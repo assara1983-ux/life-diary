@@ -13,6 +13,13 @@ function hapticNotify(type = "success") { tg?.HapticFeedback?.notificationOccurr
 //  API — Gemini через Vercel serverless прокси (ключ спрятан)
 // ══════════════════════════════════════════════════════════════
 async function askClaude(system, user, maxTokens = 1200) {
+  // Кэш на день — один запрос к Gemini за одну тему в день
+  const today = new Date().toISOString().split("T")[0];
+  const cacheKey = "ai_cache_" + today + "_" + btoa(encodeURIComponent(user)).slice(0, 40);
+  try {
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) return cached;
+  } catch {}
   try {
     const r = await fetch("/api/ai", {
       method: "POST",
@@ -20,7 +27,9 @@ async function askClaude(system, user, maxTokens = 1200) {
       body: JSON.stringify({ system, user, maxTokens }),
     });
     const d = await r.json();
-    return d.text || "Не удалось получить ответ.";
+    const text = d.text || "Не удалось получить ответ.";
+    if (d.text) { try { localStorage.setItem(cacheKey, text); } catch {} }
+    return text;
   } catch { return "Ошибка соединения с ИИ."; }
 }
 
