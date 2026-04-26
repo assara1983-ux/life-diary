@@ -879,6 +879,7 @@ const DEF_SECTIONS = [
   {id:"health",   emoji:"🌿",  name:"Здоровье",   vis:true},
   {id:"beauty",   emoji:"✨",  name:"Красота",    vis:true},
   {id:"hobbies",  emoji:"🎨",  name:"Хобби",      vis:true},
+  {id:"goals",    emoji:"🎯",  name:"Мои цели",   vis:true},
   {id:"mental",   emoji:"🧘",  name:"Ментальное", vis:true},
   {id:"travel",   emoji:"✈️",  name:"Поездки",    vis:true},
   {id:"journal",  emoji:"📖",  name:"Журнал",     vis:true},
@@ -1352,6 +1353,7 @@ export default function LifeDiary() {
             {active==="health"   && <HealthSection profile={profile} tasks={tasks} setTasks={setTasks} today={today} kb={kb} notify={notify}/>}
             {active==="beauty"   && <BeautySection profile={profile} tasks={tasks} setTasks={setTasks} today={today} kb={kb} notify={notify}/>}
             {active==="hobbies"  && <HobbiesSection profile={profile} hobbies={hobbies} setHobbies={setHobbies} kb={kb} notify={notify}/>}
+            {active==="goals"    && <GoalsSection profile={profile} kb={kb} notify={notify}/>}
             {active==="mental"   && <MentalSection profile={profile} kb={kb} notify={notify}/>}
             {active==="travel"   && <TravelSection profile={profile} trips={trips} setTrips={setTrips} kb={kb} notify={notify}/>}
             {active==="journal"  && <JournalSection journal={journal} setJournal={setJournal} today={today} notify={notify}/>}
@@ -2029,6 +2031,52 @@ function HobbiesSection({profile,hobbies,setHobbies,kb,notify}) {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════
+//  GOALS
+// ══════════════════════════════════════════════════════════════
+function GoalsSection({profile,kb,notify}) {
+  const moon=getMoon();
+  const goalAreas=profile.goalAreas||[];
+  const goalBlocks=profile.goalBlocks||[];
+  const mainGoal=profile.mainGoal||"";
+  const AREA_EMOJI={"Здоровье":"💚","Карьера":"💼","Финансы":"💰","Отношения":"❤️","Саморазвитие":"📚","Творчество":"🎨","Путешествия":"✈️","Духовность":"🌟","Семья":"👨‍👩‍👧","Внешность":"✨"};
+  const BLOCK_TIP={"Нехватка времени":"Техника Помодоро + делегирование","Нехватка энергии":"Оптимизация сна + адаптогены + режим","Откладываю":"Правило 2 минут + декомпозиция задач","Не знаю с чего начать":"Разбить на шаги по 15 минут","Много отвлекаюсь":"Режим фокуса + уведомления выключить","Страх неудачи":"КПТ-техника + маленькие победы каждый день"};
+
+  return(
+    <div>
+      {mainGoal&&<div className="card card-accent" style={{marginBottom:12}}>
+        <div style={{fontSize:11,color:"#A8A49C",fontFamily:"'JetBrains Mono'",letterSpacing:2,marginBottom:8}}>ГЛАВНАЯ ЦЕЛЬ</div>
+        <div style={{fontFamily:"'Cormorant Infant',serif",fontSize:22,color:"#E5C87A",lineHeight:1.3,marginBottom:8}}>{mainGoal}</div>
+        <div style={{fontSize:13,color:"#A8A49C",fontStyle:"italic"}}>Луна {moon.n} — {moon.t}</div>
+      </div>}
+
+      {goalAreas.length>0&&<div className="card" style={{marginBottom:12}}>
+        <div style={{fontSize:11,color:"#A8A49C",fontFamily:"'JetBrains Mono'",letterSpacing:2,marginBottom:12}}>ПРИОРИТЕТНЫЕ СФЕРЫ ЖИЗНИ</div>
+        <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+          {goalAreas.map(a=><div key={a} style={{display:"flex",alignItems:"center",gap:6,padding:"8px 14px",borderRadius:12,background:"rgba(200,164,90,0.1)",border:"1px solid rgba(200,164,90,0.25)"}}>
+            <span style={{fontSize:18}}>{AREA_EMOJI[a]||"⭐"}</span>
+            <span style={{fontSize:15,color:"#E5C87A",fontFamily:"'Crimson Pro',serif"}}>{a}</span>
+          </div>)}
+        </div>
+      </div>}
+
+      {goalBlocks.length>0&&<div className="card" style={{marginBottom:12}}>
+        <div style={{fontSize:11,color:"#A8A49C",fontFamily:"'JetBrains Mono'",letterSpacing:2,marginBottom:12}}>ЧТО МЕШАЕТ — И КАК ПРЕОДОЛЕТЬ</div>
+        {goalBlocks.map(b=><div key={b} style={{padding:"10px 0",borderBottom:"1px solid rgba(255,255,255,.04)"}}>
+          <div style={{fontSize:15,color:"#E87878",marginBottom:3}}>⚠ {b}</div>
+          <div style={{fontSize:14,color:"#A8A49C",fontStyle:"italic"}}>→ {BLOCK_TIP[b]||"Разбей на маленькие шаги"}</div>
+        </div>)}
+      </div>}
+
+      <AiBox kb={kb} prompt={"Составь персональный план достижения цели для "+( profile.name||"меня")+". Главная цель: "+(profile.mainGoal||"не указана")+". Приоритетные сферы: "+(goalAreas.join(",")||"—")+". Что мешает: "+(goalBlocks.join(",")||"—")+". Мотивирует: "+(profile.motivates||"—")+". Ключевая ценность: "+(profile.coreValue||"—")+". Свободное время: с "+(profile.workEnd||"18:00")+" до "+(profile.sleep||"23:00")+", "+(profile.selfTime||"30")+" мин/день на себя. Луна: "+moon.n+"("+moon.t+"). Дай: 1) декомпозицию цели на 3 шага на эту неделю с конкретным временем, 2) как обойти каждый блок из списка, 3) утреннюю аффирмацию под мою ценность и цель, 4) что сделать СЕГОДНЯ за 15 минут в направлении цели."} label="План достижения цели" btnText="Составить мой план" placeholder="Составлю персональный план под твою цель и ритм жизни..."/>
+
+      <AiBox kb={kb} prompt={"Проведи экспресс-анализ колеса жизни для "+( profile.name||"меня")+". Мои сферы приоритетов: "+(goalAreas.join(",")||"здоровье, карьера, отношения")+". Главная цель: "+(profile.mainGoal||"—")+". Что истощает: "+((profile.workDrain||[]).join(",")||"—")+". Что мотивирует: "+(profile.motivates||"—")+". Дай: 1) честную оценку баланса сфер жизни сейчас, 2) где самый большой дисбаланс, 3) одно конкретное действие для каждой приоритетной сферы на эту неделю. Оформи как нумерованный список."} label="Колесо жизни" btnText="Анализ баланса жизни" placeholder="Проанализирую баланс твоих жизненных сфер..."/>
+
+      <AiBox kb={kb} prompt={"Составь персональные аффирмации для "+( profile.name||"меня")+". Ключевая ценность: "+(profile.coreValue||"—")+". Главная цель: "+(profile.mainGoal||"—")+". Мотивирует: "+(profile.motivates||"—")+". Знак зодиака: "+getZodiac(profile.dob).name+". Луна: "+moon.n+"("+moon.t+"). Дай 5 мощных аффирмаций в настоящем времени, от первого лица, конкретных и заряженных. Плюс: когда и как их лучше всего произносить под мой хронотип "+(profile.chronotype||"—")+"."} label="Мои аффирмации" btnText="Создать аффирмации" placeholder="Создам персональные аффирмации под твою цель и ценности..."/>
     </div>
   );
 }
