@@ -13,9 +13,12 @@ function hapticNotify(type = "success") { tg?.HapticFeedback?.notificationOccurr
 //  API — Gemini через Vercel serverless прокси (ключ спрятан)
 // ══════════════════════════════════════════════════════════════
 async function askClaude(system, user, maxTokens = 1200) {
-  // Кэш на день — один запрос к Gemini за одну тему в день
+  // Кэш на день — уникальный ключ по всему тексту запроса
   const today = new Date().toISOString().split("T")[0];
-  const cacheKey = "ai_cache_" + today + "_" + btoa(encodeURIComponent(user)).slice(0, 40);
+  let hash = 0;
+  const str = user + system;
+  for (let i = 0; i < str.length; i++) { hash = ((hash << 5) - hash) + str.charCodeAt(i); hash |= 0; }
+  const cacheKey = "ai_cache_" + today + "_" + Math.abs(hash);
   try {
     const cached = localStorage.getItem(cacheKey);
     if (cached) return cached;
