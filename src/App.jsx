@@ -1369,17 +1369,159 @@ export default function LifeDiary() {
 // ══════════════════════════════════════════════════════════════
 //  AI BOX COMPONENT
 // ══════════════════════════════════════════════════════════════
-function AiBox({ kb, prompt, label="ИИ-СОВЕТНИК", btnText="Получить совет", placeholder="Нажми — получи персональный совет..." }) {
+// Парсер AI-ответа — превращает текст в структурированные блоки
+function parseAiResponse(text) {
+  if(!text) return [];
+  const blocks = [];
+  const lines = text.split("\n");
+  let currentList = null;
+  let currentText = [];
+  
+  const flushText = () => {
+    if(currentText.length > 0) {
+      blocks.push({type:"text", content: currentText.join("\n").trim()});
+      currentText = [];
+    }
+  };
+  const flushList = () => {
+    if(currentList) {
+      blocks.push(currentList);
+      currentList = null;
+    }
+  };
+  
+  for(let line of lines) {
+    const trimmed = line.trim();
+    if(!trimmed) {
+      flushList();
+      flushText();
+      continue;
+    }
+    // Заголовок **текст**
+    const headerMatch = trimmed.match(/^\*\*(.+?)\*\*:?$/);
+    if(headerMatch) {
+      flushList(); flushText();
+      blocks.push({type:"header", content: headerMatch[1]});
+      continue;
+    }
+    // Заголовок с двоеточием в конце (короткий)
+    if(trimmed.length < 60 && trimmed.endsWith(":") && !trimmed.match(/^[-•*\d]/)) {
+      flushList(); flushText();
+      blocks.push({type:"header", content: trimmed.slice(0, -1)});
+      continue;
+    }
+    // Нумерованный или маркированный список
+    const listMatch = trimmed.match(/^(?:(\d+)[.)]\s|[-•*]\s+)(.+)$/);
+    if(listMatch) {
+      flushText();
+      const itemText = listMatch[2];
+      if(!currentList) currentList = {type:"list", items:[]};
+      currentList.items.push(itemText);
+      continue;
+    }
+    // Обычный текст
+    flushList();
+    currentText.push(trimmed);
+  }
+  flushList();
+  flushText();
+  return blocks;
+}
+
+function AiBox({ kb, prompt, label="ИИ-СОВЕТНИК", btnText="Получить совет", placeholder="Нажми — получи персональный совет...", actionType=null, onAddItems=null }) {
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
   const ask = async()=>{ setLoading(true); const r=await askClaude(kb,prompt); setText(r); setLoading(false); };
+  const blocks = useMemo(()=>parseAiResponse(text), [text]);
+  
+  // Извлекаем все элементы списков для возможности добавить в задачи/покупки
+  const allListItems = useMemo(()=>{
+    const items = [];
+    blocks.forEach(b => {
+      if(b.type === "list") b.items.forEach(it => items.push(it));
+    });
+    return items;
+  }, [blocks]);
+  
+  const addToTasks = () => {
+    if(!allListItems.length) return;
+    try {
+      const tasks = JSON.parse(localStorage.getItem("ld_tasks_v3") || "[]");
+      const newTasks = allListItems.map(t => ({
+        id: Date.now() + Math.random(),
+        title: t.length > 100 ? t.slice(0, 97) + "..." : t,
+        section: "tasks",
+        freq: "once",
+        priority: "m",
+        deadline: "",
+        notes: "",
+        preferredTime: "",
+        lastDone: "",
+        doneDate: ""
+      }));
+      localStorage.setItem("ld_tasks_v3", JSON.stringify([...tasks, ...newTasks]));
+      alert("Добавлено " + newTasks.length + " задач");
+    } catch(e) { alert("Ошибка сохранения"); }
+  };
+  
+  const addToShopping = () => {
+    if(!allListItems.length) return;
+    try {
+      const list = JSON.parse(localStorage.getItem("ld_shop_v1") || "[]");
+      const newItems = allListItems.map(t => ({
+        id: Date.now() + Math.random(),
+        name: t.length > 80 ? t.slice(0, 77) + "..." : t,
+        cat: "Продукты",
+        done: false
+      }));
+      localStorage.setItem("ld_shop_v1", JSON.stringify([...list, ...newItems]));
+      alert("Добавлено " + newItems.length + " пунктов в покупки");
+    } catch(e) { alert("Ошибка сохранения"); }
+  };
+  
+  const addAllToCalendar = () => {
+    if(!allListItems.length) return;
+    const start = new Date(); start.setHours(start.getHours()+1, 0, 0, 0);
+    const end = new Date(start.getTime()+3600000);
+    const f = d => d.toISOString().replace(/[-:]/g,"").split(".")[0]+"Z";
+    const desc = allListItems.map((t,i)=>(i+1)+". "+t).join("\n");
+    window.open("https://calendar.google.com/calendar/render?action=TEMPLATE&text="+encodeURIComponent(label)+"&dates="+f(start)+"/"+f(end)+"&details="+encodeURIComponent(desc), "_blank");
+  };
+  
+  const saveAsNote = () => {
+    if(!text) return;
+    try {
+      const notes = JSON.parse(localStorage.getItem("ld_ai_notes") || "[]");
+      notes.unshift({date:new Date().toISOString(), label, text});
+      localStorage.setItem("ld_ai_notes", JSON.stringify(notes.slice(0, 50)));
+      alert("Сохранено в заметки");
+    } catch(e) { alert("Ошибка сохранения"); }
+  };
+  
   return (
     <div className="ai-box">
       <div className="ai-hd"><div className="ai-pulse"/><div className="ai-lbl">{label}</div></div>
-      {text ? <div className="ai-text">{text}</div> : <div className="ai-dim">{placeholder}</div>}
-      <div style={{marginTop:14,display:"flex",gap:8}}>
-        <button className="btn btn-teal btn-sm" onClick={ask} disabled={loading}>{loading?"Думаю...":btnText}</button>
-        {text&&<button className="btn btn-ghost btn-sm" onClick={()=>setText("")}>Обновить</button>}
+      {!text && <div className="ai-dim">{placeholder}</div>}
+      {text && <div className="ai-content">
+        {blocks.map((b, i) => {
+          if(b.type === "header") return <div key={i} className="ai-header">{b.content}</div>;
+          if(b.type === "list") return <div key={i} className="ai-list">
+            {b.items.map((item, j) => <div key={j} className="ai-list-item">
+              <span className="ai-list-num">{j+1}</span>
+              <span className="ai-list-text">{item}</span>
+            </div>)}
+          </div>;
+          return <div key={i} className="ai-paragraph">{b.content}</div>;
+        })}
+      </div>}
+      <div className="ai-actions">
+        <button className="btn btn-teal btn-sm" onClick={ask} disabled={loading}>{loading?"Думаю...":text?"Обновить":btnText}</button>
+        {text && allListItems.length > 0 && <>
+          {actionType !== "shopping" && <button className="btn btn-ghost btn-sm" onClick={addToTasks}>📋 В задачи</button>}
+          {actionType === "shopping" && <button className="btn btn-ghost btn-sm" onClick={addToShopping}>🛒 В список покупок</button>}
+          <button className="btn btn-ghost btn-sm" onClick={addAllToCalendar}>📅 В календарь</button>
+        </>}
+        {text && <button className="btn btn-ghost btn-sm" onClick={saveAsNote}>💾 Сохранить</button>}
       </div>
     </div>
   );
@@ -1819,7 +1961,7 @@ function ShoppingSection({profile,shopList,setShopList,kb,notify}) {
           <div className="pf-item"><div className="pf-l">Онлайн</div><div className="pf-v">{profile.onlineShopping||"—"}</div></div>
         </div>
       </div>
-      <AiBox kb={kb} prompt={`Составь подробный список покупок на неделю для ${profile.name||"меня"}. Тип питания: ${profile.nutrition||"обычное"}. Всегда есть дома: ${(profile.staples||[]).join(",")||"—"}. Питомцы и их еда: ${(profile.pets||[]).map(p=>`${p.name}(${p.type}):${p.food||"стандартный корм"}`).join(",")||"нет"}. Живу: ${(profile.livesWith||[]).join(",")||"один(а)"}. Закупка: ${profile.shopDay||"—"}, онлайн: ${profile.onlineShopping||"нет"}. Раздели список по категориям: Продукты питания (с конкретными рецептами на неделю), Бытовая химия, Уход и красота, Для питомцев. Учти сезон и тип питания.`} label="Список покупок на неделю" btnText="Составить список" placeholder="Составлю список покупок на неделю..."/>
+      <AiBox kb={kb} prompt={`Составь подробный список покупок на неделю для ${profile.name||"меня"}. Тип питания: ${profile.nutrition||"обычное"}. Всегда есть дома: ${(profile.staples||[]).join(",")||"—"}. Питомцы и их еда: ${(profile.pets||[]).map(p=>`${p.name}(${p.type}):${p.food||"стандартный корм"}`).join(",")||"нет"}. Живу: ${(profile.livesWith||[]).join(",")||"один(а)"}. Закупка: ${profile.shopDay||"—"}, онлайн: ${profile.onlineShopping||"нет"}. Раздели список по категориям: Продукты питания (с конкретными рецептами на неделю), Бытовая химия, Уход и красота, Для питомцев. Учти сезон и тип питания.`} label="Список покупок на неделю" btnText="Составить список" placeholder="Составлю список покупок на неделю..." actionType="shopping"/>
       <div className="card">
         <div style={{display:"flex",gap:8,marginBottom:16}}>
           <input style={{flex:1,padding:"10px 14px",background:"rgba(255,255,255,.03)",border:`1px solid ${T.bdr}`,borderRadius:10,color:T.text0,fontFamily:"'Crimson Pro',serif",fontSize:16,outline:"none"}} placeholder="Добавить товар..." value={newItem} onChange={e=>setNewItem(e.target.value)} onKeyDown={e=>e.key==="Enter"&&add()}/>
@@ -1939,7 +2081,7 @@ function HealthSection({profile,tasks,setTasks,today,kb,notify}) {
         ))}
       </div>
       {modal!==null&&<TaskModal task={modal.id?modal:null} defaultSection="health" onSave={t=>{setTasks(p=>modal.id?p.map(x=>x.id===t.id?t:x):[...p,t]);notify("Добавлено");}} onClose={()=>setModal(null)}/>}
-      <AiBox kb={kb} prompt={"Составь меню на неделю для "+( profile.name||"меня")+". Тип питания: "+(profile.nutrition||"обычное")+". Всегда дома: "+((profile.staples||[]).join(","))+". Зоны здоровья: "+((profile.healthFocus||[]).join(","))+". Хронические болезни: "+(profile.chronic||"нет")+". Луна сейчас: "+moonN+" ("+moonT+"). Сезон: "+season+". Дай: 1) меню на 7 дней (завтрак, обед, ужин) с учётом сезона и типа питания, 2) список покупок под это меню, 3) какие суперфуды и добавки важны именно мне под мои зоны здоровья. Оформи нумерованным списком по дням."} label="Меню на неделю" btnText="Составить меню" placeholder="Составлю персональное меню на неделю под твоё питание и здоровье..."/>
+      <AiBox kb={kb} prompt={"Составь меню на неделю для "+( profile.name||"меня")+". Тип питания: "+(profile.nutrition||"обычное")+". Всегда дома: "+((profile.staples||[]).join(","))+". Зоны здоровья: "+((profile.healthFocus||[]).join(","))+". Хронические болезни: "+(profile.chronic||"нет")+". Луна сейчас: "+moonN+" ("+moonT+"). Сезон: "+season+". Дай: 1) меню на 7 дней (завтрак, обед, ужин) с учётом сезона и типа питания, 2) список покупок под это меню, 3) какие суперфуды и добавки важны именно мне под мои зоны здоровья. Оформи нумерованным списком по дням."} label="Меню на неделю" btnText="Составить меню" placeholder="Составлю персональное меню на неделю под твоё питание и здоровье..." actionType="shopping"/>
       <AiBox kb={kb} prompt={"Дай рецепт на сегодня для "+( profile.name||"меня")+". Тип питания: "+(profile.nutrition||"обычное")+". Луна: "+moonN+" ("+moonT+"). Зоны здоровья: "+((profile.healthFocus||[]).join(","))+". Что есть дома: "+((profile.staples||[]).join(","))+". Сезон: "+season+". Дай: 1) один конкретный рецепт под эту фазу луны и мои зоны здоровья, 2) почему именно этот рецепт полезен для меня сегодня, 3) какие добавки или суперфуды добавить для усиления эффекта."} label="Рецепт на сегодня" btnText="Рецепт дня" placeholder="Подберу рецепт под фазу луны и твоё здоровье..."/>
     </div>
   );
@@ -2442,7 +2584,9 @@ function ProfileSection({profile,setProfile,sections,setSections,notify,kb}) {
             <div className="card" style={{textAlign:"center"}}><div style={{fontSize:40,marginBottom:6}}>🐾</div><div style={{fontFamily:"'Cormorant Infant',serif",fontSize:20}}>{east}</div><div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",marginTop:4,letterSpacing:1}}>ВОСТОЧНЫЙ ЗНАК</div></div>
             <div className="card gfull"><div className="pf-l">Луна сегодня</div><div style={{fontFamily:"'Cormorant Infant',serif",fontSize:22,color:T.text0,marginTop:4}}>{getMoon().e} {getMoon().n}</div><div style={{fontSize:14,color:T.text3,marginTop:3,fontStyle:"italic"}}>{getMoon().t}</div></div>
           </div>
-          <AiBox kb={kb} prompt={`Составь мой астрологический и нумерологический портрет: ${z.name}, Восточный: ${east}, градус ${deg}°. Характер, сильные стороны, слабые места здоровья, лучшие жизненные стратегии. Конкретно и с заботой.`} label="Персональный астропортрет" btnText="Составить мой портрет" placeholder="Получи свой полный астрологический портрет..."/>
+          <AiBox kb={kb} prompt={"Составь подробный астрологический и нумерологический портрет для "+(profile.name||"меня")+". Знак зодиака: "+z.name+", восточный: "+east+", градус судьбы: "+(deg||"—")+"°, дата рождения: "+(profile.dob||"—")+". Раздели ответ на чёткие блоки с заголовками: 1) **Характер и личность** — основные черты, 2) **Сильные стороны** — что использовать, 3) **Слабые места** — над чем работать, 4) **Здоровье** — на что обращать внимание, 5) **Любовь и отношения** — какой ты партнёр, 6) **Карьера и финансы** — где реализуешься. Каждый блок 3-5 пунктов нумерованным списком."} label="Персональный астропортрет" btnText="Составить мой портрет" placeholder="Получи свой полный астрологический портрет..."/>
+          <AiBox kb={kb} prompt={"Расшифруй жизненный путь по годам для "+(profile.name||"меня")+". Знак: "+z.name+", восточный: "+east+", градус: "+(deg||"—")+"°, дата рождения: "+(profile.dob||"—")+", сейчас "+(profile.dob?(new Date().getFullYear()-new Date(profile.dob).getFullYear())+" лет":"—")+". Дай: 1) **Детство (0-12)** — какой я была, 2) **Юность (13-21)** — что формировало личность, 3) **Молодость (22-35)** — главные уроки, 4) **Зрелость (36-50)** — пик реализации, 5) **Мудрость (50+)** — что важно. По каждому периоду 3-4 ключевых пункта."} label="Жизненный путь по годам" btnText="Расшифровать" placeholder="Покажу твой жизненный путь по этапам..."/>
+          <AiBox kb={kb} prompt={"Составь календарь ключевых дат прошлого и будущего для "+(profile.name||"меня")+". Знак: "+z.name+", восточный: "+east+", градус: "+(deg||"—")+"°, дата рождения: "+(profile.dob||"—")+". Используй нумерологию (личный год по дате рождения), астрологические циклы (Сатурн ~28-30 лет, Юпитер ~12 лет). Дай: 1) **Прошлые ключевые годы** — какие важные точки уже были (3-5 лет с пояснением), 2) **Этот год** — главная тема и события, 3) **Ближайшие 3 года** — что ждёт, к чему готовиться, 4) **Дальняя перспектива (5-10 лет)** — крупные циклы. Конкретные годы с месяцами где можно."} label="Ключевые даты жизни" btnText="Показать мои даты" placeholder="Покажу важные годы и события прошлого и будущего..."/>
         </div>
       )}
       {view==="sections"&&(
