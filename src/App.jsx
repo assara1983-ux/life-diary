@@ -85,19 +85,28 @@ function freqLabel(f) {
 }
 
 function buildKB(p) {
-  return `Ты — личный жизненный советник Life Diary. Говори тепло, как умный близкий друг. Конкретно и по делу.
+  const age = p.dob ? new Date().getFullYear()-new Date(p.dob).getFullYear() : null;
+  const freeFrom = p.workEnd || "18:00";
+  const wakeTime = p.wake || "07:00";
+  return `Ты — личный жизненный советник Life Diary. Говори тепло, как умный близкий друг. Конкретно и по делу. ВСЕГДА учитывай весь профиль при ответе.
 
-ПРОФИЛЬ: ${p.name||"—"}, ${p.dob?new Date().getFullYear()-new Date(p.dob).getFullYear()+" лет":""}, ${getZodiac(p.dob).name}, ${getEastern(p.dob)}, хронотип: ${p.chronotype||"—"}
-ЛИЧНОСТЬ: решения-${p.decisionStyle||"—"}, энергия из-${p.energySource||"—"}, планирование-${p.planningStyle||"—"}, ценность-${p.coreValue||"—"}, стресс от-${(p.stressors||[]).join(",")||"—"}, восстановление-${(p.recovery||[]).join(",")||"—"}
-РАБОТА: ${p.profession||"—"} в ${p.jobSphere||"—"}, ${p.workType||"—"}, ${p.workStart||"?"}-${p.workEnd||"?"}
-ДОМ: ${p.homeType||"—"} ${p.homeArea||"?"}м², с: ${(p.livesWith||[]).join(",")||"один(а)"}, растения: ${p.plants||"нет"}
-ПИТОМЦЫ: ${(p.pets||[]).map(pt=>`${pt.name}(${pt.type},${pt.feedTimes}х/д)`).join(";")||"нет"}
-ЗДОРОВЬЕ: ${(p.healthFocus||[]).join(",")||"—"}, цель: ${p.healthGoal||"—"}, спорт: ${(p.sport||[]).join(",")||"—"}
-КРАСОТА: кожа-${p.skinType||"—"}, волосы-${p.hairType||"—"}
-ХОББИ: ${(p.hobbies||[]).join(",")||"—"}
-ЦЕЛИ: ${p.mainGoal||"—"}
+ПРОФИЛЬ: ${p.name||"—"}, ${age?age+" лет":""}, ${p.gender||""}, ${p.city||""}
+АСТРО: ${getZodiac(p.dob).name}, восточный знак-${getEastern(p.dob)}, хронотип: ${p.chronotype||"—"}, подъём-${wakeTime}, отбой-${p.sleep||"23:00"}
+ЛИЧНОСТЬ: решения-${p.decisionStyle||"—"}, энергия из-${p.energySource||"—"}, планирование-${p.planningStyle||"—"}, ценность-${p.coreValue||"—"}
+СТРЕСС: от-${(p.stressors||[]).join(",")||"—"}, восстановление-${(p.recovery||[]).join(",")||"—"}
+РАБОТА: ${p.profession||"—"} в ${p.jobSphere||"—"}, формат-${p.workType||"—"}, график: ${p.workStart||"?"}–${p.workEnd||"?"}, дорога-${p.commuteTime||"нет"}
+СВОБОДНОЕ ВРЕМЯ: с ${freeFrom} до ${p.sleep||"23:00"} (практики ТОЛЬКО в это время!)
+ДОМ: ${p.homeType||"—"} ${p.homeArea||"?"}м², с: ${(p.livesWith||[]).join(",")||"один(а)"}, уборка: ${(p.cleanDays||[]).join(",")||"—"}
+ПИТОМЦЫ: ${(p.pets||[]).map(pt=>`${pt.name}(${pt.type},${pt.feedTimes}х/д,еда:${pt.food||"—"})`).join(";")||"нет"}
+ЗДОРОВЬЕ: зоны-${(p.healthFocus||[]).join(",")||"—"}, цель-${p.healthGoal||"—"}, хрон.-${p.chronic||"нет"}, спорт-${(p.sport||[]).join(",")||"—"}, практики-${(p.practices||[]).join(",")||"—"}
+ПИТАНИЕ: ${p.nutrition||"обычное"}, всегда дома-${(p.staples||[]).join(",")||"—"}, закупка-${p.shopDay||"—"}
+КРАСОТА: кожа-${p.skinType||"—"}, волосы-${p.hairType||"—"}, ногти-${p.nailFreq||"—"}, приоритет-${p.beautyPriority||"—"}
+ХОББИ: ${(p.hobbies||[]).join(",")||"—"}, проект-${p.hobbyProject||"—"}
+ЦЕЛИ: ${p.mainGoal||"—"}, вдохновляет-${p.workInspire||"—"}, истощает-${(p.workDrain||[]).join(",")||"—"}
 
-ЗНАНИЯ: Уборка-ежедневно(постель,посуда,мусор), еженедельно(пн-зеркала,вт-полы,ср-сантехника,чт-ванная,пт-холодильник,сб-бельё,вс-глажка), ежемесячно(окна,генуборка). Питомцы-вакцинация раз в год, антипаразит раз в 3 мес. Красота-маска лица 2р/нед, маска волос 1р/нед, скраб тела 2р/нед.`;
+ПРАВИЛА: 1) Никогда не предлагай занятия в рабочее время (${p.workStart||"9:00"}–${p.workEnd||"18:00"}). 2) Хронотип "сова" = поздние практики, "жаворонок" = ранние. 3) Уход — строго под тип кожи и волос. 4) Меню — под тип питания и сезон. 5) Йога/цигун/медитация — только после ${freeFrom}.
+
+ЗНАНИЯ: Уборка-ежедневно(постель,посуда,мусор), еженедельно(пн-зеркала,вт-полы,ср-сантехника,чт-ванная,пт-холодильник,сб-бельё,вс-глажка), ежемесячно(окна,генуборка). Питомцы-вакцинация раз в год, антипаразит раз в 3 мес. Красота-маска лица 2р/нед, маска волос 1р/нед, скраб тела 2р/нед. Цигун-утренний комплекс 15мин, вечерний 10мин.`;
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -870,6 +879,7 @@ const DEF_SECTIONS = [
   {id:"health",   emoji:"🌿",  name:"Здоровье",   vis:true},
   {id:"beauty",   emoji:"✨",  name:"Красота",    vis:true},
   {id:"hobbies",  emoji:"🎨",  name:"Хобби",      vis:true},
+  {id:"mental",   emoji:"🧘",  name:"Ментальное", vis:true},
   {id:"travel",   emoji:"✈️",  name:"Поездки",    vis:true},
   {id:"journal",  emoji:"📖",  name:"Журнал",     vis:true},
   {id:"profile",  emoji:"👤",  name:"Профиль",    vis:true},
@@ -1342,6 +1352,7 @@ export default function LifeDiary() {
             {active==="health"   && <HealthSection profile={profile} tasks={tasks} setTasks={setTasks} today={today} kb={kb} notify={notify}/>}
             {active==="beauty"   && <BeautySection profile={profile} tasks={tasks} setTasks={setTasks} today={today} kb={kb} notify={notify}/>}
             {active==="hobbies"  && <HobbiesSection profile={profile} hobbies={hobbies} setHobbies={setHobbies} kb={kb} notify={notify}/>}
+            {active==="mental"   && <MentalSection profile={profile} kb={kb} notify={notify}/>}
             {active==="travel"   && <TravelSection profile={profile} trips={trips} setTrips={setTrips} kb={kb} notify={notify}/>}
             {active==="journal"  && <JournalSection journal={journal} setJournal={setJournal} today={today} notify={notify}/>}
             {active==="profile"  && <ProfileSection profile={profile} setProfile={setProfile} sections={sections} setSections={setSections} notify={notify} kb={kb}/>}
@@ -1617,7 +1628,7 @@ function ScheduleSection({profile,tasks,setTasks,today,kb,notify}) {
   const weekDays=()=>{const d=new Date();d.setDate(d.getDate()-d.getDay()+1+offset*7);return Array.from({length:7},(_,i)=>{const dd=new Date(d);dd.setDate(d.getDate()+i);return toDay(dd);});};
   const days=weekDays();
 
-  const getAiSchedule=async()=>{setLoading(true);const r=await askClaude(kb,`Составь оптимальное расписание на неделю. Регулярные дела: ${tasks.filter(t=>t.freq&&t.freq!=="once").map(t=>`${t.title}(${freqLabel(t.freq)})`).join("; ")||"нет"}. Работа: ${profile.workStart||"?"}-${profile.workEnd||"?"}. Дни уборки: ${(profile.cleanDays||[]).join(", ")||"—"}. День закупки: ${profile.shopDay||"—"}. Учти хронотип (${profile.chronotype||"—"}) и характер. Дай конкретный план по дням недели.`,1000);setAiText(r);setLoading(false);};
+  const getAiSchedule=async()=>{setLoading(true);const r=await askClaude(kb,`Составь детальное расписание на неделю для ${profile.name||"меня"}. Работа: ${profile.workStart||"9:00"}–${profile.workEnd||"18:00"} (${profile.workType||"офис"}), дорога: ${profile.commuteTime||"нет"}. Подъём: ${profile.wake||"7:00"}, отбой: ${profile.sleep||"23:00"}. Хронотип: ${profile.chronotype||"—"}. Регулярные дела: ${tasks.filter(t=>t.freq&&t.freq!=="once").map(t=>`${t.title}(${freqLabel(t.freq)})`).join("; ")||"нет"}. Дни уборки: ${(profile.cleanDays||[]).join(", ")||"—"}. Закупки: ${profile.shopDay||"—"}. Практики: ${(profile.practices||[]).join(",")||"—"}. Спорт: ${(profile.sport||[]).join(",")||"—"}. ВАЖНО: все практики и спорт ТОЛЬКО после ${profile.workEnd||"18:00"}. Дай конкретный план по дням с точным временем.`,1000);setAiText(r);setLoading(false);};
 
   const SECT_COLORS={work:`rgba(90,142,200,.18)`,health:`rgba(91,173,122,.18)`,beauty:`rgba(140,90,200,.18)`,pets:`rgba(78,201,190,.18)`,home:`rgba(200,164,90,.12)`,shopping:`rgba(200,140,58,.15)`};
   const SECT_TEXT={work:T.info,health:T.success,beauty:T.purple,pets:T.teal,home:T.gold,shopping:T.warn};
@@ -1662,7 +1673,7 @@ function ScheduleSection({profile,tasks,setTasks,today,kb,notify}) {
             {aiText&&<button className="btn btn-ghost btn-sm" onClick={()=>setAiText("")}>Обновить</button>}
           </div>
         </div>
-        <AiBox kb={kb} prompt="Как мне всё успевать и не надрываться? Учти мой хронотип, характер и то что меня истощает. Дай конкретные советы по организации дня именно для меня." label="Как всё успевать" btnText="Как организовать день" placeholder="Помогу найти твой ритм и баланс..."/>
+        <AiBox kb={kb} prompt={`Как ${profile.name||"мне"} всё успевать и не надрываться? Хронотип: ${profile.chronotype||"—"}, работа до ${profile.workEnd||"18:00"}, подъём ${profile.wake||"7:00"}. Меня истощает: ${(profile.workDrain||[]).join(",")||"—"}, стрессоры: ${(profile.stressors||[]).join(",")||"—"}. Восстанавливаюсь через: ${(profile.recovery||[]).join(",")||"—"}. Тип планирования: ${profile.planningStyle||"—"}. Дай конкретные советы по управлению энергией именно для моего типа.`} label="Как всё успевать" btnText="Как организовать день" placeholder="Помогу найти твой ритм и баланс..."/>
       </>}
     </div>
   );
@@ -1746,7 +1757,7 @@ function HomeSection({profile,tasks,setTasks,today,kb,notify}) {
         </div>
         {(profile.cleanDays||[]).length>0&&<div style={{marginTop:10,fontSize:13,color:T.text3}}>✦ Дни уборки: {profile.cleanDays.join(", ")}</div>}
       </div>
-      <AiBox kb={kb} prompt="Какие домашние дела важнее всего сейчас и как их сделать быстро? Дай 3-4 конкретных совета для моего типа личности." label="Быт и дом" btnText="Советы по быту" placeholder="Подскажу как организовать дом легко..."/>
+      <AiBox kb={kb} prompt={`Советы по домашним делам для ${profile.homeType||"квартиры"} ${profile.homeArea||"?"}м² где живут: ${(profile.livesWith||[]).join(",")||"я один(а)"}. Питомцы: ${(profile.pets||[]).map(p=>p.name).join(",")||"нет"}. Дни уборки по расписанию: ${(profile.cleanDays||[]).join(",")||"—"}. Я работаю до ${profile.workEnd||"18:00"} — дела планируй после этого. Тип личности: ${profile.planningStyle||"—"}. Что важнее всего сделать сегодня с учётом моего расписания?`} label="Быт и дом" btnText="Советы по быту" placeholder="Подскажу как организовать дом легко..."/>
       {homeTasks.length===0&&(
         <div className="card" style={{textAlign:"center",padding:"28px 20px"}}>
           <div style={{fontSize:14,color:T.text3,marginBottom:16,fontStyle:"italic"}}>Добавь домашние дела или создай расписание уборки автоматически</div>
@@ -1806,7 +1817,7 @@ function ShoppingSection({profile,shopList,setShopList,kb,notify}) {
           <div className="pf-item"><div className="pf-l">Онлайн</div><div className="pf-v">{profile.onlineShopping||"—"}</div></div>
         </div>
       </div>
-      <AiBox kb={kb} prompt={`Составь список продуктов на неделю. Питомцы: ${(profile.pets||[]).map(p=>`${p.name}(${p.food})`).join(",")||"нет"}. Всегда дома: ${(profile.staples||[]).join(",")||"—"}. Питание: ${profile.nutrition||"обычное"}.`} label="Список покупок на неделю" btnText="Составить список" placeholder="Составлю список покупок на неделю..."/>
+      <AiBox kb={kb} prompt={`Составь подробный список покупок на неделю для ${profile.name||"меня"}. Тип питания: ${profile.nutrition||"обычное"}. Всегда есть дома: ${(profile.staples||[]).join(",")||"—"}. Питомцы и их еда: ${(profile.pets||[]).map(p=>`${p.name}(${p.type}):${p.food||"стандартный корм"}`).join(",")||"нет"}. Живу: ${(profile.livesWith||[]).join(",")||"один(а)"}. Закупка: ${profile.shopDay||"—"}, онлайн: ${profile.onlineShopping||"нет"}. Раздели список по категориям: Продукты питания (с конкретными рецептами на неделю), Бытовая химия, Уход и красота, Для питомцев. Учти сезон и тип питания.`} label="Список покупок на неделю" btnText="Составить список" placeholder="Составлю список покупок на неделю..."/>
       <div className="card">
         <div style={{display:"flex",gap:8,marginBottom:16}}>
           <input style={{flex:1,padding:"10px 14px",background:"rgba(255,255,255,.03)",border:`1px solid ${T.bdr}`,borderRadius:10,color:T.text0,fontFamily:"'Crimson Pro',serif",fontSize:16,outline:"none"}} placeholder="Добавить товар..." value={newItem} onChange={e=>setNewItem(e.target.value)} onKeyDown={e=>e.key==="Enter"&&add()}/>
@@ -1890,6 +1901,8 @@ function PetsSection({profile,setProfile,petLog,setPetLog,today,kb,notify}) {
 function HealthSection({profile,tasks,setTasks,today,kb,notify}) {
   const [modal,setModal]=useState(null);
   const moon=getMoon();
+  const moonN=moon.n; const moonT=moon.t;
+  const season=(()=>{const m=new Date().getMonth();return m<2||m>10?"зима":m<5?"весна":m<8?"лето":"осень";})();
   const healthTasks=tasks.filter(t=>t.section==="health");
   const due=healthTasks.filter(t=>isDue(t,today));
   const autoHealth=()=>{
@@ -1908,7 +1921,7 @@ function HealthSection({profile,tasks,setTasks,today,kb,notify}) {
         <div style={{fontSize:13,color:T.text3}}>Цель: {profile.healthGoal||"—"} · Питание: {profile.nutrition||"—"}</div>
         <div style={{marginTop:10,padding:"8px 13px",background:"rgba(78,201,190,.07)",borderRadius:9,fontSize:13,color:T.teal}}>🌙 {moon.n} — {moon.t}</div>
       </div>
-      <AiBox kb={kb} prompt={`Советы по здоровью на сегодня. Луна: ${moon.n}(${moon.t}). Зоны: ${(profile.healthFocus||[]).join(",")||"—"}. Цель: ${profile.healthGoal||"—"}. Включи: что рекомендует лунный день, рецепты, практики.`} label="Здоровье на сегодня" btnText="Советы по здоровью" placeholder="Дам персональные советы по здоровью..."/>
+      <AiBox kb={kb} prompt={`Дай персональные советы по здоровью на сегодня. Луна: ${moon.n}(${moon.t}). Мои проблемные зоны: ${(profile.healthFocus||[]).join(",")||"—"}. Хронические болезни: ${profile.chronic||"нет"}. Цель: ${profile.healthGoal||"—"}. Питание: ${profile.nutrition||"обычное"}. Практики: ${(profile.practices||[]).join(",")||"—"}. Свободна после: ${profile.workEnd||"18:00"}. Дай: 1) что полезно при этой фазе луны для моих зон здоровья, 2) конкретный рецепт под моё питание на сегодня, 3) комплекс йоги или цигуна на 15-20 мин строго после ${profile.workEnd||"18:00"}.`} label="Здоровье на сегодня" btnText="Советы по здоровью" placeholder="Дам персональные советы по здоровью..."/>
       <div className="card">
         <div className="card-hd">
           <div className="card-title">Здоровые привычки</div>
@@ -1924,6 +1937,8 @@ function HealthSection({profile,tasks,setTasks,today,kb,notify}) {
         ))}
       </div>
       {modal!==null&&<TaskModal task={modal.id?modal:null} defaultSection="health" onSave={t=>{setTasks(p=>modal.id?p.map(x=>x.id===t.id?t:x):[...p,t]);notify("Добавлено");}} onClose={()=>setModal(null)}/>}
+      <AiBox kb={kb} prompt={"Составь меню на неделю для "+( profile.name||"меня")+". Тип питания: "+(profile.nutrition||"обычное")+". Всегда дома: "+((profile.staples||[]).join(","))+". Зоны здоровья: "+((profile.healthFocus||[]).join(","))+". Хронические болезни: "+(profile.chronic||"нет")+". Луна сейчас: "+moonN+" ("+moonT+"). Сезон: "+season+". Дай: 1) меню на 7 дней (завтрак, обед, ужин) с учётом сезона и типа питания, 2) список покупок под это меню, 3) какие суперфуды и добавки важны именно мне под мои зоны здоровья. Оформи нумерованным списком по дням."} label="Меню на неделю" btnText="Составить меню" placeholder="Составлю персональное меню на неделю под твоё питание и здоровье..."/>
+      <AiBox kb={kb} prompt={"Дай рецепт на сегодня для "+( profile.name||"меня")+". Тип питания: "+(profile.nutrition||"обычное")+". Луна: "+moonN+" ("+moonT+"). Зоны здоровья: "+((profile.healthFocus||[]).join(","))+". Что есть дома: "+((profile.staples||[]).join(","))+". Сезон: "+season+". Дай: 1) один конкретный рецепт под эту фазу луны и мои зоны здоровья, 2) почему именно этот рецепт полезен для меня сегодня, 3) какие добавки или суперфуды добавить для усиления эффекта."} label="Рецепт на сегодня" btnText="Рецепт дня" placeholder="Подберу рецепт под фазу луны и твоё здоровье..."/>
     </div>
   );
 }
@@ -1951,7 +1966,7 @@ function BeautySection({profile,tasks,setTasks,today,kb,notify}) {
           <div className="pf-item"><div className="pf-l">Приоритет</div><div className="pf-v">{profile.beautyPriority||"—"}</div></div>
         </div>
       </div>
-      <AiBox kb={kb} prompt={`Советы по уходу за собой. Кожа: ${profile.skinType||"—"}, волосы: ${profile.hairType||"—"}. Что важно сделать сегодня и на неделе?`} label="Уход за собой" btnText="Советы по уходу" placeholder="Дам персональные советы по уходу..."/>
+      <AiBox kb={kb} prompt={`Дай персональные советы по уходу за собой для ${profile.name||"меня"} с кожей "${profile.skinType||"нормальная"}" и волосами "${profile.hairType||"нормальные"}". Приоритет красоты: ${profile.beautyPriority||"—"}. Свободное время: после ${profile.workEnd||"18:00"}. Дай: 1) утренний уход строго под мой тип кожи ${profile.skinType} с конкретными шагами, 2) вечерний ритуал под мой тип, 3) процедуру для волос под тип ${profile.hairType}, 4) что важно сделать именно сегодня исходя из лунного дня.`} label="Уход за собой" btnText="Советы по уходу" placeholder="Дам персональные советы по уходу..."/>
       <div className="card">
         <div className="card-hd">
           <div className="card-title">Процедуры</div>
@@ -1980,7 +1995,7 @@ function HobbiesSection({profile,hobbies,setHobbies,kb,notify}) {
   const logSession=id=>{setHobbies(p=>p.map(h=>h.id===id?{...h,sessions:[...(h.sessions||[]),toDay()]}:h));notify("Сессия отмечена!");};
   return(
     <div>
-      <AiBox kb={kb} prompt={`Мои хобби: ${(profile.hobbies||[]).join(",")||"—"}. Проект: ${profile.hobbyProject||"—"}. Как найти время для хобби? Как развивать проект шаг за шагом?`} label="Хобби и увлечения" btnText="Советы по хобби" placeholder="Помогу найти время для хобби..."/>
+      <AiBox kb={kb} prompt={`Советы по хобби для ${profile.name||"меня"}. Мои хобби: ${(profile.hobbies||[]).join(",")||"—"}. Текущий проект: ${profile.hobbyProject||"—"}. Работаю до ${profile.workEnd||"18:00"}, значит свободное время с ${profile.workEnd||"18:00"} до ${profile.sleep||"23:00"}. Тип планирования: ${profile.planningStyle||"—"}. Восстанавливаюсь через: ${(profile.recovery||[]).join(",")||"—"}. Как встроить хобби в мой реальный распорядок? Дай конкретный пошаговый план развития моего проекта.`} label="Хобби и увлечения" btnText="Советы по хобби" placeholder="Помогу найти время для хобби..."/>
       {hobbies.length===0&&<div className="empty"><span className="empty-ico">🎨</span><p>Добавь свои хобби</p><button className="btn btn-primary btn-sm" style={{marginTop:12}} onClick={()=>setModal(true)}>+ Добавить хобби</button></div>}
       {hobbies.map(h=>{
         const wk=(h.sessions||[]).filter(s=>(new Date()-new Date(s))/86400000<=7).length;
@@ -2014,6 +2029,168 @@ function HobbiesSection({profile,hobbies,setHobbies,kb,notify}) {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════
+//  MENTAL HEALTH
+// ══════════════════════════════════════════════════════════════
+function MentalSection({profile,kb,notify}) {
+  const [mood,setMood]=useState(3);
+  const [stress,setStress]=useState(3);
+  const [note,setNote]=useState("");
+  const [saved,setSaved]=useState(false);
+  const [tab,setTab]=useState("check");
+  const moon=getMoon();
+  const moods=["😔","😟","😐","🙂","😊","🤩"];
+  const freeFrom=profile.workEnd||"18:00";
+  const wakeTime=profile.wake||"07:00";
+  const isHighStress=(profile.stressors||[]).length>=2||(profile.workDrain||[]).length>=2;
+  const currentHour=new Date().getHours();
+  const isSedentary=(profile.workType||"").includes("офис")||(profile.workType||"").includes("удалённо");
+  const hasBadSleep=(profile.sleepQuality||"").includes("Плох")||(profile.sleepQuality||"").includes("Сред");
+  const recovery=(profile.recovery||[]).join(",");
+  const stressors=(profile.stressors||[]).join(",");
+
+  const saveMoodLog=()=>{
+    try{
+      const logs=JSON.parse(localStorage.getItem("mental_log")||"[]");
+      logs.unshift({date:new Date().toISOString(),mood,stress,note});
+      localStorage.setItem("mental_log",JSON.stringify(logs.slice(0,60)));
+    }catch{}
+    setSaved(true);notify("Записано");setTimeout(()=>setSaved(false),2000);
+  };
+
+  return(
+    <div>
+      <div className="tabs">{[["check","Состояние"],["breath","Дыхание"],["practice","Практики"],["sound","Звук"],["history","История"]].map(([v,l])=><div key={v} className={"tab"+(tab===v?" on":"")} onClick={()=>setTab(v)}>{l}</div>)}</div>
+
+      {tab==="check"&&<>
+        <div className="card card-accent" style={{marginBottom:12}}>
+          <div style={{fontFamily:"'Cormorant Infant',serif",fontSize:20,color:"#E5C87A",marginBottom:12}}>Как ты сейчас, {profile.name||"—"}?</div>
+          <div style={{marginBottom:14}}>
+            <div style={{fontSize:11,color:"#A8A49C",fontFamily:"'JetBrains Mono'",letterSpacing:1.5,marginBottom:10}}>НАСТРОЕНИЕ</div>
+            <div style={{display:"flex",gap:10}}>{moods.map((m,i)=><div key={i} onClick={()=>setMood(i)} style={{fontSize:30,cursor:"pointer",opacity:mood===i?1:0.35,transform:mood===i?"scale(1.25)":"scale(1)",transition:"all .2s"}}>{m}</div>)}</div>
+          </div>
+          <div style={{marginBottom:14}}>
+            <div style={{fontSize:11,color:"#A8A49C",fontFamily:"'JetBrains Mono'",letterSpacing:1.5,marginBottom:10}}>СТРЕСС: {stress}/5</div>
+            <div style={{display:"flex",gap:8}}>{[1,2,3,4,5].map(i=><div key={i} onClick={()=>setStress(i)} style={{flex:1,height:38,borderRadius:8,border:"1px solid "+(stress>=i?"#C8A45A":"rgba(200,164,90,0.15)"),background:stress>=i?"rgba(200,164,90,0.2)":"transparent",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontSize:13,color:stress>=i?"#E5C87A":"#706C64",fontFamily:"'JetBrains Mono'"}}>{i}</div>)}</div>
+          </div>
+          <textarea style={{width:"100%",padding:"10px 14px",background:"rgba(255,255,255,.03)",border:"1px solid rgba(200,164,90,0.2)",borderRadius:10,color:"#F0EDE8",fontFamily:"'Crimson Pro',serif",fontSize:16,outline:"none",resize:"none",minHeight:80,lineHeight:1.6}} placeholder="Что на душе сегодня? Любые мысли..." value={note} onChange={e=>setNote(e.target.value)}/>
+          <div style={{display:"flex",gap:8,marginTop:10}}>
+            <button className="btn btn-primary btn-sm" onClick={saveMoodLog}>{saved?"✓ Сохранено":"Сохранить запись"}</button>
+          </div>
+        </div>
+        <AiBox kb={kb} prompt={"Дай персональный план восстановления для "+( profile.name||"меня")+" на сегодня. Стрессоры: "+stressors+". Что истощает на работе: "+((profile.workDrain||[]).join(","))+". Восстанавливаюсь через: "+recovery+". Хронотип: "+(profile.chronotype||"—")+". Свободна после: "+freeFrom+". Качество сна: "+(profile.sleepQuality||"—")+". Луна: "+moon.n+"("+moon.t+"). Сейчас высокий стресс: "+(isHighStress?"да":"нет")+". Дай: 1) экстренную технику при стрессе прямо сейчас (2-3 мин), 2) вечерний ритуал восстановления после "+freeFrom+" под мой тип восстановления ["+recovery+"], 3) что поможет со сном сегодня ночью, 4) одну аффирмацию под мою ценность "+(profile.coreValue||"—")+". Оформи нумерованным списком."} label="Состояние и восстановление" btnText="Получить план восстановления" placeholder="Составлю персональный план восстановления..."/>
+      </>}
+
+      {tab==="breath"&&<>
+        <div className="card card-accent" style={{marginBottom:12}}>
+          <div style={{fontFamily:"'Cormorant Infant',serif",fontSize:18,color:"#E5C87A",marginBottom:8}}>Дыхательные практики</div>
+          <div style={{fontSize:15,color:"#A8A49C",lineHeight:1.6}}>Дыхание — самый быстрый способ изменить состояние. Выбери нужное прямо сейчас.</div>
+        </div>
+        {[
+          {name:"4-7-8 — снятие тревоги",desc:"Вдох 4с → задержка 7с → выдох 8с. Повтори 4 раза. Активирует парасимпатику.",time:"3 мин",icon:"🌬️",color:"rgba(78,201,190,0.15)"},
+          {name:"Бокс-дыхание — при панике",desc:"Вдох 4с → задержка 4с → выдох 4с → задержка 4с. Квадрат. Используют военные.",time:"4 мин",icon:"⬜",color:"rgba(90,142,200,0.15)"},
+          {name:"Когерентное — баланс НС",desc:"Вдох 5с → выдох 5с без пауз. 6 циклов в минуту. Синхронизирует сердце и мозг.",time:"5 мин",icon:"💫",color:"rgba(200,164,90,0.12)"},
+          {name:"4-6 — перед сном",desc:"Вдох 4с → выдох 6с. Удлинённый выдох замедляет ЧСС и готовит к сну.",time:"5 мин",icon:"🌙",color:"rgba(140,90,200,0.12)"},
+          {name:"Вим Хоф — заряд энергии",desc:"30 глубоких вдохов → выдох → задержка → вдох → задержка 15с. Только утром!",time:"10 мин",icon:"⚡",color:"rgba(200,140,58,0.12)"},
+          {name:"Нади Шодхана — балансировка",desc:"Поочерёдное дыхание через ноздри. Балансирует полушария мозга.",time:"5 мин",icon:"☯️",color:"rgba(91,173,122,0.12)"},
+        ].map((b,i)=><div key={i} style={{background:b.color,border:"1px solid rgba(255,255,255,0.08)",borderRadius:14,padding:"14px 16px",marginBottom:10}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
+            <div style={{display:"flex",gap:10,alignItems:"center"}}>
+              <span style={{fontSize:22}}>{b.icon}</span>
+              <div style={{fontFamily:"'Crimson Pro',serif",fontSize:17,color:"#F0EDE8",fontWeight:500}}>{b.name}</div>
+            </div>
+            <span style={{fontSize:11,color:"#A8A49C",fontFamily:"'JetBrains Mono'",whiteSpace:"nowrap"}}>{b.time}</span>
+          </div>
+          <div style={{fontSize:14,color:"#A8A49C",lineHeight:1.6,marginLeft:32}}>{b.desc}</div>
+          <div style={{marginTop:10,marginLeft:32}}>
+            <button className="btn btn-ghost btn-xs" onClick={()=>openGCal("Дыхательная практика: "+b.name,new Date().toISOString(),"Техника: "+b.desc)}>📅 В календарь</button>
+          </div>
+        </div>)}
+        <AiBox kb={kb} prompt={"Подбери дыхательную технику для "+( profile.name||"меня")+" прямо сейчас. Мои стрессоры: "+stressors+". Качество сна: "+(profile.sleepQuality||"—")+". Время суток: сейчас "+currentHour+":00. Хронотип: "+(profile.chronotype||"—")+". Объясни пошагово как выполнять выбранную технику и почему она подходит именно мне."} label="Подобрать технику" btnText="Подобрать мою технику" placeholder="Подберу дыхательную технику под твоё состояние..."/>
+      </>}
+
+      {tab==="practice"&&<>
+        <AiBox kb={kb} prompt={"Составь персональный комплекс практик для "+( profile.name||"меня")+" на сегодня вечером после "+freeFrom+". Луна: "+moon.n+"("+moon.t+"). Зоны здоровья: "+((profile.healthFocus||[]).join(","))+". Стрессоры: "+stressors+". Восстановление: "+recovery+". Работа: "+((profile.workDrain||[]).join(","))+". Сидячая работа: "+(isSedentary?"да":"нет")+". Дай ПОШАГОВЫЙ комплекс: 1) цигун 10-15 мин — конкретные упражнения с описанием движений, 2) йога 10-15 мин — последовательность асан с временем удержания, 3) медитация 10 мин — текст для погружения. Каждую практику оформи как нумерованный список шагов с временем."} label="Комплекс практик на вечер" btnText="Составить мой комплекс" placeholder="Составлю персональный комплекс цигун, йоги и медитации..."/>
+        <AiBox kb={kb} prompt={"Проведи утреннюю практику для "+( profile.name||"меня"). Подъём в "+wakeTime+". Хронотип: "+(profile.chronotype||"—")+". Луна: "+moon.n+". Зоны здоровья: "+((profile.healthFocus||[]).join(","))+". У меня "+( profile.selfTime||"30")+" минут до начала рабочего дня. Дай: 1) утренний цигун 5-7 мин сразу после подъёма, 2) Сурья Намаскар или альтернативу 5-7 мин, 3) дыхательную практику 3 мин, 4) аффирмацию на день. Всё конкретно с описанием движений."} label="Утренняя практика" btnText="Утренний комплекс" placeholder="Составлю утренний комплекс под твой ритм..."/>
+        <AiBox kb={kb} prompt={"Проведи вечерний ритуал для "+( profile.name||"меня")+" перед сном (отбой в "+(profile.sleep||"23:00")+"). Качество сна: "+(profile.sleepQuality||"—")+". Луна: "+moon.n+"("+moon.t+"). Восстановление: "+recovery+". Дай: 1) инь-йога или цигун 10 мин, 2) боди-скан медитация 10 мин — текст для расслабления каждой части тела, 3) дыхание 4-6 для засыпания, 4) ароматерапия под моё состояние. Говори мягко от второго лица."} label="Вечерний ритуал" btnText="Вечерний ритуал" placeholder="Проведу тебя через вечерний ритуал для глубокого сна..."/>
+      </>}
+
+      {tab==="sound"&&<>
+        <div className="card card-accent" style={{marginBottom:12}}>
+          <div style={{fontFamily:"'Cormorant Infant',serif",fontSize:18,color:"#E5C87A",marginBottom:8}}>Звукотерапия</div>
+          <div style={{fontSize:15,color:"#A8A49C",lineHeight:1.6}}>Звук влияет на мозговые волны и состояние. Выбери нужную частоту или звук.</div>
+        </div>
+        {[
+          {hz:"432 Гц",name:"Расслабление",desc:"Снижает тревогу, гармонизирует нервную систему. Слушать вечером.",icon:"🎵",when:"Вечер, стресс"},
+          {hz:"528 Гц",name:"Исцеление",desc:"Частота восстановления ДНК по некоторым исследованиям. При болезни или усталости.",icon:"💚",when:"Болезнь, усталость"},
+          {hz:"396 Гц",name:"Освобождение от страха",desc:"Помогает отпустить тревогу и страх. При навязчивых мыслях.",icon:"🔓",when:"Тревога, страхи"},
+          {hz:"Дельта (0.5-4 Гц)",name:"Глубокий сон",desc:"Бинауральные ритмы для глубокого сна. Слушать в наушниках перед сном.",icon:"🌑",when:"Перед сном"},
+          {hz:"Тета (4-8 Гц)",name:"Медитация",desc:"Состояние глубокой медитации и творчества. Во время практик.",icon:"🌀",when:"Медитация"},
+          {hz:"Альфа (8-14 Гц)",name:"Фокус и спокойствие",desc:"Расслабленное внимание. Лучше всего для работы и обучения.",icon:"✨",when:"Работа, учёба"},
+          {hz:"Белый шум",name:"Сон и фокус",desc:"Маскирует посторонние звуки. Для сна и глубокой концентрации.",icon:"🌊",when:"Сон, работа"},
+          {hz:"Мантра Ом",name:"Центрирование",desc:"Вибрация Ом синхронизирует внутренние ритмы. 10-15 мин пения.",icon:"🕉️",when:"Медитация, утро"},
+        ].map((s,i)=><div key={i} style={{background:"rgba(140,90,200,0.08)",border:"1px solid rgba(140,90,200,0.2)",borderRadius:14,padding:"14px 16px",marginBottom:10}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
+            <div style={{display:"flex",gap:10,alignItems:"center"}}>
+              <span style={{fontSize:22}}>{s.icon}</span>
+              <div>
+                <div style={{fontFamily:"'JetBrains Mono'",fontSize:11,color:"#B882E8",letterSpacing:1}}>{s.hz}</div>
+                <div style={{fontFamily:"'Crimson Pro',serif",fontSize:17,color:"#F0EDE8"}}>{s.name}</div>
+              </div>
+            </div>
+            <span style={{fontSize:11,color:"#A8A49C",fontFamily:"'JetBrains Mono'",whiteSpace:"nowrap"}}>{s.when}</span>
+          </div>
+          <div style={{fontSize:14,color:"#A8A49C",lineHeight:1.6,marginLeft:32}}>{s.desc}</div>
+          <div style={{marginTop:10,marginLeft:32}}>
+            <button className="btn btn-ghost btn-xs" onClick={()=>openGCal("Звукотерапия: "+s.name,new Date().toISOString(),s.hz+": "+s.desc)}>📅 В календарь</button>
+          </div>
+        </div>)}
+        <AiBox kb={kb} prompt={"Подбери звукотерапию для "+( profile.name||"меня")+" на сегодня. Стрессоры: "+stressors+". Качество сна: "+(profile.sleepQuality||"—")+". Восстановление: "+recovery+". Луна: "+moon.n+". Время суток: "+currentHour+":00. Дай: 1) какую частоту слушать сегодня и почему именно мне, 2) как правильно проводить сеанс (поза, время, условия), 3) с чем сочетать (дыхание, медитация, ароматерапия)."} label="Подобрать звукотерапию" btnText="Подобрать мою практику" placeholder="Подберу звуковую практику под твоё состояние и луну..."/>
+      </>}
+
+      {tab==="history"&&<div className="card">
+        <div className="card-hd"><div className="card-title">История настроения</div></div>
+        {(()=>{
+          try{
+            const logs=JSON.parse(localStorage.getItem("mental_log")||"[]");
+            if(!logs.length)return(<div className="empty"><span className="empty-ico">🧘</span><p>Записей пока нет — отмечай своё состояние каждый день</p></div>);
+            const avgMood=(logs.reduce((s,l)=>s+l.mood,0)/logs.length).toFixed(1);
+            const avgStress=(logs.reduce((s,l)=>s+l.stress,0)/logs.length).toFixed(1);
+            return(<>
+              <div style={{display:"flex",gap:12,marginBottom:16}}>
+                <div style={{flex:1,background:"rgba(200,164,90,0.1)",borderRadius:12,padding:"12px",textAlign:"center"}}>
+                  <div style={{fontSize:24}}>{moods[Math.round(avgMood)]}</div>
+                  <div style={{fontSize:11,color:"#A8A49C",fontFamily:"'JetBrains Mono'",marginTop:4}}>СР. НАСТР.</div>
+                </div>
+                <div style={{flex:1,background:"rgba(200,80,80,0.1)",borderRadius:12,padding:"12px",textAlign:"center"}}>
+                  <div style={{fontFamily:"'Cormorant Infant',serif",fontSize:28,color:"#E87878"}}>{avgStress}</div>
+                  <div style={{fontSize:11,color:"#A8A49C",fontFamily:"'JetBrains Mono'",marginTop:4}}>СР. СТРЕСС</div>
+                </div>
+                <div style={{flex:1,background:"rgba(78,201,190,0.1)",borderRadius:12,padding:"12px",textAlign:"center"}}>
+                  <div style={{fontFamily:"'Cormorant Infant',serif",fontSize:28,color:"#7EDDD5"}}>{logs.length}</div>
+                  <div style={{fontSize:11,color:"#A8A49C",fontFamily:"'JetBrains Mono'",marginTop:4}}>ЗАПИСЕЙ</div>
+                </div>
+              </div>
+              {logs.slice(0,14).map((l,i)=>(
+                <div key={i} style={{display:"flex",gap:12,alignItems:"flex-start",padding:"10px 0",borderBottom:"1px solid rgba(255,255,255,.04)"}}>
+                  <span style={{fontSize:24,flexShrink:0}}>{moods[l.mood]}</span>
+                  <div style={{flex:1}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
+                      <div style={{fontSize:13,color:"#A8A49C"}}>{new Date(l.date).toLocaleDateString("ru-RU",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}</div>
+                      <span style={{fontSize:12,color:l.stress>=4?"#E87878":l.stress>=3?"#E8A85A":"#7BCCA0",fontFamily:"'JetBrains Mono'"}}>стресс {l.stress}/5</span>
+                    </div>
+                    {l.note&&<div style={{fontSize:15,color:"#C8C4BC",lineHeight:1.5,fontStyle:"italic"}}>{l.note}</div>}
+                  </div>
+                </div>
+              ))}
+            </>);
+          }catch{return null;}
+        })()}
+      </div>}
     </div>
   );
 }
