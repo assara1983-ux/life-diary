@@ -2230,19 +2230,36 @@ function HomeSection({profile,tasks,setTasks,today,kb,notify}) {
       {homeTasks.length===0&&(
         <div className="card" style={{textAlign:"center",padding:"28px 20px"}}>
           <div style={{fontSize:14,color:T.text3,marginBottom:16,fontStyle:"italic"}}>Добавь домашние дела или создай расписание уборки автоматически</div>
-          <button className="btn btn-primary" onClick={()=>{const ts=autoHome();setTasks(p=>[...p,...ts]);notify("Добавлено "+ts.length+" задач");}}>✦ Создать расписание уборки</button>
+          <button className="btn btn-primary" onClick={()=>{const ts=autoHome();setTasks(p=>{const exist=new Set(p.filter(x=>x.section==="home").map(x=>x.title.toLowerCase()));const filtered=ts.filter(t=>!exist.has(t.title.toLowerCase()));notify("Добавлено "+filtered.length+" задач"+(filtered.length<ts.length?" (пропущено "+(ts.length-filtered.length)+" дубликатов)":""));return [...p,...filtered];});}}>✦ Создать расписание уборки</button>
         </div>
       )}
       {homeTasks.length>0&&(()=>{
         // Разбить дела по периодичности
-        const isDailyFreq = f => f==="daily" || f==="workdays" || (f||"").startsWith("every:1");
-        const isWeeklyFreq = f => f==="weekly:1"||f==="weekly:2"||f==="weekly:3"||f==="weekly:4"||f==="weekly:5"||f==="weekly:6"||f==="weekly:0" || (f||"").match(/^every:[2-7]$/) || (f||"").startsWith("weekly:");
-        const isMonthlyFreq = f => (f||"").startsWith("every:14") || (f||"").startsWith("every:21") || (f||"").startsWith("every:30") || (f||"").startsWith("every:60") || (f||"").startsWith("every:90") || (f||"").startsWith("monthly:");
+        // Классификация: каждая задача попадает РОВНО в одну группу по периоду
+        const classifyTask = (f) => {
+          if(!f) return "other";
+          if(f==="once") return "other";
+          if(f==="daily" || f==="workdays") return "today";
+          // every:N — N дней между повторами
+          const ev = f.match(/^every:(\d+)$/);
+          if(ev) {
+            const n = parseInt(ev[1]);
+            if(n <= 1) return "today";
+            if(n <= 7) return "week";
+            if(n <= 90) return "month";
+            return "other";
+          }
+          // weekly:N — конкретный день недели
+          if(f.startsWith("weekly:")) return "week";
+          // monthly:N — конкретный день месяца
+          if(f.startsWith("monthly:")) return "month";
+          return "other";
+        };
         
-        const todayTasks = homeTasks.filter(t=>isDailyFreq(t.freq) || isDue(t,today));
-        const weekTasks = homeTasks.filter(t=>isWeeklyFreq(t.freq) && !isDailyFreq(t.freq));
-        const monthTasks = homeTasks.filter(t=>isMonthlyFreq(t.freq));
-        const otherTasks = homeTasks.filter(t=>!isDailyFreq(t.freq)&&!isWeeklyFreq(t.freq)&&!isMonthlyFreq(t.freq));
+        const todayTasks = homeTasks.filter(t=>classifyTask(t.freq)==="today");
+        const weekTasks = homeTasks.filter(t=>classifyTask(t.freq)==="week");
+        const monthTasks = homeTasks.filter(t=>classifyTask(t.freq)==="month");
+        const otherTasks = homeTasks.filter(t=>classifyTask(t.freq)==="other");
         
         const renderGroup = (title, emoji, color, list, showFreq) => list.length===0 ? null : (
           <div className="card" style={{marginBottom:12,borderLeft:"3px solid "+color}}>
@@ -2268,7 +2285,7 @@ function HomeSection({profile,tasks,setTasks,today,kb,notify}) {
             <div className="card-hd" style={{marginBottom:8}}>
               <div className="card-title">Дела по дому</div>
               <div className="btn-row">
-                <button className="btn btn-ghost btn-sm" onClick={()=>{const ts=autoHome();setTasks(p=>[...p,...ts]);notify("Добавлено");}}>+ Авто</button>
+                <button className="btn btn-ghost btn-sm" onClick={()=>{const ts=autoHome();setTasks(p=>{const exist=new Set(p.filter(x=>x.section==="home").map(x=>x.title.toLowerCase()));const filtered=ts.filter(t=>!exist.has(t.title.toLowerCase()));notify(filtered.length>0?"Добавлено "+filtered.length:"Все задачи уже есть");return [...p,...filtered];});}}>+ Авто</button>
                 <button className="btn btn-ghost btn-sm" onClick={()=>setModal({})}>+ Своё</button>
               </div>
             </div>
@@ -2291,6 +2308,28 @@ function HomeSection({profile,tasks,setTasks,today,kb,notify}) {
 function ShoppingSection({profile,shopList,setShopList,kb,notify}) {
   const [newItem,setNewItem]=useState(""); const [newCat,setNewCat]=useState("Продукты");
   const cats=["Продукты","Бытовая химия","Красота и уход","Для питомцев","Одежда","Аптека","Другое"];
+  
+  // Очистка старых записей с [Категория] в названии — выполняется один раз при загрузке
+  useEffect(()=>{
+    const needsCleanup = shopList.some(item => /\[[^\]]+\]/.test(item.name));
+    if(!needsCleanup) return;
+    const validCats = cats;
+    const cleaned = [];
+    const seen = new Set();
+    shopList.forEach(item => {
+      const m = item.name.match(/\[([^\]]+)\]/);
+      let cat = item.cat || "Продукты";
+      if(m && validCats.includes(m[1])) cat = m[1];
+      let name = item.name.replace(/\[[^\]]+\]/g, "").replace(/^[:\s—-]+/, "").trim();
+      if(!name || name.length < 2) return;
+      const key = name.toLowerCase();
+      if(seen.has(key)) return;
+      seen.add(key);
+      cleaned.push({...item, name, cat});
+    });
+    setShopList(cleaned);
+  }, []);
+  
   const add=()=>{if(!newItem.trim())return;setShopList(p=>[...p,{id:Date.now(),name:newItem,cat:newCat,done:false}]);setNewItem("");notify("Добавлено");};
   const byCat=cats.reduce((a,c)=>({...a,[c]:shopList.filter(x=>x.cat===c)}),{});
   const doneN=shopList.filter(x=>x.done).length;
@@ -2435,7 +2474,7 @@ function HealthSection({profile,tasks,setTasks,setShopList,today,kb,notify}) {
         ))}
       </div>
       {modal!==null&&<TaskModal task={modal.id?modal:null} defaultSection="health" onSave={t=>{setTasks(p=>modal.id?p.map(x=>x.id===t.id?t:x):[...p,t]);notify("Добавлено");}} onClose={()=>setModal(null)}/>}
-      <AiBox kb={kb} prompt={"Составь меню на неделю с расчётом продуктов. Тип питания: "+(profile.nutrition||"обычное")+". Всегда дома: "+((profile.staples||[]).join(","))+". Зоны здоровья: "+((profile.healthFocus||[]).join(","))+". Хронические болезни: "+(profile.chronic||"нет")+". Луна: "+moonN+" ("+moonT+"). Сезон: "+season+". Структура с заголовками ##:\n\n## Меню на 7 дней\nДля каждого дня (Понедельник, Вторник и т.д.) — завтрак, обед, ужин с конкретными блюдами и порциями. Нумерованным списком 7 пунктов где номер = день.\n\n## Список покупок под это меню\nВсе нужные продукты с количеством и КАЖДЫЙ начинай с метки [Продукты] для добавления в список покупок. Например: 1) [Продукты] Куриное филе 1 кг 2) [Продукты] Гречка 500 г. Нумерованный список.\n\n## Что добавить в покупки сверх меню\nПусть будут также суперфуды и добавки, тоже с метками [Аптека] или [Продукты]. Нумерованный список 3-5 пунктов.\n\nВ конце выведи: \"Это меню сохранится в журнал — завтра вечером появится меню на следующий день\"."} label="Меню на неделю" btnText="Составить меню" placeholder="Составлю меню на неделю с возможностью добавить продукты в список покупок..." actionType="shopping" onShopAdd={setShopList}/>
+      <AiBox kb={kb} prompt={"Составь меню на неделю с расчётом продуктов. Тип питания: "+(profile.nutrition||"обычное")+". Всегда дома: "+((profile.staples||[]).join(","))+". Зоны здоровья: "+((profile.healthFocus||[]).join(","))+". Хронические болезни: "+(profile.chronic||"нет")+". Луна: "+moonN+" ("+moonT+"). Сезон: "+season+". Пиши заголовки разделов БЕЗ опечаток в формате ##.\n\n## Меню на 7 дней\nДля каждого дня (Понедельник, Вторник и т.д.) — завтрак, обед, ужин с конкретными блюдами и порциями. Нумерованным списком 7 пунктов где номер = день.\n\n## Список покупок под это меню\nВсе нужные продукты с количеством и КАЖДЫЙ начинай с метки [Продукты] для добавления в список покупок. Например: 1) [Продукты] Куриное филе 1 кг 2) [Продукты] Гречка 500 г. Нумерованный список.\n\n## Что добавить в покупки сверх меню\nПусть будут также суперфуды и добавки, тоже с метками [Аптека] или [Продукты]. Нумерованный список 3-5 пунктов.\n\nВ конце выведи: \"Это меню сохранится в журнал — завтра вечером появится меню на следующий день\"."} label="Меню на неделю" btnText="Составить меню" placeholder="Составлю меню на неделю с возможностью добавить продукты в список покупок..." actionType="shopping" onShopAdd={setShopList}/>
       <AiBox kb={kb} prompt={"Дай рецепт на сегодня для "+( profile.name||"меня")+". Тип питания: "+(profile.nutrition||"обычное")+". Луна: "+moonN+" ("+moonT+"). Зоны здоровья: "+((profile.healthFocus||[]).join(","))+". Что есть дома: "+((profile.staples||[]).join(","))+". Сезон: "+season+". Дай: 1) один конкретный рецепт под эту фазу луны и мои зоны здоровья, 2) почему именно этот рецепт полезен для меня сегодня, 3) какие добавки или суперфуды добавить для усиления эффекта."} label="Рецепт на сегодня" btnText="Рецепт дня" placeholder="Подберу рецепт под фазу луны и твоё здоровье..."/>
     </div>
   );
@@ -2464,7 +2503,7 @@ function BeautySection({profile,tasks,setTasks,today,kb,notify}) {
           <div className="pf-item"><div className="pf-l">Приоритет</div><div className="pf-v">{profile.beautyPriority||"—"}</div></div>
         </div>
       </div>
-      <AiBox kb={kb} prompt={"Дай советы ТОЛЬКО по красоте и уходу за собой (кожа, волосы, ногти, тело). Тип кожи: "+(profile.skinType||"нормальная")+", тип волос: "+(profile.hairType||"нормальные")+", приоритет: "+(profile.beautyPriority||"—")+". Свободное время после "+(profile.workEnd||"18:00")+". Луна: "+getMoon().n+". ВАЖНО: НЕ упоминай уборку, дом, питомцев, работу, питание. Только КРАСОТА. Структура с заголовками ##:\n\n## Утренний уход\n3-4 шага под твой тип кожи нумерованным списком.\n\n## Вечерний ритуал\n3-4 шага нумерованным списком.\n\n## Уход за волосами\n3 шага под твой тип волос.\n\n## Что сделать сегодня\n2-3 конкретные процедуры с учётом фазы луны нумерованным списком."} label="Уход за собой" btnText="Советы по уходу" placeholder="Дам персональные советы по уходу..."/>
+      <AiBox kb={kb} prompt={"Дай советы ТОЛЬКО по красоте и уходу за собой (кожа, волосы, ногти, тело). Тип кожи: "+(profile.skinType||"нормальная")+", тип волос: "+(profile.hairType||"нормальные")+", приоритет: "+(profile.beautyPriority||"—")+". Свободное время после "+(profile.workEnd||"18:00")+". Луна: "+getMoon().n+". ВАЖНО: НЕ упоминай уборку, дом, питомцев, работу, питание. Только КРАСОТА. Структура строго с такими заголовками (пиши БЕЗ ошибок):\n\n## Утренний уход\n3-4 шага под твой тип кожи нумерованным списком.\n\n## Вечерний ритуал\n3-4 шага нумерованным списком.\n\n## Уход за волосами\n3 шага под твой тип волос.\n\n## Что сделать сегодня\n2-3 конкретные процедуры с учётом фазы луны нумерованным списком."} label="Уход за собой" btnText="Советы по уходу" placeholder="Дам персональные советы по уходу..."/>
       <div className="card">
         <div className="card-hd">
           <div className="card-title">Процедуры</div>
