@@ -143,13 +143,9 @@ body {
 }
 input, select, textarea, button { font-family:'Crimson Pro', serif; }
 ::selection { background:rgba(45,106,79,0.2); color:${T.goldM}; }
-
-/* Scrollbar */
 ::-webkit-scrollbar { width:4px; height:4px; }
 ::-webkit-scrollbar-track { background:${T.bg1}; }
 ::-webkit-scrollbar-thumb { background:${T.text3}; border-radius:2px; }
-
-/* ── БУМАЖНАЯ ТЕКСТУРА ── */
 body::before {
   content:''; position:fixed; inset:0; z-index:0; pointer-events:none;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='paper'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23paper)' opacity='0.08'/%3E%3C/svg%3E");
@@ -179,12 +175,13 @@ body::before {
 /* ── SIDEBAR ── */
 .sidebar {
   width:72px;
-  background:linear-gradient(180deg, ${T.bg2} 0%, ${T.bg1} 100%);
+  background:linear-gradient(180deg, ${T.bg2} 0%, ${T.bg3} 100%);
   border-right:1px solid ${T.bdr};
   display:flex; flex-direction:column; align-items:center;
   padding:16px 0 24px;
   position:fixed; top:0; left:0; bottom:0; z-index:100;
   gap:3px;
+  box-shadow:2px 0 12px rgba(45,32,16,0.08);
 }
 .sidebar::after {
   content:''; position:absolute; top:0; right:0; bottom:0; width:1px;
@@ -238,7 +235,7 @@ body::before {
   padding:16px 32px;
   border-bottom:1px solid ${T.bdr};
   position:sticky; top:0;
-  background:linear-gradient(180deg, ${T.bg1}f0 0%, ${T.bg1}cc 100%);
+  background:linear-gradient(180deg, ${T.bg0}f0 0%, ${T.bg0}cc 100%);
   z-index:50; backdrop-filter:blur(20px);
 }
 .hdr-l {}
@@ -280,6 +277,7 @@ body::before {
   background:linear-gradient(135deg, ${T.bg1} 0%, ${T.bg2} 100%);
   border:1px solid ${T.bdr};
   border-radius:14px;
+  box-shadow:0 2px 8px rgba(45,32,16,0.08), 0 1px 0 rgba(255,255,255,0.6) inset;
   padding:22px 24px;
   margin-bottom:14px;
   transition:border-color .22s, box-shadow .22s;
@@ -311,8 +309,8 @@ body::before {
 
 /* ── SECTION DIVIDER ── */
 .sec-lbl {
-  font-family:'JetBrains Mono'; font-size:10px;
-  color:${T.text2}; letter-spacing:3px;
+  font-family:'JetBrains Mono'; font-size:9px;
+  color:${T.text3}; letter-spacing:3px;
   text-transform:uppercase;
   margin:20px 0 10px;
   display:flex; align-items:center; gap:10px;
@@ -339,7 +337,7 @@ body::before {
 .stat:hover { border-color:${T.bdrH}; }
 .stat::after {
   content:''; position:absolute; bottom:0; left:0; right:0; height:2px;
-  background:linear-gradient(90deg, ${T.gold}66, ${T.teal}44, transparent);
+  background:linear-gradient(90deg, ${T.gold}44, ${T.teal}22, transparent);
 }
 .stat-n {
   font-family:'Cormorant Infant', serif;
@@ -347,8 +345,8 @@ body::before {
   font-weight:300; line-height:1.1;
 }
 .stat-l {
-  font-family:'JetBrains Mono'; font-size:11px;
-  color:${T.text2}; letter-spacing:2px;
+  font-family:'JetBrains Mono'; font-size:9px;
+  color:${T.text3}; letter-spacing:2px;
   margin-top:4px; text-transform:uppercase;
 }
 .stat-s { font-size:15px; color:${T.text2}; margin-top:3px; }
@@ -365,33 +363,33 @@ body::before {
 }
 .btn-primary {
   background:linear-gradient(135deg, ${T.gold} 0%, ${T.goldL} 100%);
-  color:${T.bg0}; font-weight:600;
-  box-shadow:0 2px 16px rgba(200,164,90,0.25);
+  color:#fff; font-weight:600;
+  box-shadow:0 2px 10px rgba(45,106,79,0.3);
 }
-.btn-primary:hover { transform:translateY(-2px); box-shadow:0 6px 24px rgba(200,164,90,0.4); }
+.btn-primary:hover { transform:translateY(-1px); box-shadow:0 4px 16px rgba(45,106,79,0.4); }
 .btn-primary:disabled { opacity:.45; transform:none; cursor:default; box-shadow:none; }
 
 .btn-ghost {
-  background:transparent;
+  background:rgba(45,32,16,0.05);
   border:1px solid ${T.bdr};
   color:${T.text2};
 }
-.btn-ghost:hover { border-color:${T.bdrH}; color:${T.gold}; }
+.btn-ghost:hover { border-color:${T.bdrH}; color:${T.text0}; background:rgba(45,32,16,0.09); }
 
 .btn-teal {
   background:linear-gradient(135deg, ${T.teal}, ${T.tealD});
-  color:${T.bg0}; font-weight:600;
-  box-shadow:0 2px 16px rgba(78,201,190,0.2);
+  color:#fff; font-weight:600;
+  box-shadow:0 2px 10px rgba(29,78,107,0.25);
 }
-.btn-teal:hover { transform:translateY(-2px); box-shadow:0 6px 24px rgba(78,201,190,0.35); }
+.btn-teal:hover { transform:translateY(-1px); box-shadow:0 4px 16px rgba(29,78,107,0.35); }
 .btn-teal:disabled { opacity:.45; transform:none; cursor:default; }
 
 .btn-danger {
-  background:rgba(200,80,80,0.1);
-  border:1px solid rgba(200,80,80,0.22);
+  background:rgba(139,32,32,0.07);
+  border:1px solid rgba(139,32,32,0.2);
   color:${T.danger};
 }
-.btn-danger:hover { background:rgba(200,80,80,0.18); }
+.btn-danger:hover { background:rgba(139,32,32,0.14); }
 
 .btn-sm { padding:6px 14px; font-size:9px; letter-spacing:1px; border-radius:8px; }
 .btn-xs { padding:4px 10px; font-size:8.5px; border-radius:7px; }
@@ -426,7 +424,7 @@ body::before {
 .fld input:focus, .fld select:focus, .fld textarea:focus {
   border-color:${T.gold}; background:rgba(255,255,255,0.95);
 }
-.fld select option { background:${T.bg2}; }
+.fld select option { background:${T.bg1}; color:${T.text0}; }
 .fld textarea { resize:vertical; min-height:72px; line-height:1.6; }
 .fld-hint { font-size:14px; color:${T.text2}; margin-top:5px; line-height:1.5; }
 .fld-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
@@ -441,15 +439,16 @@ body::before {
   font-family:'Crimson Pro', serif;
   transition:all .18s; background:rgba(255,255,255,0.5);
   color:${T.text1}; white-space:nowrap; user-select:none;
+  box-shadow:0 1px 3px rgba(45,32,16,0.08);
 }
 .chip:hover { border-color:${T.bdrH}; color:${T.text0}; background:rgba(255,255,255,0.8); }
 .chip.on {
-  border-color:${T.gold}88;
+  border-color:${T.gold};
   color:${T.gold};
-  background:rgba(200,164,90,0.1);
-  box-shadow:inset 0 0 0 1px rgba(200,164,90,0.15);
+  background:rgba(45,106,79,0.1);
+  box-shadow:0 1px 4px rgba(45,106,79,0.2);
 }
-.chip.on-t { border-color:${T.teal}88; color:${T.teal}; background:rgba(78,201,190,0.1); }
+.chip.on-t { border-color:${T.teal}; color:${T.teal}; background:rgba(29,78,107,0.08); }
 
 /* ── BADGES ── */
 .badge {
@@ -487,7 +486,7 @@ body::before {
 .chk.done { border-color:${T.success}; background:${T.success}22; color:${T.success}; }
 
 .task-body { flex:1; min-width:0; }
-.task-name { font-size:18px; line-height:1.45; font-family:'Crimson Pro', serif; }
+.task-name { font-size:18px; line-height:1.4; font-family:'Crimson Pro', serif; }
 .task-name.done { text-decoration:line-through; color:${T.text3}; }
 .task-meta { display:flex; gap:6px; flex-wrap:wrap; margin-top:4px; align-items:center; }
 .task-notes { font-size:15px; color:${T.text2}; margin-top:3px; font-style:italic; }
@@ -499,16 +498,16 @@ body::before {
 
 /* ── AI BOX ── */
 .ai-box {
-  background:linear-gradient(135deg,
-    rgba(45,106,79,0.06) 0%, rgba(29,78,107,0.04) 100%);
+  background:linear-gradient(135deg, rgba(45,106,79,0.06) 0%, rgba(29,78,107,0.04) 100%);
   border:1px solid rgba(45,32,16,0.18);
-  border-radius:14px; padding:22px 24px;
+  border-radius:14px;
+  box-shadow:0 2px 10px rgba(45,32,16,0.07); padding:22px 24px;
   margin-bottom:14px; position:relative;
 }
 .ai-box::before {
   content:''; position:absolute; top:0; left:0; right:0; height:1px;
   background:linear-gradient(90deg, transparent, ${T.gold}66, ${T.teal}44, transparent);
-  border-radius:18px 18px 0 0;
+  border-radius:14px 14px 0 0;
 }
 .ai-hd { display:flex; align-items:center; gap:8px; margin-bottom:13px; }
 .ai-pulse {
@@ -517,7 +516,7 @@ body::before {
 }
 @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.85)} }
 .ai-lbl {
-  font-family:'JetBrains Mono'; font-size:10px;
+  font-family:'JetBrains Mono'; font-size:9px;
   color:${T.teal}; letter-spacing:2.5px; text-transform:uppercase;
 }
 .ai-text { font-size:16px; line-height:1.8; color:${T.text1}; white-space:pre-wrap; font-family:'Crimson Pro', serif; }
@@ -533,11 +532,9 @@ body::before {
   color:${T.goldL};
   letter-spacing:.3px;
   padding:12px 16px;
-  background:linear-gradient(135deg, rgba(200,164,90,0.18), rgba(200,164,90,0.04));
+  background:rgba(45,106,79,0.08);
   border-left:4px solid ${T.gold};
   border-radius:10px;
-  text-transform:none;
-  box-shadow:0 1px 0 rgba(200,164,90,0.1) inset;
 }
 .ai-header-mark {
   font-size:14px; color:${T.gold}; opacity:.9;
@@ -548,20 +545,20 @@ body::before {
 .ai-list-item {
   position:relative;
   padding:14px 16px 14px 44px;
-  background:linear-gradient(135deg, rgba(255,255,255,0.5));
+  background:rgba(255,255,255,0.5);
   border:1px solid ${T.bdr};
   border-radius:10px;
   transition:all .2s;
 }
 .ai-list-item:hover {
   border-color:rgba(200,164,90,0.35);
-  background:linear-gradient(135deg, rgba(255,255,255,0.04), rgba(200,164,90,0.07));
+  background:rgba(255,255,255,0.75);
 }
 .ai-list-num {
   position:absolute; top:14px; left:14px;
   width:22px; height:22px; border-radius:50%;
-  background:linear-gradient(135deg, ${T.gold}, ${T.goldL});
-  color:${T.bg0};
+  background:${T.gold};
+  color:#fff;
   display:flex; align-items:center; justify-content:center;
   font-family:'JetBrains Mono'; font-size:11px; font-weight:700;
   box-shadow:0 1px 4px rgba(200,164,90,0.3);
@@ -570,7 +567,7 @@ body::before {
 .ai-list-title {
   font-family:'Cormorant Infant', serif;
   font-size:19px; font-weight:600;
-  color:${T.goldL};
+  color:${T.text0};
   margin-bottom:5px;
   line-height:1.3;
 }
@@ -613,6 +610,16 @@ body::before {
 .btn-mini:hover {
   background:rgba(200,164,90,0.2);
   border-color:rgba(200,164,90,0.5);
+}
+@media(max-width:380px) {
+  .ai-list-item { padding:12px 14px 12px 38px; }
+  .ai-list-num { width:20px; height:20px; font-size:10px; top:12px; left:12px; }
+  .ai-list-title { font-size:17px; }
+  .ai-list-text { font-size:15px; }
+  .ai-header { font-size:19px; padding:10px 14px; }
+  .s-nav { width:42px; height:48px; }
+  .s-ico { font-size:17px; }
+  .s-lbl { font-size:6px; }
 }
 
 /* ── ORNAMENTAL DIVIDER ── */
@@ -743,8 +750,7 @@ body::before {
   border:1px solid ${T.bdr};
   border-radius:12px; padding:4px;
   margin-bottom:20px;
-  overflow-x:auto; -webkit-overflow-scrolling:touch;
-  scrollbar-width:none;
+  overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none;
 }
 .tabs::-webkit-scrollbar { display:none; }
 .tab {
@@ -919,23 +925,8 @@ body::before {
 }
 
 /* ── RESPONSIVE ── */
-@media(max-width:380px) {
-  .ai-list-item { padding:12px 14px 12px 38px; }
-  .ai-list-num { width:20px; height:20px; font-size:10px; top:12px; left:12px; }
-  .ai-list-title { font-size:17px; }
-  .ai-list-text { font-size:15px; }
-  .ai-header { font-size:19px; padding:10px 14px; }
-  .s-nav { width:42px; height:48px; }
-  .s-ico { font-size:17px; }
-  .s-lbl { font-size:6px; }
-}
 @media(max-width:700px) {
-  .sidebar {
-    width:100%; height:56px; top:auto; bottom:0; left:0; right:0;
-    flex-direction:row; padding:0 4px; border-right:none; border-top:1px solid ${T.bdr};
-    overflow-x:auto; overflow-y:hidden; justify-content:flex-start; gap:0;
-    -webkit-overflow-scrolling:touch; box-shadow:0 -2px 10px rgba(45,32,16,0.08);
-  }
+  .sidebar { width:100%; height:56px; top:auto; bottom:0; left:0; right:0; flex-direction:row; padding:0 4px; border-right:none; border-top:1px solid ${T.bdr}; overflow-x:auto; overflow-y:hidden; justify-content:flex-start; gap:0; -webkit-overflow-scrolling:touch; box-shadow:0 -2px 10px rgba(45,32,16,0.08); }
   .sidebar::after { top:0; bottom:auto; left:0; right:0; width:auto; height:1px; background:linear-gradient(90deg, transparent, ${T.gold}44, ${T.teal}33, transparent); }
   .s-logo { display:none; }
   .s-nav { width:48px; height:48px; border-radius:10px; flex-shrink:0; }
@@ -1006,7 +997,7 @@ function Onboarding({ onDone }) {
   const s = OB_STEPS[step];
   const pct = (step/(OB_STEPS.length-1))*100;
 
-  const addPet = () => set("pets",[...d.pets,{id:Date.now(),name:"",type:"Кошка",breed:"",dob:"",food:"",feedTimes:"2",notes:"",vacDate:"",parasiteDate:""}]);
+  const addPet = () => set("pets",[...d.pets,{id:Date.now(),name:"",type:"Кошка",breed:"",dob:"",food:"",feedTimes:"2",weightKg:"",notes:"",vacDate:"",parasiteDate:""}]);
   const updPet = (id,k,v) => set("pets",d.pets.map(p=>p.id===id?{...p,[k]:v}:p));
   const delPet = id => set("pets",d.pets.filter(p=>p.id!==id));
   const addTrip = () => set("trips",[...d.trips,{id:Date.now(),destination:"",targetDate:"",budget:"",saved:"",stage:"💭 Мечта",notes:""}]);
@@ -1022,7 +1013,7 @@ function Onboarding({ onDone }) {
     <div className="ob-wrap">
       <div className="ob-card">
         <div className="ob-step">Шаг {step+1} из {OB_STEPS.length}</div>
-        <div className="ob-bar"><div className="ob-fill" style={{width:`${pct}%`}}/></div>
+        <div className="ob-bar"><div className="ob-fill" style={{width:pct+"%"}}/></div>
         <div className="ob-title">{s.title}</div>
         <div className="ob-sub">{s.sub}</div>
 
@@ -1109,10 +1100,10 @@ function Onboarding({ onDone }) {
           {[
             ["Что выбивает из колеи?","stressors",["Неопределённость","Много задач сразу","Конфликты","Нехватка времени","Усталость","Критика","Хаос"],true],
             ["Как восстанавливаешься?","recovery",["Сон и тишина","Прогулка на природе","Общение с близкими","Любимое хобби","Спорт и движение","Уход за собой","Вкусная еда","Кино / книга","Музыка","Медитация","Горячая ванна","Время в одиночестве"],true],
-          ].map(([label,key,opts])=>(
+          ].map(([label,key,multi])=>(
             <div className="fld" key={key}>
               <label>{label}</label>
-              <div className="chips">{opts.map(v=><div key={v} className={`chip ${(d[key]||[]).includes(v)?"on":""}`} onClick={()=>tog(key,v)}>{v}</div>)}</div>
+              <div className="chips">{(multi?["Неопределённость","Много задач сразу","Конфликты","Нехватка времени","Усталость","Критика","Хаос","Сон и тишина","Прогулка","Общение","Хобби","Спорт","Самоуход","Еда","Сериал / книга"]:[]).map(v=><div key={v} className={`chip ${(d[key]||[]).includes(v)?"on":""}`} onClick={()=>tog(key,v)}>{v}</div>)}</div>
             </div>
           ))}
           {[
@@ -1231,6 +1222,7 @@ function Onboarding({ onDone }) {
               </div>
               <div className="fld-row">
                 <div className="fld"><label>Корм</label><input placeholder="Royal Canin..." value={pet.food} onChange={e=>updPet(pet.id,"food",e.target.value)}/></div>
+                <div className="fld"><label>Вес питомца (кг)</label><input type="number" step="0.1" placeholder="4.5" value={pet.weightKg||""} onChange={e=>updPet(pet.id,"weightKg",e.target.value)}/></div>
                 <div className="fld"><label>Кормлений в день</label>
                   <div className="chips">{["1","2","3","4"].map(v=><div key={v} className={`chip ${pet.feedTimes===v?"on":""}`} onClick={()=>updPet(pet.id,"feedTimes",v)}>{v}</div>)}</div>
                 </div>
@@ -1442,10 +1434,10 @@ export default function LifeDiary() {
             {active==="pets"     && <PetsSection profile={profile} setProfile={setProfile} petLog={petLog} setPetLog={setPetLog} today={today} kb={kb} notify={notify}/>}
             {active==="health"   && <HealthSection profile={profile} tasks={tasks} setTasks={setTasks} setShopList={setShopList} today={today} kb={kb} notify={notify}/>}
             {active==="beauty"   && <BeautySection profile={profile} tasks={tasks} setTasks={setTasks} today={today} kb={kb} notify={notify}/>}
-            {active==="hobbies"  && <HobbiesSection profile={profile} hobbies={hobbies} setHobbies={setHobbies} tasks={tasks} setTasks={setTasks} kb={kb} notify={notify}/>}
-            {active==="goals"    && <GoalsSection profile={profile} tasks={tasks} setTasks={setTasks} kb={kb} notify={notify}/>}
-            {active==="mental"   && <MentalSection profile={profile} tasks={tasks} setTasks={setTasks} kb={kb} notify={notify}/>}
-            {active==="travel"   && <TravelSection profile={profile} trips={trips} setTrips={setTrips} tasks={tasks} setTasks={setTasks} kb={kb} notify={notify}/>}
+            {active==="hobbies"  && <HobbiesSection profile={profile} hobbies={hobbies} setHobbies={setHobbies} kb={kb} notify={notify}/>}
+            {active==="goals"    && <GoalsSection profile={profile} kb={kb} notify={notify}/>}
+            {active==="mental"   && <MentalSection profile={profile} kb={kb} notify={notify}/>}
+            {active==="travel"   && <TravelSection profile={profile} trips={trips} setTrips={setTrips} kb={kb} notify={notify}/>}
             {active==="journal"  && <JournalSection journal={journal} setJournal={setJournal} today={today} notify={notify}/>}
             {active==="profile"  && <ProfileSection profile={profile} setProfile={setProfile} sections={sections} setSections={setSections} notify={notify} kb={kb}/>}
           </div>
@@ -1607,10 +1599,10 @@ function parseAiResponse(text) {
   return blocks;
 }
 
-function AiBox({ kb, prompt, label="ИИ-СОВЕТНИК", btnText="Получить совет", placeholder="Нажми — получи персональный совет...", actionType=null, onShopAdd=null, onTaskAdd=null, noActions=false }) {
+function AiBox({ kb, prompt, label="ИИ-СОВЕТНИК", btnText="Получить совет", placeholder="Нажми — получи персональный совет...", actionType=null, onShopAdd=null, onTaskAdd=null, noActions=false, maxTokens=1200 }) {
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
-  const ask = async()=>{ setLoading(true); const r=await askClaude(kb,prompt); setText(r); setLoading(false); };
+  const ask = async()=>{ setLoading(true); const r=await askClaude(kb,prompt,maxTokens); setText(r); setLoading(false); };
   const blocks = useMemo(()=>parseAiResponse(text), [text]);
   
   // Извлекаем все элементы списков для возможности добавить в задачи/покупки
@@ -2047,7 +2039,7 @@ function TasksSection({profile,tasks,setTasks,today,kb,notify}) {
     <div>
       <AiBox kb={kb} prompt={`Мои задачи: ${tasks.map(t=>t.title).join(", ")}. Помоги расставить приоритеты — что важнее всего сделать сегодня и почему, учитывая мой хронотип ${profile.chronotype||"—"} и то что меня стрессит: ${(profile.stressors||[]).join(", ")||"—"}.`} label="Как расставить приоритеты" btnText="Расставить приоритеты" placeholder="Помогу понять что сделать в первую очередь..."/>
       <div style={{display:"flex",gap:8,marginBottom:14}}>
-        <input style={{flex:1,padding:"10px 14px",background:"rgba(255,255,255,.03)",border:`1px solid ${T.bdr}`,borderRadius:10,color:T.text0,fontFamily:"'Crimson Pro',serif",fontSize:16,outline:"none"}} placeholder="Поиск задач..." value={search} onChange={e=>setSearch(e.target.value)}/>
+        <input style={{flex:1,padding:"10px 14px",background:"rgba(255,255,255,.03)",border:"1px solid "+T.bdr,borderRadius:10,color:T.text0,fontFamily:"'Crimson Pro',serif",fontSize:16,outline:"none"}} placeholder="Поиск задач..." value={search} onChange={e=>setSearch(e.target.value)}/>
         <button className="btn btn-primary btn-sm" onClick={()=>setModal({})}>+ Задача</button>
       </div>
       <div className="tabs">{secs.map(([v,l])=><div key={v} className={`tab${filter===v?" on":""}`} onClick={()=>setFilter(v)}>{l}</div>)}</div>
@@ -2111,7 +2103,6 @@ function ScheduleSection({profile,tasks,setTasks,today,kb,notify}) {
   const [offset,setOffset]=useState(0);
   const [aiText,setAiText]=useState("");
   const [loading,setLoading]=useState(false);
-  const [modal,setModal]=useState(null);
 
   const weekDays=()=>{const d=new Date();d.setDate(d.getDate()-d.getDay()+1+offset*7);return Array.from({length:7},(_,i)=>{const dd=new Date(d);dd.setDate(d.getDate()+i);return toDay(dd);});};
   const days=weekDays();
@@ -2123,11 +2114,7 @@ function ScheduleSection({profile,tasks,setTasks,today,kb,notify}) {
 
   return(
     <div>
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:4}}>
-        <div className="tabs" style={{flex:1,marginBottom:0,marginRight:8}}>{[["week","Неделя"],["ai","ИИ-план недели"]].map(([v,l])=><div key={v} className={`tab${view===v?" on":""}`} onClick={()=>setView(v)}>{l}</div>)}</div>
-        <button className="btn btn-primary btn-sm" style={{flexShrink:0}} onClick={()=>setModal({})}>+ Задача</button>
-      </div>
-      <div style={{marginBottom:14}}/>
+      <div className="tabs">{[["week","Неделя"],["ai","ИИ-план недели"]].map(([v,l])=><div key={v} className={`tab${view===v?" on":""}`} onClick={()=>setView(v)}>{l}</div>)}</div>
       {view==="week"&&<>
         <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:14}}>
           <button className="btn btn-ghost btn-sm" onClick={()=>setOffset(o=>o-1)}>←</button>
@@ -2157,7 +2144,7 @@ function ScheduleSection({profile,tasks,setTasks,today,kb,notify}) {
         </div>
       </>}
       {view==="ai"&&<>
-        <div className="ai-box" style={{background:`linear-gradient(135deg,rgba(200,164,90,.1),rgba(78,201,190,.07))`,borderColor:`rgba(200,164,90,.3)`}}>
+        <div className="ai-box" style={{background:"linear-gradient(135deg,rgba(45,106,79,0.1),rgba(29,78,107,0.07))",borderColor:"rgba(45,106,79,0.3)"}}>
           <div className="ai-hd"><div className="ai-pulse"/><div className="ai-lbl">ИИ-Планировщик недели</div></div>
           {aiText?<div className="ai-text">{aiText}</div>:<div className="ai-dim">Составлю оптимальное расписание под твой ритм и задачи — нажми кнопку</div>}
           <div style={{marginTop:14,display:"flex",gap:8}}>
@@ -2167,7 +2154,6 @@ function ScheduleSection({profile,tasks,setTasks,today,kb,notify}) {
         </div>
         <AiBox kb={kb} prompt={`Как ${profile.name||"мне"} всё успевать и не надрываться? Хронотип: ${profile.chronotype||"—"}, работа до ${profile.workEnd||"18:00"}, подъём ${profile.wake||"7:00"}. Меня истощает: ${(profile.workDrain||[]).join(",")||"—"}, стрессоры: ${(profile.stressors||[]).join(",")||"—"}. Восстанавливаюсь через: ${(profile.recovery||[]).join(",")||"—"}. Тип планирования: ${profile.planningStyle||"—"}. Дай конкретные советы по управлению энергией именно для моего типа.`} label="Как всё успевать" btnText="Как организовать день" placeholder="Помогу найти твой ритм и баланс..."/>
       </>}
-      {modal!==null&&<TaskModal task={modal.id?modal:null} defaultSection="tasks" onSave={t=>{setTasks(p=>modal.id?p.map(x=>x.id===t.id?t:x):[...p,t]);notify("Добавлено");}} onClose={()=>setModal(null)}/>}
     </div>
   );
 }
@@ -2177,6 +2163,9 @@ function ScheduleSection({profile,tasks,setTasks,today,kb,notify}) {
 // ══════════════════════════════════════════════════════════════
 function WorkSection({profile,tasks,setTasks,today,kb,notify}) {
   const [modal,setModal]=useState(null);
+  const [editSchedule,setEditSchedule]=useState(false);
+  const [schedStart,setSchedStart]=useState(profile.workStart||"09:00");
+  const [schedEnd,setSchedEnd]=useState(profile.workEnd||"18:00");
   const workTasks=tasks.filter(t=>t.section==="work");
   const due=workTasks.filter(t=>isDue(t,today)||(t.freq==="once"&&!t.lastDone&&!t.doneDate));
   const isWorkDay=(profile.workDaysList||[1,2,3,4,5]).includes(new Date().getDay());
@@ -2188,7 +2177,7 @@ function WorkSection({profile,tasks,setTasks,today,kb,notify}) {
           <div className="pf-item"><div className="pf-l">Должность</div><div className="pf-v">{profile.profession||"—"}</div></div>
           <div className="pf-item"><div className="pf-l">Сфера</div><div className="pf-v">{profile.jobSphere||"—"}</div></div>
           <div className="pf-item"><div className="pf-l">Формат</div><div className="pf-v">{profile.workType||"—"}</div></div>
-          <div className="pf-item"><div className="pf-l">График</div><div className="pf-v">{profile.workStart||"?"}–{profile.workEnd||"?"}</div></div>
+          <div className="pf-item"><div className="pf-l">График</div>{editSchedule?(<div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}><input type="time" value={schedStart} onChange={e=>setSchedStart(e.target.value)} style={{padding:"4px 8px",background:"rgba(255,255,255,0.7)",border:"1px solid "+T.bdr,borderRadius:7,fontSize:15,color:T.text0,outline:"none",width:100}}/><span>–</span><input type="time" value={schedEnd} onChange={e=>setSchedEnd(e.target.value)} style={{padding:"4px 8px",background:"rgba(255,255,255,0.7)",border:"1px solid "+T.bdr,borderRadius:7,fontSize:15,color:T.text0,outline:"none",width:100}}/><button className="btn btn-primary btn-sm" style={{padding:"4px 10px"}} onClick={()=>{profile.workStart=schedStart;profile.workEnd=schedEnd;setEditSchedule(false);notify("График обновлён");}}>✓</button></div>):(<div style={{display:"flex",alignItems:"center",gap:8}}><div className="pf-v">{profile.workStart||"?"}–{profile.workEnd||"?"}</div><button className="btn btn-ghost btn-sm" style={{padding:"3px 8px",fontSize:11}} onClick={()=>setEditSchedule(true)}>✏️</button></div>)}</div>
         </div>
         {profile.commuteTime&&<div style={{marginTop:10,fontSize:13,color:T.text3}}>🚌 {profile.commuteTime} · {profile.commuteWay||""}</div>}
         {!isWorkDay&&<div style={{marginTop:12,padding:"8px 14px",background:"rgba(200,164,90,.08)",borderRadius:9,fontSize:14,color:T.gold,fontStyle:"italic"}}>Сегодня нерабочий день ✦ Отдыхай</div>}
@@ -2228,7 +2217,7 @@ function HomeSection({profile,tasks,setTasks,today,kb,notify}) {
   const [modal,setModal]=useState(null);
   const autoHome=()=>{
     const items=[
-      {title:"Застелить постель",freq:"daily",priority:"l"},{title:"Помыть посуду",freq:"daily",priority:"m"},
+      {title:"Вытереть пыль",freq:"daily",priority:"l"},{title:"Помыть посуду",freq:"daily",priority:"m"},
       {title:"Вынести мусор",freq:"daily",priority:"m"},{title:"Протереть плиту",freq:"daily",priority:"l"},
       {title:"Зеркала и полки",freq:"weekly:1",priority:"l"},{title:"Полы и пылесос",freq:"weekly:2",priority:"m"},
       {title:"Сантехника",freq:"weekly:3",priority:"m"},{title:"Ванная",freq:"weekly:4",priority:"l"},
@@ -2369,8 +2358,8 @@ function ShoppingSection({profile,shopList,setShopList,kb,notify}) {
       <AiBox kb={kb} prompt={"Составь подробный список покупок на неделю. Тип питания: "+(profile.nutrition||"обычное")+". Всегда есть дома: "+((profile.staples||[]).join(",")||"—")+". Питомцы и их еда: "+((profile.pets||[]).map(p=>p.name+"("+p.type+"):"+(p.food||"стандартный корм")).join(",")||"нет")+". Живу: "+((profile.livesWith||[]).join(",")||"один(а)")+". Закупка: "+(profile.shopDay||"—")+". ВАЖНО: каждый товар в списке начинай с метки в квадратных скобках указывая категорию. Категории: [Продукты], [Бытовая химия], [Красота и уход], [Для питомцев], [Аптека]. Пример: 1) [Продукты] Куриная грудка 1 кг 2) [Бытовая химия] Гель для посуды 1 шт 3) [Для питомцев] Корм для кошки 2 кг. Дай заголовки разделов через ## и под каждым нумерованный список товаров с метками."} label="Список покупок на неделю" btnText="Составить список" placeholder="Составлю список покупок на неделю..." actionType="shopping" onShopAdd={setShopList}/>
       <div className="card">
         <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
-          <input style={{flex:"1 1 180px",padding:"10px 14px",background:"rgba(255,255,255,.03)",border:`1px solid ${T.bdr}`,borderRadius:10,color:T.text0,fontFamily:"'Crimson Pro',serif",fontSize:16,outline:"none"}} placeholder="Добавить товар..." value={newItem} onChange={e=>setNewItem(e.target.value)} onKeyDown={e=>e.key==="Enter"&&add()}/>
-          <select style={{padding:"10px",background:T.bg2,border:`1px solid ${T.bdr}`,borderRadius:10,color:T.text1,fontSize:14,outline:"none"}} value={newCat} onChange={e=>setNewCat(e.target.value)}>{cats.map(c=><option key={c}>{c}</option>)}</select>
+          <input style={{flex:"1 1 180px",padding:"10px 14px",background:"rgba(255,255,255,.03)",border:"1px solid "+T.bdr,borderRadius:10,color:T.text0,fontFamily:"'Crimson Pro',serif",fontSize:16,outline:"none"}} placeholder="Добавить товар..." value={newItem} onChange={e=>setNewItem(e.target.value)} onKeyDown={e=>e.key==="Enter"&&add()}/>
+          <select style={{padding:"10px",background:T.bg2,border:"1px solid "+T.bdr,borderRadius:10,color:T.text1,fontSize:14,outline:"none"}} value={newCat} onChange={e=>setNewCat(e.target.value)}>{cats.map(c=><option key={c}>{c}</option>)}</select>
           <button className="btn btn-primary btn-sm" onClick={add}>+</button>
         </div>
         <div style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap"}}>
@@ -2400,12 +2389,12 @@ function ShoppingSection({profile,shopList,setShopList,kb,notify}) {
         {shopList.length===0&&<div className="empty"><span className="empty-ico">🛒</span><p>Список пуст. Нажми "Составить список" чтобы AI составил персональный список покупок.</p></div>}
         {cats.filter(c=>byCat[c].length>0).map(cat=>{
           const catEmoji = {"Продукты":"🥦","Бытовая химия":"🧼","Красота и уход":"✨","Для питомцев":"🐾","Одежда":"👕","Аптека":"💊","Другое":"📦"}[cat] || "📦";
-          const catColor = {"Продукты":"#7BCCA0","Бытовая химия":"#82AADD","Красота и уход":"#E8A8C8","Для питомцев":"#E8A85A","Одежда":"#B882E8","Аптека":"#E87878","Другое":"#A8A49C"}[cat] || "#A8A49C";
+          const catColor = {"Продукты":"#7BCCA0","Бытовая химия":"#82AADD","Красота и уход":"#E8A8C8","Для питомцев":"#E8A85A","Одежда":"#B882E8","Аптека":T.danger,"Другое":"#A8A49C"}[cat] || "#A8A49C";
           const itemsLeft = byCat[cat].filter(x=>!x.done).length;
           const itemsDone = byCat[cat].filter(x=>x.done).length;
           return (
-            <div key={cat} style={{marginBottom:14,background:"rgba(255,255,255,0.02)",border:`1px solid ${catColor}33`,borderRadius:14,overflow:"hidden"}}>
-              <div style={{display:"flex",alignItems:"center",gap:10,padding:"12px 16px",background:`linear-gradient(135deg, ${catColor}1a, ${catColor}05)`,borderBottom:`1px solid ${catColor}22`}}>
+            <div key={cat} style={{marginBottom:14,background:"rgba(255,255,255,0.02)",border:"1px solid "+catColor+"33",borderRadius:14,overflow:"hidden"}}>
+              <div style={{display:"flex",alignItems:"center",gap:10,padding:"12px 16px",background:"linear-gradient(135deg, "+catColor+"22, "+catColor+"08)",borderBottom:"1px solid "+catColor+"22"}}>
                 <span style={{fontSize:22}}>{catEmoji}</span>
                 <span style={{flex:1,fontFamily:"'Cormorant Infant',serif",fontSize:18,color:catColor,fontWeight:600}}>{cat}</span>
                 <span style={{fontFamily:"'JetBrains Mono'",fontSize:11,color:T.text2,letterSpacing:1}}>{itemsLeft}{itemsDone>0?` / ${itemsDone}✓`:""}</span>
@@ -2523,7 +2512,7 @@ function HealthSection({profile,tasks,setTasks,setShopList,today,kb,notify}) {
       </div>
       {modal!==null&&<TaskModal task={modal.id?modal:null} defaultSection="health" onSave={t=>{setTasks(p=>modal.id?p.map(x=>x.id===t.id?t:x):[...p,t]);notify("Добавлено");}} onClose={()=>setModal(null)}/>}
       <AiBox kb={kb} prompt={"Составь меню на неделю с расчётом продуктов. Тип питания: "+(profile.nutrition||"обычное")+". Всегда дома: "+((profile.staples||[]).join(","))+". Зоны здоровья: "+((profile.healthFocus||[]).join(","))+". Хронические болезни: "+(profile.chronic||"нет")+". Луна: "+moonN+" ("+moonT+"). Сезон: "+season+". Пиши заголовки разделов БЕЗ опечаток в формате ##.\n\n## Меню на 7 дней\nДля каждого дня (Понедельник, Вторник и т.д.) — завтрак, обед, ужин с конкретными блюдами и порциями. Нумерованным списком 7 пунктов где номер = день.\n\n## Список покупок под это меню\nВсе нужные продукты с количеством и КАЖДЫЙ начинай с метки [Продукты] для добавления в список покупок. Например: 1) [Продукты] Куриное филе 1 кг 2) [Продукты] Гречка 500 г. Нумерованный список.\n\n## Что добавить в покупки сверх меню\nПусть будут также суперфуды и добавки, тоже с метками [Аптека] или [Продукты]. Нумерованный список 3-5 пунктов.\n\nВ конце выведи: \"Это меню сохранится в журнал — завтра вечером появится меню на следующий день\"."} label="Меню на неделю" btnText="Составить меню" placeholder="Составлю меню на неделю с возможностью добавить продукты в список покупок..." actionType="shopping" onShopAdd={setShopList}/>
-      <AiBox kb={kb} prompt={"Дай рецепт на сегодня для "+( profile.name||"меня")+". Тип питания: "+(profile.nutrition||"обычное")+". Луна: "+moonN+" ("+moonT+"). Зоны здоровья: "+((profile.healthFocus||[]).join(","))+". Что есть дома: "+((profile.staples||[]).join(","))+". Сезон: "+season+". Дай: 1) один конкретный рецепт под эту фазу луны и мои зоны здоровья, 2) почему именно этот рецепт полезен для меня сегодня, 3) какие добавки или суперфуды добавить для усиления эффекта."} label="Рецепт на сегодня" btnText="Рецепт дня" placeholder="Подберу рецепт под фазу луны и твоё здоровье..."/>
+      <AiBox kb={kb} prompt={"Дай рецепт на сегодня для "+( profile.name||"меня")+". Тип питания: "+(profile.nutrition||"обычное")+". Луна: "+moonN+" ("+moonT+"). Зоны здоровья: "+((profile.healthFocus||[]).join(","))+". Что есть дома: "+((profile.staples||[]).join(","))+". Сезон: "+season+". Дай: 1) один конкретный рецепт под эту фазу луны и мои зоны здоровья, 2) почему именно этот рецепт полезен для меня сегодня, 3) какие добавки или суперфуды добавить для усиления эффекта."} label="Рецепт на сегодня" btnText="Рецепт дня" placeholder="Подберу рецепт под фазу луны и твоё здоровье..." noActions={true}/>
     </div>
   );
 }
@@ -2574,18 +2563,14 @@ function BeautySection({profile,tasks,setTasks,today,kb,notify}) {
 // ══════════════════════════════════════════════════════════════
 //  HOBBIES
 // ══════════════════════════════════════════════════════════════
-function HobbiesSection({profile,hobbies,setHobbies,tasks,setTasks,kb,notify}) {
-  const [taskModal,setTaskModal]=useState(null);
-  const [hobbyModal,setHobbyModal]=useState(false);
+function HobbiesSection({profile,hobbies,setHobbies,kb,notify}) {
+  const [modal,setModal]=useState(false);
   const [nh,setNh]=useState({name:"",goal:"",notes:""});
   const logSession=id=>{setHobbies(p=>p.map(h=>h.id===id?{...h,sessions:[...(h.sessions||[]),toDay()]}:h));notify("Сессия отмечена!");};
   return(
     <div>
-      <div style={{display:"flex",justifyContent:"flex-end",marginBottom:8}}>
-        <button className="btn btn-primary btn-sm" onClick={()=>setTaskModal({})}>+ Задача</button>
-      </div>
       <AiBox kb={kb} prompt={`Советы по хобби для ${profile.name||"меня"}. Мои хобби: ${(profile.hobbies||[]).join(",")||"—"}. Текущий проект: ${profile.hobbyProject||"—"}. Работаю до ${profile.workEnd||"18:00"}, значит свободное время с ${profile.workEnd||"18:00"} до ${profile.sleep||"23:00"}. Тип планирования: ${profile.planningStyle||"—"}. Восстанавливаюсь через: ${(profile.recovery||[]).join(",")||"—"}. Как встроить хобби в мой реальный распорядок? Дай конкретный пошаговый план развития моего проекта.`} label="Хобби и увлечения" btnText="Советы по хобби" placeholder="Помогу найти время для хобби..."/>
-      {hobbies.length===0&&<div className="empty"><span className="empty-ico">🎨</span><p>Добавь свои хобби</p><button className="btn btn-primary btn-sm" style={{marginTop:12}} onClick={()=>setHobbyModal(true)}>+ Добавить хобби</button></div>}
+      {hobbies.length===0&&<div className="empty"><span className="empty-ico">🎨</span><p>Добавь свои хобби</p><button className="btn btn-primary btn-sm" style={{marginTop:12}} onClick={()=>setModal(true)}>+ Добавить хобби</button></div>}
       {hobbies.map(h=>{
         const wk=(h.sessions||[]).filter(s=>(new Date()-new Date(s))/86400000<=7).length;
         return(
@@ -2603,22 +2588,21 @@ function HobbiesSection({profile,hobbies,setHobbies,tasks,setTasks,kb,notify}) {
           </div>
         );
       })}
-      {hobbies.length>0&&<button className="btn btn-ghost btn-sm" onClick={()=>setHobbyModal(true)}>+ Добавить хобби</button>}
-      {hobbyModal&&(
-        <div className="overlay" onClick={()=>setHobbyModal(false)}>
+      {hobbies.length>0&&<button className="btn btn-ghost btn-sm" onClick={()=>setModal(true)}>+ Добавить хобби</button>}
+      {modal&&(
+        <div className="overlay" onClick={()=>setModal(false)}>
           <div className="modal" onClick={e=>e.stopPropagation()}>
-            <span className="modal-x" onClick={()=>setHobbyModal(false)}>✕</span>
+            <span className="modal-x" onClick={()=>setModal(false)}>✕</span>
             <div className="modal-title">Новое хобби</div>
             <div className="fld"><label>Название</label><input placeholder="Фотография, чтение, вязание..." value={nh.name} onChange={e=>setNh(p=>({...p,name:e.target.value}))}/></div>
             <div className="fld"><label>Цель / проект</label><input placeholder="Освоить ретушь, прочитать 12 книг..." value={nh.goal} onChange={e=>setNh(p=>({...p,goal:e.target.value}))}/></div>
             <div className="modal-foot">
-              <button className="btn btn-ghost" onClick={()=>setHobbyModal(false)}>Отмена</button>
-              <button className="btn btn-primary" onClick={()=>{if(!nh.name.trim())return;setHobbies(p=>[...p,{...nh,id:Date.now(),sessions:[]}]);setHobbyModal(false);notify("Хобби добавлено");}}>Добавить</button>
+              <button className="btn btn-ghost" onClick={()=>setModal(false)}>Отмена</button>
+              <button className="btn btn-primary" onClick={()=>{if(!nh.name.trim())return;setHobbies(p=>[...p,{...nh,id:Date.now(),sessions:[]}]);setModal(false);notify("Хобби добавлено");}}>Добавить</button>
             </div>
           </div>
         </div>
       )}
-      {taskModal!==null&&<TaskModal task={taskModal.id?taskModal:null} defaultSection="hobbies" onSave={t=>{setTasks(p=>taskModal.id?p.map(x=>x.id===t.id?t:x):[...p,t]);notify("Добавлено");}} onClose={()=>setTaskModal(null)}/>}
     </div>
   );
 }
@@ -2626,8 +2610,7 @@ function HobbiesSection({profile,hobbies,setHobbies,tasks,setTasks,kb,notify}) {
 // ══════════════════════════════════════════════════════════════
 //  GOALS
 // ══════════════════════════════════════════════════════════════
-function GoalsSection({profile,tasks,setTasks,kb,notify}) {
-  const [modal,setModal]=useState(null);
+function GoalsSection({profile,kb,notify}) {
   const moon=getMoon();
   const goalAreas=profile.goalAreas||[];
   const goalBlocks=profile.goalBlocks||[];
@@ -2640,11 +2623,11 @@ function GoalsSection({profile,tasks,setTasks,kb,notify}) {
     {name:"Здоровье", emoji:"💚", color:"#7BCCA0", desc:"Физическое и эмоциональное здоровье, энергия, сон, питание"},
     {name:"Карьера", emoji:"💼", color:"#82AADD", desc:"Работа, профессиональный рост, реализация в деле"},
     {name:"Финансы", emoji:"💰", color:"#E5C87A", desc:"Доход, накопления, финансовая стабильность"},
-    {name:"Отношения", emoji:"❤️", color:"#E87878", desc:"Партнёр, друзья, близкое окружение"},
+    {name:"Отношения", emoji:"❤️", color:T.danger, desc:"Партнёр, друзья, близкое окружение"},
     {name:"Семья", emoji:"👨‍👩‍👧", color:"#B882E8", desc:"Родители, дети, домашняя атмосфера"},
-    {name:"Саморазвитие", emoji:"📚", color:"#7EDDD5", desc:"Обучение, рост, новые навыки"},
+    {name:"Саморазвитие", emoji:"📚", color:T.teal, desc:"Обучение, рост, новые навыки"},
     {name:"Творчество", emoji:"🎨", color:"#E8A85A", desc:"Хобби, самовыражение, увлечения"},
-    {name:"Духовность", emoji:"🌟", color:"#C8C4BC", desc:"Ценности, смысл жизни, внутренний мир"}
+    {name:"Духовность", emoji:"🌟", color:T.text1, desc:"Ценности, смысл жизни, внутренний мир"}
   ];
   const [wheelScores, setWheelScores] = useState(()=>{
     try { return JSON.parse(localStorage.getItem("ld_wheel")||"null") || WHEEL_AREAS.reduce((a,k)=>({...a,[k.name]:5}),{}); }
@@ -2684,13 +2667,10 @@ function GoalsSection({profile,tasks,setTasks,kb,notify}) {
 
   return(
     <div>
-      <div style={{display:"flex",justifyContent:"flex-end",marginBottom:8}}>
-        <button className="btn btn-primary btn-sm" onClick={()=>setModal({})}>+ Задача</button>
-      </div>
       {mainGoal&&<div className="card card-accent" style={{marginBottom:12}}>
-        <div style={{fontSize:11,color:T.text2,fontFamily:"'JetBrains Mono'",letterSpacing:2,marginBottom:8}}>ГЛАВНАЯ ЦЕЛЬ</div>
-        <div style={{fontFamily:"'Cormorant Infant',serif",fontSize:22,color:T.gold,lineHeight:1.3,marginBottom:8}}>{mainGoal}</div>
-        <div style={{fontSize:13,color:T.text2,fontStyle:"italic"}}>Луна {moon.n} — {moon.t}</div>
+        <div style={{fontSize:11,color:"#A8A49C",fontFamily:"'JetBrains Mono'",letterSpacing:2,marginBottom:8}}>ГЛАВНАЯ ЦЕЛЬ</div>
+        <div style={{fontFamily:"'Cormorant Infant',serif",fontSize:22,color:"#E5C87A",lineHeight:1.3,marginBottom:8}}>{mainGoal}</div>
+        <div style={{fontSize:13,color:"#A8A49C",fontStyle:"italic"}}>Луна {moon.n} — {moon.t}</div>
       </div>}
 
       {/* ГРАФИЧЕСКОЕ КОЛЕСО ЖИЗНИ */}
@@ -2700,7 +2680,7 @@ function GoalsSection({profile,tasks,setTasks,kb,notify}) {
         <div style={{display:"flex",justifyContent:"center",marginBottom:14}}>
           <svg width="360" height="360" viewBox="-30 -30 380 380" style={{maxWidth:"100%"}}>
             {/* концентрические круги-направляющие */}
-            {[2,4,6,8,10].map(n=><circle key={n} cx={cx} cy={cy} r={(n/10)*maxR} fill="none" stroke="rgba(200,164,90,0.1)" strokeWidth="1"/>)}
+            {[2,4,6,8,10].map(n=><circle key={n} cx={cx} cy={cy} r={(n/10)*maxR} fill="none" stroke=T.goldGlow strokeWidth="1"/>)}
             {/* линии между секторами */}
             {WHEEL_AREAS.map((_,i)=>{
               const a = (i/sectorCount)*2*Math.PI - Math.PI/2;
@@ -2731,7 +2711,7 @@ function GoalsSection({profile,tasks,setTasks,kb,notify}) {
             <div style={{flex:1,fontFamily:"'Cormorant Infant',serif",fontSize:20,color:WHEEL_AREAS[activeArea].color,fontWeight:600}}>{WHEEL_AREAS[activeArea].name}</div>
             <span style={{fontFamily:"'JetBrains Mono'",fontSize:14,color:WHEEL_AREAS[activeArea].color,fontWeight:700}}>{wheelScores[WHEEL_AREAS[activeArea].name]||5}/10</span>
           </div>
-          <div style={{fontSize:14,color:"#C8C4BC",lineHeight:1.6,marginBottom:12,fontFamily:"'Crimson Pro',serif",fontStyle:"italic"}}>{WHEEL_AREAS[activeArea].desc}</div>
+          <div style={{fontSize:14,color:T.text1,lineHeight:1.6,marginBottom:12,fontFamily:"'Crimson Pro',serif",fontStyle:"italic"}}>{WHEEL_AREAS[activeArea].desc}</div>
           <div style={{fontSize:12,color:"#A8A49C",marginBottom:6}}>Твоя оценка:</div>
           <input type="range" min="1" max="10" value={wheelScores[WHEEL_AREAS[activeArea].name]||5} 
             onChange={e=>updateScore(WHEEL_AREAS[activeArea].name, parseInt(e.target.value))} 
@@ -2746,7 +2726,7 @@ function GoalsSection({profile,tasks,setTasks,kb,notify}) {
           {WHEEL_AREAS.map((area,i)=>(
             <div key={area.name} onClick={()=>setActiveArea(i)} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 10px",borderRadius:8,background:activeArea===i?area.color+"22":"transparent",border:"1px solid "+(activeArea===i?area.color:"transparent"),cursor:"pointer",transition:"all .15s"}}>
               <span style={{fontSize:14}}>{area.emoji}</span>
-              <span style={{flex:1,fontSize:12,color:"#C8C4BC"}}>{area.name}</span>
+              <span style={{flex:1,fontSize:12,color:T.text1}}>{area.name}</span>
               <span style={{fontFamily:"'JetBrains Mono'",fontSize:12,color:area.color,fontWeight:700}}>{wheelScores[area.name]||5}</span>
             </div>
           ))}
@@ -2756,7 +2736,7 @@ function GoalsSection({profile,tasks,setTasks,kb,notify}) {
       {goalAreas.length>0&&<div className="card" style={{marginBottom:12}}>
         <div style={{fontSize:11,color:"#A8A49C",fontFamily:"'JetBrains Mono'",letterSpacing:2,marginBottom:12}}>ПРИОРИТЕТНЫЕ СФЕРЫ</div>
         <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-          {goalAreas.map(a=><div key={a} style={{display:"flex",alignItems:"center",gap:6,padding:"8px 14px",borderRadius:12,background:"rgba(200,164,90,0.1)",border:"1px solid rgba(200,164,90,0.25)"}}>
+          {goalAreas.map(a=><div key={a} style={{display:"flex",alignItems:"center",gap:6,padding:"8px 14px",borderRadius:12,background:T.goldGlow,border:"1px solid rgba(200,164,90,0.25)"}}>
             <span style={{fontSize:18}}>{AREA_EMOJI[a]||"⭐"}</span>
             <span style={{fontSize:15,color:"#E5C87A",fontFamily:"'Crimson Pro',serif"}}>{a}</span>
           </div>)}
@@ -2766,7 +2746,7 @@ function GoalsSection({profile,tasks,setTasks,kb,notify}) {
       {goalBlocks.length>0&&<div className="card" style={{marginBottom:12}}>
         <div style={{fontSize:11,color:"#A8A49C",fontFamily:"'JetBrains Mono'",letterSpacing:2,marginBottom:12}}>ЧТО МЕШАЕТ — И КАК ПРЕОДОЛЕТЬ</div>
         {goalBlocks.map(b=><div key={b} style={{padding:"10px 0",borderBottom:"1px solid rgba(255,255,255,.04)"}}>
-          <div style={{fontSize:15,color:"#E87878",marginBottom:3}}>⚠ {b}</div>
+          <div style={{fontSize:15,color:T.danger,marginBottom:3}}>⚠ {b}</div>
           <div style={{fontSize:14,color:"#A8A49C",fontStyle:"italic"}}>→ {BLOCK_TIP[b]||"Разбей на маленькие шаги"}</div>
         </div>)}
       </div>}
@@ -2776,7 +2756,6 @@ function GoalsSection({profile,tasks,setTasks,kb,notify}) {
       <AiBox kb={kb} prompt={"Проанализируй колесо жизни. Мои оценки сфер: "+WHEEL_AREAS.map(a=>a.name+":"+(wheelScores[a.name]||5)).join(", ")+". Приоритеты: "+(goalAreas.join(",")||"—")+". Главная цель: "+(profile.mainGoal||"—")+". Дай ответ с заголовками ##: ## Общая оценка баланса; ## Самые слабые сферы — что с ними делать; ## Самые сильные сферы — как использовать; ## Действие на эту неделю по каждой провисающей сфере (нумерованный список). Обращайся на ты, без имени."} label="Анализ моего колеса" btnText="Проанализировать колесо" placeholder="Проанализирую твой баланс по оценкам колеса..."/>
 
       <AiBox kb={kb} prompt={"Составь персональные аффирмации для "+( profile.name||"меня")+". Ключевая ценность: "+(profile.coreValue||"—")+". Главная цель: "+(profile.mainGoal||"—")+". Мотивирует: "+(profile.motivates||"—")+". Знак зодиака: "+getZodiac(profile.dob).name+". Луна: "+moon.n+"("+moon.t+"). Дай 5 мощных аффирмаций в настоящем времени, от первого лица, конкретных и заряженных. Плюс: когда и как их лучше всего произносить под мой хронотип "+(profile.chronotype||"—")+"."} label="Мои аффирмации" btnText="Создать аффирмации" placeholder="Создам персональные аффирмации под твою цель и ценности..."/>
-      {modal!==null&&<TaskModal task={modal.id?modal:null} defaultSection="tasks" onSave={t=>{setTasks(p=>modal.id?p.map(x=>x.id===t.id?t:x):[...p,t]);notify("Добавлено");}} onClose={()=>setModal(null)}/>}
     </div>
   );
 }
@@ -2784,18 +2763,19 @@ function GoalsSection({profile,tasks,setTasks,kb,notify}) {
 // ══════════════════════════════════════════════════════════════
 //  MENTAL HEALTH
 // ══════════════════════════════════════════════════════════════
-function MentalSection({profile,tasks,setTasks,kb,notify}) {
+function MentalSection({profile,kb,notify}) {
   const [mood,setMood]=useState(3);
   const [stress,setStress]=useState(5);
   const [note,setNote]=useState("");
   const [saved,setSaved]=useState(false);
   const [tab,setTab]=useState("check");
-  const [modal,setModal]=useState(null);
   const moon=getMoon();
   const freeFrom=profile.workEnd||"18:00";
+  const wakeTime=profile.wake||"07:00";
   const isHighStress=(profile.stressors||[]).length>=2||(profile.workDrain||[]).length>=2;
   const currentHour=new Date().getHours();
   const isSedentary=(profile.workType||"").includes("офис")||(profile.workType||"").includes("удалённо");
+  const hasBadSleep=(profile.sleepQuality||"").includes("Плох")||(profile.sleepQuality||"").includes("Сред");
   const recovery=(profile.recovery||[]).join(",");
   const stressors=(profile.stressors||[]).join(",");
 
@@ -2808,41 +2788,22 @@ function MentalSection({profile,tasks,setTasks,kb,notify}) {
     setSaved(true);notify("Записано");setTimeout(()=>setSaved(false),2000);
   };
 
-  const stressColor = stress<=3?T.success:stress<=6?T.warn:T.danger;
-
   return(
     <div>
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:4}}>
-        <div className="tabs" style={{flex:1,marginBottom:0,marginRight:8}}>
-          {[["check","Состояние"],["breath","Дыхание"],["practice","Практики"],["sound","Звук"],["history","История"]].map(([v,l])=>(
-            <div key={v} className={"tab"+(tab===v?" on":"")} onClick={()=>setTab(v)}>{l}</div>
-          ))}
-        </div>
-        <button className="btn btn-primary btn-sm" style={{flexShrink:0}} onClick={()=>setModal({})}>+ Задача</button>
-      </div>
-      <div style={{marginBottom:14}}/>
+      <div className="tabs">{[["check","Состояние"],["breath","Дыхание"],["practice","Практики"],["sound","Звук"],["history","История"]].map(([v,l])=><div key={v} className={"tab"+(tab===v?" on":"")} onClick={()=>setTab(v)}>{l}</div>)}</div>
 
       {tab==="check"&&<>
         <div className="card card-accent" style={{marginBottom:12}}>
           <div style={{fontFamily:"'Cormorant Infant',serif",fontSize:20,color:T.gold,marginBottom:12}}>Как ты сейчас, {profile.name||"—"}?</div>
           <div style={{marginBottom:14}}>
             <div style={{fontSize:11,color:T.text2,fontFamily:"'JetBrains Mono'",letterSpacing:1.5,marginBottom:10}}>НАСТРОЕНИЕ</div>
-            <div style={{display:"flex",gap:10}}>{["😔","😟","😐","🙂","😊","🤩"].map((m,i)=><div key={i} onClick={()=>setMood(i)} style={{fontSize:30,cursor:"pointer",opacity:mood===i?1:0.35,transform:mood===i?"scale(1.25)":"scale(1)",transition:"all .2s"}}>{m}</div>)}</div>
+            <div style={{display:"flex",gap:10}}>{moods.map((m,i)=><div key={i} onClick={()=>setMood(i)} style={{fontSize:30,cursor:"pointer",opacity:mood===i?1:0.35,transform:mood===i?"scale(1.25)":"scale(1)",transition:"all .2s"}}>{m}</div>)}</div>
           </div>
           <div style={{marginBottom:14}}>
-            <div style={{fontSize:11,color:T.text2,fontFamily:"'JetBrains Mono'",letterSpacing:1.5,marginBottom:10}}>СТРЕСС: <span style={{color:stressColor,fontWeight:600}}>{stress}/10</span></div>
-            <div style={{display:"flex",gap:3}}>
-              {[1,2,3,4,5,6,7,8,9,10].map(i=>(
-                <div key={i} onClick={()=>setStress(i)} style={{flex:1,minWidth:0,height:36,borderRadius:6,
-                  border:`1px solid ${stress>=i?stressColor:T.bdr}`,
-                  background:stress>=i?`${stressColor}22`:"transparent",
-                  display:"flex",alignItems:"center",justifyContent:"center",
-                  cursor:"pointer",fontSize:12,color:stress>=i?stressColor:T.text3,
-                  fontFamily:"'JetBrains Mono'",transition:"all .15s"}}>{i}</div>
-              ))}
-            </div>
+            <div style={{fontSize:11,color:T.text2,fontFamily:"'JetBrains Mono'",letterSpacing:1.5,marginBottom:10}}>СТРЕСС: <span style={{color:stress<=3?T.success:stress<=6?T.warn:T.danger,fontWeight:600}}>{stress}/10</span></div>
+            <div style={{display:"flex",gap:3}}>{[1,2,3,4,5,6,7,8,9,10].map(i=><div key={i} onClick={()=>setStress(i)} style={{flex:1,minWidth:0,height:36,borderRadius:6,border:"1px solid "+(stress>=i?(stress<=3?T.success:stress<=6?T.warn:T.danger):T.bdr),background:stress>=i?(stress<=3?"rgba(45,106,79,0.15)":stress<=6?"rgba(122,80,16,0.15)":"rgba(139,32,32,0.15)"):"transparent",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontSize:11,color:stress>=i?(stress<=3?T.success:stress<=6?T.warn:T.danger):T.text3,fontFamily:"'JetBrains Mono'",transition:"all .15s"}}>{i}</div>)}</div>
           </div>
-          <textarea style={{width:"100%",padding:"10px 14px",background:"rgba(255,255,255,0.6)",border:`1px solid ${T.bdr}`,borderRadius:10,color:T.text0,fontFamily:"'Crimson Pro',serif",fontSize:17,outline:"none",resize:"none",minHeight:80,lineHeight:1.6}} placeholder="Что на душе сегодня? Любые мысли..." value={note} onChange={e=>setNote(e.target.value)}/>
+          <textarea style={{width:"100%",padding:"10px 14px",background:"rgba(255,255,255,0.6)",border:"1px solid "+T.bdr,borderRadius:10,color:T.text0,fontFamily:"'Crimson Pro',serif",fontSize:16,outline:"none",resize:"none",minHeight:80,lineHeight:1.6}} placeholder="Что на душе сегодня? Любые мысли..." value={note} onChange={e=>setNote(e.target.value)}/>
           <div style={{display:"flex",gap:8,marginTop:10}}>
             <button className="btn btn-primary btn-sm" onClick={saveMoodLog}>{saved?"✓ Сохранено":"Сохранить запись"}</button>
           </div>
@@ -2920,7 +2881,6 @@ function MentalSection({profile,tasks,setTasks,kb,notify}) {
       {tab==="history"&&<div className="card">
         <div className="card-hd"><div className="card-title">История настроения</div></div>
         {(()=>{
-          const moods=["😔","😟","😐","🙂","😊","🤩"];
           try{
             const logs=JSON.parse(localStorage.getItem("mental_log")||"[]");
             if(!logs.length)return(<div className="empty"><span className="empty-ico">🧘</span><p>Записей пока нет — отмечай своё состояние каждый день</p></div>);
@@ -2929,21 +2889,21 @@ function MentalSection({profile,tasks,setTasks,kb,notify}) {
             return(<>
               <div style={{display:"flex",gap:12,marginBottom:16}}>
                 <div style={{flex:1,background:T.goldGlow,borderRadius:12,padding:"12px",textAlign:"center"}}>
-                  <div style={{fontSize:24}}>{moods[Math.round(avgMood)]||"😐"}</div>
+                  <div style={{fontSize:24}}>{moods[Math.round(avgMood)]}</div>
                   <div style={{fontSize:11,color:T.text2,fontFamily:"'JetBrains Mono'",marginTop:4}}>СР. НАСТР.</div>
                 </div>
                 <div style={{flex:1,background:"rgba(139,32,32,0.08)",borderRadius:12,padding:"12px",textAlign:"center"}}>
-                  <div style={{fontFamily:"'Cormorant Infant',serif",fontSize:28,color:T.danger}}>{avgStress}</div>
+                  <div style={{fontFamily:"'Cormorant Infant',serif",fontSize:28,color:"color:T.danger}}>{avgStress}</div>
                   <div style={{fontSize:11,color:T.text2,fontFamily:"'JetBrains Mono'",marginTop:4}}>СР. СТРЕСС</div>
                 </div>
                 <div style={{flex:1,background:T.tealGlow,borderRadius:12,padding:"12px",textAlign:"center"}}>
-                  <div style={{fontFamily:"'Cormorant Infant',serif",fontSize:28,color:T.teal}}>{logs.length}</div>
+                  <div style={{fontFamily:"'Cormorant Infant',serif",fontSize:28,color:"color:T.teal}}>{logs.length}</div>
                   <div style={{fontSize:11,color:T.text2,fontFamily:"'JetBrains Mono'",marginTop:4}}>ЗАПИСЕЙ</div>
                 </div>
               </div>
               {logs.slice(0,14).map((l,i)=>(
-                <div key={i} style={{display:"flex",gap:12,alignItems:"flex-start",padding:"10px 0",borderBottom:`1px solid ${T.bdrS}`}}>
-                  <span style={{fontSize:24,flexShrink:0}}>{moods[l.mood]||"😐"}</span>
+                <div key={i} style={{display:"flex",gap:12,alignItems:"flex-start",padding:"10px 0",borderBottom:"1px solid rgba(255,255,255,.04)"}}>
+                  <span style={{fontSize:24,flexShrink:0}}>{moods[l.mood]}</span>
                   <div style={{flex:1}}>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
                       <div style={{fontSize:13,color:T.text2}}>{new Date(l.date).toLocaleDateString("ru-RU",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}</div>
@@ -2957,7 +2917,6 @@ function MentalSection({profile,tasks,setTasks,kb,notify}) {
           }catch{return null;}
         })()}
       </div>}
-      {modal!==null&&<TaskModal task={modal.id?modal:null} defaultSection="tasks" onSave={t=>{setTasks(p=>modal.id?p.map(x=>x.id===t.id?t:x):[...p,t]);notify("Добавлено");}} onClose={()=>setModal(null)}/>}
     </div>
   );
 }
@@ -2965,8 +2924,7 @@ function MentalSection({profile,tasks,setTasks,kb,notify}) {
 // ══════════════════════════════════════════════════════════════
 //  TRAVEL
 // ══════════════════════════════════════════════════════════════
-function TravelSection({profile,trips,setTrips,tasks,setTasks,kb,notify}) {
-  const [taskModal,setTaskModal]=useState(null);
+function TravelSection({profile,trips,setTrips,kb,notify}) {
   const [modal,setModal]=useState(false);
   const [nt,setNt]=useState({destination:"",targetDate:"",budget:"",saved:"",stage:"💭 Мечта",notes:""});
   const [checkin,setCheckin]=useState({});
@@ -2977,9 +2935,6 @@ function TravelSection({profile,trips,setTrips,tasks,setTasks,kb,notify}) {
   const getCheckin=async(trip)=>{setChecking(p=>({...p,[trip.id]:true}));const r=await askClaude(buildKB(profile),`Мягко спроси о прогрессе в подготовке к ${trip.destination}. Стадия: ${trip.stage}. Бюджет: ${trip.budget||"?"}₽. Отложено: ${trip.saved||"0"}₽. Дата: ${trip.targetDate||"—"}. Дай 2-3 следующих шага. Говори тепло без давления.`,500);setCheckin(p=>({...p,[trip.id]:r}));setChecking(p=>({...p,[trip.id]:false}));};
   return(
     <div>
-      <div style={{display:"flex",justifyContent:"flex-end",marginBottom:8}}>
-        <button className="btn btn-primary btn-sm" onClick={()=>setTaskModal({})}>+ Задача</button>
-      </div>
       <AiBox kb={kb} prompt={`Поездки: ${trips.map(t=>`${t.destination}(${t.stage})`).join(";")||"нет"}. Как реализовать мечту о путешествии без стресса? Как правильно копить и планировать?`} label="Путешествия" btnText="Советы по путешествиям" placeholder="Помогу превратить мечту о поездке в реальность..."/>
       {trips.length===0&&<div className="empty"><span className="empty-ico">✈️</span><p>Поездок нет. Добавь мечту!</p><button className="btn btn-primary btn-sm" style={{marginTop:12}} onClick={()=>setModal(true)}>+ Добавить поездку</button></div>}
       {trips.map(trip=>{
@@ -2998,20 +2953,20 @@ function TravelSection({profile,trips,setTrips,tasks,setTasks,kb,notify}) {
             </div>
             <div style={{marginBottom:8}}>
               <div style={{fontFamily:"'JetBrains Mono'",fontSize:9,color:T.text3,letterSpacing:2,marginBottom:6,textTransform:"uppercase"}}>Подготовка {progress}%</div>
-              <div className="prog"><div className="prog-fill" style={{width:`${progress}%`,background:`linear-gradient(90deg,${T.info},${T.teal})`}}/></div>
+              <div className="prog"><div className="prog-fill" style={{width:progress+"%",background:"linear-gradient(90deg,${T.info},"+(T.teal)+")"}}/></div>
               <div style={{display:"flex",gap:2,marginTop:6}}>
                 {stages.map((s,i)=><div key={s} title={s} style={{flex:1,height:3,borderRadius:2,background:stages.indexOf(trip.stage)>=i?T.teal:T.bdr,cursor:"pointer",transition:"background .2s"}} onClick={()=>upd(trip.id,"stage",s)}/>)}
               </div>
             </div>
             {trip.budget&&<div style={{marginBottom:10}}>
               <div style={{fontFamily:"'JetBrains Mono'",fontSize:9,color:T.text3,letterSpacing:2,marginBottom:6,textTransform:"uppercase"}}>Накоплено {trip.saved||0}₽ из {trip.budget}₽ ({savedPct}%)</div>
-              <div className="prog"><div className="prog-fill" style={{width:`${savedPct}%`,background:`linear-gradient(90deg,${T.gold},${T.goldL})`}}/></div>
+              <div className="prog"><div className="prog-fill" style={{width:savedPct+"%",background:"linear-gradient(90deg,${T.gold},"+(T.goldL)+")"}}/></div>
               <div style={{marginTop:8,display:"flex",gap:8,alignItems:"center"}}>
-                <input style={{width:130,padding:"6px 11px",background:"rgba(255,255,255,.03)",border:`1px solid ${T.bdr}`,borderRadius:8,color:T.text0,fontFamily:"'Crimson Pro',serif",fontSize:14,outline:"none"}} placeholder="Отложено ₽" value={trip.saved||""} onChange={e=>upd(trip.id,"saved",e.target.value)}/>
+                <input style={{width:130,padding:"6px 11px",background:"rgba(255,255,255,.03)",border:"1px solid "+T.bdr,borderRadius:8,color:T.text0,fontFamily:"'Crimson Pro',serif",fontSize:14,outline:"none"}} placeholder="Отложено ₽" value={trip.saved||""} onChange={e=>upd(trip.id,"saved",e.target.value)}/>
                 {trip.budget&&trip.saved&&<span style={{fontSize:12,color:T.text3}}>осталось: {Math.max(0,parseInt(trip.budget)-parseInt(trip.saved))}₽</span>}
               </div>
             </div>}
-            {checkin[trip.id]&&<div style={{background:"rgba(255,255,255,.04)",borderRadius:10,padding:"12px 14px",marginBottom:10,fontSize:15,lineHeight:1.7,color:T.text1,fontStyle:"italic"}}>{checkin[trip.id]}</div>}
+            {checkin[trip.id]&&<div style={{background:"${T.bdrS}",borderRadius:10,padding:"12px 14px",marginBottom:10,fontSize:15,lineHeight:1.7,color:T.text1,fontStyle:"italic"}}>{checkin[trip.id]}</div>}
             <div style={{display:"flex",gap:7}}>
               <button className="btn btn-ghost btn-sm" onClick={()=>getCheckin(trip)} disabled={checking[trip.id]}>{checking[trip.id]?"Думаю...":"🤖 Как дела с поездкой?"}</button>
               {trip.targetDate&&<button className="btn btn-ghost btn-sm" onClick={()=>openGCal(`✈ ${trip.destination}`,new Date(trip.targetDate).toISOString())}>📅 Cal</button>}
@@ -3038,10 +2993,12 @@ function TravelSection({profile,trips,setTrips,tasks,setTasks,kb,notify}) {
           </div>
         </div>
       )}
-      {taskModal!==null&&<TaskModal task={taskModal.id?taskModal:null} defaultSection="tasks" onSave={t=>{setTasks(p=>taskModal.id?p.map(x=>x.id===t.id?t:x):[...p,t]);notify("Добавлено");}} onClose={()=>setTaskModal(null)}/>}
     </div>
   );
 }
+
+// ══════════════════════════════════════════════════════════════
+//  JOURNAL
 // ══════════════════════════════════════════════════════════════
 function JournalSection({journal,setJournal,today,notify}) {
   const [view,setView]=useState("today");
@@ -3067,7 +3024,7 @@ function JournalSection({journal,setJournal,today,notify}) {
         </div>
       )}
       {view==="all"&&<>
-        <div style={{marginBottom:12}}><input style={{width:"100%",padding:"10px 14px",background:"rgba(255,255,255,.03)",border:`1px solid ${T.bdr}`,borderRadius:10,color:T.text0,fontFamily:"'Crimson Pro',serif",fontSize:16,outline:"none"}} placeholder="Поиск..." value={search} onChange={e=>setSearch(e.target.value)}/></div>
+        <div style={{marginBottom:12}}><input style={{width:"100%",padding:"10px 14px",background:"rgba(255,255,255,.03)",border:"1px solid "+T.bdr,borderRadius:10,color:T.text0,fontFamily:"'Crimson Pro',serif",fontSize:16,outline:"none"}} placeholder="Поиск..." value={search} onChange={e=>setSearch(e.target.value)}/></div>
         {entries.filter(([d,en])=>!search||(en.win||"").includes(search)||(en.gratitude||"").includes(search)).map(([d,en])=>(
           <div key={d} className="card">
             <div style={{fontFamily:"'JetBrains Mono'",fontSize:9,color:T.goldD,letterSpacing:2,marginBottom:10,textTransform:"uppercase"}}>{new Date(d).toLocaleDateString("ru-RU",{weekday:"long",day:"numeric",month:"long"})}</div>
@@ -3114,7 +3071,7 @@ function ProfileSection({profile,setProfile,sections,setSections,notify,kb}) {
         <div>
           <div className="card card-accent">
             <div style={{display:"flex",gap:16,alignItems:"flex-start"}}>
-              <div style={{width:56,height:56,borderRadius:"50%",background:`linear-gradient(135deg,${T.gold}66,${T.goldD})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0,border:`1px solid ${T.gold}44`}}>{profile.gender==="Женский"?"👩":"👤"}</div>
+              <div style={{width:56,height:56,borderRadius:"50%",background:"linear-gradient(135deg,${T.gold}66,"+(T.goldD)+")",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0,border:"1px solid "+(T.gold)+"44"}}>{profile.gender==="Женский"?"👩":"👤"}</div>
               <div>
                 <div style={{fontFamily:"'Cormorant Infant',serif",fontSize:26,color:T.gold,marginBottom:3,fontWeight:400}}>{profile.name||"—"}</div>
                 {profile.fullName&&profile.fullName!==profile.name&&<div style={{fontSize:14,color:T.text3,marginBottom:6}}>{profile.fullName}</div>}
@@ -3142,7 +3099,16 @@ function ProfileSection({profile,setProfile,sections,setSections,notify,kb}) {
           <div className="sec-lbl">Работа и жизнь</div>
           <div className="g2" style={{marginBottom:14}}>
             <div className="card"><div className="pf-l">Работа</div><div className="pf-v">{profile.profession||"—"}</div><div className="pf-s">{profile.workType||""} · {profile.workStart||"?"}–{profile.workEnd||"?"}</div></div>
-            <div className="card"><div className="pf-l">Режим</div><div className="pf-v">{profile.chronotype?.split("—")[0]?.trim()||"—"}</div><div className="pf-s">Подъём {profile.wake||"?"} · Отбой {profile.sleep||"?"}</div></div>
+            <div className="card"><div className="pf-l">Хронотип</div><div className="pf-v">{profile.chronotype?.split("—")[0]?.trim()||"—"}</div><div className="pf-s">Качество сна: {profile.sleepQuality||"—"}</div></div>
+          </div>
+          <div className="card" style={{marginBottom:14}}>
+            <div className="pf-l" style={{marginBottom:10}}>Режим дня</div>
+            <div style={{display:"flex",gap:16,flexWrap:"wrap"}}>
+              <div><div style={{fontSize:11,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1}}>ПОДЪЁМ</div><div style={{fontFamily:"'Cormorant Infant',serif",fontSize:22,color:T.gold}}>{profile.wake||"—"}</div></div>
+              <div><div style={{fontSize:11,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1}}>ОТБОЙ</div><div style={{fontFamily:"'Cormorant Infant',serif",fontSize:22,color:T.teal}}>{profile.sleep||"—"}</div></div>
+              <div><div style={{fontSize:11,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1}}>РАБОТА</div><div style={{fontFamily:"'Cormorant Infant',serif",fontSize:22,color:T.text1}}>{profile.workStart||"?"}–{profile.workEnd||"?"}</div></div>
+              <div><div style={{fontSize:11,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1}}>СВОБОДНО</div><div style={{fontFamily:"'Cormorant Infant',serif",fontSize:22,color:T.text1}}>{profile.workEnd||"?"}–{profile.sleep||"?"}</div></div>
+            </div>
           </div>
           {(profile.hobbies||[]).length>0&&<div className="card" style={{marginBottom:8}}><div className="pf-l" style={{marginBottom:8}}>Хобби</div><div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{profile.hobbies.map(h=><span key={h} className="badge bp">{h}</span>)}</div></div>}
           {(profile.pets||[]).length>0&&<div className="card" style={{marginBottom:8}}><div className="pf-l" style={{marginBottom:8}}>Питомцы</div><div style={{display:"flex",gap:12,flexWrap:"wrap"}}>{profile.pets.map(p=><span key={p.id} style={{fontSize:16}}>{{Кошка:"🐱",Собака:"🐶",Попугай:"🦜",Кролик:"🐰",Хомяк:"🐹"}[p.type]||"🐾"} {p.name}</span>)}</div></div>}
@@ -3163,8 +3129,8 @@ function ProfileSection({profile,setProfile,sections,setSections,notify,kb}) {
             <div className="card" style={{textAlign:"center"}}><div style={{fontSize:40,marginBottom:6}}>🐾</div><div style={{fontFamily:"'Cormorant Infant',serif",fontSize:20}}>{east}</div><div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",marginTop:4,letterSpacing:1}}>ВОСТОЧНЫЙ ЗНАК</div></div>
             <div className="card gfull"><div className="pf-l">Луна сегодня</div><div style={{fontFamily:"'Cormorant Infant',serif",fontSize:22,color:T.text0,marginTop:4}}>{getMoon().e} {getMoon().n}</div><div style={{fontSize:14,color:T.text3,marginTop:3,fontStyle:"italic"}}>{getMoon().t}</div></div>
           </div>
-          <AiBox kb={kb} prompt={"Составь подробный астрологический и нумерологический портрет для "+(profile.name||"меня")+". Знак зодиака: "+z.name+", восточный: "+east+", градус судьбы: "+(deg||"—")+"°, дата рождения: "+(profile.dob||"—")+". Раздели ответ на чёткие блоки с заголовками: 1) **Характер и личность** — основные черты, 2) **Сильные стороны** — что использовать, 3) **Слабые места** — над чем работать, 4) **Здоровье** — на что обращать внимание, 5) **Любовь и отношения** — какой ты партнёр, 6) **Карьера и финансы** — где реализуешься. Каждый блок 3-5 пунктов нумерованным списком."} label="Персональный астропортрет" btnText="Составить мой портрет" placeholder="Получи свой полный астрологический портрет..." noActions={true}/>
-          <AiBox kb={kb} prompt={"Расшифруй жизненный путь по годам для "+(profile.name||"меня")+". Знак: "+z.name+", восточный: "+east+", градус: "+(deg||"—")+"°, дата рождения: "+(profile.dob||"—")+", сейчас "+(profile.dob?(new Date().getFullYear()-new Date(profile.dob).getFullYear())+" лет":"—")+". Дай: 1) **Детство (0-12)** — какой я была, 2) **Юность (13-21)** — что формировало личность, 3) **Молодость (22-35)** — главные уроки, 4) **Зрелость (36-50)** — пик реализации, 5) **Мудрость (50+)** — что важно. По каждому периоду 3-4 ключевых пункта."} label="Жизненный путь по годам" btnText="Расшифровать" placeholder="Покажу твой жизненный путь по этапам..." noActions={true}/>
+          <AiBox kb={kb} prompt={"Составь подробный астрологический и нумерологический портрет. ВАЖНО: говори ТОЛЬКО от второго лица (ты, твой, тебе) — никогда в третьем лице (она, Ирина). Дата рождения: "+(profile.dob||"—")+". Знак зодиака: "+z.name+", восточный: "+east+", градус судьбы: "+(deg||"—")+"°, дата рождения: "+(profile.dob||"—")+". Раздели ответ на чёткие блоки с заголовками: 1) **Характер и личность** — основные черты, 2) **Сильные стороны** — что использовать, 3) **Слабые места** — над чем работать, 4) **Здоровье** — на что обращать внимание, 5) **Любовь и отношения** — какой ты партнёр, 6) **Карьера и финансы** — где реализуешься. Каждый блок 3-5 пунктов нумерованным списком."} label="Персональный астропортрет" btnText="Составить мой портрет" placeholder="Получи свой полный астрологический портрет..." noActions={true} maxTokens={1800}/>
+          <AiBox kb={kb} prompt={"Расшифруй мой жизненный путь по годам. ВАЖНО: говори ТОЛЬКО от второго лица (ты, твой). Дата рождения: "+(profile.dob||"—")+". Знак: "+z.name+", восточный: "+east+", градус: "+(deg||"—")+"°, дата рождения: "+(profile.dob||"—")+", сейчас "+(profile.dob?(new Date().getFullYear()-new Date(profile.dob).getFullYear())+" лет":"—")+". Дай: 1) **Детство (0-12)** — какой я была, 2) **Юность (13-21)** — что формировало личность, 3) **Молодость (22-35)** — главные уроки, 4) **Зрелость (36-50)** — пик реализации, 5) **Мудрость (50+)** — что важно. По каждому периоду 3-4 ключевых пункта."} label="Жизненный путь по годам" btnText="Расшифровать" placeholder="Покажу твой жизненный путь по этапам..." noActions={true} maxTokens={1800}/>
           <AiBox kb={kb} prompt={"Составь календарь ключевых дат прошлого и будущего для "+(profile.name||"меня")+". Знак: "+z.name+", восточный: "+east+", градус: "+(deg||"—")+"°, дата рождения: "+(profile.dob||"—")+". Используй нумерологию (личный год по дате рождения), астрологические циклы (Сатурн ~28-30 лет, Юпитер ~12 лет). Дай: 1) **Прошлые ключевые годы** — какие важные точки уже были (3-5 лет с пояснением), 2) **Этот год** — главная тема и события, 3) **Ближайшие 3 года** — что ждёт, к чему готовиться, 4) **Дальняя перспектива (5-10 лет)** — крупные циклы. Конкретные годы с месяцами где можно."} label="Ключевые даты жизни" btnText="Показать мои даты" placeholder="Покажу важные годы и события прошлого и будущего..." noActions={true}/>
         </div>
       )}
