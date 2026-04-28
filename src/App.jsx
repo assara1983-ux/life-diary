@@ -113,38 +113,38 @@ function buildKB(p) {
 //  DESIGN TOKENS
 // ══════════════════════════════════════════════════════════════
 const T = {
-  // Backgrounds — тёмно-зелёные земляные
-  bg0:     "#0d1510",
-  bg1:     "#111a13",
-  bg2:     "#162019",
-  bg3:     "#1b2820",
-  bg4:     "#203028",
-  // Акцент — бирюзово-зелёный
-  gold:    "#4DB87A",
-  goldL:   "#72D496",
-  goldM:   "#35a060",
-  goldD:   "#1a3d28",
-  goldGlow:"rgba(77,184,122,0.18)",
-  // Второй акцент — мятно-бирюзовый
-  teal:    "#3EC9A7",
-  tealL:   "#6EDFC2",
-  tealD:   "#154030",
-  tealGlow:"rgba(62,201,167,0.14)",
-  // Text — белый с оттенками
-  text0:   "#FFFFFF",
-  text1:   "#E8E8E8",
-  text2:   "#B8B8B8",
-  text3:   "#888888",
+  // Backgrounds — тёплая состаренная бумага
+  bg0:     "#F5F0E8",
+  bg1:     "#EDE8DC",
+  bg2:     "#E4DDD0",
+  bg3:     "#DDD5C5",
+  bg4:     "#D4CBB8",
+  // Акцент — чернильный зелёный
+  gold:    "#2D6A4F",
+  goldL:   "#40916C",
+  goldM:   "#1B4332",
+  goldD:   "#B7D9C8",
+  goldGlow:"rgba(45,106,79,0.12)",
+  // Второй акцент — чернильный синий
+  teal:    "#1D4E6B",
+  tealL:   "#2E7DA8",
+  tealD:   "#BDD5E3",
+  tealGlow:"rgba(29,78,107,0.10)",
+  // Text — чернила
+  text0:   "#1A1208",
+  text1:   "#2C2010",
+  text2:   "#5C4A30",
+  text3:   "#8C7A5A",
   // Semantic
-  success: "#4DB87A",
-  danger:  "#D96060",
-  warn:    "#CFA044",
-  info:    "#5A9EC8",
-  purple:  "#9A7AD4",
-  // Borders — зелёные
-  bdr:     "rgba(77,184,122,0.15)",
-  bdrH:    "rgba(77,184,122,0.40)",
-  bdrS:    "rgba(77,184,122,0.07)",
+  success: "#2D6A4F",
+  danger:  "#8B2020",
+  warn:    "#7A5010",
+  info:    "#1D4E6B",
+  purple:  "#4A2D7A",
+  // Borders — чернильные
+  bdr:     "rgba(45,32,16,0.15)",
+  bdrH:    "rgba(45,32,16,0.40)",
+  bdrS:    "rgba(45,32,16,0.07)",
 };
 
 // ══════════════════════════════════════════════════════════════
@@ -166,20 +166,21 @@ body {
   overflow-x:hidden;
 }
 input, select, textarea, button { font-family:'Crimson Pro', serif; }
-::selection { background:${T.goldGlow}; color:${T.goldL}; }
+::selection { background:rgba(45,106,79,0.2); color:${T.goldM}; }
 
 /* Scrollbar */
-::-webkit-scrollbar { width:3px; height:3px; }
-::-webkit-scrollbar-track { background:transparent; }
-::-webkit-scrollbar-thumb { background:${T.goldD}; border-radius:2px; }
+::-webkit-scrollbar { width:4px; height:4px; }
+::-webkit-scrollbar-track { background:${T.bg1}; }
+::-webkit-scrollbar-thumb { background:${T.text3}; border-radius:2px; }
 
-/* ── NOISE OVERLAY ── */
+/* ── БУМАЖНАЯ ТЕКСТУРА ── */
 body::before {
   content:''; position:fixed; inset:0; z-index:0; pointer-events:none;
-  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='paper'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23paper)' opacity='0.08'/%3E%3C/svg%3E");
   background-repeat:repeat;
-  background-size:200px 200px;
-  opacity:0.4;
+  background-size:300px 300px;
+  opacity:0.6;
+  mix-blend-mode:multiply;
 }
 
 /* ── AMBIENT GLOW ── */
@@ -189,13 +190,13 @@ body::before {
 .ambient::before {
   content:''; position:absolute;
   width:600px; height:600px; border-radius:50%;
-  background:radial-gradient(circle, rgba(200,164,90,0.05) 0%, transparent 70%);
+  background:radial-gradient(circle, rgba(210,195,165,0.4) 0%, transparent 70%);
   top:-200px; left:-150px;
 }
 .ambient::after {
   content:''; position:absolute;
   width:500px; height:500px; border-radius:50%;
-  background:radial-gradient(circle, rgba(78,201,190,0.04) 0%, transparent 70%);
+  background:radial-gradient(circle, rgba(180,200,185,0.3) 0%, transparent 70%);
   bottom:-150px; right:-100px;
 }
 
@@ -205,12 +206,13 @@ body::before {
 /* ── SIDEBAR ── */
 .sidebar {
   width:72px;
-  background:linear-gradient(180deg, ${T.bg2} 0%, ${T.bg1} 100%);
+  background:linear-gradient(180deg, ${T.bg2} 0%, ${T.bg3} 100%);
   border-right:1px solid ${T.bdr};
   display:flex; flex-direction:column; align-items:center;
   padding:16px 0 24px;
   position:fixed; top:0; left:0; bottom:0; z-index:100;
   gap:3px;
+  box-shadow:2px 0 12px rgba(45,32,16,0.08);
 }
 .sidebar::after {
   content:''; position:absolute; top:0; right:0; bottom:0; width:1px;
@@ -264,8 +266,9 @@ body::before {
   padding:16px 32px;
   border-bottom:1px solid ${T.bdr};
   position:sticky; top:0;
-  background:linear-gradient(180deg, ${T.bg1}f0 0%, ${T.bg1}cc 100%);
-  z-index:50; backdrop-filter:blur(20px);
+  background:linear-gradient(180deg, ${T.bg0}f0 0%, ${T.bg0}cc 100%);
+  z-index:50; backdrop-filter:blur(12px);
+  box-shadow:0 1px 8px rgba(45,32,16,0.07);
 }
 .hdr-l {}
 .hdr-title {
@@ -276,7 +279,7 @@ body::before {
 }
 .hdr-sub {
   font-family:'JetBrains Mono';
-  font-size:11px; color:${T.text2};
+  font-size:10px; color:${T.text3};
   margin-top:2px; letter-spacing:.5px;
 }
 .hdr-r { display:flex; gap:10px; align-items:center; }
@@ -303,25 +306,26 @@ body::before {
 
 /* ── CARDS ── */
 .card {
-  background:linear-gradient(135deg, ${T.bg3} 0%, ${T.bg2} 100%);
+  background:linear-gradient(135deg, ${T.bg1} 0%, ${T.bg2} 100%);
   border:1px solid ${T.bdr};
-  border-radius:18px;
+  border-radius:14px;
   padding:22px 24px;
   margin-bottom:14px;
   transition:border-color .22s, box-shadow .22s;
   position:relative; overflow:hidden;
+  box-shadow:0 2px 8px rgba(45,32,16,0.08), 0 1px 0 rgba(255,255,255,0.6) inset;
 }
 .card::before {
   content:''; position:absolute; top:0; left:0; right:0; height:1px;
-  background:linear-gradient(90deg, transparent, ${T.gold}22, transparent);
+  background:linear-gradient(90deg, transparent, rgba(255,255,255,0.7), transparent);
 }
-.card:hover { border-color:${T.bdrH}; box-shadow:0 4px 32px rgba(200,164,90,0.06); }
+.card:hover { border-color:${T.bdrH}; box-shadow:0 4px 18px rgba(45,32,16,0.12), 0 1px 0 rgba(255,255,255,0.6) inset; }
 
 .card-accent {
-  background:linear-gradient(135deg, rgba(200,164,90,0.09) 0%, rgba(78,201,190,0.05) 100%);
-  border-color:rgba(200,164,90,0.22);
+  background:linear-gradient(135deg, rgba(45,106,79,0.08) 0%, rgba(29,78,107,0.05) 100%);
+  border-color:rgba(45,106,79,0.25);
 }
-.card-accent::before { background:linear-gradient(90deg, transparent, ${T.gold}44, ${T.teal}22, transparent); }
+.card-accent::before { background:linear-gradient(90deg, transparent, rgba(45,106,79,0.3), rgba(29,78,107,0.2), transparent); }
 
 .card-hd {
   display:flex; align-items:center; justify-content:space-between;
@@ -339,8 +343,7 @@ body::before {
 .sec-lbl {
   font-family:'JetBrains Mono'; font-size:10px;
   color:${T.text2}; letter-spacing:3px;
-  text-transform:uppercase;
-  margin:20px 0 10px;
+  text-transform:uppercase; margin:20px 0 10px;
   display:flex; align-items:center; gap:10px;
 }
 .sec-lbl::after {
@@ -354,18 +357,18 @@ body::before {
 .g4 { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
 .gfull { grid-column:1/-1; }
 
-/* ── STAT CARDS ── */
 .stat {
-  background:linear-gradient(135deg, ${T.bg3}, ${T.bg2});
+  background:linear-gradient(135deg, ${T.bg1}, ${T.bg2});
   border:1px solid ${T.bdr};
   border-radius:14px; padding:16px 18px;
   position:relative; overflow:hidden;
   transition:all .22s;
+  box-shadow:0 1px 6px rgba(45,32,16,0.07);
 }
 .stat:hover { border-color:${T.bdrH}; }
 .stat::after {
   content:''; position:absolute; bottom:0; left:0; right:0; height:2px;
-  background:linear-gradient(90deg, ${T.gold}44, ${T.teal}22, transparent);
+  background:linear-gradient(90deg, ${T.gold}66, ${T.teal}44, transparent);
 }
 .stat-n {
   font-family:'Cormorant Infant', serif;
@@ -391,33 +394,33 @@ body::before {
 }
 .btn-primary {
   background:linear-gradient(135deg, ${T.gold} 0%, ${T.goldL} 100%);
-  color:${T.bg0}; font-weight:600;
-  box-shadow:0 2px 16px rgba(200,164,90,0.25);
+  color:#fff; font-weight:600;
+  box-shadow:0 2px 10px rgba(45,106,79,0.3);
 }
-.btn-primary:hover { transform:translateY(-2px); box-shadow:0 6px 24px rgba(200,164,90,0.4); }
+.btn-primary:hover { transform:translateY(-1px); box-shadow:0 4px 16px rgba(45,106,79,0.4); }
 .btn-primary:disabled { opacity:.45; transform:none; cursor:default; box-shadow:none; }
 
 .btn-ghost {
-  background:transparent;
+  background:rgba(45,32,16,0.05);
   border:1px solid ${T.bdr};
   color:${T.text2};
 }
-.btn-ghost:hover { border-color:${T.bdrH}; color:${T.gold}; }
+.btn-ghost:hover { border-color:${T.bdrH}; color:${T.text0}; background:rgba(45,32,16,0.09); }
 
 .btn-teal {
-  background:linear-gradient(135deg, ${T.teal}, ${T.tealD});
-  color:${T.bg0}; font-weight:600;
-  box-shadow:0 2px 16px rgba(78,201,190,0.2);
+  background:linear-gradient(135deg, ${T.teal}, ${T.tealL});
+  color:#fff; font-weight:600;
+  box-shadow:0 2px 10px rgba(29,78,107,0.25);
 }
-.btn-teal:hover { transform:translateY(-2px); box-shadow:0 6px 24px rgba(78,201,190,0.35); }
+.btn-teal:hover { transform:translateY(-1px); box-shadow:0 4px 16px rgba(29,78,107,0.35); }
 .btn-teal:disabled { opacity:.45; transform:none; cursor:default; }
 
 .btn-danger {
-  background:rgba(200,80,80,0.1);
-  border:1px solid rgba(200,80,80,0.22);
+  background:rgba(139,32,32,0.07);
+  border:1px solid rgba(139,32,32,0.2);
   color:${T.danger};
 }
-.btn-danger:hover { background:rgba(200,80,80,0.18); }
+.btn-danger:hover { background:rgba(139,32,32,0.14); }
 
 .btn-sm { padding:6px 14px; font-size:9px; letter-spacing:1px; border-radius:8px; }
 .btn-xs { padding:4px 10px; font-size:8.5px; border-radius:7px; }
@@ -442,17 +445,18 @@ body::before {
 }
 .fld input, .fld select, .fld textarea {
   width:100%; padding:11px 15px;
-  background:rgba(255,255,255,0.03);
+  background:rgba(255,255,255,0.7);
   border:1px solid ${T.bdr};
   border-radius:10px;
   color:${T.text0};
   font-family:'Crimson Pro', serif; font-size:18px;
   outline:none; transition:border .2s, background .2s;
+  box-shadow:0 1px 3px rgba(45,32,16,0.06) inset;
 }
 .fld input:focus, .fld select:focus, .fld textarea:focus {
-  border-color:${T.gold}88; background:rgba(200,164,90,0.04);
+  border-color:${T.gold}; background:rgba(255,255,255,0.95);
 }
-.fld select option { background:${T.bg2}; }
+.fld select option { background:${T.bg1}; color:${T.text0}; }
 .fld textarea { resize:vertical; min-height:72px; line-height:1.6; }
 .fld-hint { font-size:14px; color:${T.text2}; margin-top:5px; line-height:1.5; }
 .fld-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
@@ -461,38 +465,38 @@ body::before {
 /* ── CHIPS ── */
 .chips { display:flex; flex-wrap:wrap; gap:8px; }
 .chip {
-  padding:9px 18px; border-radius:22px;
-  border:1px solid rgba(255,255,255,0.22);
+  padding:8px 16px; border-radius:20px;
+  border:1px solid ${T.bdr};
   cursor:pointer; font-size:16px;
   font-family:'Crimson Pro', serif;
   transition:all .18s;
-  background:rgba(255,255,255,0.06);
-  color:${T.text0}; white-space:nowrap; user-select:none;
+  background:rgba(255,255,255,0.5);
+  color:${T.text1}; white-space:nowrap; user-select:none;
+  box-shadow:0 1px 3px rgba(45,32,16,0.08);
 }
-.chip:hover { border-color:rgba(255,255,255,0.45); background:rgba(255,255,255,0.11); color:#fff; }
+.chip:hover { border-color:${T.bdrH}; color:${T.text0}; background:rgba(255,255,255,0.8); }
 .chip.on {
   border-color:${T.gold};
   color:${T.gold};
-  background:rgba(77,184,122,0.15);
-  box-shadow:0 0 0 1px rgba(77,184,122,0.25);
+  background:rgba(45,106,79,0.1);
+  box-shadow:0 1px 4px rgba(45,106,79,0.2);
 }
-.chip.on-t { border-color:${T.teal}; color:${T.teal}; background:rgba(62,201,167,0.12); }
+.chip.on-t { border-color:${T.teal}; color:${T.teal}; background:rgba(29,78,107,0.08); }
 
-/* ── BADGES ── */
 .badge {
   display:inline-flex; align-items:center; gap:3px;
-  padding:2px 9px; border-radius:10px;
-  font-size:11px; font-family:'JetBrains Mono';
+  padding:3px 10px; border-radius:10px;
+  font-size:12px; font-family:'JetBrains Mono';
   white-space:nowrap; letter-spacing:.3px;
 }
-.bg  { background:rgba(200,164,90,0.1);  color:${T.gold};    border:1px solid rgba(200,164,90,0.2); }
-.bt  { background:rgba(78,201,190,0.08); color:${T.teal};    border:1px solid rgba(78,201,190,0.2); }
-.br  { background:rgba(200,80,80,0.09);  color:${T.danger};  border:1px solid rgba(200,80,80,0.2); }
-.bw  { background:rgba(200,140,58,0.09); color:${T.warn};    border:1px solid rgba(200,140,58,0.2); }
-.bgr { background:rgba(91,173,122,0.09); color:${T.success}; border:1px solid rgba(91,173,122,0.2); }
-.bm  { background:rgba(255,255,255,0.05);color:${T.text2};   border:1px solid ${T.bdr}; }
-.bi  { background:rgba(90,142,200,0.09); color:${T.info};    border:1px solid rgba(90,142,200,0.2); }
-.bp  { background:rgba(140,90,200,0.09); color:${T.purple};  border:1px solid rgba(140,90,200,0.2); }
+.bg  { background:rgba(45,106,79,0.12);  color:${T.gold};    border:1px solid rgba(45,106,79,0.25); }
+.bt  { background:rgba(29,78,107,0.10);  color:${T.teal};    border:1px solid rgba(29,78,107,0.25); }
+.br  { background:rgba(139,32,32,0.09);  color:${T.danger};  border:1px solid rgba(139,32,32,0.2); }
+.bw  { background:rgba(122,80,16,0.09);  color:${T.warn};    border:1px solid rgba(122,80,16,0.2); }
+.bgr { background:rgba(45,106,79,0.10);  color:${T.success}; border:1px solid rgba(45,106,79,0.22); }
+.bm  { background:rgba(45,32,16,0.07);   color:${T.text2};   border:1px solid ${T.bdr}; }
+.bi  { background:rgba(29,78,107,0.09);  color:${T.info};    border:1px solid rgba(29,78,107,0.22); }
+.bp  { background:rgba(74,45,122,0.09);  color:${T.purple};  border:1px solid rgba(74,45,122,0.22); }
 
 /* ── TASK ROWS ── */
 .task-row {
@@ -526,18 +530,16 @@ body::before {
 
 /* ── AI BOX ── */
 .ai-box {
-  background:linear-gradient(135deg,
-    rgba(200,164,90,0.07) 0%,
-    rgba(78,201,190,0.04) 50%,
-    rgba(200,164,90,0.03) 100%);
-  border:1px solid rgba(200,164,90,0.18);
-  border-radius:18px; padding:22px 24px;
+  background:linear-gradient(135deg, rgba(45,106,79,0.06) 0%, rgba(29,78,107,0.04) 100%);
+  border:1px solid rgba(45,32,16,0.18);
+  border-radius:14px; padding:22px 24px;
   margin-bottom:14px; position:relative;
+  box-shadow:0 2px 10px rgba(45,32,16,0.07);
 }
 .ai-box::before {
-  content:''; position:absolute; top:0; left:0; right:0; height:1px;
-  background:linear-gradient(90deg, transparent, ${T.gold}66, ${T.teal}44, transparent);
-  border-radius:18px 18px 0 0;
+  content:''; position:absolute; top:0; left:0; right:0; height:2px;
+  background:linear-gradient(90deg, transparent, ${T.gold}88, ${T.teal}66, transparent);
+  border-radius:14px 14px 0 0;
 }
 .ai-hd { display:flex; align-items:center; gap:8px; margin-bottom:13px; }
 .ai-pulse {
@@ -546,10 +548,10 @@ body::before {
 }
 @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.85)} }
 .ai-lbl {
-  font-family:'JetBrains Mono'; font-size:9px;
+  font-family:'JetBrains Mono'; font-size:10px;
   color:${T.teal}; letter-spacing:2.5px; text-transform:uppercase;
 }
-.ai-text { font-size:16px; line-height:1.8; color:${T.text1}; white-space:pre-wrap; font-family:'Crimson Pro', serif; }
+.ai-text { font-size:18px; line-height:1.8; color:${T.text1}; white-space:pre-wrap; font-family:'Crimson Pro', serif; }
 .ai-dim { color:${T.text2}; font-style:italic; font-size:16px; font-family:'Cormorant Infant', serif; }
 
 /* ── AI CONTENT BLOCKS ── */
@@ -577,23 +579,22 @@ body::before {
 .ai-list-item {
   position:relative;
   padding:14px 16px 14px 44px;
-  background:linear-gradient(135deg, rgba(255,255,255,0.025), rgba(200,164,90,0.04));
-  border:1px solid rgba(200,164,90,0.18);
-  border-radius:12px;
+  background:rgba(255,255,255,0.5);
+  border:1px solid ${T.bdr};
+  border-radius:10px;
   transition:all .2s;
 }
 .ai-list-item:hover {
-  border-color:rgba(200,164,90,0.35);
-  background:linear-gradient(135deg, rgba(255,255,255,0.04), rgba(200,164,90,0.07));
+  border-color:${T.bdrH};
+  background:rgba(255,255,255,0.75);
 }
 .ai-list-num {
   position:absolute; top:14px; left:14px;
   width:22px; height:22px; border-radius:50%;
-  background:linear-gradient(135deg, ${T.gold}, ${T.goldL});
-  color:${T.bg0};
+  background:${T.gold};
+  color:#fff;
   display:flex; align-items:center; justify-content:center;
   font-family:'JetBrains Mono'; font-size:11px; font-weight:700;
-  box-shadow:0 1px 4px rgba(200,164,90,0.3);
 }
 .ai-list-body { padding-left:0; }
 .ai-list-title {
@@ -615,50 +616,53 @@ body::before {
   font-size:17px; line-height:1.75;
   color:${T.text1};
   padding:14px 16px;
-  background:rgba(255,255,255,0.02);
-  border-left:2px solid rgba(200,164,90,0.25);
+  background:rgba(255,255,255,0.4);
+  border-left:3px solid ${T.gold};
   border-radius:8px;
 }
 
 .ai-actions {
   margin-top:18px; padding-top:14px;
-  border-top:1px solid rgba(200,164,90,0.15);
+  border-top:1px solid ${T.bdr};
   display:flex; gap:8px; flex-wrap:wrap;
 }
 
-
-.ai-item-actions {
-  margin-top:10px; display:flex; gap:6px; flex-wrap:wrap;
-}
+.ai-item-actions { margin-top:10px; display:flex; gap:6px; flex-wrap:wrap; }
 .btn-mini {
-  padding:5px 10px; font-size:11px;
-  background:rgba(200,164,90,0.1);
-  border:1px solid rgba(200,164,90,0.25);
-  color:${T.goldL};
+  padding:5px 11px; font-size:12px;
+  background:rgba(45,32,16,0.06);
+  border:1px solid ${T.bdr};
+  color:${T.text2};
   border-radius:8px; cursor:pointer;
   font-family:'JetBrains Mono'; letter-spacing:.3px;
   transition:all .15s;
 }
-.btn-mini:hover {
-  background:rgba(200,164,90,0.2);
-  border-color:rgba(200,164,90,0.5);
+.btn-mini:hover { background:rgba(45,32,16,0.12); border-color:${T.bdrH}; color:${T.text0}; }
+@media(max-width:380px) {
+  .ai-list-item { padding:12px 14px 12px 38px; }
+  .ai-list-num { width:20px; height:20px; font-size:10px; top:12px; left:12px; }
+  .ai-list-title { font-size:17px; }
+  .ai-list-text { font-size:15px; }
+  .ai-header { font-size:19px; padding:10px 14px; }
+  .s-nav { width:42px; height:48px; }
+  .s-ico { font-size:17px; }
+  .s-lbl { font-size:6px; }
 }
+
+/* ── RESPONSIVE MOBILE ── */
 @media(max-width:700px) {
   .sidebar {
     width:100%; height:56px;
     top:auto; bottom:0; left:0; right:0;
-    flex-direction:row;
-    padding:0 4px;
-    border-right:none;
-    border-top:1px solid ${T.bdr};
+    flex-direction:row; padding:0 4px;
+    border-right:none; border-top:1px solid ${T.bdr};
     overflow-x:auto; overflow-y:hidden;
-    justify-content:flex-start;
-    gap:0;
+    justify-content:flex-start; gap:0;
     -webkit-overflow-scrolling:touch;
+    box-shadow:0 -2px 10px rgba(45,32,16,0.08);
   }
   .sidebar::after {
-    top:0; bottom:auto; left:0; right:0;
-    width:auto; height:1px;
+    top:0; bottom:auto; left:0; right:0; width:auto; height:1px;
     background:linear-gradient(90deg, transparent, ${T.gold}44, ${T.teal}33, transparent);
   }
   .s-logo { display:none; }
@@ -668,7 +672,6 @@ body::before {
     width:24px; height:3px;
     background:linear-gradient(90deg, ${T.gold}, ${T.teal});
     border-radius:3px 3px 0 0;
-    box-shadow:0 0 8px ${T.gold}66;
   }
   .main { margin-left:0; padding-bottom:60px; }
   .page { padding:12px 14px; }
@@ -683,16 +686,6 @@ body::before {
   .calc-row { grid-template-columns:1fr 1fr; }
   .overlay { padding:0; align-items:flex-end; }
   .modal { border-radius:22px 22px 0 0; max-height:92vh; width:100%; padding:28px 18px 36px; }
-}
-@media(max-width:380px) {
-  .s-nav { width:42px; height:48px; }
-  .s-ico { font-size:17px; }
-  .s-lbl { font-size:6px; }
-  .ai-list-item { padding:12px 14px 12px 38px; }
-  .ai-list-num { width:20px; height:20px; font-size:10px; top:12px; left:12px; }
-  .ai-list-title { font-size:17px; }
-  .ai-list-text { font-size:15px; }
-  .ai-header { font-size:19px; padding:10px 14px; }
 }
 
 /* ── ORNAMENTAL DIVIDER ── */
@@ -1049,7 +1042,7 @@ function Onboarding({ onDone }) {
   const s = OB_STEPS[step];
   const pct = (step/(OB_STEPS.length-1))*100;
 
-  const addPet = () => set("pets",[...d.pets,{id:Date.now(),name:"",type:"Кошка",breed:"",dob:"",food:"",feedTimes:"2",notes:"",vacDate:"",parasiteDate:""}]);
+  const addPet = () => set("pets",[...d.pets,{id:Date.now(),name:"",type:"Кошка",breed:"",dob:"",food:"",feedTimes:"2",weightKg:"",notes:"",vacDate:"",parasiteDate:""}]);
   const updPet = (id,k,v) => set("pets",d.pets.map(p=>p.id===id?{...p,[k]:v}:p));
   const delPet = id => set("pets",d.pets.filter(p=>p.id!==id));
   const addTrip = () => set("trips",[...d.trips,{id:Date.now(),destination:"",targetDate:"",budget:"",saved:"",stage:"💭 Мечта",notes:""}]);
@@ -1274,6 +1267,7 @@ function Onboarding({ onDone }) {
               </div>
               <div className="fld-row">
                 <div className="fld"><label>Корм</label><input placeholder="Royal Canin..." value={pet.food} onChange={e=>updPet(pet.id,"food",e.target.value)}/></div>
+                <div className="fld"><label>Вес питомца (кг)</label><input type="number" step="0.1" placeholder="4.5" value={pet.weightKg||""} onChange={e=>updPet(pet.id,"weightKg",e.target.value)}/></div>
                 <div className="fld"><label>Кормлений в день</label>
                   <div className="chips">{["1","2","3","4"].map(v=><div key={v} className={`chip ${pet.feedTimes===v?"on":""}`} onClick={()=>updPet(pet.id,"feedTimes",v)}>{v}</div>)}</div>
                 </div>
@@ -1499,6 +1493,77 @@ export default function LifeDiary() {
   );
 }
 
+// ── Хелпер: слияние одинаковых товаров с суммированием количества ──
+function mergeShopItems(items) {
+  const map = new Map(); // ключ: name.toLowerCase()
+  // Регулярки для парсинга количества
+  const parseQty = (name) => {
+    // "Гречка 500г", "Куриное филе 1 кг", "Молоко 2 л", "Яблоки 3 шт"
+    const m = name.match(/^(.+?)\s+([\d,.]+)\s*(кг|г|гр|ml|мл|л|шт|уп|пач|бут|пак|пор)\.?$/i);
+    if(m) return { base: m[1].trim(), qty: parseFloat(m[2].replace(",",".")), unit: m[3].toLowerCase() };
+    return null;
+  };
+  const normUnit = u => ({г:"г",гр:"г",кг:"кг",мл:"мл",ml:"мл",л:"л",шт:"шт",уп:"уп",пач:"уп",бут:"шт",пак:"уп",пор:"уп"}[u]||u);
+  const fmtQty = (qty, unit) => {
+    // Конвертация г → кг если >= 1000
+    if(unit==="г" && qty>=1000) return `${+(qty/1000).toFixed(2)} кг`;
+    if(unit==="мл" && qty>=1000) return `${+(qty/1000).toFixed(2)} л`;
+    return `${+qty.toFixed(2)} ${unit}`;
+  };
+  items.forEach(item => {
+    const key = item.name.toLowerCase().trim();
+    const parsed = parseQty(item.name);
+    if(parsed) {
+      const baseKey = parsed.base.toLowerCase();
+      const unit = normUnit(parsed.unit);
+      if(map.has(baseKey)) {
+        const ex = map.get(baseKey);
+        if(ex._unit === unit) {
+          ex._qty += parsed.qty;
+          ex.name = parsed.base + " " + fmtQty(ex._qty, unit);
+          return;
+        }
+      }
+      map.set(baseKey, {...item, name: parsed.base + " " + fmtQty(parsed.qty, unit), _qty: parsed.qty, _unit: unit});
+    } else {
+      if(!map.has(key)) map.set(key, {...item});
+    }
+  });
+  return Array.from(map.values()).map(({_qty, _unit, ...item}) => item);
+}
+
+// ── Хелпер: расчёт нормы корма для питомца ──
+function calcPetFood(pet) {
+  const type = pet.type || "";
+  const weightKg = parseFloat(pet.weightKg) || null;
+  const ageMonths = pet.dob ? Math.floor((Date.now()-new Date(pet.dob))/(30.44*86400000)) : null;
+  const food = (pet.food||"").toLowerCase();
+  const isKitten = ageMonths && ageMonths < 12;
+  const isPuppy  = ageMonths && ageMonths < 12;
+  if(type==="Кошка") {
+    if(food.includes("сухой") || food.includes("сухой корм")) {
+      const base = weightKg ? Math.round(weightKg * (isKitten ? 60 : 40)) : (isKitten ? 80 : 60);
+      return { daily: `${base} г/день`, weekly: `${Math.round(base*7/1000*10)/10} кг/нед` };
+    }
+    if(food.includes("влажный") || food.includes("паучи")) {
+      const base = weightKg ? Math.round(weightKg * 80) : 120;
+      return { daily: `${base} г/день`, weekly: `${Math.round(base*7)} г/нед (~${Math.ceil(base*7/85)} пауч.)` };
+    }
+    const base = weightKg ? Math.round(weightKg * 50) : 70;
+    return { daily: `~${base} г/день`, weekly: `~${Math.round(base*7/1000*10)/10} кг/нед` };
+  }
+  if(type==="Собака") {
+    const pct = isPuppy ? 0.05 : 0.025;
+    const base = weightKg ? Math.round(weightKg*1000*pct) : null;
+    if(base) return { daily: `${base} г/день`, weekly: `${Math.round(base*7/1000*10)/10} кг/нед` };
+    return { daily: "2–3% от веса/день", weekly: "уточни вес питомца" };
+  }
+  if(type==="Попугай") return { daily: "15–25 г/день", weekly: "100–175 г/нед" };
+  if(type==="Кролик") return { daily: "сено вволю + 100г зелени + 30г гранул", weekly: "сено 500г + зелень 700г + гранулы 200г" };
+  if(type==="Хомяк") return { daily: "2 ч.л. (≈10 г)/день", weekly: "≈70 г/нед" };
+  return null;
+}
+
 // ══════════════════════════════════════════════════════════════
 //  AI BOX COMPONENT
 // ══════════════════════════════════════════════════════════════
@@ -1690,40 +1755,25 @@ function AiBox({ kb, prompt, label="ИИ-СОВЕТНИК", btnText="Получ�
     if(!allListItems.length) return;
     try {
       const list = JSON.parse(localStorage.getItem("ld_shop_v3") || "[]");
-      const catRules = [
-        {cat:"Бытовая химия", words:["мыло","порошок","гель для стир","шампунь для","ополаск","чистящ","моющ","туалетн","губка","перчатк","пятновыв","отбелив","кондиц для бель","полотенца бумаж","салфетки","пакет","фольга","плёнка"]},
-        {cat:"Красота и уход", words:["крем","маска для","сыворотк","тоник","скраб","пилинг","масло для","бальзам","помад","тушь","пудр","ватн","косметик","дезодорант","зубн паст","зубн нить","шампунь","кондиционер для волос"]},
-        {cat:"Для питомцев", words:["корм для","лоток","наполнитель","когтет","ошейник","поводок","для котов","для собак","для кошек","для попуг","для хомяк"]},
-        {cat:"Аптека", words:["витамин","омега","магний","мелатонин","пробиотик","антиб","сироп","таблетк","капл","мазь","бинт","пластыр","термометр","леденц","спрей от"]},
-        {cat:"Одежда", words:["футболк","рубашк","брюк","юбк","платье","носки","нижне бель","пижам","халат","куртк","пальто","туфл","ботинк","кроссовк"]},
-      ];
-      const detect = (n)=>{ const l=n.toLowerCase(); for(const r of catRules) for(const w of r.words) if(l.includes(w)) return r.cat; return "Продукты"; };
-      // Дедупликация уже добавленных товаров
-      const existingNames = new Set(list.map(i=>i.name.toLowerCase().trim()));
-      const newItems = [];
       const validCats = ["Продукты","Бытовая химия","Красота и уход","Для питомцев","Одежда","Аптека","Другое"];
+      const newItems = [];
       allListItems.forEach(t => {
-        // Извлечь категорию [...]
         const m = t.match(/\[([^\]]+)\]/);
-        let cat = "Продукты";
-        if(m && validCats.includes(m[1])) cat = m[1];
-        // Удалить ВСЕ метки [Категория] из имени
-        let name = t.replace(/\[[^\]]+\]/g, "").trim();
-        // Убрать ведущие двоеточия и пробелы
-        name = name.replace(/^[:\s—-]+/, "").trim();
+        if(!m) return;
+        const cat = validCats.includes(m[1]) ? m[1] : "Продукты";
+        let name = t.replace(/\[[^\]]+\]/g, "").replace(/^[:\s—\-]+/, "").trim();
         if(!name || name.length < 2) return;
-        if(!m) cat = detect(name);
-        // Защита от дублей
-        if(existingNames.has(name.toLowerCase())) return;
-        existingNames.add(name.toLowerCase());
-        newItems.push({id:Date.now()+Math.random(), name:name.length>80?name.slice(0,77)+"...":name, cat, done:false});
+        newItems.push({id:Date.now()+Math.random(), name, cat, done:false});
       });
-      const merged = [...list, ...newItems];
+      if(newItems.length === 0) { alert("Нет продуктов для добавления. Убедитесь что AI составил список с метками [Продукты]."); return; }
+      // Объединяем старый список с новыми и суммируем дубли
+      const merged = mergeShopItems([...list, ...newItems]);
       localStorage.setItem("ld_shop_v3", JSON.stringify(merged));
       if(onShopAdd) onShopAdd(merged);
+      const added = merged.length - list.length;
       const byCat = {};
       newItems.forEach(i=>{byCat[i.cat]=(byCat[i.cat]||0)+1;});
-      alert("Добавлено: " + Object.entries(byCat).map(([c,n])=>n+" в "+c).join(", "));
+      alert("Добавлено: " + Object.entries(byCat).map(([c,n])=>n+" в "+c).join(", ") + (added<newItems.length ? ` (${newItems.length-added} объединено)` : ""));
     } catch(e) { alert("Ошибка"); }
   };
   
@@ -2413,23 +2463,18 @@ function ShoppingSection({profile,shopList,setShopList,kb,notify}) {
         <div style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap"}}>
           <button className="btn btn-ghost btn-sm" onClick={()=>{
             const validCats = cats;
-            const cleaned = [];
-            const seen = new Set();
-            shopList.forEach(item => {
+            const preCleaned = shopList.map(item => {
               const m = item.name.match(/\[([^\]]+)\]/);
               let cat = item.cat || "Продукты";
               if(m && validCats.includes(m[1])) cat = m[1];
-              let name = item.name.replace(/\[[^\]]+\]/g, "").replace(/^[:\s—-]+/, "").trim();
-              if(!name || name.length < 2) return;
-              const key = name.toLowerCase();
-              if(seen.has(key)) return;
-              seen.add(key);
-              cleaned.push({...item, name, cat});
-            });
-            const removedCount = shopList.length - cleaned.length;
-            setShopList(cleaned);
-            notify(removedCount>0 ? "Очищено: убрано "+removedCount+" дубликатов и меток" : "Список уже чист");
-          }}>🧹 Очистить дубли и метки</button>
+              let name = item.name.replace(/\[[^\]]+\]/g, "").replace(/^[:\s—\-]+/, "").trim();
+              return {...item, name: name||item.name, cat};
+            }).filter(i => i.name && i.name.length >= 2);
+            const merged = mergeShopItems(preCleaned);
+            const removedCount = shopList.length - merged.length;
+            setShopList(merged);
+            notify(removedCount>0 ? "Готово: объединено/убрано "+removedCount+" позиций" : "Список уже чист");
+          }}>🧹 Объединить дубли</button>
           {shopList.length>0 && <button className="btn btn-ghost btn-sm" onClick={()=>{
             if(confirm("Удалить все товары из списка покупок?")) { setShopList([]); notify("Список очищен"); }
           }}>🗑 Сбросить список</button>}
@@ -2484,6 +2529,7 @@ function PetsSection({profile,setProfile,petLog,setPetLog,today,kb,notify}) {
         const labels=feeds===1?["День"]:feeds===2?["Утро","Вечер"]:feeds===3?["Утро","День","Вечер"]:["1","2","3","4"];
         const vacDays=daysUntil(pet.vacDate);
         const parDays=daysUntil(pet.parasiteDate);
+        const foodNorm=calcPetFood(pet);
         return(
           <div key={pet.id} className="pet-card">
             <div style={{display:"flex",gap:14,alignItems:"flex-start",marginBottom:14}}>
@@ -2492,6 +2538,7 @@ function PetsSection({profile,setProfile,petLog,setPetLog,today,kb,notify}) {
                 <div style={{fontFamily:"'Cormorant Infant',serif",fontSize:20,color:T.text0,marginBottom:3}}>{pet.name}</div>
                 <div style={{fontSize:13,color:T.text3}}>{pet.type}{pet.breed&&" · "+pet.breed}{pet.dob&&" · "+getAge(pet.dob)}</div>
                 {pet.food&&<div style={{fontSize:13,color:T.text2,marginTop:2}}>🍽 {pet.food}</div>}
+                {foodNorm&&<div style={{fontSize:12,color:T.teal,marginTop:3,fontFamily:"'JetBrains Mono'",letterSpacing:.3}}>📊 {foodNorm.daily} · {foodNorm.weekly}</div>}
                 {pet.notes&&<div style={{fontSize:13,color:T.warn,marginTop:2}}>⚠ {pet.notes}</div>}
               </div>
             </div>
@@ -2849,8 +2896,12 @@ function MentalSection({profile,kb,notify}) {
             <div style={{display:"flex",gap:10}}>{moods.map((m,i)=><div key={i} onClick={()=>setMood(i)} style={{fontSize:30,cursor:"pointer",opacity:mood===i?1:0.35,transform:mood===i?"scale(1.25)":"scale(1)",transition:"all .2s"}}>{m}</div>)}</div>
           </div>
           <div style={{marginBottom:14}}>
-            <div style={{fontSize:11,color:"#A8A49C",fontFamily:"'JetBrains Mono'",letterSpacing:1.5,marginBottom:10}}>СТРЕСС: {stress}/5</div>
-            <div style={{display:"flex",gap:8}}>{[1,2,3,4,5].map(i=><div key={i} onClick={()=>setStress(i)} style={{flex:1,height:38,borderRadius:8,border:"1px solid "+(stress>=i?"#C8A45A":"rgba(200,164,90,0.15)"),background:stress>=i?"rgba(200,164,90,0.2)":"transparent",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontSize:13,color:stress>=i?"#E5C87A":"#706C64",fontFamily:"'JetBrains Mono'"}}>{i}</div>)}</div>
+            <div style={{fontSize:11,color:"#A8A49C",fontFamily:"'JetBrains Mono'",letterSpacing:1.5,marginBottom:10}}>СТРЕСС: {stress}/10</div>
+            <div style={{display:"flex",gap:4,flexWrap:"nowrap"}}>
+              {[1,2,3,4,5,6,7,8,9,10].map(i=>(
+                <div key={i} onClick={()=>setStress(i)} style={{flex:1,minWidth:0,height:36,borderRadius:6,border:"1px solid "+(stress>=i?"#C8A45A":"rgba(200,164,90,0.15)"),background:stress>=i?"rgba(200,164,90,0.2)":"transparent",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontSize:11,color:stress>=i?"#E5C87A":"#706C64",fontFamily:"'JetBrains Mono'"}}>{i}</div>
+              ))}
+            </div>
           </div>
           <textarea style={{width:"100%",padding:"10px 14px",background:"rgba(255,255,255,.03)",border:"1px solid rgba(200,164,90,0.2)",borderRadius:10,color:"#F0EDE8",fontFamily:"'Crimson Pro',serif",fontSize:16,outline:"none",resize:"none",minHeight:80,lineHeight:1.6}} placeholder="Что на душе сегодня? Любые мысли..." value={note} onChange={e=>setNote(e.target.value)}/>
           <div style={{display:"flex",gap:8,marginTop:10}}>
