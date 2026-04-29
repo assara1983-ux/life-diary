@@ -203,7 +203,7 @@ function buildKB(p) {
   return `Ты — личный жизненный советник Life Diary. Говори тепло, как умный близкий друг. Конкретно и по делу. ВСЕГДА учитывай весь профиль при ответе.
 
 ПРОФИЛЬ: ${p.name||"—"}, ${age?age+" лет":""}, ${p.gender||""}, ${p.city||""}
-КАЗАХСТАН · ГОРОД: ${p.city||"—"}
+КАЗАХСТАН · ГОРОД: ${p.city||"—"} · ПОЛ: ${p.gender||"не указан"}
 АСТРО: ${getZodiac(p.dob).name}, восточный знак-${getEastern(p.dob)}, хронотип: ${p.chronotype||"—"}, подъём-${wakeTime}, отбой-${p.sleep||"23:00"}
 ЛИЧНОСТЬ: решения-${p.decisionStyle||"—"}, энергия из-${p.energySource||"—"}, планирование-${p.planningStyle||"—"}, ценность-${p.coreValue||"—"}
 СТРЕСС: от-${(p.stressors||[]).join(",")||"—"}, восстановление-${(p.recovery||[]).join(",")||"—"}
@@ -1079,6 +1079,28 @@ const DEF_SECTIONS = [
   {id:"journal",  emoji:"📖",  name:"Журнал",     vis:true},
   {id:"profile",  emoji:"👤",  name:"Профиль",    vis:true},
 ];
+// Адаптация текста под пол пользователя
+function genderText(profile, female, male) {
+  return profile.gender === "Мужской" ? male : female;
+}
+function genderPrompt(profile) {
+  const g = profile.gender === "Мужской";
+  return {
+    free:   g ? "Свободен после" : "Свободна после",
+    tired:  g ? "устал" : "устала",
+    can:    g ? "могу" : "могу",
+    name:   profile.name || (g ? "меня" : "меня"),
+    he_she: g ? "он" : "она",
+    his:    g ? "его" : "её",
+    dear:   g ? profile.name||"друг" : profile.name||"подруга",
+    suffix: g ? "й" : "я", // "рабочий"/"рабочая"
+    gender: g ? "мужской" : "женский",
+    address: g ? "Обращайся к пользователю как к мужчине, используй мужские окончания и формы (устал, готов, свободен, занят, увлечён и т.д.)" 
+               : "Обращайся к пользователю как к женщине, используй женские окончания (устала, готова, свободна, занята, увлечена и т.д.)",
+  };
+}
+
+
 
 // ══════════════════════════════════════════════════════════════
 //  ONBOARDING
@@ -1087,7 +1109,7 @@ const OB_STEPS = [
   {id:"welcome",  title:"Добро пожаловать",              sub:"Твой личный организатор жизни — знает тебя, думает за тебя, помогает всё успевать. Займёт 7–10 минут."},
   {id:"basic",    title:"Кто ты?",                       sub:"Самое главное — имя, дата рождения и место. Из этого рассчитываются знак зодиака, восточный знак и градус судьбы."},
   {id:"persona",  title:"Как ты устроен(а)?",            sub:"Не тест — честные вопросы о твоей природе. Чем точнее ответишь, тем лучше работают советы."},
-  {id:"persona2", title:"Энергия и восстановление",      sub:"Как ты работаешь изнутри — откуда силы и что тебя истощает."},
+  {id:"persona2", title:"Энергия и восстановление",      sub:"Как ты работаешь изнутри — откуда берутся силы и что их забирает."},
   {id:"schedule", title:"Твой ритм дня",                 sub:"Подъём, отбой, хронотип — выстроим всё расписание вокруг твоей природы."},
   {id:"work",     title:"Работа и карьера",              sub:"Чем занимаешься и что для тебя в этом важно."},
   {id:"work2",    title:"Рабочий распорядок",            sub:"Из чего состоит твой рабочий день — включим в общее расписание."},
@@ -1221,7 +1243,7 @@ function Onboarding({ onDone }) {
             </div>
           ))}
           {[
-            ["Уровень энергии сейчас","stressLevel",["Полна сил","В балансе","Немного устала","Нужна подзарядка"]],
+            ["Уровень энергии сейчас","stressLevel",d.gender==="Мужской"?["Полон сил","В балансе","Немного устал","Нужна подзарядка"]:["Полна сил","В балансе","Немного устала","Нужна подзарядка"]],
             ["Отношение к своему телу","bodyRelation",["Люблю и забочусь","Хочу больше внимания","Стремлюсь к гармонии","Учусь принимать себя"]],
             ["Отношение ко времени","timeStyle",["Планирую заранее","Умею расставлять приоритеты","Живу в моменте","Учусь управлять временем"]],
           ].map(([label,key,opts])=>(
@@ -1256,7 +1278,7 @@ function Onboarding({ onDone }) {
           <div className="fld"><label>Формат занятости</label>
             <div className="chips">{["Офис","Удалёнка","Гибрид","Фриланс","Своё дело","Учусь","Декрет / не работаю"].map(v=><div key={v} className={`chip ${d.workType===v?"on":""}`} onClick={()=>set("workType",v)}>{v}</div>)}</div>
           </div>
-          <div className="fld"><label>Что на работе выматывает?</label>
+          <div className="fld"><label>Что на работе забирает энергию?</label>
             <div className="chips">{["Много встреч","Однообразие","Дедлайны","Конфликты","Переработки","Скучные задачи","Неопределённость"].map(v=><div key={v} className={`chip ${(d.workDrain||[]).includes(v)?"on":""}`} onClick={()=>tog("workDrain",v)}>{v}</div>)}</div>
           </div>
           <div className="fld"><label>Что вдохновляет в работе?</label><input placeholder="Результат, команда, творчество, признание, деньги, свобода..." value={d.workInspire||""} onChange={e=>set("workInspire",e.target.value)}/></div>
@@ -1581,7 +1603,7 @@ function Onboarding({ onDone }) {
           <div className="fld"><label>Сферы где хочешь прогресса</label>
             <div className="chips">{["Здоровье","Карьера","Финансы","Отношения","Саморазвитие","Творчество","Путешествия","Духовность","Семья","Внешность"].map(v=><div key={v} className={`chip ${(d.goalAreas||[]).includes(v)?"on":""}`} onClick={()=>tog("goalAreas",v)}>{v}</div>)}</div>
           </div>
-          <div className="fld"><label>Что мешает достигать целей?</label>
+          <div className="fld"><label>Что сдерживает от достижения целей?</label>
             <div className="chips">{["Нехватка времени","Нехватка энергии","Откладываю","Не знаю с чего начать","Много отвлекаюсь","Страх неудачи"].map(v=><div key={v} className={`chip ${(d.goalBlocks||[]).includes(v)?"on":""}`} onClick={()=>tog("goalBlocks",v)}>{v}</div>)}</div>
           </div>
         </>}
@@ -1647,6 +1669,7 @@ export default function LifeDiary() {
   if(!profile) return <><style>{CSS}</style><Onboarding onDone={d=>{setProfile(d);if((d.trips||[]).length>0)setTrips(d.trips);}}/></>;
 
   const kb = buildKB(profile);
+  const gp = genderPrompt(profile);
   const activeS = sections.find(s=>s.id===active)||sections[0];
 
   return (
@@ -3024,6 +3047,7 @@ function getProfDeadlines(profile) {
 
 function WorkSection({profile,tasks,setTasks,today,kb,notify}) {
   const [modal,setModal]=useState(null);
+  const gp = genderPrompt(profile);
   const [editSchedule,setEditSchedule]=useState(false);
   const [schedStart,setSchedStart]=useState(profile.workStart||"09:00");
   const [schedEnd,setSchedEnd]=useState(profile.workEnd||"18:00");
@@ -3331,7 +3355,7 @@ function WorkSection({profile,tasks,setTasks,today,kb,notify}) {
           </div>
         );
       })()}
-      <AiBox kb={kb} prompt={`Как ${profile.profession||"мне"} организовать этот рабочий день? Меня выматывает: ${(profile.workDrain||[]).join(",")||"—"}, вдохновляет: ${profile.workInspire||"—"}. Дай 3-5 конкретных совета для моего типа личности.`} label="Рабочий день" btnText="Совет по дню" placeholder="Помогу сделать рабочий день продуктивнее..."/>
+      <AiBox kb={kb} prompt={`${gp.address}. Как ${profile.profession||"мне"} организовать этот рабочий день? ${(profile.workDrain||[]).join(",")||"—"}, вдохновляет: ${profile.workInspire||"—"}. Дай 3-5 конкретных совета для моего типа личности.`} label="Рабочий день" btnText="Совет по дню" placeholder="Помогу сделать рабочий день продуктивнее..."/>
 
       {/* ── Рабочие задачи по подразделам ── */}
       {(()=>{
@@ -3885,6 +3909,7 @@ function PetsSection({profile,setProfile,petLog,setPetLog,today,kb,notify}) {
 //  HEALTH
 // ══════════════════════════════════════════════════════════════
 function HealthSection({profile,tasks,setTasks,setShopList,today,kb,notify}) {
+  const gp = genderPrompt(profile);
   const [modal,setModal]=useState(null);
   const moon=getMoon();
   const moonN=moon.n; const moonT=moon.t;
@@ -3907,7 +3932,7 @@ function HealthSection({profile,tasks,setTasks,setShopList,today,kb,notify}) {
         <div style={{fontSize:13,color:T.text3}}>Цель: {profile.healthGoal||"—"} · Питание: {profile.nutrition||"—"}</div>
         <div style={{marginTop:10,padding:"8px 13px",background:"rgba(78,201,190,.07)",borderRadius:9,fontSize:13,color:T.teal}}>🌙 {moon.n} — {moon.t}</div>
       </div>
-      <AiBox kb={kb} prompt={`Дай персональные советы по здоровью на сегодня. Луна: ${moon.n}(${moon.t}). Мои проблемные зоны: ${(profile.healthFocus||[]).join(",")||"—"}. Хронические болезни: ${profile.chronic||"нет"}. Цель: ${profile.healthGoal||"—"}. Питание: ${profile.nutrition||"обычное"}. Практики: ${(profile.practices||[]).join(",")||"—"}. Свободна после: ${profile.workEnd||"18:00"}. Дай: 1) что полезно при этой фазе луны для моих зон здоровья, 2) конкретный рецепт под моё питание на сегодня, 3) комплекс йоги или цигуна на 15-20 мин строго после ${profile.workEnd||"18:00"}.`} label="Здоровье на сегодня" btnText="Советы по здоровью" placeholder="Дам персональные советы по здоровью..."/>
+      <AiBox kb={kb} prompt={`${gp.address}. Дай персональные советы по здоровью на сегодня. Луна: ${moon.n}(${moon.t}). Мои проблемные зоны: ${(profile.healthFocus||[]).join(",")||"—"}. Хронические болезни: ${profile.chronic||"нет"}. Цель: ${profile.healthGoal||"—"}. Питание: ${profile.nutrition||"обычное"}. Практики: ${(profile.practices||[]).join(",")||"—"}. Свободен(а) после: ${profile.workEnd||"18:00"}. ${gp.address}. Дай: 1) что полезно при этой фазе луны для моих зон здоровья, 2) конкретный рецепт под моё питание на сегодня, 3) комплекс практик 15-20 мин строго после ${profile.workEnd||"18:00"}.`} label="Здоровье на сегодня" btnText="Советы по здоровью" placeholder="Дам персональные советы по здоровью..."/>
       <div className="card">
         <div className="card-hd">
           <div className="card-title">Здоровые привычки</div>
@@ -4238,7 +4263,7 @@ function MentalSection({profile,kb,notify}) {
 
       {tab==="check"&&<>
         <div className="card card-accent" style={{marginBottom:12}}>
-          <div style={{fontFamily:"'Cormorant Infant',serif",fontSize:20,color:T.gold,marginBottom:12}}>Как ты сейчас, {profile.name||"—"}?</div>
+          <div style={{fontFamily:"'Cormorant Infant',serif",fontSize:20,color:T.gold,marginBottom:12}}>Как ты сейчас{profile.name?", "+profile.name:""}?</div>
           <div style={{marginBottom:14}}>
             <div style={{fontSize:11,color:T.text2,fontFamily:"'JetBrains Mono'",letterSpacing:1.5,marginBottom:10}}>НАСТРОЕНИЕ</div>
             <div style={{display:"flex",gap:10}}>{moods.map((m,i)=><div key={i} onClick={()=>setMood(i)} style={{fontSize:30,cursor:"pointer",opacity:mood===i?1:0.35,transform:mood===i?"scale(1.25)":"scale(1)",transition:"all .2s"}}>{m}</div>)}</div>
@@ -4252,7 +4277,7 @@ function MentalSection({profile,kb,notify}) {
             <button className="btn btn-primary btn-sm" onClick={saveMoodLog}>{saved?"✓ Сохранено":"Сохранить запись"}</button>
           </div>
         </div>
-        <AiBox kb={kb} prompt={"Дай персональный план восстановления для "+( profile.name||"меня")+" на сегодня. Стрессоры: "+stressors+". Что истощает на работе: "+((profile.workDrain||[]).join(","))+". Восстанавливаюсь через: "+recovery+". Хронотип: "+(profile.chronotype||"—")+". Свободна после: "+freeFrom+". Качество сна: "+(profile.sleepQuality||"—")+". Луна: "+moon.n+"("+moon.t+"). Сейчас высокий стресс: "+(isHighStress?"да":"нет")+". Дай: 1) экстренную технику при стрессе прямо сейчас (2-3 мин), 2) вечерний ритуал восстановления после "+freeFrom+" под мой тип восстановления ["+recovery+"], 3) что поможет со сном сегодня ночью, 4) одну аффирмацию под мою ценность "+(profile.coreValue||"—")+". Оформи нумерованным списком."} label="Состояние и восстановление" btnText="Получить план восстановления" placeholder="Составлю персональный план восстановления..."/>
+        <AiBox kb={kb} prompt={"Дай персональный план восстановления для "+( profile.name||"меня")+" на сегодня. Стрессоры: "+stressors+". Что забирает энергию на работе: "+((profile.workDrain||[]).join(","))+". Восстанавливаюсь через: "+recovery+". Хронотип: "+(profile.chronotype||"—")+". Свободен(а) после: "+freeFrom+". Качество сна: "+(profile.sleepQuality||"—")+". Луна: "+moon.n+"("+moon.t+"). Сейчас высокий стресс: "+(isHighStress?"да":"нет")+". Дай: 1) экстренную технику при стрессе прямо сейчас (2-3 мин), 2) вечерний ритуал восстановления после "+freeFrom+" под мой тип восстановления ["+recovery+"], 3) что поможет со сном сегодня ночью, 4) одну аффирмацию под мою ценность "+(profile.coreValue||"—")+". Оформи нумерованным списком."} label="Состояние и восстановление" btnText="Получить план восстановления" placeholder="Составлю персональный план восстановления..."/>
       </>}
 
       {tab==="breath"&&<>
