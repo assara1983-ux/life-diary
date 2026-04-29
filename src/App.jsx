@@ -2224,14 +2224,21 @@ function getTCMDayRecs(profile, dayInfo) {
 }
 
 function TodaySection({profile,tasks,setTasks,journal,setJournal,today,moon,kb,notify,petLog,setPetLog}) {
+  // ── Все хуки на уровне компонента (React требует) ──────────
   const [addModal, setAddModal] = useState(false);
   const [modal, setModal] = useState(null);
   const [aiPlan, setAiPlan] = useState("");
   const [planLoading, setPlanLoading] = useState(false);
+  const [plannerOpen, setPlannerOpen] = useState(true);
+  const [moodOpen, setMoodOpen] = useState(false);
+  const [commuteOpen, setCommuteOpen] = useState(false);
+  const [commuteRec, setCommuteRec] = useState("");
+  const [commuteLoading, setCommuteLoading] = useState(false);
+  const [expandedBlock, setExpandedBlock] = useState(null);
+
   const todayE = journal[today]||{};
   const saveJ = u => setJournal(p=>({...p,[today]:{...todayE,...u}}));
-  // Умный фильтр "сегодня": не показывать долгие задачи которые никогда не выполнялись
-  // Показываем: ежедневные, конкретные дни недели, конкретные числа, повторные задачи
+
   const isTrulyDue = (t) => {
     if(!t.freq) return false;
     if(t.freq==="once") return !t.lastDone && !t.doneDate;
@@ -2239,475 +2246,405 @@ function TodaySection({profile,tasks,setTasks,journal,setJournal,today,moon,kb,n
     if(t.freq.startsWith("weekly:") || t.freq.startsWith("monthly:")) return isDue(t,today);
     if(t.freq.startsWith("every:")) {
       const n = parseInt(t.freq.split(":")[1]);
-      // Задачи с периодичностью > 1 дня не показывать если ни разу не выполнялись
-      // (пользователь сам отметит первый раз, потом они будут появляться по расписанию)
       if(n > 1 && !t.lastDone) return false;
       return isDue(t,today);
     }
     return false;
   };
+
   const dueTasks = tasks.filter(t => isTrulyDue(t) && t.section !== "work" && !t.isDeadline);
   const doneCnt = tasks.filter(t=>t.doneDate===today).length;
+  const petEmoji = t=>({Кошка:"🐱",Собака:"🐶",Попугай:"🦜",Кролик:"🐰",Хомяк:"🐹",Черепаха:"🐢",Рыбки:"🐠"}[t]||"🐾");
+
+  // ── Вычисляем данные для рендера ───────────────────────────
+  const now = new Date();
+  const currentH = now.getHours();
+  const currentMin = now.getMinutes();
+  const nowMinutes = currentH*60 + currentMin;
+  const dayInfo = getTCMDayInfo(now);
+  const hourOrgan = getTCMHourOrgan(currentH);
+  const recs = getTCMDayRecs(profile, getTCMFullProfile(profile));
+  const tcm = getTCMFullProfile(profile);
+  const todayZodiac = getZodiac(now.toISOString().split("T")[0]);
+  const isWorkDay = (profile.workDaysList||[1,2,3,4,5]).includes(now.getDay());
+  const isWeekend = [0,6].includes(now.getDay());
+  const wakeH = parseInt((profile.wake||"07:00").split(":")[0]);
+  const workStartH = parseInt((profile.workStart||"09:00").split(":")[0]);
+  const workEndH = parseInt((profile.workEnd||"18:00").split(":")[0]);
+  const sleepH = parseInt((profile.sleep||"23:00").split(":")[0]);
 
   const getAiPlan = async()=>{
     setPlanLoading(true);
-    const now = new Date();
-    const dayInfo = getTCMDayInfo(now);
-    const hourOrgan = getTCMHourOrgan(now.getHours());
-    const tcm = getTCMFullProfile(profile);
+    const tcmD = getTCMFullProfile(profile);
     const r = await askClaude(kb,
       `Сегодня ${now.toLocaleDateString("ru-RU",{weekday:"long",day:"numeric",month:"long"})}. Луна: ${moon.n} — ${moon.t}.\n`+
       `ТКМ дня: стихия ${dayInfo.element}, органы ${dayInfo.organs}. ${dayInfo.tip}\n`+
-      `Активный меридиан сейчас (${now.getHours()}:00): ${hourOrgan.organ} — ${hourOrgan.tip}\n`+
-      (tcm?.el?`Моя стихия: ${tcm.el.name}. Синдромы: ${(tcm.syndromes||[]).join(", ")||"нет"}. Слабые органы: ${(tcm.uniqueOrgans||[]).join(", ")||"—"}.\n`:"")+
-      (todayE.todayEmotion?`Сегодняшняя эмоция: ${todayE.todayEmotion}. Учитывай это при составлении плана.\n`:"")+
-      `Задачи: ${dueTasks.map(t=>(t.preferredTime?t.preferredTime+" ":"")+t.title).join(", ")||"нет"}.\n`+
-      `Питомцы: ${(profile.pets||[]).map(p=>p.name+"("+p.feedTimes+"х)").join(", ")||"нет"}.\n`+
-      `Работа до ${profile.workEnd||"18:00"}, подъём ${profile.wake||"?"}.\n\n`+
-      `Составь тёплый план дня по блокам: утро / работа / обед / после работы / вечер. `+
-      `Учитывай активные меридианы — рекомендуй еду и активности в правильное время. `+
-      `Живым языком, как близкий друг знающий ТКМ.`,
-      1200);
+      (tcmD?.el?`Моя стихия: ${tcmD.el.name}. Синдромы: ${(tcmD.syndromes||[]).join(", ")||"нет"}.\n`:"")+
+      (todayE.todayEmotion?`Эмоция: ${todayE.todayEmotion}.\n`:"")+
+      `Задачи: ${dueTasks.slice(0,5).map(t=>(t.preferredTime?t.preferredTime+" ":"")+t.title).join(", ")||"нет"}.\n`+
+      `Работа ${isWorkDay?profile.workStart+"–"+profile.workEnd:"— выходной"}. Подъём ${profile.wake||"?"}.\n\n`+
+      `Составь краткий тёплый план дня (3-4 предложения), учитывая ТКМ меридианы.`, 800);
     setAiPlan(r); setPlanLoading(false);
   };
 
-  const moods=["😔","😕","😐","🙂","😊","🤩"];
-  const petEmoji=t=>({Кошка:"🐱",Собака:"🐶",Попугай:"🦜",Кролик:"🐰",Хомяк:"🐹",Черепаха:"🐢",Рыбки:"🐠"}[t]||"🐾");
+  const getCommuteRec = async()=>{
+    setCommuteLoading(true);
+    const r = await askClaude(kb,
+      `Еду — ${profile.commuteTime} на ${profile.commuteWay||"транспорте"}. Стихия дня — ${dayInfo.element}. Дай одну рекомендацию: что послушать, о чём подумать или короткую практику. 2-3 предложения.`, 300);
+    setCommuteRec(r); setCommuteLoading(false);
+  };
+
+  // ── Планировщик: формируем события ────────────────────────
+  const plannerEvents = [];
+  plannerEvents.push({id:"wake",type:"anchor",emoji:"☀️",title:"Подъём",time:profile.wake||"07:00",timeH:wakeH,timeM:0,done:false,fixed:true});
+
+  // Кормление питомцев
+  (profile.pets||[]).forEach(pet=>{
+    const feeds=parseInt(pet.feedTimes)||2;
+    const labels=feeds<=2?["Утро","Вечер"]:feeds===3?["Утро","День","Вечер"]:["1","2","3","4"];
+    const autoTimes=feeds===1?["08:00"]:feeds===2?["08:00","19:00"]:feeds===3?["08:00","14:00","19:00"]:["07:00","11:00","15:00","19:00"];
+    for(let i=0;i<feeds;i++){
+      const t=(pet.feedSchedule||[])[i]||autoTimes[i]||"08:00";
+      const [h,m]=t.split(":").map(Number);
+      const log=petLog[today]?.[pet.id]||[];
+      plannerEvents.push({
+        id:"pet-"+pet.id+"-"+i, type:"pet", emoji:petEmoji(pet.type),
+        title:"Покормить "+pet.name+" ("+labels[i]+")",
+        time:t, timeH:h, timeM:m||0, done:log.includes(i),
+        onDone:()=>{const cur=petLog[today]?.[pet.id]||[];const n=cur.includes(i)?cur.filter(x=>x!==i):[...cur,i];setPetLog(p=>({...p,[today]:{...(p[today]||{}),[pet.id]:n}}))}
+      });
+    }
+  });
+
+  // Дорога на работу
+  if(isWorkDay && profile.commuteTime && profile.commuteTime!=="Дома") {
+    const mins=parseInt((profile.commuteTime.match(/\d+/)||["30"])[0]);
+    const commuteH=workStartH-Math.ceil(mins/60);
+    plannerEvents.push({id:"commute",type:"commute",emoji:"🚌",
+      title:"В дороге → ("+profile.commuteTime+")",
+      time:commuteH+":00",timeH:commuteH,timeM:0,done:false,fixed:true});
+  }
+
+  // Практики и спорт
+  if(isWorkDay) {
+    (profile.practices||[]).filter(pr=>pr&&pr!=="Нет").forEach((pr,i)=>{
+      const h=workEndH; const m=i*20;
+      plannerEvents.push({id:"practice-"+i,type:"health",emoji:"🧘",
+        title:pr,time:h+":"+(m<10?"0"+m:m),timeH:h,timeM:m,done:false});
+    });
+    if((profile.sport||[]).length>0 && !profile.sport.includes("Не занимаюсь")) {
+      const h=workEndH+1;
+      plannerEvents.push({id:"sport",type:"health",emoji:"🏃",
+        title:"Спорт: "+(profile.sport||[]).slice(0,2).join(", "),
+        time:h+":00",timeH:h,timeM:0,done:false});
+    }
+  } else {
+    // Выходной — утренние практики
+    (profile.practices||[]).filter(pr=>pr&&pr!=="Нет").forEach((pr,i)=>{
+      const h=wakeH+1; const m=i*20;
+      plannerEvents.push({id:"practice-w-"+i,type:"health",emoji:"🧘",
+        title:pr,time:h+":"+(m<10?"0"+m:m),timeH:h,timeM:m,done:false});
+    });
+    if((profile.sport||[]).length>0 && !profile.sport.includes("Не занимаюсь")) {
+      plannerEvents.push({id:"sport-w",type:"health",emoji:"🏃",
+        title:"Спорт: "+(profile.sport||[]).slice(0,2).join(", "),
+        time:(wakeH+3)+":00",timeH:wakeH+3,timeM:0,done:false});
+    }
+    plannerEvents.push({id:"weekend-free",type:"anchor",emoji:"🌿",
+      title:"Свободное время / отдых",time:"12:00",timeH:12,timeM:0,done:false,fixed:true});
+  }
+
+  // Задачи с временем
+  dueTasks.filter(t=>t.preferredTime).forEach(t=>{
+    const [h,m]=(t.preferredTime||"12:00").split(":").map(Number);
+    plannerEvents.push({
+      id:"task-"+t.id, type:"task",
+      emoji:t.section==="home"?"🏠":t.section==="health"?"💚":t.section==="beauty"?"✨":t.section==="hobbies"?"🎨":"📌",
+      title:t.title, time:t.preferredTime, timeH:h, timeM:m||0,
+      done:t.doneDate===today, taskId:t.id,
+      onDone:()=>setTasks(p=>p.map(x=>x.id===t.id?{...x,doneDate:x.doneDate===today?null:today,lastDone:x.doneDate===today?x.lastDone:today}:x))
+    });
+  });
+
+  // Отбой
+  plannerEvents.push({id:"sleep",type:"anchor",emoji:"🌙",title:"Отбой",time:profile.sleep||"23:00",timeH:sleepH,timeM:0,done:false,fixed:true});
+  plannerEvents.sort((a,b)=>a.timeH*60+a.timeM-(b.timeH*60+b.timeM));
+
+  const noTimeTasks = dueTasks.filter(t=>!t.preferredTime);
+  const sectionColor={home:T.gold,health:T.success,beauty:"#B882E8",pets:T.teal,hobbies:"#E8556D"};
 
   return (
     <div>
       {/* ═══ 1. ШАПКА — луна, знак зодиака, стихия ══════════════ */}
-      {(()=>{
-        const now = new Date();
-        const dayInfo = getTCMDayInfo(now);
-        const todayZodiac = getZodiac(now.toISOString().split("T")[0]);
-        const tcm = getTCMFullProfile(profile);
-        const el = tcm?.el;
-        const isWeekend = [0,6].includes(now.getDay());
-        const workDays = profile.workDaysList||[1,2,3,4,5];
-        const isWorkDay = workDays.includes(now.getDay());
-
-        return(
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
-            {/* Луна */}
-            <div title={"Фаза луны: "+moon.n+" — "+moon.t}
-              style={{display:"flex",alignItems:"center",gap:8,padding:"10px 12px",background:"rgba(45,32,16,0.05)",borderRadius:12,cursor:"help"}}>
-              <span style={{fontSize:22}}>{moon.e}</span>
-              <div><div style={{fontSize:13,fontWeight:600,color:T.text0}}>{moon.n}</div><div style={{fontSize:10,color:T.text3}}>{moon.t}</div></div>
-            </div>
-            {/* Знак зодиака сегодня */}
-            <div title={"Солнце в знаке "+todayZodiac.name}
-              style={{display:"flex",alignItems:"center",gap:8,padding:"10px 12px",background:"rgba(45,32,16,0.05)",borderRadius:12,cursor:"help"}}>
-              <span style={{fontSize:22}}>{todayZodiac.emoji}</span>
-              <div><div style={{fontSize:13,fontWeight:600,color:T.text0}}>{todayZodiac.name}</div><div style={{fontSize:10,color:T.text3}}>Знак сегодня</div></div>
-            </div>
-            {/* Стихия дня ТКМ */}
-            <div title={"Стихия "+dayInfo.element+": "+dayInfo.tip}
-              style={{display:"flex",alignItems:"center",gap:8,padding:"10px 12px",background:"rgba(45,32,16,0.05)",borderRadius:12,cursor:"help"}}>
-              <span style={{fontSize:22}}>{dayInfo.emoji}</span>
-              <div><div style={{fontSize:13,fontWeight:600,color:dayInfo.color}}>{dayInfo.element}</div><div style={{fontSize:10,color:T.text3}}>Стихия дня</div></div>
-            </div>
-            {/* Твоя стихия */}
-            {el&&<div title={"Твоя стихия по НК РК: "+el.name+(el.yin?" (Инь)":" (Ян)")+". Органы: "+el.organ}
-              style={{display:"flex",alignItems:"center",gap:8,padding:"10px 12px",background:"rgba(45,106,79,0.08)",borderRadius:12,cursor:"help"}}>
-              <span style={{fontSize:22}}>{el.emoji}</span>
-              <div><div style={{fontSize:13,fontWeight:600,color:T.gold}}>{el.name}{el.yin?" Инь":" Ян"}</div><div style={{fontSize:10,color:T.text3}}>Твоя стихия</div></div>
-            </div>}
-            {/* Тип дня */}
-            <div style={{gridColumn:"1/-1",display:"flex",alignItems:"center",gap:8,padding:"8px 12px",
-              background:isWorkDay?"rgba(29,78,107,0.08)":"rgba(45,106,79,0.1)",borderRadius:12}}>
-              <span style={{fontSize:16}}>{isWorkDay?"💼":"🌿"}</span>
-              <span style={{fontSize:13,color:T.text1,fontWeight:500}}>{isWorkDay?"Рабочий день · "+profile.workStart+"–"+profile.workEnd:(isWeekend?"Выходной день — отдых и восстановление":"Нерабочий день")}</span>
-            </div>
-          </div>
-        );
-      })()}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
+        <div title={"Луна: "+moon.n+" — "+moon.t}
+          style={{display:"flex",alignItems:"center",gap:8,padding:"10px 12px",background:"rgba(45,32,16,0.05)",borderRadius:12}}>
+          <span style={{fontSize:22}}>{moon.e}</span>
+          <div><div style={{fontSize:13,fontWeight:600,color:T.text0}}>{moon.n}</div><div style={{fontSize:10,color:T.text3}}>{moon.t}</div></div>
+        </div>
+        <div title={"Солнце в знаке "+todayZodiac.name}
+          style={{display:"flex",alignItems:"center",gap:8,padding:"10px 12px",background:"rgba(45,32,16,0.05)",borderRadius:12}}>
+          <span style={{fontSize:22}}>{todayZodiac.emoji}</span>
+          <div><div style={{fontSize:13,fontWeight:600,color:T.text0}}>{todayZodiac.name}</div><div style={{fontSize:10,color:T.text3}}>Знак сегодня</div></div>
+        </div>
+        <div title={"Стихия "+dayInfo.element+": "+dayInfo.tip}
+          style={{display:"flex",alignItems:"center",gap:8,padding:"10px 12px",background:"rgba(45,32,16,0.05)",borderRadius:12}}>
+          <span style={{fontSize:22}}>{dayInfo.emoji}</span>
+          <div><div style={{fontSize:13,fontWeight:600,color:dayInfo.color}}>{dayInfo.element}</div><div style={{fontSize:10,color:T.text3}}>Стихия дня</div></div>
+        </div>
+        {tcm?.el&&<div title={"Твоя стихия: "+tcm.el.name+(tcm.el.yin?" (Инь)":" (Ян)")+". Органы: "+tcm.el.organ}
+          style={{display:"flex",alignItems:"center",gap:8,padding:"10px 12px",background:"rgba(45,106,79,0.08)",borderRadius:12}}>
+          <span style={{fontSize:22}}>{tcm.el.emoji}</span>
+          <div><div style={{fontSize:13,fontWeight:600,color:T.gold}}>{tcm.el.name}</div><div style={{fontSize:10,color:T.text3}}>Твоя стихия</div></div>
+        </div>}
+        <div style={{gridColumn:"1/-1",display:"flex",alignItems:"center",gap:8,padding:"8px 12px",
+          background:isWorkDay?"rgba(29,78,107,0.08)":"rgba(45,106,79,0.1)",borderRadius:12}}>
+          <span style={{fontSize:16}}>{isWorkDay?"💼":"🌿"}</span>
+          <span style={{fontSize:13,color:T.text1,fontWeight:500}}>
+            {isWorkDay?"Рабочий день · "+(profile.workStart||"9:00")+"–"+(profile.workEnd||"18:00"):
+             isWeekend?"Выходной день — время для себя":"Нерабочий день"}
+          </span>
+        </div>
+      </div>
 
       {/* ═══ 2. ЛИЧНО ДЛЯ ТЕБЯ — ТКМ профиль ════════════════════ */}
-      {(()=>{
-        const tcm = getTCMFullProfile(profile);
-        if(!tcm?.el) return null;
-        const {el, syndromes, uniqueOrgans, digestionNote} = tcm;
-        if(!syndromes?.length && !uniqueOrgans?.length) return null;
-        return(
-          <div style={{padding:"10px 14px",background:"rgba(45,106,79,0.07)",borderRadius:12,marginBottom:10,borderLeft:"3px solid "+T.gold}}>
-            <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1.5,marginBottom:6}}>ЛИЧНО ДЛЯ ТЕБЯ — ТКМ ПРОФИЛЬ</div>
-            {syndromes?.length>0&&<div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:6}}>
-              {syndromes.map(s=><span key={s} className="badge bw" style={{fontSize:11}}>{s}</span>)}
-            </div>}
-            {uniqueOrgans?.length>0&&<div style={{fontSize:13,color:T.text2}}>Внимание: <span style={{color:T.warn}}>{uniqueOrgans.join(" · ")}</span></div>}
-            {digestionNote&&<div style={{fontSize:12,color:T.text3,marginTop:3,fontStyle:"italic"}}>{digestionNote}</div>}
+      {tcm?.el&&(tcm.syndromes?.length>0||tcm.uniqueOrgans?.length>0)&&(
+        <div style={{padding:"10px 14px",background:"rgba(45,106,79,0.07)",borderRadius:12,marginBottom:10,borderLeft:"3px solid "+T.gold}}>
+          <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1.5,marginBottom:6}}>ЛИЧНО ДЛЯ ТЕБЯ · ТКМ</div>
+          {tcm.syndromes?.length>0&&<div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:5}}>
+            {tcm.syndromes.map(s=><span key={s} className="badge bw" style={{fontSize:11}}>{s}</span>)}
+          </div>}
+          {tcm.uniqueOrgans?.length>0&&<div style={{fontSize:13,color:T.text2}}>
+            Внимание: <span style={{color:T.warn}}>{tcm.uniqueOrgans.join(" · ")}</span>
+          </div>}
+          {tcm.digestionNote&&<div style={{fontSize:12,color:T.text3,marginTop:3,fontStyle:"italic"}}>{tcm.digestionNote}</div>}
+        </div>
+      )}
+
+      {/* ═══ 3. ДЕНЬ ПО ТКМ ══════════════════════════════════════ */}
+      <div className="card" style={{marginBottom:10,borderLeft:"3px solid "+dayInfo.color}}>
+        <div style={{fontSize:11,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1.5,marginBottom:8}}>
+          {dayInfo.emoji} {dayInfo.name.toUpperCase()} — {dayInfo.element.toUpperCase()}
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
+          <div style={{background:"rgba(45,106,79,0.07)",borderRadius:9,padding:"8px 10px"}}>
+            <div style={{fontSize:10,color:T.success,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:5}}>СЕГОДНЯ ХОРОШО</div>
+            {dayInfo.good.map((g,i)=><div key={i} style={{fontSize:12,color:T.text1,marginBottom:2}}>✦ {g}</div>)}
           </div>
-        );
-      })()}
-
-      {/* ═══ 3. ДЕНЬ ПО ТКМ — хорошо/избегать + меридиан ══════════ */}
-      {(()=>{
-        const now = new Date();
-        const dayInfo = getTCMDayInfo(now);
-        const hourOrgan = getTCMHourOrgan(now.getHours());
-        const recs = getTCMDayRecs(profile, getTCMFullProfile(profile));
-        return(
-          <div className="card" style={{marginBottom:10,borderLeft:"3px solid "+dayInfo.color}}>
-            <div style={{fontSize:11,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1.5,marginBottom:8}}>
-              {dayInfo.emoji} {dayInfo.name.toUpperCase()} — {dayInfo.element.toUpperCase()}
-            </div>
-            {/* Хорошо / Избегать — две колонки */}
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
-              <div style={{background:"rgba(45,106,79,0.07)",borderRadius:9,padding:"8px 10px"}}>
-                <div style={{fontSize:10,color:T.success,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:5}}>СЕГОДНЯ ХОРОШО</div>
-                {dayInfo.good.map((g,i)=><div key={i} style={{fontSize:12,color:T.text1,marginBottom:2}}>✦ {g}</div>)}
-              </div>
-              <div style={{background:"rgba(139,32,32,0.05)",borderRadius:9,padding:"8px 10px"}}>
-                <div style={{fontSize:10,color:T.danger,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:5}}>ЛУЧШЕ ИЗБЕГАТЬ</div>
-                {dayInfo.avoid.map((a,i)=><div key={i} style={{fontSize:12,color:T.text2,marginBottom:2}}>✗ {a}</div>)}
-              </div>
-            </div>
-            {/* Персональные рекомендации */}
-            {recs?.length>0&&recs.map((r,i)=>(
-              <div key={i} style={{display:"flex",gap:8,padding:"6px 8px",borderRadius:8,marginBottom:4,
-                background:r.type==="warn"?"rgba(139,32,32,0.05)":"rgba(45,106,79,0.06)"}}>
-                <span style={{fontSize:14,flexShrink:0}}>{r.type==="warn"?"⚠️":"⭐"}</span>
-                <span style={{fontSize:12,color:r.type==="warn"?T.warn:T.success,lineHeight:1.4}}>{r.text}</span>
-              </div>
-            ))}
-            {/* Активный меридиан */}
-            <div style={{display:"flex",alignItems:"center",gap:10,padding:"8px 10px",background:"rgba(45,32,16,0.05)",borderRadius:9,marginTop:6}}>
-              <span style={{fontSize:18}}>{hourOrgan.emoji}</span>
-              <div style={{flex:1}}>
-                <div style={{fontSize:11,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1}}>АКТИВНЫЙ МЕРИДИАН · {now.getHours()}:00</div>
-                <div style={{fontSize:14,color:T.gold,fontWeight:500}}>{hourOrgan.organ}</div>
-                <div style={{fontSize:12,color:T.text2,lineHeight:1.4}}>{hourOrgan.tip}</div>
-              </div>
-            </div>
+          <div style={{background:"rgba(139,32,32,0.05)",borderRadius:9,padding:"8px 10px"}}>
+            <div style={{fontSize:10,color:T.danger,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:5}}>ЛУЧШЕ ИЗБЕГАТЬ</div>
+            {dayInfo.avoid.map((a,i)=><div key={i} style={{fontSize:12,color:T.text2,marginBottom:2}}>✗ {a}</div>)}
           </div>
-        );
-      })()}
-
-      {/* ═══ 4. ПЛАНИРОВЩИК ДНЯ ══════════════════════════════════ */}
-      {(()=>{
-        const now = new Date();
-        const currentH = now.getHours();
-        const currentMin = now.getMinutes();
-        const wakeStr = profile.wake||"07:00";
-        const workStartStr = profile.workStart||"09:00";
-        const workEndStr = profile.workEnd||"18:00";
-        const sleepStr = profile.sleep||"23:00";
-        const wakeH = parseInt(wakeStr);
-        const workStartH = parseInt(workStartStr);
-        const workEndH = parseInt(workEndStr);
-        const sleepH = parseInt(sleepStr);
-        const commuteH = profile.commuteTime&&profile.commuteTime!=="Дома"?
-          (profile.commuteTime.includes("60+")?"60":profile.commuteTime.match(/\d+/)?.slice(-1)[0]||"30"):0;
-        const isWorkDay = (profile.workDaysList||[1,2,3,4,5]).includes(now.getDay());
-        const isWeekend = [0,6].includes(now.getDay());
-
-        // Строим полный список событий для планировщика
-        const allEvents = [];
-
-        // Добавляем подъём
-        allEvents.push({id:"wake", type:"anchor", emoji:"☀️", title:"Подъём", time:wakeStr, timeH:wakeH, timeM:0, section:"", done:false, fixed:true});
-
-        // Добавляем кормление питомцев
-        (profile.pets||[]).forEach(pet=>{
-          const feeds = parseInt(pet.feedTimes)||2;
-          const feedTimes = pet.feedSchedule||[];
-          const labels = feeds<=2?["Утро","Вечер"]:feeds===3?["Утро","День","Вечер"]:["1","2","3","4"];
-          // Если нет расписания — авто-распределяем
-          const autoTimes = feeds===1?["08:00"]:feeds===2?["08:00","19:00"]:feeds===3?["08:00","14:00","19:00"]:["07:00","11:00","15:00","19:00"];
-          for(let i=0;i<feeds;i++){
-            const t = feedTimes[i]||autoTimes[i]||"08:00";
-            const [h,m] = t.split(":").map(Number);
-            const log = petLog[today]?.[pet.id]||[];
-            allEvents.push({
-              id:"pet-"+pet.id+"-"+i, type:"pet", emoji:"🐾",
-              title:"Покормить "+pet.name+" ("+labels[i]+")",
-              time:t, timeH:h, timeM:m||0, section:"pets",
-              done:log.includes(i),
-              onDone:()=>{const c=petLog[today]?.[pet.id]||[];const n=c.includes(i)?c.filter(x=>x!==i):[...c,i];setPetLog(p=>({...p,[today]:{...(p[today]||{}),[pet.id]:n}}))}
-            });
-          }
-        });
-
-        // Дорога на работу (если рабочий день)
-        if(isWorkDay && profile.commuteTime && profile.commuteTime!=="Дома") {
-          const commuteStart = workStartH-Math.ceil(parseInt(commuteH||30)/60);
-          allEvents.push({id:"commute-to", type:"commute", emoji:"🚌",
-            title:"В дороге → работа ("+profile.commuteTime+")", time:commuteStart+":00",
-            timeH:commuteStart, timeM:0, section:"", done:false, fixed:true});
-        }
-
-        // Задачи с временем из dueTasks (все разделы кроме work/deadlines)
-        dueTasks.filter(t=>t.preferredTime).forEach(t=>{
-          const [h,m] = t.preferredTime.split(":").map(Number);
-          allEvents.push({id:"task-"+t.id, type:"task", emoji:
-            t.section==="home"?"🏠":t.section==="health"?"💚":t.section==="beauty"?"✨":
-            t.section==="pets"?"🐾":t.section==="hobbies"?"🎨":"📌",
-            title:t.title, time:t.preferredTime, timeH:h, timeM:m||0,
-            section:t.section, done:t.doneDate===today,
-            taskId:t.id,
-            onDone:()=>setTasks(p=>p.map(x=>x.id===t.id?{...x,doneDate:x.doneDate===today?null:today,lastDone:x.doneDate===today?x.lastDone:today}:x))
-          });
-        });
-
-        // Практики, спорт, восстановление из профиля — в свободное время
-        const practiceTime = isWorkDay ? (workEndH+0)+":30" : (wakeH+1)+":00";
-        (profile.practices||[]).forEach((pr,i)=>{
-          if(["Нет"].includes(pr)) return;
-          const h = isWorkDay ? workEndH : wakeH+1;
-          allEvents.push({id:"practice-"+i, type:"health", emoji:"🧘",
-            title:pr, time:h+":"+(i*15<10?"0"+i*15:i*15>45?"30":i*15),
-            timeH:h, timeM:i*15>45?30:i*15, section:"health", done:false,
-            onDone:null});
-        });
-
-        if(profile.sport&&profile.sport.length>0&&!profile.sport.includes("Не занимаюсь")) {
-          const sportH = isWorkDay ? workEndH+1 : wakeH+2;
-          allEvents.push({id:"sport", type:"health", emoji:"🏃",
-            title:"Спорт: "+(profile.sport||[]).slice(0,2).join(", "),
-            time:sportH+":00", timeH:sportH, timeM:0, section:"health", done:false});
-        }
-
-        // Выходной день — блок планов
-        if(!isWorkDay) {
-          allEvents.push({id:"weekend-morning", type:"anchor", emoji:"🌿",
-            title:"Утреннее время для себя", time:(wakeH+1)+":00",
-            timeH:wakeH+1, timeM:0, section:"", done:false, fixed:true});
-          allEvents.push({id:"weekend-free", type:"anchor", emoji:"✨",
-            title:"Свободное время / отдых", time:"12:00",
-            timeH:12, timeM:0, section:"", done:false, fixed:true});
-        }
-
-        // Отбой
-        allEvents.push({id:"sleep", type:"anchor", emoji:"🌙", title:"Отбой", time:sleepStr, timeH:sleepH, timeM:0, section:"", done:false, fixed:true});
-
-        // Сортируем по времени
-        allEvents.sort((a,b)=>a.timeH*60+a.timeM-(b.timeH*60+b.timeM));
-
-        const [plannerOpen, setPlannerOpen] = useState(true);
-        const [editEvent, setEditEvent] = useState(null);
-        const noTimeTasks = dueTasks.filter(t=>!t.preferredTime);
-        const nowMinutes = currentH*60+currentMin;
-
-        const sectionLabel = {home:"Дом",health:"Здоровье",beauty:"Уход",pets:"Питомцы",hobbies:"Хобби","":"",tasks:"Задачи"};
-        const sectionColor = {home:T.gold,health:T.success,beauty:"#B882E8",pets:T.teal,hobbies:"#E8556D","":T.text3};
-
-        return(
-          <div className="card" style={{marginBottom:12}}>
-            <div className="card-hd" style={{cursor:"pointer"}} onClick={()=>setPlannerOpen(o=>!o)}>
-              <div style={{display:"flex",alignItems:"center",gap:8}}>
-                <span style={{fontSize:18}}>📅</span>
-                <div className="card-title">Планировщик дня</div>
-                <span className="badge bm" style={{fontSize:10}}>
-                  {allEvents.filter(e=>e.done&&!e.fixed).length}/{allEvents.filter(e=>!e.fixed).length}
-                </span>
-              </div>
-              <div style={{display:"flex",gap:6,alignItems:"center"}}>
-                <button className="btn btn-ghost btn-sm" style={{fontSize:11,padding:"2px 8px"}}
-                  onClick={e=>{e.stopPropagation();setAddModal(true);}}>+ Добавить</button>
-                <span style={{color:T.text3,fontSize:14}}>{plannerOpen?"▲":"▼"}</span>
-              </div>
-            </div>
-
-            {plannerOpen&&(
-              <div style={{marginTop:8}}>
-                {allEvents.map((ev,idx)=>{
-                  const evMinutes = ev.timeH*60+ev.timeM;
-                  const isNow = evMinutes<=nowMinutes && (idx===allEvents.length-1||nowMinutes<allEvents[idx+1].timeH*60+allEvents[idx+1].timeM);
-                  const isPast = evMinutes<nowMinutes && !isNow;
-
-                  return(
-                    <div key={ev.id} style={{
-                      display:"flex",alignItems:"flex-start",gap:8,padding:"7px 0",
-                      borderBottom:"1px solid "+T.bdrS,
-                      opacity:isPast&&ev.done?0.6:1
-                    }}>
-                      {/* Время */}
-                      <div style={{minWidth:42,textAlign:"right",paddingTop:2,flexShrink:0}}>
-                        <div style={{fontSize:12,color:isNow?T.gold:isPast?T.text3:T.text2,fontFamily:"'JetBrains Mono'",fontWeight:isNow?700:400}}>
-                          {ev.time}
-                        </div>
-                      </div>
-                      {/* Индикатор времени */}
-                      <div style={{width:2,alignSelf:"stretch",background:isNow?T.gold:isPast?T.bdrS:T.bdr,borderRadius:1,flexShrink:0,minHeight:20}}/>
-                      {/* Чекбокс */}
-                      {!ev.fixed&&(
-                        <div onClick={ev.onDone||(()=>{})}
-                          style={{width:18,height:18,borderRadius:5,border:"1.5px solid "+(ev.done?T.success:T.bdr),
-                            background:ev.done?"rgba(45,106,79,0.2)":"transparent",display:"flex",alignItems:"center",
-                            justifyContent:"center",cursor:"pointer",flexShrink:0,marginTop:2,fontSize:11,color:T.success}}>
-                          {ev.done?"✓":""}
-                        </div>
-                      )}
-                      {ev.fixed&&<div style={{width:18,flexShrink:0}}/>}
-                      {/* Иконка + контент */}
-                      <div style={{flex:1,minWidth:0}}>
-                        <div style={{display:"flex",alignItems:"center",gap:6}}>
-                          <span style={{fontSize:14}}>{ev.emoji}</span>
-                          <span style={{fontSize:14,color:ev.done?T.text3:ev.type==="anchor"?T.text0:T.text1,
-                            textDecoration:ev.done?"line-through":"none",fontWeight:ev.type==="anchor"?600:400,
-                            lineHeight:1.3}}>
-                            {ev.title}
-                          </span>
-                          {isNow&&<span style={{fontSize:9,color:T.gold,fontFamily:"'JetBrains Mono'",background:"rgba(45,106,79,0.15)",padding:"1px 5px",borderRadius:3}}>СЕЙЧАС</span>}
-                        </div>
-                        {ev.section&&sectionLabel[ev.section]&&(
-                          <span style={{fontSize:10,color:sectionColor[ev.section]||T.text3,fontFamily:"'JetBrains Mono'"}}>{sectionLabel[ev.section]}</span>
-                        )}
-                      </div>
-                      {/* Действия */}
-                      {!ev.fixed&&(
-                        <div style={{display:"flex",gap:4,flexShrink:0}}>
-                          {ev.taskId&&<div className="ico-btn" style={{color:T.teal,opacity:.6,fontSize:13}} onClick={()=>setModal(tasks.find(t=>t.id===ev.taskId)||{})}>✏️</div>}
-                          {ev.taskId&&<div className="ico-btn danger" style={{fontSize:13}} onClick={()=>{
-                            // Перенести — устанавливаем следующий день
-                            setTasks(p=>p.map(t=>t.id===ev.taskId?{...t,doneDate:today,notes:(t.notes||"")+" [перенесено]"}:t));
-                            notify("Перенесено ✦");
-                          }}>↻</div>}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-
-                {/* Задачи без времени */}
-                {noTimeTasks.length>0&&(
-                  <div style={{marginTop:8,padding:"8px 10px",background:"rgba(45,32,16,0.04)",borderRadius:9}}>
-                    <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:6}}>
-                      БЕЗ ВРЕМЕНИ — {noTimeTasks.length} {noTimeTasks.length===1?"дело":"дел"}
-                    </div>
-                    {noTimeTasks.map(t=>(
-                      <div key={t.id} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",borderBottom:"1px solid "+T.bdrS}}>
-                        <div onClick={()=>setTasks(p=>p.map(x=>x.id===t.id?{...x,doneDate:x.doneDate===today?null:today,lastDone:x.doneDate===today?x.lastDone:today}:x))}
-                          style={{width:18,height:18,borderRadius:5,border:"1.5px solid "+(t.doneDate===today?T.success:T.bdr),
-                            background:t.doneDate===today?"rgba(45,106,79,0.2)":"transparent",display:"flex",alignItems:"center",
-                            justifyContent:"center",cursor:"pointer",flexShrink:0,fontSize:11,color:T.success}}>
-                          {t.doneDate===today?"✓":""}
-                        </div>
-                        <span style={{flex:1,fontSize:14,color:t.doneDate===today?T.text3:T.text1,textDecoration:t.doneDate===today?"line-through":"none"}}>{t.title}</span>
-                        <input type="time" value={t.preferredTime||""} onChange={e=>setTasks(p=>p.map(x=>x.id===t.id?{...x,preferredTime:e.target.value}:x))}
-                          style={{width:52,fontSize:11,fontFamily:"'JetBrains Mono'",color:T.gold,background:"transparent",border:"none",outline:"none"}}/>
-                        <div className="ico-btn danger" style={{fontSize:13}} onClick={()=>setTasks(p=>p.filter(x=>x.id!==t.id))}>✕</div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
+        </div>
+        {recs?.length>0&&recs.map((r,i)=>(
+          <div key={i} style={{display:"flex",gap:8,padding:"5px 8px",borderRadius:8,marginBottom:3,
+            background:r.type==="warn"?"rgba(139,32,32,0.05)":"rgba(45,106,79,0.06)"}}>
+            <span style={{fontSize:13,flexShrink:0}}>{r.type==="warn"?"⚠️":"⭐"}</span>
+            <span style={{fontSize:12,color:r.type==="warn"?T.warn:T.success,lineHeight:1.4}}>{r.text}</span>
           </div>
-        );
-      })()}
+        ))}
+        <div style={{display:"flex",alignItems:"center",gap:10,padding:"8px 10px",background:"rgba(45,32,16,0.05)",borderRadius:9,marginTop:6}}>
+          <span style={{fontSize:18}}>{hourOrgan.emoji}</span>
+          <div style={{flex:1}}>
+            <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1}}>МЕРИДИАН · {currentH}:00</div>
+            <div style={{fontSize:14,color:T.gold,fontWeight:500}}>{hourOrgan.organ}</div>
+            <div style={{fontSize:12,color:T.text2,lineHeight:1.4}}>{hourOrgan.tip}</div>
+          </div>
+        </div>
+      </div>
 
-      {/* ═══ 5. ЭМОЦИИ И НАСТРОЕНИЕ ══════════════════════════════ */}
-      {(()=>{
-        const [moodOpen, setMoodOpen] = useState(false);
-        return(
-          <div className="card" style={{marginBottom:12}}>
-            <div className="card-hd" style={{cursor:"pointer"}} onClick={()=>setMoodOpen(o=>!o)}>
-              <div className="card-title">Как ты сейчас?</div>
-              <div style={{display:"flex",alignItems:"center",gap:8}}>
-                {todayE.mood&&<span style={{fontSize:16}}>{todayE.mood}</span>}
-                {todayE.energy&&<span style={{fontSize:12,color:T.gold,fontFamily:"'JetBrains Mono'"}}>{todayE.energy}/5</span>}
-                <span style={{color:T.text3,fontSize:14}}>{moodOpen?"▲":"▼"}</span>
-              </div>
-            </div>
-            {moodOpen&&<>
-            <div className="sec-lbl">Настроение</div>
-            <div className="mood-pick" style={{marginBottom:14}}>
-              {["😔","😕","😐","🙂","😊","🤩"].map(m=><span key={m} className={"mood-btn"+(todayE.mood===m?" on":"")} onClick={()=>saveJ({mood:m})}>{m}</span>)}
-            </div>
-            <div className="sec-lbl">Энергия</div>
-            <div style={{display:"flex",gap:8,marginBottom:14}}>
-              {[1,2,3,4,5].map(n=><div key={n} className={"en-dot"+((todayE.energy||0)>=n?" on":"")} onClick={()=>saveJ({energy:n})}>{n}</div>)}
-            </div>
-            <div className="sec-lbl">Преобладающая эмоция</div>
-            <div style={{display:"flex",gap:7,flexWrap:"wrap",marginBottom:14}}>
-              {[
-                {emoji:"😤",label:"Раздражение",organ:"Печень",element:"Дерево"},
-                {emoji:"😰",label:"Тревога",organ:"Сердце",element:"Огонь"},
-                {emoji:"😟",label:"Беспокойство",organ:"Селезёнка",element:"Земля"},
-                {emoji:"😢",label:"Грусть",organ:"Лёгкие",element:"Металл"},
-                {emoji:"😨",label:"Страх",organ:"Почки",element:"Вода"},
-                {emoji:"😊",label:"Радость",organ:"Сердце",element:"Огонь"},
-                {emoji:"🌿",label:"Спокойствие",organ:"Все",element:"Баланс"},
-              ].map(e=>(
-                <div key={e.label} onClick={()=>saveJ({todayEmotion:todayE.todayEmotion===e.label?null:e.label})}
-                  style={{display:"flex",flexDirection:"column",alignItems:"center",gap:3,padding:"7px 10px",
-                    borderRadius:12,border:"1px solid "+(todayE.todayEmotion===e.label?T.gold:T.bdr),
-                    background:todayE.todayEmotion===e.label?"rgba(45,106,79,0.12)":"transparent",cursor:"pointer"}}>
-                  <span style={{fontSize:22}}>{e.emoji}</span>
-                  <span style={{fontSize:11,color:todayE.todayEmotion===e.label?T.gold:T.text2,textAlign:"center"}}>{e.label}</span>
-                </div>
-              ))}
-            </div>
-            {todayE.todayEmotion&&(()=>{
-              const balanceMap = {
-                "Раздражение":{organ:"Печень",balance:["Прогулка 20 мин","Кислые продукты","Дыхание 4-6с","Завершить 1 дело"]},
-                "Тревога":{organ:"Сердце",balance:["Медитация 10 мин","Горький шоколад","Убрать телефон 30 мин","Записать 3 вещи под контролем"]},
-                "Беспокойство":{organ:"Желудок",balance:["Тёплый чай","Потрогай что-то настоящее","Список 3 шагов на сегодня","Пой или слушай музыку"]},
-                "Грусть":{organ:"Лёгкие",balance:["Дыхание животом 5 мин","Прогулка на воздухе","Белые продукты","Выбрось что-то ненужное"]},
-                "Страх":{organ:"Почки",balance:["Тепло на поясницу","Тёплый бульон","Создай безопасное пространство","Запиши страх и его вероятность"]},
-                "Радость":{organ:"Сердце",balance:["Поделись с близким","Направь энергию в важное","Прогулка без цели","Не принимай решений на эйфории"]},
-                "Спокойствие":{organ:"Все",balance:["Сохрани состояние","Сделай что-то для других","Медитируй","Приступи к важной цели"]},
-              };
-              const info = balanceMap[todayE.todayEmotion];
-              if(!info) return null;
+      {/* ═══ 4. ПЛАНИРОВЩИК ══════════════════════════════════════ */}
+      <div className="card" style={{marginBottom:12}}>
+        <div className="card-hd" style={{cursor:"pointer"}} onClick={()=>setPlannerOpen(o=>!o)}>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <span style={{fontSize:16}}>📅</span>
+            <div className="card-title">Планировщик дня</div>
+            <span className="badge bm" style={{fontSize:10}}>
+              {plannerEvents.filter(e=>e.done&&!e.fixed).length}/{plannerEvents.filter(e=>!e.fixed).length}
+            </span>
+          </div>
+          <div style={{display:"flex",gap:6,alignItems:"center"}}>
+            <button className="btn btn-ghost btn-sm" style={{fontSize:11,padding:"2px 8px"}}
+              onClick={e=>{e.stopPropagation();setAddModal(true);}}>+</button>
+            <span style={{color:T.text3,fontSize:14}}>{plannerOpen?"▲":"▼"}</span>
+          </div>
+        </div>
+        {plannerOpen&&(
+          <div style={{marginTop:8}}>
+            {plannerEvents.map((ev,idx)=>{
+              const evMin=ev.timeH*60+ev.timeM;
+              const nextMin=idx<plannerEvents.length-1?plannerEvents[idx+1].timeH*60+plannerEvents[idx+1].timeM:sleepH*60+59;
+              const isNow=evMin<=nowMinutes&&nowMinutes<nextMin;
+              const isPast=evMin<nowMinutes&&!isNow;
               return(
-                <div style={{padding:"10px 12px",background:"rgba(45,106,79,0.06)",borderRadius:10,marginBottom:8}}>
-                  <div style={{fontSize:12,color:T.text2,marginBottom:6}}>→ Орган: <span style={{color:T.gold}}>{info.organ}</span> · Как вернуть баланс:</div>
-                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>
-                    {info.balance.map((b,i)=><div key={i} style={{fontSize:12,color:T.text1,padding:"5px 8px",background:"rgba(45,32,16,0.04)",borderRadius:7}}>✦ {b}</div>)}
+                <div key={ev.id} style={{display:"flex",alignItems:"flex-start",gap:8,padding:"6px 0",
+                  borderBottom:"1px solid "+T.bdrS,opacity:isPast&&ev.done?0.6:1}}>
+                  <div style={{minWidth:44,textAlign:"right",paddingTop:2,flexShrink:0}}>
+                    <span style={{fontSize:12,color:isNow?T.gold:isPast?T.text3:T.text2,
+                      fontFamily:"'JetBrains Mono'",fontWeight:isNow?700:400}}>{ev.time}</span>
                   </div>
+                  <div style={{width:2,alignSelf:"stretch",minHeight:18,
+                    background:isNow?T.gold:isPast?T.bdrS:T.bdr,borderRadius:1,flexShrink:0}}/>
+                  {!ev.fixed?(
+                    <div onClick={ev.onDone||(()=>{})} style={{
+                      width:18,height:18,borderRadius:4,flexShrink:0,marginTop:1,cursor:"pointer",
+                      border:"1.5px solid "+(ev.done?T.success:T.bdr),
+                      background:ev.done?"rgba(45,106,79,0.2)":"transparent",
+                      display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,color:T.success}}>
+                      {ev.done?"✓":""}
+                    </div>
+                  ):<div style={{width:18,flexShrink:0}}/>}
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{display:"flex",alignItems:"center",gap:5,flexWrap:"wrap"}}>
+                      <span style={{fontSize:14}}>{ev.emoji}</span>
+                      <span style={{fontSize:14,color:ev.done?T.text3:ev.type==="anchor"?T.text0:T.text1,
+                        textDecoration:ev.done?"line-through":"none",fontWeight:ev.type==="anchor"?600:400,
+                        lineHeight:1.3,flex:1}}>{ev.title}</span>
+                      {isNow&&<span style={{fontSize:9,color:T.gold,fontFamily:"'JetBrains Mono'",
+                        background:"rgba(45,106,79,0.15)",padding:"1px 5px",borderRadius:3,flexShrink:0}}>СЕЙЧАС</span>}
+                    </div>
+                    {ev.type&&ev.type!=="anchor"&&ev.type!=="commute"&&sectionColor[ev.section]&&(
+                      <span style={{fontSize:10,color:sectionColor[ev.section]||T.text3,fontFamily:"'JetBrains Mono'"}}>{ev.section}</span>
+                    )}
+                  </div>
+                  {!ev.fixed&&ev.taskId&&(
+                    <div style={{display:"flex",gap:3,flexShrink:0}}>
+                      <div className="ico-btn" style={{color:T.teal,opacity:.6,fontSize:12}}
+                        onClick={()=>setModal(tasks.find(t=>t.id===ev.taskId)||{})}>✏️</div>
+                      <div className="ico-btn danger" style={{fontSize:12}}
+                        onClick={()=>{setTasks(p=>p.map(t=>t.id===ev.taskId?{...t,doneDate:today}:t));notify("Перенесено ✦");}}>↻</div>
+                    </div>
+                  )}
                 </div>
               );
-            })()}
-            <div className="fld" style={{marginBottom:0}}>
-              <label>Главная мысль дня</label>
-              <textarea style={{minHeight:48}} placeholder="Что важно сегодня для тебя?" value={todayE.thought||""} onChange={e=>saveJ({thought:e.target.value})}/>
-            </div>
-            </>}
-          </div>
-        );
-      })()}
-
-      {/* ═══ В дороге (компактно) ════════════════════════════════ */}
-      {profile.commuteTime&&profile.commuteTime!=="Дома"&&(()=>{
-        const [commuteOpen,setCommuteOpen]=useState(false);
-        const [commuteRec,setCommuteRec]=useState("");
-        const [commuteLoading,setCommuteLoading]=useState(false);
-        const dayInfo=getTCMDayInfo(new Date());
-        const getCommuteRec=async()=>{
-          setCommuteLoading(true);
-          const r=await askClaude(kb,`Я еду — ${profile.commuteTime} на ${profile.commuteWay||"транспорте"}. Стихия дня — ${dayInfo.element}. Дай одну рекомендацию: что послушать, о чём подумать или короткую практику. 2-3 предложения.`,300);
-          setCommuteRec(r);setCommuteLoading(false);
-        };
-        return(
-          <div className="card" style={{marginBottom:12,borderLeft:"3px solid "+T.teal}}>
-            <div className="card-hd" style={{cursor:"pointer"}} onClick={()=>setCommuteOpen(o=>!o)}>
-              <div style={{display:"flex",alignItems:"center",gap:8}}>
-                <span>🚌</span>
-                <span style={{fontSize:14,fontWeight:500,color:T.text0}}>В дороге</span>
-                <span style={{fontSize:11,color:T.text3}}>{profile.commuteTime} · {profile.commuteWay||""}</span>
-              </div>
-              <span style={{color:T.text3,fontSize:14}}>{commuteOpen?"▲":"▼"}</span>
-            </div>
-            {commuteOpen&&(
-              <div style={{marginTop:10}}>
-                {!commuteRec&&!commuteLoading&&<button className="btn btn-primary btn-sm" onClick={getCommuteRec}>✦ Рекомендация</button>}
-                {commuteLoading&&<div style={{fontSize:13,color:T.text3,fontStyle:"italic"}}>Подбираю...</div>}
-                {commuteRec&&<><div style={{fontSize:14,color:T.text1,lineHeight:1.6,fontStyle:"italic"}}>{commuteRec}</div>
-                <button className="btn btn-ghost btn-sm" style={{marginTop:8}} onClick={()=>{setCommuteRec("");getCommuteRec();}}>↻ Другую</button></>}
+            })}
+            {noTimeTasks.length>0&&(
+              <div style={{marginTop:8,padding:"8px 10px",background:"rgba(45,32,16,0.04)",borderRadius:9}}>
+                <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:6}}>
+                  БЕЗ ВРЕМЕНИ — {noTimeTasks.length} дел
+                </div>
+                {noTimeTasks.map(t=>(
+                  <div key={t.id} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",borderBottom:"1px solid "+T.bdrS}}>
+                    <div onClick={()=>setTasks(p=>p.map(x=>x.id===t.id?{...x,doneDate:x.doneDate===today?null:today,lastDone:x.doneDate===today?x.lastDone:today}:x))}
+                      style={{width:18,height:18,borderRadius:4,border:"1.5px solid "+(t.doneDate===today?T.success:T.bdr),
+                        background:t.doneDate===today?"rgba(45,106,79,0.2)":"transparent",
+                        display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontSize:11,color:T.success}}>
+                      {t.doneDate===today?"✓":""}
+                    </div>
+                    <span style={{flex:1,fontSize:14,color:t.doneDate===today?T.text3:T.text1,
+                      textDecoration:t.doneDate===today?"line-through":"none"}}>{t.title}</span>
+                    <input type="time" value={t.preferredTime||""}
+                      onChange={e=>setTasks(p=>p.map(x=>x.id===t.id?{...x,preferredTime:e.target.value}:x))}
+                      style={{width:52,fontSize:11,fontFamily:"'JetBrains Mono'",color:T.gold,
+                        background:"transparent",border:"none",outline:"none"}}/>
+                    <div className="ico-btn danger" style={{fontSize:12}}
+                      onClick={()=>setTasks(p=>p.filter(x=>x.id!==t.id))}>✕</div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
-        );
-      })()}
+        )}
+      </div>
+
+      {/* ═══ 5. ЭМОЦИИ ═══════════════════════════════════════════ */}
+      <div className="card" style={{marginBottom:12}}>
+        <div className="card-hd" style={{cursor:"pointer"}} onClick={()=>setMoodOpen(o=>!o)}>
+          <div className="card-title">Как ты сейчас?</div>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            {todayE.mood&&<span style={{fontSize:16}}>{todayE.mood}</span>}
+            {todayE.energy&&<span style={{fontSize:12,color:T.gold,fontFamily:"'JetBrains Mono'"}}>{todayE.energy}/5</span>}
+            <span style={{color:T.text3,fontSize:14}}>{moodOpen?"▲":"▼"}</span>
+          </div>
+        </div>
+        {moodOpen&&<>
+          <div className="sec-lbl">Настроение</div>
+          <div className="mood-pick" style={{marginBottom:14}}>
+            {["😔","😕","😐","🙂","😊","🤩"].map(m=><span key={m} className={"mood-btn"+(todayE.mood===m?" on":"")} onClick={()=>saveJ({mood:m})}>{m}</span>)}
+          </div>
+          <div className="sec-lbl">Энергия</div>
+          <div style={{display:"flex",gap:8,marginBottom:14}}>
+            {[1,2,3,4,5].map(n=><div key={n} className={"en-dot"+((todayE.energy||0)>=n?" on":"")} onClick={()=>saveJ({energy:n})}>{n}</div>)}
+          </div>
+          <div className="sec-lbl">Преобладающая эмоция</div>
+          <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}>
+            {[
+              {emoji:"😤",label:"Раздражение",organ:"Печень",balance:["Прогулка 20 мин","Кислые продукты","Дыхание 4-6с","Завершить 1 дело"]},
+              {emoji:"😰",label:"Тревога",organ:"Сердце",balance:["Медитация 10 мин","Горький шоколад","Убрать телефон","Запиши 3 вещи под контролем"]},
+              {emoji:"😟",label:"Беспокойство",organ:"Желудок",balance:["Тёплый чай","Потрогай реальный предмет","Список 3 шагов","Музыка"]},
+              {emoji:"😢",label:"Грусть",organ:"Лёгкие",balance:["Дыхание 5 мин","Прогулка","Белые продукты","Выброси ненужное"]},
+              {emoji:"😨",label:"Страх",organ:"Почки",balance:["Тепло на поясницу","Тёплый бульон","Безопасное место","Запиши страх"]},
+              {emoji:"😊",label:"Радость",organ:"Сердце",balance:["Поделись с близким","Важное дело","Прогулка","Не спеши с решениями"]},
+              {emoji:"🌿",label:"Спокойствие",organ:"Все",balance:["Сохрани состояние","Помоги другому","Медитируй","Важная цель"]},
+            ].map(e=>(
+              <div key={e.label} onClick={()=>saveJ({todayEmotion:todayE.todayEmotion===e.label?null:e.label})}
+                style={{display:"flex",flexDirection:"column",alignItems:"center",gap:3,padding:"7px 10px",
+                  borderRadius:12,border:"1px solid "+(todayE.todayEmotion===e.label?T.gold:T.bdr),
+                  background:todayE.todayEmotion===e.label?"rgba(45,106,79,0.12)":"transparent",cursor:"pointer",minWidth:68}}>
+                <span style={{fontSize:22}}>{e.emoji}</span>
+                <span style={{fontSize:11,color:todayE.todayEmotion===e.label?T.gold:T.text2,textAlign:"center"}}>{e.label}</span>
+              </div>
+            ))}
+          </div>
+          {todayE.todayEmotion&&(()=>{
+            const eData={
+              "Раздражение":{organ:"Печень",balance:["Прогулка 20 мин","Кислые продукты","Дыхание 4-6с","Завершить 1 дело"]},
+              "Тревога":{organ:"Сердце",balance:["Медитация 10 мин","Горький шоколад","Убрать телефон","Запиши 3 вещи под контролем"]},
+              "Беспокойство":{organ:"Желудок",balance:["Тёплый чай","Потрогай реальный предмет","Список 3 шагов","Музыка"]},
+              "Грусть":{organ:"Лёгкие",balance:["Дыхание 5 мин","Прогулка","Белые продукты","Выброси ненужное"]},
+              "Страх":{organ:"Почки",balance:["Тепло на поясницу","Тёплый бульон","Безопасное место","Запиши страх"]},
+              "Радость":{organ:"Сердце",balance:["Поделись с близким","Важное дело","Прогулка","Не спеши с решениями"]},
+              "Спокойствие":{organ:"Все",balance:["Сохрани состояние","Помоги другому","Медитируй","Важная цель"]},
+            }[todayE.todayEmotion];
+            if(!eData) return null;
+            return(
+              <div style={{padding:"10px 12px",background:"rgba(45,106,79,0.06)",borderRadius:10,marginBottom:10}}>
+                <div style={{fontSize:12,color:T.text2,marginBottom:6}}>
+                  Орган: <span style={{color:T.gold}}>{eData.organ}</span> · Как вернуть баланс:
+                </div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>
+                  {eData.balance.map((b,i)=><div key={i} style={{fontSize:12,color:T.text1,padding:"5px 8px",background:"rgba(45,32,16,0.04)",borderRadius:7}}>✦ {b}</div>)}
+                </div>
+              </div>
+            );
+          })()}
+          <div className="fld" style={{marginBottom:0}}>
+            <label>Главная мысль дня</label>
+            <textarea style={{minHeight:48}} placeholder="Что важно сегодня для тебя?" value={todayE.thought||""} onChange={e=>saveJ({thought:e.target.value})}/>
+          </div>
+        </>}
+      </div>
+
+      {/* ═══ В дороге (компактно) ════════════════════════════════ */}
+      {profile.commuteTime&&profile.commuteTime!=="Дома"&&(
+        <div className="card" style={{marginBottom:12,borderLeft:"3px solid "+T.teal}}>
+          <div className="card-hd" style={{cursor:"pointer"}} onClick={()=>setCommuteOpen(o=>!o)}>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <span>🚌</span>
+              <span style={{fontSize:14,fontWeight:500}}>В дороге</span>
+              <span style={{fontSize:11,color:T.text3}}>{profile.commuteTime}</span>
+            </div>
+            <span style={{color:T.text3,fontSize:14}}>{commuteOpen?"▲":"▼"}</span>
+          </div>
+          {commuteOpen&&(
+            <div style={{marginTop:10}}>
+              {!commuteRec&&!commuteLoading&&<button className="btn btn-primary btn-sm" onClick={getCommuteRec}>✦ Рекомендация на дорогу</button>}
+              {commuteLoading&&<div style={{fontSize:13,color:T.text3,fontStyle:"italic"}}>Подбираю...</div>}
+              {commuteRec&&<>
+                <div style={{fontSize:14,color:T.text1,lineHeight:1.6,fontStyle:"italic"}}>{commuteRec}</div>
+                <button className="btn btn-ghost btn-sm" style={{marginTop:8}} onClick={()=>{setCommuteRec("");getCommuteRec();}}>↻</button>
+              </>}
+            </div>
+          )}
+        </div>
+      )}
 
       {addModal&&<TaskModal defaultSection="today" onSave={t=>{setTasks(p=>[...p,t]);notify("Задача добавлена");}} onClose={()=>setAddModal(false)}/>}
       {modal!==null&&<TaskModal task={modal?.id?modal:null} defaultSection={modal?.section||"tasks"} onSave={t=>{setTasks(p=>modal?.id?p.map(x=>x.id===t.id?t:x):[...p,t]);setModal(null);notify("Сохранено");}} onClose={()=>setModal(null)}/>}
     </div>
   );
 }
+
 
 // ══════════════════════════════════════════════════════════════
 //  TASKS
