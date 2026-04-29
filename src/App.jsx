@@ -18,25 +18,10 @@ async function requestNotificationPermission() {
 }
 
 function scheduleDeadlineNotifications(tasks) {
-  if(!("Notification" in window) || Notification.permission !== "granted") return;
-  const today = new Date();
-  today.setHours(0,0,0,0);
-  tasks.filter(t=>t.isDeadline && t.deadline && !t.doneDate).forEach(t=>{
-    const dl = new Date(t.deadline);
-    dl.setHours(0,0,0,0);
-    const daysLeft = Math.round((dl-today)/86400000);
-    const title = t.title.replace(/^[📋🏛🏦📊🔍💰🔒]+\s*/,"");
-    // Уведомление за 3 дня
-    if(daysLeft === 3) {
-      new Notification("⚠️ Дедлайн через 3 дня", {body: title+"\n"+dl.toLocaleDateString("ru-RU"), icon:"/icon-192.png", tag:"dl-3-"+t.id});
-    }
-    // Уведомление за 1 день
-    if(daysLeft === 1) {
-      new Notification("🔴 Завтра дедлайн!", {body: title+"\n"+dl.toLocaleDateString("ru-RU"), icon:"/icon-192.png", tag:"dl-1-"+t.id});
-    }
-    // Уведомление в день дедлайна (показываем сразу при открытии приложения)
-    if(daysLeft === 0) {
-      new Notification("🔴 Сегодня дедлайн!", {body: title, icon:"/icon-192.png", tag:"dl-0-"+t.id});
+  if(!("serviceWorker" in navigator)) return;
+  navigator.serviceWorker.ready.then(reg => {
+    if(reg.active) {
+      reg.active.postMessage({ type: "CHECK_DEADLINES", tasks });
     }
   });
 }
@@ -1110,7 +1095,7 @@ const OB_STEPS = [
   {id:"pets",     title:"Питомцы",                       sub:"Добавь всех — кормление, ветеринарные дела войдут в расписание автоматически."},
   {id:"health",   title:"Здоровье",                      sub:"Чтобы расписание строилось с заботой о тебе, а не вопреки."},
   {id:"tcm",      title:"ТКМ-диагностика",               sub:"5 вопросов для точного профиля по традиционной китайской медицине. Это позволит составить меню и рекомендации, идеально подходящие именно твоему телу."},
-  {id:"beauty",   title:"Уход за собой",                 sub:"Маски, ногти, стрижки — поставим в расписание раз и забудем."},
+  {id:"beauty",   title:"Уход за собой",                 sub:"Уход за кожей, волосами, здоровые привычки — поставим в расписание."},
   {id:"shopping", title:"Продукты и покупки",            sub:"Когда и как закупаешься — напомним вовремя."},
   {id:"hobbies",  title:"Хобби и увлечения",             sub:"Твои увлечения заслуживают места в жизни — не только дела."},
   {id:"travel",   title:"Путешествия",                   sub:"Куда хочешь поехать? Поможем спланировать мягко, шаг за шагом."},
@@ -1274,7 +1259,7 @@ function Onboarding({ onDone }) {
           <div className="fld"><label>Что на работе выматывает?</label>
             <div className="chips">{["Много встреч","Однообразие","Дедлайны","Конфликты","Переработки","Скучные задачи","Неопределённость"].map(v=><div key={v} className={`chip ${(d.workDrain||[]).includes(v)?"on":""}`} onClick={()=>tog("workDrain",v)}>{v}</div>)}</div>
           </div>
-          <div className="fld"><label>Что вдохновляет?</label><input placeholder="Результат, команда, творчество, деньги..." value={d.workInspire||""} onChange={e=>set("workInspire",e.target.value)}/></div>
+          <div className="fld"><label>Что вдохновляет в работе?</label><input placeholder="Результат, команда, творчество, признание, деньги, свобода..." value={d.workInspire||""} onChange={e=>set("workInspire",e.target.value)}/></div>
           <div className="fld"><label>Рабочая цель</label>
             <div className="chips">{["Карьерный рост","Повышение дохода","Сменить профессию","Своё дело","Работать меньше","Прокачать навыки","Стабильность"].map(v=><div key={v} className={"chip "+(d.careerGoal===v?"on":"")} onClick={()=>set("careerGoal",v)}>{v}</div>)}</div>
           </div>
@@ -1515,6 +1500,12 @@ function Onboarding({ onDone }) {
         </>}
 
         {s.id==="beauty" && <>
+          {d.gender==="Мужской"&&(
+            <div className="fld">
+              <label>Борода / усы</label>
+              <div className="chips">{["Нет","Щетина","Короткая борода","Длинная борода","Усы"].map(v=><div key={v} className={"chip "+(d.beard===v?"on":"")} onClick={()=>set("beard",v)}>{v}</div>)}</div>
+            </div>
+          )}
           <div className="fld-row">
             <div className="fld"><label>Тип кожи</label>
               <div className="chips">{["Нормальная","Сухая","Жирная","Комбинированная","Чувствительная"].map(v=><div key={v} className={`chip ${d.skinType===v?"on":""}`} onClick={()=>set("skinType",v)}>{v}</div>)}</div>
@@ -2392,9 +2383,64 @@ function TodaySection({profile,tasks,setTasks,journal,setJournal,today,moon,kb,n
         <div className="stat"><div className="stat-n">{getZodiac(profile.dob).emoji}</div><div className="stat-l">{getZodiac(profile.dob).name}</div></div>
       </div>
 
-      {/* Mood & Energy — расширенный с ТКМ-балансом */}
+      {/* ── В дороге ── */}
+      {profile.commuteTime && profile.commuteTime !== "Дома" && (()=>{
+        const [commuteOpen, setCommuteOpen] = useState(false);
+        const [commuteRec, setCommuteRec] = useState("");
+        const [commuteLoading, setCommuteLoading] = useState(false);
+        const dayInfo2 = getTCMDayInfo(new Date());
+        const getCommuteRec = async() => {
+          setCommuteLoading(true);
+          const r = await askClaude(kb,
+            `Я еду на работу — ${profile.commuteTime} на ${profile.commuteWay||"транспорте"}.\nСегодня ${new Date().toLocaleDateString("ru-RU",{weekday:"long"})}, стихия дня — ${dayInfo2.element}.\nЗадачи дня: ${dueTasks.slice(0,3).map(t=>t.title).join(", ")||"нет"}.\n\nДай одну конкретную рекомендацию на время в дороге — выбери наиболее подходящее:\n— Что послушать (подкаст, музыка, аудиокнига под настроение дня и стихию)\n— О чём поразмышлять (одна мысль, связанная с целями или стихией дня)\n— Дыхательная практика 5-7 мин (если едет не за рулём)\n— Мини-медитация или аффирмация дня\n\nОтветь кратко — 3-4 предложения. Тепло и конкретно.`, 400);
+          setCommuteRec(r); setCommuteLoading(false);
+        };
+        return(
+          <div className="card" style={{marginBottom:14,borderLeft:"3px solid "+T.teal}}>
+            <div className="card-hd" style={{cursor:"pointer"}} onClick={()=>setCommuteOpen(o=>!o)}>
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                <span style={{fontSize:18}}>🚌</span>
+                <div>
+                  <div style={{fontSize:15,color:T.text0,fontWeight:500}}>В дороге</div>
+                  <div style={{fontSize:12,color:T.text3}}>{profile.commuteTime} · {profile.commuteWay||""}</div>
+                </div>
+              </div>
+              <span style={{color:T.text3,fontSize:14}}>{commuteOpen?"▲":"▼"}</span>
+            </div>
+            {commuteOpen&&(
+              <div style={{marginTop:12}}>
+                {!commuteRec&&!commuteLoading&&(
+                  <button className="btn btn-primary btn-sm" onClick={getCommuteRec}>
+                    ✦ Что послушать / о чём подумать сегодня
+                  </button>
+                )}
+                {commuteLoading&&<div style={{fontSize:14,color:T.text3,fontStyle:"italic",padding:"8px 0"}}>Подбираю рекомендацию...</div>}
+                {commuteRec&&(
+                  <div>
+                    <div style={{fontSize:15,color:T.text1,lineHeight:1.65,fontStyle:"italic"}}>{commuteRec}</div>
+                    <button className="btn btn-ghost btn-sm" style={{marginTop:10}} onClick={()=>{setCommuteRec("");getCommuteRec();}}>↻ Другую</button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
+      {/* Mood & Energy — collapsible */}
+      {(()=>{
+        const [moodOpen, setMoodOpen] = useState(false);
+        return(
       <div className="card">
-        <div className="card-hd"><div className="card-title">Как ты сейчас?</div></div>
+        <div className="card-hd" style={{cursor:"pointer"}} onClick={()=>setMoodOpen(o=>!o)}>
+          <div className="card-title">Как ты сейчас?</div>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            {todayE.mood&&<span style={{fontSize:16}}>{todayE.mood}</span>}
+            {todayE.energy&&<span style={{fontSize:12,color:T.gold,fontFamily:"'JetBrains Mono'"}}>{todayE.energy}/5</span>}
+            <span style={{color:T.text3,fontSize:14}}>{moodOpen?"▲":"▼"}</span>
+          </div>
+        </div>
+        {moodOpen&&<>
         <div className="sec-lbl">Настроение</div>
         <div className="mood-pick" style={{marginBottom:18}}>
           {moods.map(m=><span key={m} className={`mood-btn${todayE.mood===m?" on":""}`} onClick={()=>saveJ({mood:m})}>{m}</span>)}
@@ -2581,7 +2627,10 @@ function TodaySection({profile,tasks,setTasks,journal,setJournal,today,moon,kb,n
           <label>Главная мысль дня</label>
           <textarea style={{minHeight:52}} placeholder="Что важно сегодня для тебя?" value={todayE.thought||""} onChange={e=>saveJ({thought:e.target.value})}/>
         </div>
+        </>}
       </div>
+        );
+      })()}
 
       {/* Pet feeding */}
       {(profile.pets||[]).length>0&&(
@@ -2611,12 +2660,23 @@ function TodaySection({profile,tasks,setTasks,journal,setJournal,today,moon,kb,n
         </div>
       )}
 
-      {/* Due tasks — хронологический список с временем */}
+      {/* Due tasks — хронологический список с временем, collapsible */}
+      {(()=>{
+        const [tasksOpen, setTasksOpen] = useState(true);
+        const pendingCount = dueTasks.filter(t=>t.doneDate!==today).length;
+        return(
       <div className="card">
-        <div className="card-hd">
-          <div className="card-title">Дела на сегодня</div>
-          <button className="btn btn-ghost btn-sm" onClick={()=>setAddModal(true)}>+ Добавить</button>
+        <div className="card-hd" style={{cursor:"pointer"}} onClick={()=>setTasksOpen(o=>!o)}>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <div className="card-title">Дела на сегодня</div>
+            {dueTasks.length>0&&<span className="badge bm">{dueTasks.length-pendingCount}/{dueTasks.length}</span>}
+          </div>
+          <div style={{display:"flex",gap:6,alignItems:"center"}}>
+            <button className="btn btn-ghost btn-sm" onClick={e=>{e.stopPropagation();setAddModal(true);}}>+ Добавить</button>
+            <span style={{color:T.text3,fontSize:14}}>{tasksOpen?"▲":"▼"}</span>
+          </div>
         </div>
+        {tasksOpen&&<>
         {dueTasks.length===0&&<div className="empty"><span className="empty-ico">✦</span><p>Все дела выполнены — ты молодец!</p></div>}
         {dueTasks.length>0&&(()=>{
           const sorted=[...dueTasks].sort((a,b)=>{
@@ -2653,7 +2713,10 @@ function TodaySection({profile,tasks,setTasks,journal,setJournal,today,moon,kb,n
             {noTime.length>0&&<><div className="sec-lbl">{withTime.length>0?"Без времени":"Задачи"}<span style={{fontSize:11,color:T.text3,marginLeft:6}}>— нажми на время чтобы назначить</span></div>{noTime.map(renderTask)}</>}
           </>);
         })()}
+        </>}
       </div>
+        );
+      })()}
       {addModal&&<TaskModal defaultSection="today" onSave={t=>{setTasks(p=>[...p,t]);notify("Задача добавлена");}} onClose={()=>setAddModal(false)}/>}
       {modal!==null&&<TaskModal task={modal.id?modal:null} defaultSection={modal.section||"tasks"} onSave={t=>{setTasks(p=>modal.id?p.map(x=>x.id===t.id?t:x):[...p,t]);setModal(null);notify("Сохранено");}} onClose={()=>setModal(null)}/>}
     </div>
@@ -3948,10 +4011,29 @@ function BeautySection({profile,tasks,setTasks,today,kb,notify}) {
   const [modal,setModal]=useState(null);
   const beautyTasks=tasks.filter(t=>t.section==="beauty");
   const due=beautyTasks.filter(t=>isDue(t,today));
+  const isMale = profile.gender === "Мужской";
   const autoBeauty=()=>{
-    const items=[{title:"Уход за лицом — утро",freq:"daily",priority:"m"},{title:"Уход за лицом — вечер",freq:"daily",priority:"m"},{title:"Маска для лица",freq:"every:3",priority:"l"},{title:"Маска для волос",freq:"every:7",priority:"l"},{title:"Скраб для тела",freq:"every:4",priority:"l"},{title:"Крем для рук и тела",freq:"daily",priority:"l"}];
-    if(profile.nailFreq&&!profile.nailFreq.includes("Не"))items.push({title:"Маникюр / педикюр",freq:"every:21",priority:"m"});
-    if(profile.haircutFreq)items.push({title:"Стрижка",freq:profile.haircutFreq.includes("месяц")?"every:30":"every:42",priority:"l"});
+    const items = isMale ? [
+      {title:"Уход за лицом — утро (умывание, крем)",freq:"daily",priority:"m"},
+      {title:"Уход за лицом — вечер (умывание)",freq:"daily",priority:"m"},
+      {title:"Уход за бородой / бритьё",freq:"every:2",priority:"m"},
+      {title:"Скраб для лица",freq:"every:7",priority:"l"},
+      {title:"Крем для рук",freq:"daily",priority:"l"},
+      {title:"Уход за кожей тела (увлажнение)",freq:"every:2",priority:"l"},
+    ] : [
+      {title:"Уход за лицом — утро",freq:"daily",priority:"m"},
+      {title:"Уход за лицом — вечер",freq:"daily",priority:"m"},
+      {title:"Маска для лица",freq:"every:3",priority:"l"},
+      {title:"Маска для волос",freq:"every:7",priority:"l"},
+      {title:"Скраб для тела",freq:"every:4",priority:"l"},
+      {title:"Крем для рук и тела",freq:"daily",priority:"l"},
+    ];
+    if(isMale) {
+      items.push({title:"Барбер / стрижка",freq:"every:30",priority:"m"});
+    } else {
+      if(profile.nailFreq&&!profile.nailFreq.includes("Не"))items.push({title:"Маникюр / педикюр",freq:"every:21",priority:"m"});
+      if(profile.haircutFreq)items.push({title:"Стрижка",freq:profile.haircutFreq.includes("месяц")?"every:30":"every:42",priority:"l"});
+    }
     return items.map(t=>({...t,id:Date.now()+Math.random(),section:"beauty",lastDone:"",doneDate:"",notes:""}));
   };
   return(
@@ -3964,7 +4046,10 @@ function BeautySection({profile,tasks,setTasks,today,kb,notify}) {
           <div className="pf-item"><div className="pf-l">Приоритет</div><div className="pf-v">{profile.beautyPriority||"—"}</div></div>
         </div>
       </div>
-      <AiBox kb={kb} prompt={"Дай советы ТОЛЬКО по красоте и уходу за собой (кожа, волосы, ногти, тело). Тип кожи: "+(profile.skinType||"нормальная")+", тип волос: "+(profile.hairType||"нормальные")+", приоритет: "+(profile.beautyPriority||"—")+". Свободное время после "+(profile.workEnd||"18:00")+". Луна: "+getMoon().n+". ВАЖНО: НЕ упоминай уборку, дом, питомцев, работу, питание. Только КРАСОТА. Структура строго с такими заголовками (пиши БЕЗ ошибок):\n\n## Утренний уход\n3-4 шага под твой тип кожи нумерованным списком.\n\n## Вечерний ритуал\n3-4 шага нумерованным списком.\n\n## Уход за волосами\n3 шага под твой тип волос.\n\n## Что сделать сегодня\n2-3 конкретные процедуры с учётом фазы луны нумерованным списком."} label="Уход за собой" btnText="Советы по уходу" placeholder="Дам персональные советы по уходу..."/>
+      <AiBox kb={kb} prompt={isMale
+        ? "Дай советы по уходу за собой для мужчины. Тип кожи: "+(profile.skinType||"нормальная")+", борода: "+(profile.beard||"нет")+". Свободное время после "+(profile.workEnd||"18:00")+". Только мужской уход — НЕ упоминай маски, лак, педикюр. Структура:\n\n## Утренний уход\n3 шага нумерованным списком.\n\n## Вечерний уход\n3 шага.\n\n## Уход за бородой / бритьё\n3 совета.\n\n## Что сделать сегодня\n2 конкретных действия."
+        : "Дай советы ТОЛЬКО по красоте и уходу за собой (кожа, волосы, ногти, тело). Тип кожи: "+(profile.skinType||"нормальная")+", тип волос: "+(profile.hairType||"нормальные")+", приоритет: "+(profile.beautyPriority||"—")+". Свободное время после "+(profile.workEnd||"18:00")+". Луна: "+getMoon().n+". ВАЖНО: НЕ упоминай уборку, дом, питомцев, работу, питание. Только КРАСОТА. Структура:\n\n## Утренний уход\n3-4 шага под твой тип кожи нумерованным списком.\n\n## Вечерний ритуал\n3-4 шага нумерованным списком.\n\n## Уход за волосами\n3 шага под твой тип волос.\n\n## Что сделать сегодня\n2-3 конкретные процедуры с учётом фазы луны нумерованным списком."
+      } label={isMale?"Уход за собой":"Красота и уход"} btnText="Советы по уходу" placeholder="Дам персональные советы по уходу..."/>
       <div className="card">
         <div className="card-hd">
           <div className="card-title">Процедуры</div>
