@@ -9,6 +9,38 @@ if("serviceWorker" in navigator) {
   });
 }
 
+// ── Push-уведомления о дедлайнах ───────────────────────────────
+async function requestNotificationPermission() {
+  if(!("Notification" in window)) return false;
+  if(Notification.permission === "granted") return true;
+  const p = await Notification.requestPermission();
+  return p === "granted";
+}
+
+function scheduleDeadlineNotifications(tasks) {
+  if(!("Notification" in window) || Notification.permission !== "granted") return;
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  tasks.filter(t=>t.isDeadline && t.deadline && !t.doneDate).forEach(t=>{
+    const dl = new Date(t.deadline);
+    dl.setHours(0,0,0,0);
+    const daysLeft = Math.round((dl-today)/86400000);
+    const title = t.title.replace(/^[📋🏛🏦📊🔍💰🔒]+\s*/,"");
+    // Уведомление за 3 дня
+    if(daysLeft === 3) {
+      new Notification("⚠️ Дедлайн через 3 дня", {body: title+"\n"+dl.toLocaleDateString("ru-RU"), icon:"/icon-192.png", tag:"dl-3-"+t.id});
+    }
+    // Уведомление за 1 день
+    if(daysLeft === 1) {
+      new Notification("🔴 Завтра дедлайн!", {body: title+"\n"+dl.toLocaleDateString("ru-RU"), icon:"/icon-192.png", tag:"dl-1-"+t.id});
+    }
+    // Уведомление в день дедлайна (показываем сразу при открытии приложения)
+    if(daysLeft === 0) {
+      new Notification("🔴 Сегодня дедлайн!", {body: title, icon:"/icon-192.png", tag:"dl-0-"+t.id});
+    }
+  });
+}
+
 // ══════════════════════════════════════════════════════════════
 //  TELEGRAM INTEGRATION
 // ══════════════════════════════════════════════════════════════
@@ -1611,6 +1643,16 @@ export default function LifeDiary() {
     if(profile&&hobbies.length===0&&(profile.hobbies||[]).length>0) setHobbies((profile.hobbies||[]).map(h=>({id:Date.now()+Math.random(),name:h,sessions:[],goal:"",notes:""})));
   },[profile]);
 
+  // Push-уведомления о дедлайнах при открытии приложения
+  useEffect(()=>{
+    if(profile && tasks.length > 0) {
+      const deadlines = tasks.filter(t=>t.isDeadline);
+      if(deadlines.length > 0 && Notification.permission === "granted") {
+        scheduleDeadlineNotifications(deadlines);
+      }
+    }
+  },[tasks, profile]);
+
   if(!profile) return <><style>{CSS}</style><Onboarding onDone={d=>{setProfile(d);if((d.trips||[]).length>0)setTrips(d.trips);}}/></>;
 
   const kb = buildKB(profile);
@@ -1621,6 +1663,16 @@ export default function LifeDiary() {
       <style>{CSS}</style>
       <div className="ambient"/>
       <div className="app">
+        {/* Кнопка включения уведомлений */}
+        {("Notification" in window) && Notification.permission === "default" && (
+          <div style={{padding:"10px 16px",background:"rgba(45,106,79,0.12)",borderBottom:"1px solid "+T.bdr,display:"flex",alignItems:"center",justifyContent:"space-between",gap:10}}>
+            <div style={{fontSize:13,color:T.text1}}>🔔 Включи уведомления о дедлайнах</div>
+            <button className="btn btn-primary btn-sm" onClick={async()=>{
+              const ok = await requestNotificationPermission();
+              if(ok) { scheduleDeadlineNotifications(tasks.filter(t=>t.isDeadline)); notify("Уведомления включены ✦"); }
+            }}>Включить</button>
+          </div>
+        )}
         {/* SIDEBAR */}
         <nav className="sidebar">
           <div className="s-logo">LD</div>
@@ -2210,7 +2262,7 @@ function TodaySection({profile,tasks,setTasks,journal,setJournal,today,moon,kb,n
     }
     return false;
   };
-  const dueTasks = tasks.filter(isTrulyDue);
+  const dueTasks = tasks.filter(t => isTrulyDue(t) && t.section !== "work" && !t.isDeadline);
   const doneCnt = tasks.filter(t=>t.doneDate===today).length;
 
   const getAiPlan = async()=>{
@@ -3283,27 +3335,79 @@ function WorkSection({profile,tasks,setTasks,today,kb,notify}) {
         );
       })()}
       <AiBox kb={kb} prompt={`Как ${profile.profession||"мне"} организовать этот рабочий день? Меня выматывает: ${(profile.workDrain||[]).join(",")||"—"}, вдохновляет: ${profile.workInspire||"—"}. Дай 3-5 конкретных совета для моего типа личности.`} label="Рабочий день" btnText="Совет по дню" placeholder="Помогу сделать рабочий день продуктивнее..."/>
-      <div className="card">
-        <div className="card-hd"><div className="card-title">Рабочие задачи</div><button className="btn btn-ghost btn-sm" onClick={()=>setModal({})}>+ Задача</button></div>
-        {due.length===0&&<div className="empty"><span className="empty-ico">💼</span><p>Рабочих задач на сегодня нет</p></div>}
-        {due.map(task=>(
-          <div key={task.id} className="task-row">
-            <div className={`prio p${task.priority||"m"}`}/>
-            <div className={`chk${task.doneDate===today?" done":""}`} onClick={()=>setTasks(p=>p.map(t=>t.id===task.id?{...t,doneDate:t.doneDate===today?null:today,lastDone:t.doneDate===today?t.lastDone:today}:t))}>{task.doneDate===today?"✓":""}</div>
-            <div className="task-body">
-              <div className={`task-name${task.doneDate===today?" done":""}`}>{task.title}</div>
-              <div className="task-meta">
-                {task.freq&&task.freq!=="once"&&<span className="badge bt">{freqLabel(task.freq)}</span>}
-                {task.deadline&&<span className="badge bw">📅 {new Date(task.deadline).toLocaleDateString("ru-RU")}</span>}
-              </div>
+
+      {/* ── Рабочие задачи по подразделам ── */}
+      {(()=>{
+        const govTasks     = workTasks.filter(t=>t.isDeadline && t.organ && !["ВНУТР","HR","внутр"].includes(t.organ));
+        const internalTasks= workTasks.filter(t=>!t.isDeadline || t.organ==="HR");
+        const paymentTasks = workTasks.filter(t=>t.isDeadline && t.title?.startsWith("💰"));
+
+        const renderSubTask=(task)=>(
+          <div key={task.id} style={{display:"flex",alignItems:"flex-start",gap:10,padding:"10px 0",borderBottom:"1px solid "+T.bdrS}}>
+            <div className={"chk"+(task.doneDate===today?" done":"")} style={{flexShrink:0,marginTop:2}}
+              onClick={()=>setTasks(p=>p.map(t=>t.id===task.id?{...t,doneDate:t.doneDate===today?null:today,lastDone:t.doneDate===today?t.lastDone:today}:t))}>
+              {task.doneDate===today?"✓":""}
             </div>
-            <div className="card-acts">
-              {task.deadline&&<div className="ico-btn" onClick={()=>openGCal(task.title,task.deadline,task.notes)}>📅</div>}
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:15,color:task.doneDate===today?T.text3:T.text0,textDecoration:task.doneDate===today?"line-through":"none",lineHeight:1.3}}>{task.title.replace(/^[📋🏛🏦📊🔍💰🔒]+\s*/,"")}</div>
+              {task.notes&&<div style={{fontSize:12,color:T.text3,marginTop:2}}>{task.notes}</div>}
+              {task.deadline&&(()=>{
+                const dl=new Date(task.deadline);
+                const daysLeft=Math.ceil((dl-new Date())/86400000);
+                const isOver=task.deadline<today;
+                return <div style={{fontSize:12,marginTop:3,color:isOver?T.danger:daysLeft<=3?T.warn:T.text3,fontFamily:"'JetBrains Mono'",fontWeight:isOver||daysLeft<=3?600:400}}>
+                  {isOver?"⚠️ Просрочен":daysLeft===0?"🔴 Сегодня!":daysLeft===1?"🟡 Завтра":daysLeft<=3?"🟡 "+daysLeft+" дн.":"📅 "+dl.toLocaleDateString("ru-RU",{day:"numeric",month:"short"})}
+                </div>;
+              })()}
+            </div>
+            <div style={{display:"flex",gap:4,flexShrink:0}}>
+              <div className="ico-btn" style={{color:T.teal,opacity:.7}} onClick={()=>setModal(task)}>✏️</div>
               <div className="ico-btn danger" onClick={()=>setTasks(p=>p.filter(t=>t.id!==task.id))}>✕</div>
             </div>
           </div>
-        ))}
-      </div>
+        );
+
+        const SubSection=({title,emoji,color,items,onAdd,emptyText})=>{
+          const [open,setOpen]=useState(true);
+          const doneCount=items.filter(t=>t.doneDate===today).length;
+          return(
+            <div className="card" style={{marginBottom:12,borderLeft:"3px solid "+color}}>
+              <div className="card-hd" style={{cursor:"pointer"}} onClick={()=>setOpen(o=>!o)}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <span style={{fontSize:18}}>{emoji}</span>
+                  <div className="card-title">{title}</div>
+                  {items.length>0&&<span className="badge bm" style={{fontSize:11}}>{doneCount}/{items.length}</span>}
+                </div>
+                <div style={{display:"flex",gap:6}}>
+                  {onAdd&&<button className="btn btn-ghost btn-sm" onClick={e=>{e.stopPropagation();onAdd();}}
+                    style={{padding:"3px 10px",fontSize:12}}>+ Своя</button>}
+                  <span style={{color:T.text3,fontSize:14}}>{open?"▲":"▼"}</span>
+                </div>
+              </div>
+              {open&&<>
+                {items.length===0&&<div style={{padding:"8px 0",fontSize:14,color:T.text3,fontStyle:"italic"}}>{emptyText}</div>}
+                {items.map(renderSubTask)}
+              </>}
+            </div>
+          );
+        };
+
+        return(
+          <>
+            <SubSection title="Отчётность в госорганы" emoji="🏛" color={T.danger}
+              items={govTasks.filter(t=>!t.title?.startsWith("💰")).sort((a,b)=>a.deadline?.localeCompare(b.deadline||"")||0)}
+              onAdd={()=>setModal({section:"work",isDeadline:true,organ:"КГД"})}
+              emptyText="Нет дедлайнов. Нажмите «+ Дедлайны» в карточке выше."/>
+            <SubSection title="Платежи" emoji="💰" color={T.warn}
+              items={workTasks.filter(t=>t.isDeadline&&t.title?.startsWith("💰")).sort((a,b)=>a.deadline?.localeCompare(b.deadline||"")||0)}
+              emptyText="Нет платежей"/>
+            <SubSection title="Внутренние задачи" emoji="📋" color={T.teal}
+              items={workTasks.filter(t=>!t.isDeadline).sort((a,b)=>(a.priority==="h"?0:a.priority==="m"?1:2)-(b.priority==="h"?0:b.priority==="m"?1:2))}
+              onAdd={()=>setModal({})}
+              emptyText="Нет рабочих задач"/>
+          </>
+        );
+      })()}
       {profile.careerGoal&&<div className="card"><div className="card-hd"><div className="card-title">Карьерная цель</div></div><div style={{fontFamily:"'Cormorant Infant',serif",fontSize:18,color:T.text0}}>{profile.careerGoal}</div>{profile.workInspire&&<div style={{marginTop:6,fontSize:14,color:T.text3,fontStyle:"italic"}}>Вдохновляет: {profile.workInspire}</div>}</div>}
       {modal!==null&&<TaskModal task={modal.id?modal:null} defaultSection="work" onSave={t=>{setTasks(p=>modal.id?p.map(x=>x.id===t.id?t:x):[...p,t]);notify("Добавлено");}} onClose={()=>setModal(null)}/>}
     </div>
