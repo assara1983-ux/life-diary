@@ -2643,24 +2643,44 @@ function TodaySection({profile,tasks,setTasks,journal,setJournal,today,moon,kb,n
         );
       })()}
 
-      {/* Pet feeding */}
-      {(profile.pets||[]).length>0&&(
+      {/* Pet feeding — collapsible */}
+      {(profile.pets||[]).length>0&&(()=>{
+        const [petsOpen,setPetsOpen]=useState(true);
+        const allFed=(profile.pets||[]).every(pet=>{
+          const feeds=parseInt(pet.feedTimes)||2;
+          const log=petLog[today]?.[pet.id]||[];
+          return log.length>=feeds;
+        });
+        const fedCount=(profile.pets||[]).filter(pet=>{
+          const feeds=parseInt(pet.feedTimes)||2;
+          const log=petLog[today]?.[pet.id]||[];
+          return log.length>=feeds;
+        }).length;
+        return(
         <div className="card">
-          <div className="card-hd"><div className="card-title">🐾 Питомцы — кормление</div></div>
+          <div className="card-hd" style={{cursor:"pointer"}} onClick={()=>setPetsOpen(o=>!o)}>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <div className="card-title">🐾 Питомцы</div>
+              <span className="badge bm">{fedCount}/{(profile.pets||[]).length} покормлено</span>
+            </div>
+            <span style={{color:T.text3,fontSize:14}}>{petsOpen?"▲":"▼"}</span>
+          </div>
+          {petsOpen&&<>
           {profile.pets.map(pet=>{
             const feeds=parseInt(pet.feedTimes)||2;
             const log=petLog[today]?.[pet.id]||[];
             const labels=feeds<=2?["Утро","Вечер"]:feeds===3?["Утро","День","Вечер"]:["1","2","3","4"];
+            const allDone=log.length>=feeds;
             return(
-              <div key={pet.id} style={{display:"flex",alignItems:"center",gap:14,padding:"10px 0",borderBottom:`1px solid rgba(255,255,255,.04)`}}>
+              <div key={pet.id} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 0",borderBottom:"1px solid "+T.bdrS,opacity:allDone?0.7:1}}>
                 <span style={{fontSize:22}}>{petEmoji(pet.type)}</span>
                 <div style={{flex:1}}>
                   <div style={{fontFamily:"'Cormorant Infant',serif",fontSize:17,color:T.text0}}>{pet.name}</div>
-                  <div style={{fontSize:12,color:T.text3,marginTop:1}}>{pet.type}{pet.breed&&" · "+pet.breed} {pet.food&&"· "+pet.food}</div>
+                  <div style={{fontSize:12,color:T.text3,marginTop:1}}>{pet.type}{pet.breed&&" · "+pet.breed}{pet.food&&" · "+pet.food}</div>
                 </div>
                 <div style={{display:"flex",gap:6}}>
                   {Array.from({length:feeds},(_,i)=>(
-                    <button key={i} className={`feed-btn${log.includes(i)?" done":""}`}
+                    <button key={i} className={"feed-btn"+(log.includes(i)?" done":"")}
                       onClick={()=>{const c=petLog[today]?.[pet.id]||[];const n=c.includes(i)?c.filter(x=>x!==i):[...c,i];setPetLog(p=>({...p,[today]:{...(p[today]||{}),[pet.id]:n}}));}}
                     >{log.includes(i)?"✓ ":""}{labels[i]}</button>
                   ))}
@@ -2668,8 +2688,10 @@ function TodaySection({profile,tasks,setTasks,journal,setJournal,today,moon,kb,n
               </div>
             );
           })}
+          </>}
         </div>
-      )}
+        );
+      })()}
 
       {/* Due tasks — хронологический список с временем, collapsible */}
       {(()=>{
