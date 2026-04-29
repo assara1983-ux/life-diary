@@ -2934,9 +2934,6 @@ function getProfDeadlines(profile) {
   return tasks;
 }
 
-  return tasks;
-}
-
 function WorkSection({profile,tasks,setTasks,today,kb,notify}) {
   const [modal,setModal]=useState(null);
   const [editSchedule,setEditSchedule]=useState(false);
@@ -3942,9 +3939,9 @@ function GoalsSection({profile,kb,notify}) {
   return(
     <div>
       {mainGoal&&<div className="card card-accent" style={{marginBottom:12}}>
-        <div style={{fontSize:11,color:"#A8A49C",fontFamily:"'JetBrains Mono'",letterSpacing:2,marginBottom:8}}>ГЛАВНАЯ ЦЕЛЬ</div>
-        <div style={{fontFamily:"'Cormorant Infant',serif",fontSize:22,color:"#E5C87A",lineHeight:1.3,marginBottom:8}}>{mainGoal}</div>
-        <div style={{fontSize:13,color:"#A8A49C",fontStyle:"italic"}}>Луна {moon.n} — {moon.t}</div>
+        <div style={{fontSize:11,color:T.text2,fontFamily:"'JetBrains Mono'",letterSpacing:2,marginBottom:8}}>ГЛАВНАЯ ЦЕЛЬ</div>
+        <div style={{fontFamily:"'Cormorant Infant',serif",fontSize:22,color:T.gold,lineHeight:1.3,marginBottom:8}}>{mainGoal}</div>
+        <div style={{fontSize:13,color:T.text2,fontStyle:"italic"}}>Луна {moon.n} — {moon.t}</div>
       </div>}
 
       {/* ГРАФИЧЕСКОЕ КОЛЕСО ЖИЗНИ */}
@@ -3974,7 +3971,7 @@ function GoalsSection({profile,kb,notify}) {
               return <text key={area.name} x={p.x} y={p.y} fontSize="22" textAnchor="middle" dominantBaseline="middle" style={{cursor:"pointer"}} onClick={()=>setActiveArea(activeArea===i?null:i)}>{area.emoji}</text>;
             })}
             {/* центр */}
-            <circle cx={cx} cy={cy} r="4" fill="#C8A45A"/>
+            <circle cx={cx} cy={cy} r="4" fill={T.gold}/>
           </svg>
         </div>
         
@@ -3986,7 +3983,7 @@ function GoalsSection({profile,kb,notify}) {
             <span style={{fontFamily:"'JetBrains Mono'",fontSize:14,color:WHEEL_AREAS[activeArea].color,fontWeight:700}}>{wheelScores[WHEEL_AREAS[activeArea].name]||5}/10</span>
           </div>
           <div style={{fontSize:14,color:T.text1,lineHeight:1.6,marginBottom:12,fontFamily:"'Crimson Pro',serif",fontStyle:"italic"}}>{WHEEL_AREAS[activeArea].desc}</div>
-          <div style={{fontSize:12,color:"#A8A49C",marginBottom:6}}>Твоя оценка:</div>
+          <div style={{fontSize:12,color:T.text3,marginBottom:6}}>Твоя оценка:</div>
           <input type="range" min="1" max="10" value={wheelScores[WHEEL_AREAS[activeArea].name]||5} 
             onChange={e=>updateScore(WHEEL_AREAS[activeArea].name, parseInt(e.target.value))} 
             style={{width:"100%",accentColor:WHEEL_AREAS[activeArea].color}}/>
@@ -4012,7 +4009,7 @@ function GoalsSection({profile,kb,notify}) {
         <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
           {goalAreas.map(a=><div key={a} style={{display:"flex",alignItems:"center",gap:6,padding:"8px 14px",borderRadius:12,background:T.goldGlow,border:"1px solid rgba(200,164,90,0.25)"}}>
             <span style={{fontSize:18}}>{AREA_EMOJI[a]||"⭐"}</span>
-            <span style={{fontSize:15,color:"#E5C87A",fontFamily:"'Crimson Pro',serif"}}>{a}</span>
+            <span style={{fontSize:15,color:T.gold,fontFamily:"'Crimson Pro',serif"}}>{a}</span>
           </div>)}
         </div>
       </div>}
@@ -4021,7 +4018,7 @@ function GoalsSection({profile,kb,notify}) {
         <div style={{fontSize:11,color:"#A8A49C",fontFamily:"'JetBrains Mono'",letterSpacing:2,marginBottom:12}}>ЧТО МЕШАЕТ — И КАК ПРЕОДОЛЕТЬ</div>
         {goalBlocks.map(b=><div key={b} style={{padding:"10px 0",borderBottom:"1px solid rgba(255,255,255,.04)"}}>
           <div style={{fontSize:15,color:T.danger,marginBottom:3}}>⚠ {b}</div>
-          <div style={{fontSize:14,color:"#A8A49C",fontStyle:"italic"}}>→ {BLOCK_TIP[b]||"Разбей на маленькие шаги"}</div>
+          <div style={{fontSize:14,color:T.text3,fontStyle:"italic"}}>→ {BLOCK_TIP[b]||"Разбей на маленькие шаги"}</div>
         </div>)}
       </div>}
 
@@ -4043,6 +4040,7 @@ function MentalSection({profile,kb,notify}) {
   const [note,setNote]=useState("");
   const [saved,setSaved]=useState(false);
   const [tab,setTab]=useState("check");
+  const moods=["😔","😟","😐","🙂","😊","🤩"];
   const moon=getMoon();
   const freeFrom=profile.workEnd||"18:00";
   const wakeTime=profile.wake||"07:00";
@@ -4087,8 +4085,8 @@ function MentalSection({profile,kb,notify}) {
 
       {tab==="breath"&&<>
         <div className="card card-accent" style={{marginBottom:12}}>
-          <div style={{fontFamily:"'Cormorant Infant',serif",fontSize:18,color:"#E5C87A",marginBottom:8}}>Дыхательные практики</div>
-          <div style={{fontSize:15,color:"#A8A49C",lineHeight:1.6}}>Дыхание — самый быстрый способ изменить состояние. Выбери нужное прямо сейчас.</div>
+          <div style={{fontFamily:"'Cormorant Infant',serif",fontSize:18,color:T.gold,marginBottom:8}}>Дыхательные практики</div>
+          <div style={{fontSize:15,color:T.text2,lineHeight:1.6}}>Дыхание — самый быстрый способ изменить состояние. Выбери нужное прямо сейчас.</div>
         </div>
         {[
           {name:"4-7-8 — снятие тревоги",desc:"Вдох 4с → задержка 7с → выдох 8с. Повтори 4 раза. Активирует парасимпатику.",time:"3 мин",icon:"🌬️",color:"rgba(78,201,190,0.15)"},
@@ -4101,9 +4099,9 @@ function MentalSection({profile,kb,notify}) {
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
             <div style={{display:"flex",gap:10,alignItems:"center"}}>
               <span style={{fontSize:22}}>{b.icon}</span>
-              <div style={{fontFamily:"'Crimson Pro',serif",fontSize:17,color:"#F0EDE8",fontWeight:500}}>{b.name}</div>
+              <div style={{fontFamily:"'Crimson Pro',serif",fontSize:17,color:T.text0,fontWeight:500}}>{b.name}</div>
             </div>
-            <span style={{fontSize:11,color:"#A8A49C",fontFamily:"'JetBrains Mono'",whiteSpace:"nowrap"}}>{b.time}</span>
+            <span style={{fontSize:11,color:T.text3,fontFamily:"'JetBrains Mono'",whiteSpace:"nowrap"}}>{b.time}</span>
           </div>
           <div style={{fontSize:14,color:"#A8A49C",lineHeight:1.6,marginLeft:32}}>{b.desc}</div>
           <div style={{marginTop:10,marginLeft:32}}>
@@ -4121,8 +4119,8 @@ function MentalSection({profile,kb,notify}) {
 
       {tab==="sound"&&<>
         <div className="card card-accent" style={{marginBottom:12}}>
-          <div style={{fontFamily:"'Cormorant Infant',serif",fontSize:18,color:"#E5C87A",marginBottom:8}}>Звукотерапия</div>
-          <div style={{fontSize:15,color:"#A8A49C",lineHeight:1.6}}>Звук влияет на мозговые волны и состояние. Выбери нужную частоту или звук.</div>
+          <div style={{fontFamily:"'Cormorant Infant',serif",fontSize:18,color:T.gold,marginBottom:8}}>Звукотерапия</div>
+          <div style={{fontSize:15,color:T.text2,lineHeight:1.6}}>Звук влияет на мозговые волны и состояние. Выбери нужную частоту или звук.</div>
         </div>
         {[
           {hz:"432 Гц",name:"Расслабление",desc:"Снижает тревогу, гармонизирует нервную систему. Слушать вечером.",icon:"🎵",when:"Вечер, стресс"},
@@ -4138,11 +4136,11 @@ function MentalSection({profile,kb,notify}) {
             <div style={{display:"flex",gap:10,alignItems:"center"}}>
               <span style={{fontSize:22}}>{s.icon}</span>
               <div>
-                <div style={{fontFamily:"'JetBrains Mono'",fontSize:11,color:"#B882E8",letterSpacing:1}}>{s.hz}</div>
-                <div style={{fontFamily:"'Crimson Pro',serif",fontSize:17,color:"#F0EDE8"}}>{s.name}</div>
+                <div style={{fontFamily:"'JetBrains Mono'",fontSize:11,color:T.purple,letterSpacing:1}}>{s.hz}</div>
+                <div style={{fontFamily:"'Crimson Pro',serif",fontSize:17,color:T.text0}}>{s.name}</div>
               </div>
             </div>
-            <span style={{fontSize:11,color:"#A8A49C",fontFamily:"'JetBrains Mono'",whiteSpace:"nowrap"}}>{s.when}</span>
+            <span style={{fontSize:11,color:T.text3,fontFamily:"'JetBrains Mono'",whiteSpace:"nowrap"}}>{s.when}</span>
           </div>
           <div style={{fontSize:14,color:"#A8A49C",lineHeight:1.6,marginLeft:32}}>{s.desc}</div>
           <div style={{marginTop:10,marginLeft:32}}>
@@ -4240,7 +4238,7 @@ function TravelSection({profile,trips,setTrips,kb,notify}) {
                 {trip.budget&&trip.saved&&<span style={{fontSize:12,color:T.text3}}>осталось: {Math.max(0,parseInt(trip.budget)-parseInt(trip.saved))}₽</span>}
               </div>
             </div>}
-            {checkin[trip.id]&&<div style={{background:"${T.bdrS}",borderRadius:10,padding:"12px 14px",marginBottom:10,fontSize:15,lineHeight:1.7,color:T.text1,fontStyle:"italic"}}>{checkin[trip.id]}</div>}
+            {checkin[trip.id]&&<div style={{background:T.bdrS,borderRadius:10,padding:"12px 14px",marginBottom:10,fontSize:15,lineHeight:1.7,color:T.text1,fontStyle:"italic"}}>{checkin[trip.id]}</div>}
             <div style={{display:"flex",gap:7}}>
               <button className="btn btn-ghost btn-sm" onClick={()=>getCheckin(trip)} disabled={checking[trip.id]}>{checking[trip.id]?"Думаю...":"🤖 Как дела с поездкой?"}</button>
               {trip.targetDate&&<button className="btn btn-ghost btn-sm" onClick={()=>openGCal(`✈ ${trip.destination}`,new Date(trip.targetDate).toISOString())}>📅 Cal</button>}
