@@ -1655,15 +1655,7 @@ export default function LifeDiary() {
       <div className="ambient"/>
       <div className="app">
         {/* Кнопка включения уведомлений */}
-        {("Notification" in window) && Notification.permission === "default" && (
-          <div style={{padding:"10px 16px",background:"rgba(45,106,79,0.12)",borderBottom:"1px solid "+T.bdr,display:"flex",alignItems:"center",justifyContent:"space-between",gap:10}}>
-            <div style={{fontSize:13,color:T.text1}}>🔔 Включи уведомления о дедлайнах</div>
-            <button className="btn btn-primary btn-sm" onClick={async()=>{
-              const ok = await requestNotificationPermission();
-              if(ok) { scheduleDeadlineNotifications(tasks.filter(t=>t.isDeadline)); notify("Уведомления включены ✦"); }
-            }}>Включить</button>
-          </div>
-        )}
+
         {/* SIDEBAR */}
         <nav className="sidebar">
           <div className="s-logo">LD</div>
@@ -2288,7 +2280,7 @@ function TodaySection({profile,tasks,setTasks,journal,setJournal,today,moon,kb,n
         <div className="ai-hd"><div className="ai-pulse"/><div className="ai-lbl">Доброе утро, {(profile.name||"").split(" ")[0]}</div></div>
         {aiPlan
           ? <div className="ai-text">{aiPlan}</div>
-          : <div className="ai-dim">{moon.e} {moon.n} · {moon.t}<br/><br/>Нажми — получи персональный план дня, составленный именно для тебя</div>
+          : <div className="ai-dim">Нажми — получи персональный план дня, составленный именно для тебя</div>
         }
         <div style={{marginTop:14,display:"flex",gap:8}}>
           <button className="btn btn-primary btn-sm" onClick={getAiPlan} disabled={planLoading}>{planLoading?"Составляю план...":"✦ Мой план дня"}</button>
@@ -2376,12 +2368,31 @@ function TodaySection({profile,tasks,setTasks,journal,setJournal,today,moon,kb,n
           </div>
         );
       })()}
-      <div className="g4" style={{marginBottom:14}}>
-        <div className="stat"><div className="stat-n">{doneCnt}/{dueTasks.length+doneCnt||0}</div><div className="stat-l">Задач сегодня</div></div>
-        <div className="stat"><div className="stat-n">{todayE.mood||"—"}</div><div className="stat-l">Настроение</div></div>
-        <div className="stat"><div className="stat-n">{moon.e}</div><div className="stat-l">{moon.n.split(" ")[0]}</div></div>
-        <div className="stat"><div className="stat-n">{getZodiac(profile.dob).emoji}</div><div className="stat-l">{getZodiac(profile.dob).name}</div></div>
-      </div>
+      {(()=>{
+        // Текущий знак зодиака по сегодняшней дате (не по ДР пользователя)
+        const todayZodiac = getZodiac(new Date().toISOString().split("T")[0]);
+        const dayInfo0 = getTCMDayInfo(new Date());
+        return(
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
+          <div className="stat" style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px"}}>
+            <span style={{fontSize:22}}>{todayZodiac.emoji}</span>
+            <div><div style={{fontSize:13,fontWeight:600,color:T.text0}}>{todayZodiac.name}</div><div style={{fontSize:11,color:T.text3}}>Знак сегодня</div></div>
+          </div>
+          <div className="stat" style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px"}}>
+            <span style={{fontSize:22}}>{moon.e}</span>
+            <div><div style={{fontSize:13,fontWeight:600,color:T.text0}}>{moon.n}</div><div style={{fontSize:11,color:T.text3}}>{moon.t}</div></div>
+          </div>
+          <div className="stat" style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px"}}>
+            <span style={{fontSize:22}}>{dayInfo0.emoji}</span>
+            <div><div style={{fontSize:13,fontWeight:600,color:T.text0}}>{dayInfo0.element}</div><div style={{fontSize:11,color:T.text3}}>{dayInfo0.organs.split("/")[0].trim()}</div></div>
+          </div>
+          <div className="stat" style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px"}}>
+            <span style={{fontSize:22}}>{todayE.mood||"🙂"}</span>
+            <div><div style={{fontSize:13,fontWeight:600,color:T.text0}}>{doneCnt}/{dueTasks.length+doneCnt||0} дел</div><div style={{fontSize:11,color:T.text3}}>{todayE.energy?"Энергия: "+todayE.energy+"/5":"Настроение"}</div></div>
+          </div>
+        </div>
+        );
+      })()}
 
       {/* ── В дороге ── */}
       {profile.commuteTime && profile.commuteTime !== "Дома" && (()=>{
@@ -3191,6 +3202,17 @@ function WorkSection({profile,tasks,setTasks,today,kb,notify}) {
               </div>
             </div>
 
+            {/* Компактная кнопка уведомлений */}
+            {("Notification" in window) && Notification.permission === "default" && (
+              <div style={{display:"flex",alignItems:"center",gap:8,padding:"6px 10px",background:"rgba(45,106,79,0.08)",borderRadius:8,marginBottom:8}}>
+                <span style={{fontSize:13}}>🔔</span>
+                <span style={{fontSize:12,color:T.text2,flex:1}}>Уведомления о дедлайнах</span>
+                <button className="btn btn-primary btn-sm" style={{padding:"3px 10px",fontSize:12}} onClick={async()=>{
+                  const ok=await requestNotificationPermission();
+                  if(ok){scheduleDeadlineNotifications(tasks.filter(t=>t.isDeadline));notify("Уведомления включены ✦");}
+                }}>Включить</button>
+              </div>
+            )}
             {/* Вкладки */}
             <div className="tabs" style={{marginBottom:12}}>
               {[["upcoming","Ближайшие"],["overdue","Просроченные"],["done","Выполненные"],["calendar","Календарь"],["gcal","Google Cal"]].map(([v,l])=>(
@@ -3609,10 +3631,10 @@ function HomeSection({profile,tasks,setTasks,today,kb,notify}) {
           return "other";
         };
         
-        const todayTasks = homeTasks.filter(t=>classifyTask(t.freq)==="today");
-        const weekTasks = homeTasks.filter(t=>classifyTask(t.freq)==="week");
-        const monthTasks = homeTasks.filter(t=>classifyTask(t.freq)==="month");
-        const otherTasks = homeTasks.filter(t=>classifyTask(t.freq)==="other");
+        const todayTasks = homeTasks.filter(t=>classifyTask(t.freq)==="today" && isDue(t,today));
+        const weekTasks = homeTasks.filter(t=>classifyTask(t.freq)==="week" && isDue(t,today));
+        const monthTasks = homeTasks.filter(t=>classifyTask(t.freq)==="month" && isDue(t,today));
+        const otherTasks = homeTasks.filter(t=>classifyTask(t.freq)==="other" && isDue(t,today));
         
         const renderGroup = (title, emoji, color, list, showFreq) => list.length===0 ? null : (
           <div className="card" style={{marginBottom:12,borderLeft:"3px solid "+color}}>
