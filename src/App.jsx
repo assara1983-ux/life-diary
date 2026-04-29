@@ -1,5 +1,14 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 
+// ── PWA: регистрация Service Worker для офлайн-режима ──────────
+if("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js")
+      .then(r => console.log("SW registered:", r.scope))
+      .catch(e => console.log("SW error:", e));
+  });
+}
+
 // ══════════════════════════════════════════════════════════════
 //  TELEGRAM INTEGRATION
 // ══════════════════════════════════════════════════════════════
