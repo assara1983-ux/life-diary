@@ -2486,7 +2486,7 @@ function TodaySection({profile,tasks,setTasks,journal,setJournal,today,moon,kb,n
                   <div style={{width:2,alignSelf:"stretch",minHeight:18,
                     background:isNow?T.gold:isPast?T.bdrS:T.bdr,borderRadius:1,flexShrink:0}}/>
                   {!ev.fixed?(
-                    <div onClick={ev.onDone||(()=>{})} style={{
+                    <div onClick={()=>{if(ev.onDone)ev.onDone();}} style={{
                       width:18,height:18,borderRadius:4,flexShrink:0,marginTop:1,cursor:"pointer",
                       border:"1.5px solid "+(ev.done?T.success:T.bdr),
                       background:ev.done?"rgba(45,106,79,0.2)":"transparent",
@@ -3365,26 +3365,20 @@ function WorkSection({profile,tasks,setTasks,today,kb,notify}) {
         );
 
         const SubSection=({title,emoji,color,items,onAdd,emptyText})=>{
-          const [open,setOpen]=useState(true);
           const doneCount=items.filter(t=>t.doneDate===today).length;
           return(
             <div className="card" style={{marginBottom:12,borderLeft:"3px solid "+color}}>
-              <div className="card-hd" style={{cursor:"pointer"}} onClick={()=>setOpen(o=>!o)}>
+              <div className="card-hd">
                 <div style={{display:"flex",alignItems:"center",gap:8}}>
                   <span style={{fontSize:18}}>{emoji}</span>
                   <div className="card-title">{title}</div>
                   {items.length>0&&<span className="badge bm" style={{fontSize:11}}>{doneCount}/{items.length}</span>}
                 </div>
-                <div style={{display:"flex",gap:6}}>
-                  {onAdd&&<button className="btn btn-ghost btn-sm" onClick={e=>{e.stopPropagation();onAdd();}}
-                    style={{padding:"3px 10px",fontSize:12}}>+ Своя</button>}
-                  <span style={{color:T.text3,fontSize:14}}>{open?"▲":"▼"}</span>
-                </div>
+                {onAdd&&<button className="btn btn-ghost btn-sm" onClick={e=>{e.stopPropagation();onAdd();}}
+                  style={{padding:"3px 10px",fontSize:12}}>+ Своя</button>}
               </div>
-              {open&&<>
-                {items.length===0&&<div style={{padding:"8px 0",fontSize:14,color:T.text3,fontStyle:"italic"}}>{emptyText}</div>}
-                {items.map(renderSubTask)}
-              </>}
+              {items.length===0&&<div style={{padding:"8px 0",fontSize:14,color:T.text3,fontStyle:"italic"}}>{emptyText}</div>}
+              {items.map(renderSubTask)}
             </div>
           );
         };
