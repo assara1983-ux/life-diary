@@ -2239,8 +2239,9 @@ function TodaySection({profile,tasks,setTasks,journal,setJournal,today,moon,kb,n
     if(t.freq.startsWith("weekly:") || t.freq.startsWith("monthly:")) return isDue(t,today);
     if(t.freq.startsWith("every:")) {
       const n = parseInt(t.freq.split(":")[1]);
-      // Долгие задачи (>7 дней) не показывать в "Сегодня" если ни разу не делали
-      if(n > 7 && !t.lastDone) return false;
+      // Задачи с периодичностью > 1 дня не показывать если ни разу не выполнялись
+      // (пользователь сам отметит первый раз, потом они будут появляться по расписанию)
+      if(n > 1 && !t.lastDone) return false;
       return isDue(t,today);
     }
     return false;
@@ -2287,6 +2288,124 @@ function TodaySection({profile,tasks,setTasks,journal,setJournal,today,moon,kb,n
           {aiPlan&&<button className="btn btn-ghost btn-sm" onClick={()=>setAiPlan("")}>Обновить</button>}
         </div>
       </div>
+
+
+      {/* ── Планировщик дня ── */}
+      {(()=>{
+        const now = new Date();
+        const wakeH = parseInt((profile.wake||"07:00").split(":")[0]);
+        const workStartH = parseInt((profile.workStart||"09:00").split(":")[0]);
+        const workEndH = parseInt((profile.workEnd||"18:00").split(":")[0]);
+        const sleepH = parseInt((profile.sleep||"23:00").split(":")[0]);
+        const dayInfo = getTCMDayInfo(now);
+        const hourOrgan = getTCMHourOrgan(now.getHours());
+        const tcmProfile = getTCMFullProfile(profile);
+        const currentH = now.getHours();
+
+        // Блоки дня
+        const blocks = [
+          {
+            id:"morning", emoji:"🌅", label:"Утро", time:wakeH+":00 — "+workStartH+":00",
+            start:wakeH, end:workStartH,
+            color:"rgba(45,106,79,0.12)",
+            tip: "Лучшее время для "+(profile.practices?.length?"практик ("+profile.practices.slice(0,2).join(", ")+")":"зарядки и планирования")+". Активный меридиан: "+getTCMHourOrgan(wakeH+1).organ+".",
+            tasks: dueTasks.filter(t=>t.preferredTime&&parseInt(t.preferredTime)<workStartH),
+          },
+          {
+            id:"work", emoji:"💼", label:"Работа", time:workStartH+":00 — "+workEndH+":00",
+            start:workStartH, end:workEndH,
+            color:"rgba(29,78,107,0.10)",
+            tip: "Стихия дня — "+dayInfo.element+". "+dayInfo.tip+(" "+((profile.workDrain||[]).length?"Избегай: "+(profile.workDrain||[]).slice(0,2).join(", "):"")),
+            tasks: dueTasks.filter(t=>t.preferredTime&&parseInt(t.preferredTime)>=workStartH&&parseInt(t.preferredTime)<workEndH),
+          },
+          {
+            id:"evening", emoji:"🌇", label:"Вечер", time:workEndH+":00 — "+sleepH+":00",
+            start:workEndH, end:sleepH,
+            color:"rgba(45,32,16,0.07)",
+            tip: "Свободное время. "+(profile.sport?.length?"Спорт: "+profile.sport.slice(0,2).join(", ")+". ":"")+getTCMHourOrgan(workEndH+1).tip,
+            tasks: dueTasks.filter(t=>t.preferredTime&&parseInt(t.preferredTime)>=workEndH),
+          },
+        ];
+
+        // Задачи без времени — в нужный блок по типу
+        const noTimeTasks = dueTasks.filter(t=>!t.preferredTime);
+
+        const [plannerOpen, setPlannerOpen] = useState(true);
+        const [expandedBlock, setExpandedBlock] = useState(null);
+
+        return(
+          <div className="card" style={{marginBottom:14}}>
+            <div className="card-hd" style={{cursor:"pointer"}} onClick={()=>setPlannerOpen(o=>!o)}>
+              <div className="card-title">📅 Планировщик дня</div>
+              <span style={{color:T.text3,fontSize:14}}>{plannerOpen?"▲":"▼"}</span>
+            </div>
+            {plannerOpen&&(
+              <div style={{marginTop:4}}>
+                {blocks.map(block=>{
+                  const isActive = currentH>=block.start && currentH<block.end;
+                  const isExpanded = expandedBlock===block.id;
+                  return(
+                    <div key={block.id} style={{marginBottom:8}}>
+                      {/* Заголовок блока */}
+                      <div
+                        onClick={()=>setExpandedBlock(isExpanded?null:block.id)}
+                        style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",
+                          background:isActive?"rgba(45,106,79,0.15)":block.color,
+                          borderRadius:10,cursor:"pointer",
+                          border:isActive?"1px solid rgba(45,106,79,0.3)":"1px solid transparent",
+                        }}>
+                        <span style={{fontSize:20}}>{block.emoji}</span>
+                        <div style={{flex:1}}>
+                          <div style={{display:"flex",alignItems:"center",gap:8}}>
+                            <span style={{fontSize:15,fontWeight:600,color:T.text0}}>{block.label}</span>
+                            {isActive&&<span style={{fontSize:10,color:T.success,fontFamily:"'JetBrains Mono'",letterSpacing:1,background:"rgba(45,106,79,0.15)",padding:"2px 6px",borderRadius:4}}>СЕЙЧАС</span>}
+                            {block.tasks.length>0&&<span className="badge bm" style={{fontSize:10}}>{block.tasks.length} дел</span>}
+                          </div>
+                          <div style={{fontSize:11,color:T.text3,fontFamily:"'JetBrains Mono'",marginTop:1}}>{block.time}</div>
+                        </div>
+                        <span style={{color:T.text3,fontSize:12}}>{isExpanded?"▲":"▼"}</span>
+                      </div>
+
+                      {/* Раскрытый блок */}
+                      {isExpanded&&(
+                        <div style={{padding:"8px 12px",background:"rgba(45,32,16,0.03)",borderRadius:"0 0 10px 10px",border:"1px solid "+T.bdrS,borderTop:"none"}}>
+                          {/* Рекомендация */}
+                          <div style={{fontSize:13,color:T.text2,fontStyle:"italic",padding:"8px 0 10px",lineHeight:1.55,borderBottom:"1px solid "+T.bdrS}}>
+                            💡 {block.tip}
+                          </div>
+                          {/* Задачи блока */}
+                          {block.tasks.length>0&&(
+                            <div style={{marginTop:8}}>
+                              {block.tasks.map(task=>(
+                                <div key={task.id} style={{display:"flex",alignItems:"center",gap:10,padding:"6px 0",borderBottom:"1px solid "+T.bdrS}}>
+                                  <span style={{fontSize:11,color:T.gold,fontFamily:"'JetBrains Mono'",minWidth:36}}>{task.preferredTime}</span>
+                                  <div className={"chk"+(task.doneDate===today?" done":"")} style={{flexShrink:0,width:20,height:20,fontSize:12}}
+                                    onClick={()=>setTasks(p=>p.map(t=>t.id===task.id?{...t,doneDate:t.doneDate===today?null:today,lastDone:t.doneDate===today?t.lastDone:today}:t))}>
+                                    {task.doneDate===today?"✓":""}
+                                  </div>
+                                  <span style={{fontSize:14,color:task.doneDate===today?T.text3:T.text0,flex:1,textDecoration:task.doneDate===today?"line-through":"none"}}>{task.title}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          {block.tasks.length===0&&<div style={{fontSize:13,color:T.text3,padding:"8px 0",fontStyle:"italic"}}>Запланированных дел нет. Назначь время в списке ниже →</div>}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+                {/* Без времени */}
+                {noTimeTasks.length>0&&(
+                  <div style={{marginTop:4,padding:"8px 12px",background:"rgba(45,32,16,0.04)",borderRadius:10,fontSize:13,color:T.text3}}>
+                    <span style={{fontFamily:"'JetBrains Mono'",fontSize:10,letterSpacing:1}}>БЕЗ ВРЕМЕНИ — {noTimeTasks.length} дел</span>
+                    <div style={{fontSize:12,color:T.text3,marginTop:2}}>Назначь время нажав на «--:--» в списке ниже</div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* ── ТКМ — карточка дня ── */}
       {(()=>{
@@ -3501,10 +3620,15 @@ function WorkSection({profile,tasks,setTasks,today,kb,notify}) {
 
         return(
           <>
-            <SubSection title="Отчётность в госорганы" emoji="🏛" color={T.danger}
-              items={govTasks.filter(t=>!t.title?.startsWith("💰")).sort((a,b)=>a.deadline?.localeCompare(b.deadline||"")||0)}
+            <SubSection title="Отчётность в КГД" emoji="🏛" color={T.danger}
+              items={workTasks.filter(t=>t.isDeadline&&!t.title?.startsWith("💰")&&["КГД","ЕНПФ","ФСМС","МЮ","АФН","МФ","МЗ","МОН","АДГС","АПК","МЭПР","КФМ"].includes(t.organ||"")).sort((a,b)=>a.deadline?.localeCompare(b.deadline||"")||0)}
               onAdd={()=>setModal({section:"work",isDeadline:true,organ:"КГД"})}
-              emptyText="Нет дедлайнов. Нажмите «+ Дедлайны» в карточке выше."/>
+              emptyText="Нет дедлайнов КГД. Нажми «+ Дедлайны» выше."/>
+            <SubSection title="Отчётность в БНС" emoji="📊" color="#1D4E6B"
+              items={workTasks.filter(t=>t.isDeadline&&!t.title?.startsWith("💰")&&t.organ==="БНС").sort((a,b)=>a.deadline?.localeCompare(b.deadline||"")||0)}
+              onAdd={()=>setModal({section:"work",isDeadline:true,organ:"БНС"})}
+              emptyText="Нет дедлайнов БНС."
+            />
             <SubSection title="Платежи" emoji="💰" color={T.warn}
               items={workTasks.filter(t=>t.isDeadline&&t.title?.startsWith("💰")).sort((a,b)=>a.deadline?.localeCompare(b.deadline||"")||0)}
               emptyText="Нет платежей"/>
@@ -3653,10 +3777,10 @@ function HomeSection({profile,tasks,setTasks,today,kb,notify}) {
           return "other";
         };
         
-        const todayTasks = homeTasks.filter(t=>classifyTask(t.freq)==="today" && isDue(t,today));
-        const weekTasks = homeTasks.filter(t=>classifyTask(t.freq)==="week" && isDue(t,today));
-        const monthTasks = homeTasks.filter(t=>classifyTask(t.freq)==="month" && isDue(t,today));
-        const otherTasks = homeTasks.filter(t=>classifyTask(t.freq)==="other" && isDue(t,today));
+        const todayTasks = homeTasks.filter(t=>classifyTask(t.freq)==="today" && isDue(t,today) && (t.freq==="daily"||t.freq==="workdays"||(t.freq.startsWith("every:")&&(parseInt(t.freq.split(":")[1])<=1||t.lastDone))||t.freq.startsWith("weekly:")));
+        const weekTasks = homeTasks.filter(t=>classifyTask(t.freq)==="week" && isDue(t,today) && t.lastDone);
+        const monthTasks = homeTasks.filter(t=>classifyTask(t.freq)==="month" && isDue(t,today) && t.lastDone);
+        const otherTasks = homeTasks.filter(t=>classifyTask(t.freq)==="other" && isDue(t,today) && t.lastDone);
         
         const renderGroup = (title, emoji, color, list, showFreq) => list.length===0 ? null : (
           <div className="card" style={{marginBottom:12,borderLeft:"3px solid "+color}}>
