@@ -62,6 +62,92 @@ function getZodiac(dob) {
   return {name:"Козерог",emoji:"♑"};
 }
 function getEastern(dob) { if(!dob) return "—"; return ["Крыса","Бык","Тигр","Кролик","Дракон","Змея","Лошадь","Коза","Обезьяна","Петух","Собака","Свинья"][(new Date(dob).getFullYear()-4)%12]; }
+
+// Стихия по году рождения (ТКМ: 五行 — пять первоэлементов)
+function getChineseElement(dob) {
+  if(!dob) return null;
+  const year = new Date(dob).getFullYear();
+  // Последняя цифра года определяет стихию и полярность
+  const last = year % 10;
+  const elements = [
+    {name:"Металл", emoji:"⚙️", yin:false, organ:"Лёгкие / Толстый кишечник", season:"Осень", taste:"Острое", color:"Белый", virtue:"Справедливость"},
+    {name:"Металл", emoji:"⚙️", yin:true,  organ:"Лёгкие / Толстый кишечник", season:"Осень", taste:"Острое", color:"Белый", virtue:"Справедливость"},
+    {name:"Вода",   emoji:"💧", yin:false, organ:"Почки / Мочевой пузырь",    season:"Зима",  taste:"Солёное", color:"Чёрный/синий", virtue:"Мудрость"},
+    {name:"Вода",   emoji:"💧", yin:true,  organ:"Почки / Мочевой пузырь",    season:"Зима",  taste:"Солёное", color:"Чёрный/синий", virtue:"Мудрость"},
+    {name:"Дерево", emoji:"🌿", yin:false, organ:"Печень / Желчный пузырь",   season:"Весна", taste:"Кислое",  color:"Зелёный", virtue:"Доброта"},
+    {name:"Дерево", emoji:"🌿", yin:true,  organ:"Печень / Желчный пузырь",   season:"Весна", taste:"Кислое",  color:"Зелёный", virtue:"Доброта"},
+    {name:"Огонь",  emoji:"🔥", yin:false, organ:"Сердце / Тонкий кишечник",  season:"Лето",  taste:"Горькое", color:"Красный", virtue:"Любовь"},
+    {name:"Огонь",  emoji:"🔥", yin:true,  organ:"Сердце / Тонкий кишечник",  season:"Лето",  taste:"Горькое", color:"Красный", virtue:"Любовь"},
+    {name:"Земля",  emoji:"🌍", yin:false, organ:"Селезёнка / Желудок",       season:"Межсезонье", taste:"Сладкое", color:"Жёлтый", virtue:"Честность"},
+    {name:"Земля",  emoji:"🌍", yin:true,  organ:"Селезёнка / Желудок",       season:"Межсезонье", taste:"Сладкое", color:"Жёлтый", virtue:"Честность"},
+  ];
+  return elements[last];
+}
+
+// Конституция по ТКМ (по сезону рождения — базовая)
+function getTCMConstitution(dob) {
+  if(!dob) return null;
+  const m = new Date(dob).getMonth();
+  if(m>=2&&m<=4) return {type:"Весенняя (Дерево)", desc:"Активная Ци, склонность к стрессу печени", foods:"Зелёные овощи, кислые продукты, проростки"};
+  if(m>=5&&m<=7) return {type:"Летняя (Огонь)", desc:"Избыток Ян, жар сердца, энергичность", foods:"Горькие травы, красные продукты, охлаждающие блюда"};
+  if(m>=8&&m<=10) return {type:"Осенняя (Металл)", desc:"Сухость лёгких, чёткость ума", foods:"Белые продукты, острые специи, груша, редис"};
+  return {type:"Зимняя (Вода)", desc:"Глубокая Инь, сила почек, интуиция", foods:"Солёные продукты, чёрные бобы, морепродукты, орехи"};
+}
+function getTCMFullProfile(profile) {
+  if(!profile.dob) return null;
+  const el = getChineseElement(profile.dob);
+  const cn = getTCMConstitution(profile.dob);
+
+  // Определяем синдром на основе симптомов
+  const syndromes = [];
+  if(profile.tcmTemp?.includes("жарко")) syndromes.push("Избыток Ян / Жар");
+  if(profile.tcmTemp?.includes("мёрзну")) syndromes.push("Недостаток Ян / Холод");
+  if(profile.tcmMoisture?.includes("Отёки")) syndromes.push("Сырость-Слизь");
+  if(profile.tcmMoisture?.includes("Сухость")) syndromes.push("Недостаток Инь / Сухость");
+  if(profile.tcmMoisture?.includes("потливость")) syndromes.push("Неустойчивость защитной Ци");
+
+  // Орган из часа рождения
+  const birthOrgan = profile.birthHour ? profile.birthHour.split("—")[1]?.trim().replace("Нет","") : null;
+
+  // Орган из эмоции
+  const emotionOrgan = profile.tcmEmotion?.includes("Дерево") ? "Печень" :
+    profile.tcmEmotion?.includes("Огонь") ? "Сердце" :
+    profile.tcmEmotion?.includes("Земля") ? "Селезёнка/Желудок" :
+    profile.tcmEmotion?.includes("Металл") ? "Лёгкие" :
+    profile.tcmEmotion?.includes("Вода") ? "Почки" : null;
+
+  // Орган из сна
+  const sleepOrgan = profile.tcmSleep?.includes("1–3") ? "Печень" :
+    profile.tcmSleep?.includes("3–5") ? "Лёгкие" :
+    profile.tcmSleep?.includes("5–7") ? "Толстый кишечник" : null;
+
+  // Орган из вкуса
+  const tasteOrgan = profile.tcmTaste?.includes("Кислое") ? "Печень/Желчный пузырь" :
+    profile.tcmTaste?.includes("Горькое") ? "Сердце" :
+    profile.tcmTaste?.includes("Сладкое") ? "Селезёнка" :
+    profile.tcmTaste?.includes("Острое") ? "Лёгкие" :
+    profile.tcmTaste?.includes("Солёное") ? "Почки" : null;
+
+  // Пищеварение
+  const digestionNote = profile.tcmDigestion?.includes("Вздутие") ? "Застой Ци в Желудке" :
+    profile.tcmDigestion?.includes("Тяжесть") ? "Недостаток Ян Селезёнки" :
+    profile.tcmDigestion?.includes("Изжога") ? "Жар Желудка" :
+    profile.tcmDigestion?.includes("Нестабильность") ? "Дисгармония Печени и Желудка" :
+    profile.tcmDigestion?.includes("аппетита") ? "Недостаток Ци Селезёнки" : null;
+
+  // Собираем уязвимые органы (можно несколько совпадений)
+  const organs = [birthOrgan, emotionOrgan, sleepOrgan, tasteOrgan].filter(Boolean);
+  const uniqueOrgans = [...new Set(organs)];
+
+  // Рекомендации по питанию на основе синдромов
+  let foodRecs = cn?.foods || "";
+  if(syndromes.includes("Избыток Ян / Жар")) foodRecs += ". Избегай: острого, жареного, алкоголя. Добавь: огурец, арбуз, листовой салат, зелёный чай";
+  if(syndromes.includes("Недостаток Ян / Холод")) foodRecs += ". Добавь: имбирь, корицу, тушёные блюда, тёплые супы. Избегай: сырого, холодного";
+  if(syndromes.includes("Сырость-Слизь")) foodRecs += ". Избегай: молочного, сладкого, жирного. Добавь: редис, пшено, ячмень, имбирь";
+  if(syndromes.includes("Недостаток Инь / Сухость")) foodRecs += ". Добавь: кунжут, мёд, груша, лилейный луковица, чёрный кунжут";
+
+  return { el, cn, syndromes, birthOrgan, emotionOrgan, sleepOrgan, tasteOrgan, uniqueOrgans, digestionNote, foodRecs };
+}
 function calcDegree(name) { if(!name) return null; const ru="абвгдеёжзийклмнопрстуфхцчшщъыьэюя"; let s=0; for(const c of name.toLowerCase()){const i=ru.indexOf(c);if(i>=0)s+=i+1;} return s%360||360; }
 function getMoon(dt=new Date()) { const p=((dt-new Date("2024-01-11"))/86400000%29.53+29.53)%29.53; if(p<1.85)return{n:"Новолуние",e:"🌑",t:"Начало — сей намерения"}; if(p<7.38)return{n:"Растущая",e:"🌒",t:"Рост — начинай новое"}; if(p<9.22)return{n:"Первая четверть",e:"🌓",t:"Действие — преодолевай"}; if(p<14.76)return{n:"Прибывающая",e:"🌔",t:"Сила — активно действуй"}; if(p<16.61)return{n:"Полнолуние",e:"🌕",t:"Пик — завершай"}; if(p<22.15)return{n:"Убывающая",e:"🌖",t:"Отдача — анализируй"}; if(p<23.99)return{n:"Последняя четверть",e:"🌗",t:"Итоги — очищай"}; return{n:"Тёмная луна",e:"🌘",t:"Отдых — переосмысли"}; }
 function openGCal(title,date,desc="") { const s=new Date(date),e=new Date(s.getTime()+3600000),f=d=>d.toISOString().replace(/[-:]/g,"").split(".")[0]+"Z"; window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${f(s)}/${f(e)}&details=${encodeURIComponent(desc)}`,"_blank"); }
@@ -91,6 +177,7 @@ function buildKB(p) {
   return `Ты — личный жизненный советник Life Diary. Говори тепло, как умный близкий друг. Конкретно и по делу. ВСЕГДА учитывай весь профиль при ответе.
 
 ПРОФИЛЬ: ${p.name||"—"}, ${age?age+" лет":""}, ${p.gender||""}, ${p.city||""}
+КАЗАХСТАН · ГОРОД: ${p.city||"—"}
 АСТРО: ${getZodiac(p.dob).name}, восточный знак-${getEastern(p.dob)}, хронотип: ${p.chronotype||"—"}, подъём-${wakeTime}, отбой-${p.sleep||"23:00"}
 ЛИЧНОСТЬ: решения-${p.decisionStyle||"—"}, энергия из-${p.energySource||"—"}, планирование-${p.planningStyle||"—"}, ценность-${p.coreValue||"—"}
 СТРЕСС: от-${(p.stressors||[]).join(",")||"—"}, восстановление-${(p.recovery||[]).join(",")||"—"}
@@ -981,6 +1068,7 @@ const OB_STEPS = [
   {id:"home",     title:"Твой дом",                      sub:"Тип жилья, кто с тобой живёт, растения — для правильного графика быта."},
   {id:"pets",     title:"Питомцы",                       sub:"Добавь всех — кормление, ветеринарные дела войдут в расписание автоматически."},
   {id:"health",   title:"Здоровье",                      sub:"Чтобы расписание строилось с заботой о тебе, а не вопреки."},
+  {id:"tcm",      title:"ТКМ-диагностика",               sub:"5 вопросов для точного профиля по традиционной китайской медицине. Это позволит составить меню и рекомендации, идеально подходящие именно твоему телу."},
   {id:"beauty",   title:"Уход за собой",                 sub:"Маски, ногти, стрижки — поставим в расписание раз и забудем."},
   {id:"shopping", title:"Продукты и покупки",            sub:"Когда и как закупаешься — напомним вовремя."},
   {id:"hobbies",  title:"Хобби и увлечения",             sub:"Твои увлечения заслуживают места в жизни — не только дела."},
@@ -1074,7 +1162,7 @@ function Onboarding({ onDone }) {
               <label>Часовой пояс</label>
               <select value={d.tz||""} onChange={e=>set("tz",e.target.value)}>
                 <option value="">—</option>
-                {["UTC+2 Калининград","UTC+3 Москва","UTC+4 Самара","UTC+5 Екатеринбург","UTC+6 Омск","UTC+7 Красноярск","UTC+8 Иркутск","UTC+9 Якутск","UTC+10 Владивосток","UTC+12 Камчатка"].map(t=><option key={t}>{t}</option>)}
+                {["UTC+5 Актобе, Атырау, Западный Казахстан","UTC+6 Алматы, Нур-Султан, Шымкент, Восточный Казахстан"].map(t=><option key={t}>{t}</option>)}
               </select>
             </div>
           </div>
@@ -1147,7 +1235,12 @@ function Onboarding({ onDone }) {
           </div>
           <div className="fld"><label>Что вдохновляет?</label><input placeholder="Результат, команда, творчество, деньги..." value={d.workInspire||""} onChange={e=>set("workInspire",e.target.value)}/></div>
           <div className="fld"><label>Рабочая цель</label>
-            <div className="chips">{["Карьерный рост","Повышение дохода","Сменить профессию","Своё дело","Работать меньше","Прокачать навыки","Стабильность"].map(v=><div key={v} className={`chip ${d.careerGoal===v?"on":""}`} onClick={()=>set("careerGoal",v)}>{v}</div>)}</div>
+            <div className="chips">{["Карьерный рост","Повышение дохода","Сменить профессию","Своё дело","Работать меньше","Прокачать навыки","Стабильность"].map(v=><div key={v} className={"chip "+(d.careerGoal===v?"on":"")} onClick={()=>set("careerGoal",v)}>{v}</div>)}</div>
+          </div>
+          <div className="fld">
+            <label>Профессиональные отчёты и дедлайны</label>
+            <div className="fld-hint">Выбери свою специализацию — нужные дедлайны добавятся в рабочие задачи автоматически</div>
+            <div className="chips">{["Бухгалтер / ИП","HR / Кадры","Юрист","Врач / Мед. работник","Педагог","Госслужащий","Нет отчётности"].map(v=><div key={v} className={"chip "+(d.profDeadlines===v?"on":"")} onClick={()=>set("profDeadlines",v)}>{v}</div>)}</div>
           </div>
         </>}
 
@@ -1180,6 +1273,14 @@ function Onboarding({ onDone }) {
               <div className="chips">{["Квартира","Дом","Комната","Студия"].map(v=><div key={v} className={`chip ${d.homeType===v?"on":""}`} onClick={()=>set("homeType",v)}>{v}</div>)}</div>
             </div>
             <div className="fld"><label>Площадь (м²)</label><input type="number" placeholder="45" value={d.homeArea||""} onChange={e=>set("homeArea",e.target.value)}/></div>
+          </div>
+          <div className="fld-row">
+            <div className="fld"><label>Спален</label><input type="number" placeholder="1" min="0" max="10" value={d.bedrooms||""} onChange={e=>set("bedrooms",e.target.value)}/></div>
+            <div className="fld"><label>Санузлов</label><input type="number" placeholder="1" min="0" max="5" value={d.bathrooms||""} onChange={e=>set("bathrooms",e.target.value)}/></div>
+          </div>
+          <div className="fld">
+            <label>Помещения</label>
+            <div className="chips">{["Кухня","Гостиная","Коридор","Балкон","Кабинет","Детская","Кладовка","Гараж"].map(v=><div key={v} className={`chip ${(d.homeRooms||[]).includes(v)?"on":""}`} onClick={()=>tog("homeRooms",v)}>{v}</div>)}</div>
           </div>
           <div className="fld-row">
             <div className="fld"><label>Комнат</label><input type="number" placeholder="2" value={d.rooms||""} onChange={e=>set("rooms",e.target.value)}/></div>
@@ -1256,6 +1357,119 @@ function Onboarding({ onDone }) {
           </div>
           <div className="fld"><label>Питание</label>
             <div className="chips">{["Обычное","Вегетарианское","Веганское","Без глютена","Кето","Интервальное","ПП"].map(v=><div key={v} className={`chip ${d.nutrition===v?"on":""}`} onClick={()=>set("nutrition",v)}>{v}</div>)}</div>
+          </div>
+        </>}
+
+        {s.id==="tcm" && <>
+          <div style={{padding:"12px 16px",background:"rgba(45,106,79,0.08)",borderRadius:12,marginBottom:20,fontSize:14,color:T.text2,lineHeight:1.6,borderLeft:"3px solid "+T.gold}}>
+            {d.dob && (()=>{
+              const el=getChineseElement(d.dob);
+              const cn=getTCMConstitution(d.dob);
+              return el ? <span>По году рождения твоя стихия — <strong style={{color:T.gold}}>{el.emoji} {el.name} ({el.yin?"Инь":"Ян"})</strong>. Эти вопросы уточнят твой индивидуальный ТКМ-профиль.</span> : null;
+            })()}
+            {!d.dob && <span>Ответь на вопросы — это позволит составить персональные рекомендации по питанию и здоровью на основе ТКМ.</span>}
+          </div>
+
+          {/* 1. Час рождения */}
+          <div className="fld">
+            <label>Примерный час рождения</label>
+            <div className="fld-hint">Определяет главный меридиан и тип Ци</div>
+            <div className="chips">{[
+              "🌙 Ночь (23–01) — Желчный пузырь",
+              "🌑 Глубокая ночь (01–03) — Печень",
+              "🌒 Ранее утро (03–05) — Лёгкие",
+              "🌅 Рассвет (05–07) — Толстый кишечник",
+              "☀️ Утро (07–09) — Желудок",
+              "🌤 Позднее утро (09–11) — Селезёнка",
+              "💛 Полдень (11–13) — Сердце",
+              "🌞 День (13–15) — Тонкий кишечник",
+              "🌇 Послеполуденное (15–17) — Мочевой пузырь",
+              "🌆 Ранний вечер (17–19) — Почки",
+              "🌃 Вечер (19–21) — Перикард",
+              "🌙 Поздний вечер (21–23) — Тройной обогреватель",
+              "❓ Не знаю",
+            ].map(v=><div key={v} className={"chip "+(d.birthHour===v?"on":"")} onClick={()=>set("birthHour",v)}>{v}</div>)}</div>
+          </div>
+
+          {/* 2. Ощущение температуры */}
+          <div className="fld">
+            <label>Как ты обычно себя чувствуешь по температуре тела?</label>
+            <div className="fld-hint">Диагностика Инь/Ян дисбаланса</div>
+            <div className="chips">{[
+              "🥵 Часто жарко, потею",
+              "🥶 Часто мёрзну, руки/ноги холодные",
+              "🌡 Бывает и так, и так",
+              "✅ Обычно комфортно",
+            ].map(v=><div key={v} className={"chip "+(d.tcmTemp===v?"on":"")} onClick={()=>set("tcmTemp",v)}>{v}</div>)}</div>
+          </div>
+
+          {/* 3. Влажность/сухость */}
+          <div className="fld">
+            <label>Какие симптомы сухости или влажности замечаешь?</label>
+            <div className="fld-hint">Определяет тип Сырость/Сухость по ТКМ</div>
+            <div className="chips">{[
+              "💧 Отёки, тяжесть, слизь — влажность",
+              "🏜 Сухость кожи, губ, глаз — сухость",
+              "😓 Избыточная потливость",
+              "🌿 Нормально, ничего особенного",
+              "🤔 Сложно сказать",
+            ].map(v=><div key={v} className={"chip "+(d.tcmMoisture===v?"on":"")} onClick={()=>set("tcmMoisture",v)}>{v}</div>)}</div>
+          </div>
+
+          {/* 4. Эмоциональный паттерн */}
+          <div className="fld">
+            <label>Какие эмоции преобладают в твоей жизни?</label>
+            <div className="fld-hint">Каждая стихия связана с определёнными эмоциями</div>
+            <div className="chips">{[
+              "😤 Раздражение, гнев, нетерпение — Дерево",
+              "😰 Тревога, суета, перевозбуждение — Огонь",
+              "😟 Беспокойство, навязчивые мысли — Земля",
+              "😢 Печаль, грусть, ностальгия — Металл",
+              "😨 Страх, неуверенность, изоляция — Вода",
+              "😊 В целом гармонично",
+            ].map(v=><div key={v} className={"chip "+(d.tcmEmotion===v?"on":"")} onClick={()=>set("tcmEmotion",v)}>{v}</div>)}</div>
+          </div>
+
+          {/* 5. Пищевые предпочтения */}
+          <div className="fld">
+            <label>Что тянет есть чаще всего?</label>
+            <div className="fld-hint">Тяга к определённому вкусу — сигнал органа</div>
+            <div className="chips">{[
+              "🍋 Кислое (лимон, уксус, квашеное) — Печень",
+              "🌶 Горькое (кофе, шоколад тёмный) — Сердце",
+              "🍬 Сладкое (хлеб, сахар, фрукты) — Селезёнка",
+              "🧂 Острое и пряное (специи, имбирь) — Лёгкие",
+              "🥓 Солёное (соленья, сыр, морепродукты) — Почки",
+              "🤷 Всё одинаково",
+            ].map(v=><div key={v} className={"chip "+(d.tcmTaste===v?"on":"")} onClick={()=>set("tcmTaste",v)}>{v}</div>)}</div>
+          </div>
+
+          {/* 6. Сон */}
+          <div className="fld">
+            <label>Особенности сна по ТКМ</label>
+            <div className="fld-hint">Время пробуждения указывает на орган требующий внимания</div>
+            <div className="chips">{[
+              "⏰ Просыпаюсь в 1–3 ночи — Печень",
+              "⏰ Просыпаюсь в 3–5 утра — Лёгкие",
+              "⏰ Просыпаюсь в 5–7 утра — Толстый кишечник",
+              "💤 Сплю крепко всю ночь",
+              "😴 Засыпаю с трудом, долго",
+              "🥱 Сонливость днём, усталость",
+            ].map(v=><div key={v} className={"chip "+(d.tcmSleep===v?"on":"")} onClick={()=>set("tcmSleep",v)}>{v}</div>)}</div>
+          </div>
+
+          {/* 7. Пищеварение */}
+          <div className="fld">
+            <label>Как работает пищеварение?</label>
+            <div className="fld-hint">Желудок и Селезёнка — центр Ци в ТКМ</div>
+            <div className="chips">{[
+              "✅ Всё хорошо",
+              "🎈 Вздутие, газы после еды",
+              "❄️ Тяжесть, еда долго переваривается",
+              "🔥 Изжога, кислотность",
+              "💨 Нестабильность (то запор, то нет)",
+              "😩 Часто нет аппетита",
+            ].map(v=><div key={v} className={"chip "+(d.tcmDigestion===v?"on":"")} onClick={()=>set("tcmDigestion",v)}>{v}</div>)}</div>
           </div>
         </>}
 
@@ -1879,8 +2093,95 @@ function TaskModal({ task, onSave, onClose, defaultSection="tasks" }) {
 // ══════════════════════════════════════════════════════════════
 //  TODAY
 // ══════════════════════════════════════════════════════════════
+// ── ТКМ: активные меридианы по часу дня ──────────────────────
+function getTCMHourOrgan(hour) {
+  const map = [
+    {h:[23,0],  organ:"Желчный пузырь", emoji:"💚", tip:"Время решений и смелости. Не принимай важных решений — лучше отдыхай."},
+    {h:[1,2],   organ:"Печень",         emoji:"🌿", tip:"Очищение крови. Сон обязателен — тело восстанавливается."},
+    {h:[3,4],   organ:"Лёгкие",         emoji:"🫁", tip:"Самый глубокий сон. Идеально для дыхательных практик ранним утром."},
+    {h:[5,6],   organ:"Толстый кишечник",emoji:"🌅",tip:"Время пробуждения и очищения. Выпей воду, сходи в туалет."},
+    {h:[7,8],   organ:"Желудок",        emoji:"🍚", tip:"Самое сильное пищеварение — лучшее время для завтрака."},
+    {h:[9,10],  organ:"Селезёнка",      emoji:"🌾", tip:"Пик усвоения питательных веществ. Хорошо думается, продуктивная работа."},
+    {h:[11,12], organ:"Сердце",         emoji:"❤️", tip:"Пик умственной активности и общения. Важные встречи — сейчас."},
+    {h:[13,14], organ:"Тонкий кишечник",emoji:"☀️", tip:"Усвоение обеда. Небольшой отдых после еды очень полезен."},
+    {h:[15,16], organ:"Мочевой пузырь", emoji:"💧", tip:"Второй пик энергии. Хорошо для спорта и физической работы."},
+    {h:[17,18], organ:"Почки",          emoji:"🌊", tip:"Резервуар жизненной силы. Не перегружай себя в это время."},
+    {h:[19,20], organ:"Перикард",       emoji:"🌇", tip:"Время для близких и тепла. Общение, ужин, нежность."},
+    {h:[21,22], organ:"Тройной обогреватель",emoji:"🔥",tip:"Регуляция температуры. Готовься ко сну, не переедай."},
+  ];
+  const h = hour % 24;
+  return map.find(m => h >= m.h[0] && h <= m.h[1]) || map[0];
+}
+
+// ── ТКМ: день недели по пяти стихиям ─────────────────────────
+function getTCMDayInfo(date) {
+  const dow = date.getDay(); // 0=вс
+  const days = [
+    {name:"Воскресенье", element:"Земля",  emoji:"🌍", color:"#B8860B",
+     good:["Забота о себе","Семья","Приготовление еды","Планирование недели"],
+     avoid:["Переедание","Беспокойство","Суета"],
+     organs:"Желудок / Селезёнка", tip:"День питания и заботы. Корми себя тем, что даёт тепло."},
+    {name:"Понедельник", element:"Металл",  emoji:"⚙️", color:"#708090",
+     good:["Чёткие планы","Порядок","Дыхательные практики","Уборка"],
+     avoid:["Хаос","Грусть","Нытьё"],
+     organs:"Лёгкие / Толстый кишечник", tip:"День структуры. Наведи порядок — в делах и голове."},
+    {name:"Вторник",    element:"Огонь",   emoji:"🔥", color:"#DC143C",
+     good:["Активность","Общение","Важные переговоры","Спорт"],
+     avoid:["Перевозбуждение","Кофе в избытке","Конфликты"],
+     organs:"Сердце / Тонкий кишечник", tip:"Огненный день. Энергия высокая — направь её в дело."},
+    {name:"Среда",      element:"Вода",    emoji:"💧", color:"#1E3A5F",
+     good:["Глубокие размышления","Медитация","Работа с интуицией","Планирование"],
+     avoid:["Страх","Изоляция","Холодная еда"],
+     organs:"Почки / Мочевой пузырь", tip:"День мудрости. Слушай внутренний голос."},
+    {name:"Четверг",    element:"Дерево",  emoji:"🌿", color:"#228B22",
+     good:["Новые начинания","Движение","Зелёная еда","Растяжка"],
+     avoid:["Гнев","Алкоголь","Жирная еда"],
+     organs:"Печень / Желчный пузырь", tip:"День роста. Начни что-то новое или сделай шаг к цели."},
+    {name:"Пятница",    element:"Земля",   emoji:"🌍", color:"#DAA520",
+     good:["Завершение дел","Благодарность","Приятная еда","Общение"],
+     avoid:["Переработка","Сладкое в избытке","Тревога"],
+     organs:"Желудок / Селезёнка", tip:"День завершения. Закончи начатое, порадуй себя."},
+    {name:"Суббота",    element:"Металл",  emoji:"⚙️", color:"#C0C0C0",
+     good:["Отдых","Дыхание","Прогулки на свежем воздухе","Уборка"],
+     avoid:["Грусть","Засиживаться дома","Переутомление"],
+     organs:"Лёгкие / Толстый кишечник", tip:"День очищения. Выйди на воздух, дыши глубоко."},
+  ];
+  return days[dow];
+}
+
+// ── ТКМ: персональные рекомендации на день ────────────────────
+function getTCMDayRecs(profile, dayInfo) {
+  const tcm = getTCMFullProfile(profile);
+  const recs = [];
+  if(!tcm) return recs;
+  const {el, syndromes, uniqueOrgans} = tcm;
+
+  // Пересечение органов дня и слабых органов
+  const dayOrgans = dayInfo.organs.toLowerCase();
+  uniqueOrgans.forEach(organ => {
+    if(dayOrgans.includes(organ.toLowerCase().split("/")[0].trim().toLowerCase())) {
+      recs.push({type:"warn", text:"Сегодня активен орган «"+organ+"» — твоя зона внимания. Особенно береги себя."});
+    }
+  });
+
+  // Рекомендации по синдромам
+  if(syndromes.includes("Избыток Ян / Жар") && dayInfo.element==="Огонь")
+    recs.push({type:"warn", text:"Огненный день + твой Жар = риск перегрева. Избегай острого и стресса, пей больше воды."});
+  if(syndromes.includes("Недостаток Ян / Холод") && dayInfo.element==="Вода")
+    recs.push({type:"warn", text:"Водный день + твой Холод = возможна вялость. Добавь имбирный чай и тёплую еду."});
+  if(syndromes.includes("Сырость-Слизь") && (dayInfo.element==="Земля"))
+    recs.push({type:"warn", text:"Земной день + Сырость = тяжесть. Пропусти молочное и сладкое сегодня."});
+
+  // Совпадение стихий (усиление)
+  if(el && el.name === dayInfo.element)
+    recs.push({type:"good", text:"Твоя стихия "+el.name+" совпадает с днём — ты в потоке! Используй энергию для важного."});
+
+  return recs;
+}
+
 function TodaySection({profile,tasks,setTasks,journal,setJournal,today,moon,kb,notify,petLog,setPetLog}) {
   const [addModal, setAddModal] = useState(false);
+  const [modal, setModal] = useState(null);
   const [aiPlan, setAiPlan] = useState("");
   const [planLoading, setPlanLoading] = useState(false);
   const todayE = journal[today]||{};
@@ -1905,7 +2206,23 @@ function TodaySection({profile,tasks,setTasks,journal,setJournal,today,moon,kb,n
 
   const getAiPlan = async()=>{
     setPlanLoading(true);
-    const r = await askClaude(kb,`Сегодня ${new Date().toLocaleDateString("ru-RU",{weekday:"long",day:"numeric",month:"long"})}. Луна: ${moon.n} — ${moon.t}. Задачи: ${dueTasks.map(t=>t.title).join(", ")||"нет"}. Питомцы: ${(profile.pets||[]).map(p=>`${p.name}(${p.feedTimes}х)`).join(", ")||"нет"}. Составь тёплое утреннее послание и план дня по блокам: утро / работа / обед / после работы / вечер. Конкретно, без списков с номерами, живым языком как близкий друг.`,900);
+    const now = new Date();
+    const dayInfo = getTCMDayInfo(now);
+    const hourOrgan = getTCMHourOrgan(now.getHours());
+    const tcm = getTCMFullProfile(profile);
+    const r = await askClaude(kb,
+      `Сегодня ${now.toLocaleDateString("ru-RU",{weekday:"long",day:"numeric",month:"long"})}. Луна: ${moon.n} — ${moon.t}.\n`+
+      `ТКМ дня: стихия ${dayInfo.element}, органы ${dayInfo.organs}. ${dayInfo.tip}\n`+
+      `Активный меридиан сейчас (${now.getHours()}:00): ${hourOrgan.organ} — ${hourOrgan.tip}\n`+
+      (tcm?.el?`Моя стихия: ${tcm.el.name}. Синдромы: ${(tcm.syndromes||[]).join(", ")||"нет"}. Слабые органы: ${(tcm.uniqueOrgans||[]).join(", ")||"—"}.\n`:"")+
+      (todayE.todayEmotion?`Сегодняшняя эмоция: ${todayE.todayEmotion}. Учитывай это при составлении плана.\n`:"")+
+      `Задачи: ${dueTasks.map(t=>(t.preferredTime?t.preferredTime+" ":"")+t.title).join(", ")||"нет"}.\n`+
+      `Питомцы: ${(profile.pets||[]).map(p=>p.name+"("+p.feedTimes+"х)").join(", ")||"нет"}.\n`+
+      `Работа до ${profile.workEnd||"18:00"}, подъём ${profile.wake||"?"}.\n\n`+
+      `Составь тёплый план дня по блокам: утро / работа / обед / после работы / вечер. `+
+      `Учитывай активные меридианы — рекомендуй еду и активности в правильное время. `+
+      `Живым языком, как близкий друг знающий ТКМ.`,
+      1200);
     setAiPlan(r); setPlanLoading(false);
   };
 
@@ -1927,7 +2244,86 @@ function TodaySection({profile,tasks,setTasks,journal,setJournal,today,moon,kb,n
         </div>
       </div>
 
-      {/* Stats */}
+      {/* ── ТКМ — карточка дня ── */}
+      {(()=>{
+        const now = new Date();
+        const dayInfo = getTCMDayInfo(now);
+        const hourOrgan = getTCMHourOrgan(now.getHours());
+        const recs = getTCMDayRecs(profile, dayInfo);
+        const tcm = getTCMFullProfile(profile);
+        return(
+          <div className="card" style={{marginBottom:14,borderLeft:"3px solid "+dayInfo.color}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
+              <div style={{display:"flex",alignItems:"center",gap:10}}>
+                <span style={{fontSize:28}}>{dayInfo.emoji}</span>
+                <div>
+                  <div style={{fontFamily:"'Cormorant Infant',serif",fontSize:20,color:T.text0}}>
+                    {dayInfo.name} — стихия <span style={{color:dayInfo.color}}>{dayInfo.element}</span>
+                  </div>
+                  <div style={{fontSize:12,color:T.text2,fontFamily:"'JetBrains Mono'",letterSpacing:.5}}>
+                    {dayInfo.organs}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Подсказка дня */}
+            <div style={{padding:"10px 14px",background:"rgba(45,106,79,0.07)",borderRadius:10,marginBottom:12,fontSize:15,color:T.text1,fontStyle:"italic",lineHeight:1.55}}>
+              {dayInfo.tip}
+            </div>
+
+            {/* Активный меридиан прямо сейчас */}
+            <div style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",background:"rgba(45,32,16,0.05)",borderRadius:10,marginBottom:12}}>
+              <span style={{fontSize:20}}>{hourOrgan.emoji}</span>
+              <div style={{flex:1}}>
+                <div style={{fontSize:11,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:2}}>АКТИВНЫЙ МЕРИДИАН СЕЙЧАС</div>
+                <div style={{fontSize:15,color:T.gold,fontWeight:500}}>{hourOrgan.organ}</div>
+                <div style={{fontSize:13,color:T.text2,marginTop:2,lineHeight:1.4}}>{hourOrgan.tip}</div>
+              </div>
+            </div>
+
+            {/* Что хорошо / что избегать */}
+            <div className="g2" style={{gap:8,marginBottom:recs.length>0?12:0}}>
+              <div style={{padding:"8px 12px",background:"rgba(45,106,79,0.08)",borderRadius:10}}>
+                <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:6}}>СЕГОДНЯ ХОРОШО</div>
+                {dayInfo.good.map((g,i)=>(
+                  <div key={i} style={{fontSize:13,color:T.success,marginBottom:3,display:"flex",gap:6}}>
+                    <span>✦</span><span>{g}</span>
+                  </div>
+                ))}
+              </div>
+              <div style={{padding:"8px 12px",background:"rgba(139,32,32,0.06)",borderRadius:10}}>
+                <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:6}}>ЛУЧШЕ ИЗБЕГАТЬ</div>
+                {dayInfo.avoid.map((a,i)=>(
+                  <div key={i} style={{fontSize:13,color:T.danger,marginBottom:3,display:"flex",gap:6}}>
+                    <span>✗</span><span>{a}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Персональные рекомендации по ТКМ-профилю */}
+            {recs.length>0&&(
+              <div>
+                <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:8}}>ЛИЧНО ДЛЯ ТЕБЯ (ТКМ-ПРОФИЛЬ)</div>
+                {recs.map((r,i)=>(
+                  <div key={i} style={{display:"flex",gap:10,alignItems:"flex-start",marginBottom:8,padding:"8px 12px",borderRadius:10,background:r.type==="warn"?"rgba(139,32,32,0.06)":"rgba(45,106,79,0.08)"}}>
+                    <span style={{fontSize:16,flexShrink:0}}>{r.type==="warn"?"⚠️":"⭐"}</span>
+                    <div style={{fontSize:14,color:r.type==="warn"?T.warn:T.success,lineHeight:1.5}}>{r.text}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Если ТКМ не заполнен */}
+            {!tcm?.el&&(
+              <div style={{fontSize:13,color:T.text3,fontStyle:"italic",marginTop:8}}>
+                Пройди ТКМ-диагностику в профиле — получишь персональные рекомендации на каждый день
+              </div>
+            )}
+          </div>
+        );
+      })()}
       <div className="g4" style={{marginBottom:14}}>
         <div className="stat"><div className="stat-n">{doneCnt}/{dueTasks.length+doneCnt||0}</div><div className="stat-l">Задач сегодня</div></div>
         <div className="stat"><div className="stat-n">{todayE.mood||"—"}</div><div className="stat-l">Настроение</div></div>
@@ -1935,7 +2331,7 @@ function TodaySection({profile,tasks,setTasks,journal,setJournal,today,moon,kb,n
         <div className="stat"><div className="stat-n">{getZodiac(profile.dob).emoji}</div><div className="stat-l">{getZodiac(profile.dob).name}</div></div>
       </div>
 
-      {/* Mood & Energy */}
+      {/* Mood & Energy — расширенный с ТКМ-балансом */}
       <div className="card">
         <div className="card-hd"><div className="card-title">Как ты сейчас?</div></div>
         <div className="sec-lbl">Настроение</div>
@@ -1946,7 +2342,181 @@ function TodaySection({profile,tasks,setTasks,journal,setJournal,today,moon,kb,n
         <div style={{display:"flex",gap:8,marginBottom:18}}>
           {[1,2,3,4,5].map(n=><div key={n} className={`en-dot${(todayE.energy||0)>=n?" on":""}`} onClick={()=>saveJ({energy:n})}>{n}</div>)}
         </div>
-        <div className="fld" style={{marginBottom:0}}>
+
+        {/* Эмоция дня — выбор */}
+        <div className="sec-lbl">Преобладающая эмоция</div>
+        <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:18}}>
+          {[
+            {emoji:"😤",label:"Раздражение",organ:"Печень",element:"Дерево",balance:"Дыши глубоко, прогулка, кислые ягоды"},
+            {emoji:"😰",label:"Тревога",    organ:"Сердце", element:"Огонь", balance:"Медитация, горький шоколад, тишина"},
+            {emoji:"😟",label:"Беспокойство",organ:"Селезёнка",element:"Земля",balance:"Заземление, тёплый суп, ритм"},
+            {emoji:"😢",label:"Грусть",     organ:"Лёгкие", element:"Металл",balance:"Дыхательные практики, белая еда, порядок"},
+            {emoji:"😨",label:"Страх",      organ:"Почки",  element:"Вода",  balance:"Тепло, солёный бульон, спокойствие"},
+            {emoji:"😊",label:"Радость",    organ:"Сердце", element:"Огонь", balance:"Поделись с близкими, не суетись"},
+            {emoji:"🌿",label:"Спокойствие",organ:"Все",    element:"Баланс",balance:"Ты в гармонии — поддерживай"},
+          ].map(e=>(
+            <div key={e.label}
+              onClick={()=>saveJ({todayEmotion:todayE.todayEmotion===e.label?null:e.label})}
+              style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,padding:"8px 12px",
+                borderRadius:12,border:"1px solid "+(todayE.todayEmotion===e.label?T.gold:T.bdr),
+                background:todayE.todayEmotion===e.label?"rgba(45,106,79,0.12)":"transparent",
+                cursor:"pointer",minWidth:70,transition:"all .18s"}}>
+              <span style={{fontSize:24}}>{e.emoji}</span>
+              <span style={{fontSize:12,color:todayE.todayEmotion===e.label?T.gold:T.text2,textAlign:"center",lineHeight:1.3}}>{e.label}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* ТКМ-расшифровка выбранной эмоции */}
+        {todayE.todayEmotion&&(()=>{
+          const emotionMap = {
+            "Раздражение":{organ:"Печень",element:"Дерево",emoji:"🌿",color:"#228B22",
+              what:"Избыток энергии Дерева — Ци застоит в Печени. Тело ищет выход.",
+              balance:[
+                "🚶 Прогулка 20 мин — движение разгоняет застой Ци",
+                "🍋 Кислые продукты: лимон, клюква, квашеная капуста",
+                "🫁 Дыхание: вдох 4с → выдох 6с, 10 раз",
+                "✅ Закончи одно незавершённое дело — Печень любит завершённость",
+              ],
+              avoid:"Алкоголь, жирное, крики — усиливают застой",
+              tasks:dueTasks.filter(t=>["home","hobbies"].includes(t.section)).slice(0,2),
+              taskTip:"Дела по дому и хобби помогут направить энергию Дерева"},
+            "Тревога":{organ:"Сердце / Тонкий кишечник",element:"Огонь",emoji:"❤️",color:"#DC143C",
+              what:"Огонь Сердца разгорелся — Шэнь (дух) беспокоен.",
+              balance:[
+                "🧘 Медитация 10 мин: сосредоточься на дыхании",
+                "🍫 Горький шоколад или цикорий — охлаждает Огонь",
+                "📵 Убери телефон на 30 мин — Сердцу нужна тишина",
+                "✍️ Запиши 3 вещи которые точно под контролем",
+              ],
+              avoid:"Кофе, новости, споры — подбрасывают дров в Огонь",
+              tasks:dueTasks.filter(t=>t.priority==="l").slice(0,2),
+              taskTip:"Лёгкие дела без давления — не берись за сложное в тревоге"},
+            "Беспокойство":{organ:"Селезёнка / Желудок",element:"Земля",emoji:"🌍",color:"#DAA520",
+              what:"Земля расшаталась — Ци Селезёнки истощена навязчивыми мыслями.",
+              balance:[
+                "🍵 Тёплый имбирный чай или суп — питает Желудок",
+                "🪴 Потрогай землю, растение, что-то настоящее — заземление",
+                "📋 Список трёх конкретных шагов на сегодня — структура лечит",
+                "🎵 Пой или слушай приятную музыку — резонирует с Землёй",
+              ],
+              avoid:"Холодная еда, хаос, неопределённость — дестабилизируют Землю",
+              tasks:dueTasks.filter(t=>t.freq==="daily").slice(0,2),
+              taskTip:"Ежедневные ритуальные дела дают ощущение почвы под ногами"},
+            "Грусть":{organ:"Лёгкие / Толстый кишечник",element:"Металл",emoji:"⚙️",color:"#708090",
+              what:"Металл сжался — Ци Лёгких опустилась, дыхание поверхностное.",
+              balance:[
+                "🫁 Глубокое дыхание животом 5 мин — напрямую питает Лёгкие",
+                "🏃 Лёгкая прогулка на свежем воздухе — Лёгкие управляют кожей",
+                "⬜ Белые продукты: груша, редис, рис — союзники Металла",
+                "🗑 Выбрось что-то ненужное — Толстый кишечник любит отпускать",
+              ],
+              avoid:"Замкнутость, жалость к себе, тяжёлая пища — усугубляют",
+              tasks:dueTasks.filter(t=>t.section==="health").slice(0,2),
+              taskTip:"Задачи по здоровью сейчас особенно важны — поддержи Лёгкие"},
+            "Страх":{organ:"Почки / Мочевой пузырь",element:"Вода",emoji:"💧",color:"#1E3A5F",
+              what:"Вода замёрзла — Ци Почек ослабла, жизненная сила на минимуме.",
+              balance:[
+                "🌡 Тепло на поясницу — Почки живут в пояснице",
+                "🥣 Тёплый солёный бульон, морепродукты, чёрные бобы",
+                "🕯 Создай безопасное пространство: тишина, одеяло, покой",
+                "📝 Запиши самый страшный сценарий и реальную вероятность",
+              ],
+              avoid:"Холод, перегрузки, резкие перемены — истощают Воду",
+              tasks:dueTasks.filter(t=>t.priority!=="h").slice(0,2),
+              taskTip:"Только лёгкие дела — не давай себе сверхнагрузку в этот день"},
+            "Радость":{organ:"Сердце",element:"Огонь",emoji:"❤️",color:"#E8556D",
+              what:"Огонь Сердца горит ярко — прекрасно, но избыток Радости рассеивает Шэнь.",
+              balance:[
+                "💌 Поделись радостью с близким — разделённая радость укрепляет",
+                "🎯 Направь энергию в важное дело — огонь горит, используй",
+                "🚶 Прогулка без цели — просто присутствие в моменте",
+                "📵 Не перевозбуждайся — отдых тоже важен",
+              ],
+              avoid:"Избыточное возбуждение, хаотичные решения на эйфории",
+              tasks:dueTasks.filter(t=>t.priority==="h").slice(0,2),
+              taskTip:"Сейчас лучший момент для важных и сложных дел"},
+            "Спокойствие":{organ:"Все",element:"Баланс",emoji:"🌿",color:"#2D6A4F",
+              what:"Пять стихий в гармонии — редкое и ценное состояние.",
+              balance:[
+                "🌟 Сохрани это состояние — не перегружай себя",
+                "✨ Сделай что-то для других — гармония хочет делиться",
+                "📖 Медитируй или веди дневник — зафиксируй этот момент",
+                "🎯 Приступи к важной долгосрочной цели — ты готова",
+              ],
+              avoid:"Нарушать ритм без нужды",
+              tasks:dueTasks.filter(t=>t.priority==="h").slice(0,2),
+              taskTip:"Идеальный момент для задач требующих концентрации"},
+          };
+          const info = emotionMap[todayE.todayEmotion];
+          if(!info) return null;
+
+          // Анализ задач на день — нет ли перекоса
+          const heavyTasks = dueTasks.filter(t=>t.priority==="h").length;
+          const totalTasks = dueTasks.length;
+          const isOverloaded = heavyTasks > 2 || totalTasks > 8;
+          const needsBalance = ["Тревога","Страх","Беспокойство"].includes(todayE.todayEmotion) && isOverloaded;
+
+          return(
+            <div style={{marginBottom:4}}>
+              {/* Расшифровка */}
+              <div style={{padding:"12px 14px",background:"rgba(45,106,79,0.07)",borderRadius:12,marginBottom:12,borderLeft:"3px solid "+info.color}}>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+                  <span style={{fontSize:20}}>{info.emoji}</span>
+                  <span style={{fontFamily:"'Cormorant Infant',serif",fontSize:17,color:info.color}}>{todayE.todayEmotion} → орган: {info.organ}</span>
+                </div>
+                <div style={{fontSize:14,color:T.text2,lineHeight:1.55}}>{info.what}</div>
+              </div>
+
+              {/* Баланс — что делать */}
+              <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:8}}>КАК ВЕРНУТЬ БАЛАНС СЕГОДНЯ</div>
+              <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:12}}>
+                {info.balance.map((b,i)=>(
+                  <div key={i} style={{display:"flex",gap:10,padding:"8px 12px",background:"rgba(45,106,79,0.06)",borderRadius:10}}>
+                    <span style={{fontSize:16,flexShrink:0}}>{b.split(" ")[0]}</span>
+                    <span style={{fontSize:14,color:T.text1,lineHeight:1.45}}>{b.split(" ").slice(1).join(" ")}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Чего избегать */}
+              <div style={{padding:"8px 14px",background:"rgba(139,32,32,0.06)",borderRadius:10,marginBottom:12,fontSize:13,color:T.danger}}>
+                <span style={{fontFamily:"'JetBrains Mono'",fontSize:9,letterSpacing:1,marginRight:8,opacity:.7}}>ИЗБЕГАТЬ:</span>
+                {info.avoid}
+              </div>
+
+              {/* Перекос задач — предупреждение */}
+              {needsBalance&&(
+                <div style={{padding:"10px 14px",background:"rgba(122,80,16,0.08)",borderRadius:10,marginBottom:12,borderLeft:"3px solid "+T.warn}}>
+                  <div style={{fontSize:13,color:T.warn,fontWeight:500,marginBottom:4}}>⚠️ Перегрузка при {todayE.todayEmotion.toLowerCase()}!</div>
+                  <div style={{fontSize:13,color:T.text2,lineHeight:1.5}}>
+                    У тебя {totalTasks} дел сегодня, из них {heavyTasks} приоритетных. При этой эмоции тело уже под нагрузкой.
+                    Оставь максимум 3 важных дела, остальные перенеси.
+                  </div>
+                </div>
+              )}
+
+              {/* Рекомендованные задачи из списка */}
+              {info.tasks.length>0&&(
+                <div>
+                  <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:8}}>ДЕЛА ПОДХОДЯЩИЕ ДЛЯ ЭТОГО СОСТОЯНИЯ</div>
+                  <div style={{fontSize:12,color:T.text2,fontStyle:"italic",marginBottom:8}}>{info.taskTip}</div>
+                  {info.tasks.map(t=>(
+                    <div key={t.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",background:"rgba(45,106,79,0.06)",borderRadius:10,marginBottom:6}}>
+                      <div className={"chk"+(t.doneDate===today?" done":"")} style={{flexShrink:0}} onClick={()=>{const done=t.doneDate===today;setTasks(p=>p.map(x=>x.id===t.id?{...x,doneDate:done?null:today,lastDone:done?x.lastDone:today}:x));if(!done)notify("✓ "+t.title);}}>
+                        {t.doneDate===today?"✓":""}
+                      </div>
+                      <span style={{fontSize:15,color:T.text1}}>{t.title}</span>
+                      {t.preferredTime&&<span style={{fontSize:11,color:T.gold,fontFamily:"'JetBrains Mono'",marginLeft:"auto"}}>{t.preferredTime}</span>}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })()}
+
+        <div className="fld" style={{marginBottom:0,marginTop:8}}>
           <label>Главная мысль дня</label>
           <textarea style={{minHeight:52}} placeholder="Что важно сегодня для тебя?" value={todayE.thought||""} onChange={e=>saveJ({thought:e.target.value})}/>
         </div>
@@ -1980,31 +2550,52 @@ function TodaySection({profile,tasks,setTasks,journal,setJournal,today,moon,kb,n
         </div>
       )}
 
-      {/* Due tasks */}
+      {/* Due tasks — хронологический список с временем */}
       <div className="card">
         <div className="card-hd">
           <div className="card-title">Дела на сегодня</div>
           <button className="btn btn-ghost btn-sm" onClick={()=>setAddModal(true)}>+ Добавить</button>
         </div>
         {dueTasks.length===0&&<div className="empty"><span className="empty-ico">✦</span><p>Все дела выполнены — ты молодец!</p></div>}
-        {dueTasks.map(task=>(
-          <div key={task.id} className="task-row">
-            <div className={`prio p${task.priority||"m"}`}/>
-            <div className={`chk${task.doneDate===today?" done":""}`} onClick={()=>{const done=task.doneDate===today;setTasks(p=>p.map(t=>t.id===task.id?{...t,doneDate:done?null:today,lastDone:done?t.lastDone:today}:t));if(!done)notify(`✓ ${task.title}`);}}>
-              {task.doneDate===today?"✓":""}
-            </div>
-            <div className="task-body">
-              <div className={`task-name${task.doneDate===today?" done":""}`}>{task.title}</div>
-              <div className="task-meta">
-                <span className="badge bm">{task.section}</span>
-                {task.freq&&task.freq!=="once"&&<span className="badge bt">{freqLabel(task.freq)}</span>}
-                {task.preferredTime&&<span className="badge bg">🕐 {task.preferredTime}</span>}
+        {dueTasks.length>0&&(()=>{
+          const sorted=[...dueTasks].sort((a,b)=>{
+            if(a.preferredTime&&b.preferredTime) return a.preferredTime.localeCompare(b.preferredTime);
+            if(a.preferredTime) return -1;
+            if(b.preferredTime) return 1;
+            return 0;
+          });
+          const withTime=sorted.filter(t=>t.preferredTime);
+          const noTime=sorted.filter(t=>!t.preferredTime);
+          const renderTask=(task)=>(
+            <div key={task.id} style={{display:"flex",alignItems:"flex-start",gap:0,padding:"10px 0",borderBottom:"1px solid "+T.bdrS}}>
+              <div style={{minWidth:56,textAlign:"center",paddingTop:3,flexShrink:0}}>
+                <input type="time" value={task.preferredTime||""} onChange={e=>setTasks(p=>p.map(t=>t.id===task.id?{...t,preferredTime:e.target.value}:t))}
+                  style={{width:54,fontSize:12,fontFamily:"'JetBrains Mono'",color:task.preferredTime?T.gold:T.text3,background:"transparent",border:"none",outline:"none",cursor:"pointer",padding:0,textAlign:"center",opacity:task.preferredTime?1:0.45}}/>
               </div>
+              <div style={{width:1,alignSelf:"stretch",background:task.preferredTime?T.gold+"55":T.bdrS,margin:"0 10px",flexShrink:0}}/>
+              <div className={"chk"+(task.doneDate===today?" done":"")} style={{marginTop:3,flexShrink:0}} onClick={()=>{const done=task.doneDate===today;setTasks(p=>p.map(t=>t.id===task.id?{...t,doneDate:done?null:today,lastDone:done?t.lastDone:today}:t));if(!done)notify("✓ "+task.title);}}>
+                {task.doneDate===today?"✓":""}
+              </div>
+              <div className="task-body" style={{flex:1}}>
+                <div className={"task-name"+(task.doneDate===today?" done":"")}>{task.title}</div>
+                <div className="task-meta">
+                  <span className="badge bm">{task.section}</span>
+                  {task.freq&&task.freq!=="once"&&<span className="badge bt">{freqLabel(task.freq)}</span>}
+                </div>
+              </div>
+              <div className="ico-btn" onClick={()=>setModal(task)} style={{color:T.teal,opacity:.7}}>✏️</div>
+              <div className="ico-btn danger" onClick={()=>setTasks(p=>p.filter(t=>t.id!==task.id))}>✕</div>
             </div>
-          </div>
-        ))}
+          );
+          return(<>
+            {withTime.length>0&&<><div className="sec-lbl" style={{marginTop:4}}>По расписанию</div>{withTime.map(renderTask)}</>}
+            {noTime.length>0&&<><div className="sec-lbl">{withTime.length>0?"Без времени":"Задачи"}<span style={{fontSize:11,color:T.text3,marginLeft:6}}>— нажми на время чтобы назначить</span></div>{noTime.map(renderTask)}</>}
+          </>);
+        })()}
+      </div>
       </div>
       {addModal&&<TaskModal defaultSection="today" onSave={t=>{setTasks(p=>[...p,t]);notify("Задача добавлена");}} onClose={()=>setAddModal(false)}/>}
+      {modal!==null&&<TaskModal task={modal.id?modal:null} defaultSection={modal.section||"tasks"} onSave={t=>{setTasks(p=>modal.id?p.map(x=>x.id===t.id?t:x):[...p,t]);setModal(null);notify("Сохранено");}} onClose={()=>setModal(null)}/>}
     </div>
   );
 }
@@ -2014,6 +2605,7 @@ function TodaySection({profile,tasks,setTasks,journal,setJournal,today,moon,kb,n
 // ══════════════════════════════════════════════════════════════
 function TasksSection({profile,tasks,setTasks,today,kb,notify}) {
   const [modal,setModal]=useState(null);
+  const [editId,setEditId]=useState(null);
   const [filter,setFilter]=useState("all");
   const [search,setSearch]=useState("");
   const secs=[["all","Все"],["work","Работа"],["home","Дом"],["health","Здоровье"],["beauty","Красота"],["pets","Питомцы"],["shopping","Покупки"],["hobbies","Хобби"]];
@@ -2065,6 +2657,7 @@ function TasksSection({profile,tasks,setTasks,today,kb,notify}) {
             </div>
             <div className="card-acts">
               <div className="ico-btn" onClick={()=>setModal(task)}>✏️</div>
+              <div className="ico-btn" onClick={()=>setModal(task)} style={{color:T.teal,opacity:.7}}>✏️</div>
               <div className="ico-btn danger" onClick={()=>{setTasks(p=>p.filter(t=>t.id!==task.id));notify("Удалено");}}>✕</div>
             </div>
           </div>
@@ -2161,12 +2754,199 @@ function ScheduleSection({profile,tasks,setTasks,today,kb,notify}) {
 // ══════════════════════════════════════════════════════════════
 //  WORK
 // ══════════════════════════════════════════════════════════════
+
+// ══════════════════════════════════════════════════════════════
+//  ПРОФЕССИОНАЛЬНЫЕ ДЕДЛАЙНЫ ПО ОТЧЁТНОСТИ
+// ══════════════════════════════════════════════════════════════
+function getProfDeadlines(profile) {
+  const prof = profile.profDeadlines || "";
+  const year = new Date().getFullYear();
+  const tasks = [];
+
+  // Вспомогательная функция — создаёт задачу-дедлайн
+  const mk = (title, month, day, note="", organ="") => {
+    const d = new Date(year, month-1, day);
+    if(d < new Date()) d.setFullYear(year+1);
+    return {
+      id: Date.now()+Math.random(),
+      title,
+      section: "work",
+      freq: "once",
+      priority: "h",
+      deadline: d.toISOString().split("T")[0],
+      notes: note,
+      organ,
+      lastDone: "", doneDate: "",
+      preferredTime: "09:00",
+      isDeadline: true,
+    };
+  };
+
+  // ════════════════════════════════════════════════════
+  //  БУХГАЛТЕР / ИП — КАЗАХСТАН
+  // ════════════════════════════════════════════════════
+  if(prof.includes("Бухгалтер") || prof.includes("ИП")) {
+
+    // ─── КГД (Комитет государственных доходов / Налоговая) ──
+    // ИПН / КПН
+    tasks.push(mk("🏛 КГД: ФНО 100.00 — Декларация КПН (год)",         3,31,"Корпоративный подоходный налог. Юридические лица","КГД"));
+    tasks.push(mk("🏛 КГД: ФНО 220.00 — Декларация ИПН (год)",         3,31,"Индивидуальный подоходный налог. ИП на ОУР","КГД"));
+    tasks.push(mk("🏛 КГД: ФНО 240.00 — Декларация ИПН физлица (год)", 3,31,"Физические лица с доходами вне работы","КГД"));
+    // НДС
+    tasks.push(mk("🏛 КГД: ФНО 300.00 — НДС (1 кв.)",  4,15,"НДС за 1 квартал","КГД"));
+    tasks.push(mk("🏛 КГД: ФНО 300.00 — НДС (2 кв.)",  7,15,"НДС за 2 квартал","КГД"));
+    tasks.push(mk("🏛 КГД: ФНО 300.00 — НДС (3 кв.)", 10,15,"НДС за 3 квартал","КГД"));
+    tasks.push(mk("🏛 КГД: ФНО 300.00 — НДС (4 кв.)",  1,15,"НДС за 4 квартал","КГД"));
+    // Зарплатный отчёт (ФНО 200 / 700)
+    tasks.push(mk("🏛 КГД: ФНО 200.00 — Зарплатный (1 кв.)",  4,15,"ИПН, ОПВ, ОСМС, СО — 1 квартал","КГД"));
+    tasks.push(mk("🏛 КГД: ФНО 200.00 — Зарплатный (2 кв.)",  7,15,"ИПН, ОПВ, ОСМС, СО — 2 квартал","КГД"));
+    tasks.push(mk("🏛 КГД: ФНО 200.00 — Зарплатный (3 кв.)", 10,15,"ИПН, ОПВ, ОСМС, СО — 3 квартал","КГД"));
+    tasks.push(mk("🏛 КГД: ФНО 200.00 — Зарплатный (4 кв.)",  1,15,"ИПН, ОПВ, ОСМС, СО — 4 квартал","КГД"));
+    // Упрощённая декларация (СНР)
+    tasks.push(mk("🏛 КГД: ФНО 910.00 — Упрощённая декларация (1 п/г)", 8,15,"Специальный налоговый режим — 1 полугодие","КГД"));
+    tasks.push(mk("🏛 КГД: ФНО 910.00 — Упрощённая декларация (2 п/г)", 2,15,"Специальный налоговый режим — 2 полугодие","КГД"));
+    // Патент
+    tasks.push(mk("🏛 КГД: ФНО 911.00 — Патент (продление)", 1,5,"Патент для ИП — продление на новый год","КГД"));
+    // Налог на имущество, землю, транспорт
+    tasks.push(mk("🏛 КГД: ФНО 700.00 — Налог на имущество/землю (год)", 3,31,"Годовая декларация. Авансы — до 25 февр., мая, авг., ноябр.","КГД"));
+    tasks.push(mk("💰 КГД: Аванс налог на имущество (1 кв.)",  2,25,"Авансовый платёж","КГД"));
+    tasks.push(mk("💰 КГД: Аванс налог на имущество (2 кв.)",  5,25,"Авансовый платёж","КГД"));
+    tasks.push(mk("💰 КГД: Аванс налог на имущество (3 кв.)",  8,25,"Авансовый платёж","КГД"));
+    tasks.push(mk("💰 КГД: Аванс налог на имущество (4 кв.)", 11,25,"Авансовый платёж","КГД"));
+    tasks.push(mk("🏛 КГД: ФНО 870.00 — Транспортный налог (год)", 3,31,"Юридические лица","КГД"));
+    // Авансы по КПН
+    tasks.push(mk("💰 КГД: Аванс КПН (январь–март)",  3,25,"Авансовые платежи КПН","КГД"));
+    tasks.push(mk("💰 КГД: Аванс КПН (апрель–июнь)",  6,25,"Авансовые платежи КПН","КГД"));
+    tasks.push(mk("💰 КГД: Аванс КПН (июль–сент.)",   9,25,"Авансовые платежи КПН","КГД"));
+    tasks.push(mk("💰 КГД: Аванс КПН (окт.–дек.)",   12,25,"Авансовые платежи КПН","КГД"));
+    // Трансфертное ценообразование
+    tasks.push(mk("🏛 КГД: ФНО 150.00 — Трансфертное ценообразование", 5,31,"При наличии контролируемых сделок","КГД"));
+
+    // ─── ЕНПФ (Пенсионный фонд) ─────────────────────────────
+    tasks.push(mk("🏦 ЕНПФ: ОПВ — Обязательные пенсионные взносы (янв.)", 2,10,"Уплата за январь до 25 числа. Отчёт — до 10-го","ЕНПФ"));
+    tasks.push(mk("🏦 ЕНПФ: ОПВ (апр.)",   5,10,"Уплата за апрель — до 25-го","ЕНПФ"));
+    tasks.push(mk("🏦 ЕНПФ: ОПВ (июл.)",   8,10,"Уплата за июль — до 25-го","ЕНПФ"));
+    tasks.push(mk("🏦 ЕНПФ: ОПВ (окт.)",  11,10,"Уплата за октябрь — до 25-го","ЕНПФ"));
+    tasks.push(mk("🏦 ЕНПФ: ОППВ — Профессиональные взносы (год)", 3,31,"При наличии вредных условий труда","ЕНПФ"));
+
+    // ─── ФСМС (Медицинское страхование) ─────────────────────
+    tasks.push(mk("🏥 ФСМС: ОСМС — Взносы работодателя (1 кв.)",  4,25,"3% от ФОТ","ФСМС"));
+    tasks.push(mk("🏥 ФСМС: ОСМС — Взносы работодателя (2 кв.)",  7,25,"3% от ФОТ","ФСМС"));
+    tasks.push(mk("🏥 ФСМС: ОСМС — Взносы работодателя (3 кв.)", 10,25,"3% от ФОТ","ФСМС"));
+    tasks.push(mk("🏥 ФСМС: ОСМС — Взносы работодателя (4 кв.)",  1,25,"3% от ФОТ","ФСМС"));
+
+    // ─── БНС (Бюро национальной статистики) ─────────────────
+    tasks.push(mk("📊 БНС: Форма 1-П — Промышленность (янв.)",   2,10,"Ежемесячный отчёт об объёме производства","БНС"));
+    tasks.push(mk("📊 БНС: Форма 1-П — Промышленность (апр.)",   5,10,"Ежемесячный","БНС"));
+    tasks.push(mk("📊 БНС: Форма 1-П — Промышленность (июл.)",   8,10,"Ежемесячный","БНС"));
+    tasks.push(mk("📊 БНС: Форма 1-П — Промышленность (окт.)",  11,10,"Ежемесячный","БНС"));
+    tasks.push(mk("📊 БНС: Форма 1-ПФ — Финансы предприятий (год)", 3,15,"Годовой финансовый отчёт в статистику","БНС"));
+    tasks.push(mk("📊 БНС: Форма 1-Т — Труд и зарплата (1 кв.)",  4,10,"Численность и зарплата работников","БНС"));
+    tasks.push(mk("📊 БНС: Форма 1-Т — Труд и зарплата (2 кв.)",  7,10,"Численность и зарплата работников","БНС"));
+    tasks.push(mk("📊 БНС: Форма 1-Т — Труд и зарплата (3 кв.)", 10,10,"Численность и зарплата работников","БНС"));
+    tasks.push(mk("📊 БНС: Форма 1-Т — Труд и зарплата (4 кв.)",  1,10,"Включая годовые данные","БНС"));
+    tasks.push(mk("📊 БНС: Форма 11 — Основные фонды (год)",      4,15,"Годовой отчёт об основных средствах","БНС"));
+    tasks.push(mk("📊 БНС: Форма 1-МП — Малый бизнес (год)",      4,15,"Для субъектов малого предпринимательства","БНС"));
+    tasks.push(mk("📊 БНС: Форма ДАП-ПМ — Деловая активность (квартал)", 4,8,"Промышленность малого бизнеса","БНС"));
+
+    // ─── Прочие госорганы ───────────────────────────────────
+    tasks.push(mk("🔍 КФМ: Отчёт по финмониторингу (год)", 2,15,"Комитет финмониторинга — при наличии обязательства","КФМ"));
+    tasks.push(mk("🏛 МЮ: Годовой отчёт НКО (год)",        4,30,"Некоммерческие организации — отчёт в Минюст","МЮ"));
+    tasks.push(mk("🌿 МЭПР: Экологическая отчётность (год)", 3,15,"Министерство экологии — при природопользовании","МЭПР"));
+  }
+
+  // ════════════════════════════════════════════════════
+  //  HR / КАДРЫ — КАЗАХСТАН
+  // ════════════════════════════════════════════════════
+  if(prof.includes("HR") || prof.includes("Кадры")) {
+    tasks.push(mk("🏛 КГД: ФНО 200.00 — Зарплатный (1 кв.)",  4,15,"ИПН, ОПВ, ОСМС, СО по сотрудникам","КГД"));
+    tasks.push(mk("🏛 КГД: ФНО 200.00 — Зарплатный (2 кв.)",  7,15,"","КГД"));
+    tasks.push(mk("🏛 КГД: ФНО 200.00 — Зарплатный (3 кв.)", 10,15,"","КГД"));
+    tasks.push(mk("🏛 КГД: ФНО 200.00 — Зарплатный (4 кв.)",  1,15,"","КГД"));
+    tasks.push(mk("📊 БНС: Форма 1-Т — Труд и зарплата (квартал)", 4,10,"Численность, зарплата, условия труда","БНС"));
+    tasks.push(mk("📊 БНС: Форма 4-Т — Условия труда (год)",  2,10,"Годовой отчёт об условиях труда","БНС"));
+    tasks.push(mk("📊 БНС: Форма 2-Т — Трудоустройство (год)", 2,15,"Движение рабочей силы за год","БНС"));
+    tasks.push(mk("🏦 ЕНПФ: Сверка ОПВ (год)",               2,15,"Ежегодная сверка с ЕНПФ по пенсионным взносам","ЕНПФ"));
+    tasks.push(mk("🏥 ФСМС: Сверка ОСМС (год)",              2,15,"Сверка взносов на медстрахование","ФСМС"));
+    tasks.push(mk("📋 График отпусков на следующий год",      12,15,"Утвердить до 15 декабря","HR"));
+    tasks.push(mk("📋 Воинский учёт — годовая сверка",        9,1, "Сверка с военкоматом (ВЦУ)","HR"));
+    tasks.push(mk("📋 Сдача трудовых договоров в архив (год)", 1,31,"Документы за прошлый год","HR"));
+  }
+
+  // ════════════════════════════════════════════════════
+  //  ЮРИСТ — КАЗАХСТАН
+  // ════════════════════════════════════════════════════
+  if(prof.includes("Юрист")) {
+    tasks.push(mk("🏛 МЮ: Перерегистрация ТОО/АО (при изменениях)", 1,31,"Внесение изменений в учредительные документы","МЮ"));
+    tasks.push(mk("📋 Годовое собрание участников ТОО",    6,30,"Обязательно — утверждение годового отчёта, распределение прибыли","МЮ"));
+    tasks.push(mk("📋 Годовое собрание акционеров АО",     6,30,"Не позднее 6 месяцев после окончания финансового года","МЮ"));
+    tasks.push(mk("🏛 КГД: Продление лицензии",           12,1, "Проверить сроки действия всех лицензий","КГД"));
+    tasks.push(mk("🔍 АФН: Отчёт по комплаенсу (год)",     3,31,"При наличии финансовой деятельности — Агентство фин.надзора","АФН"));
+    tasks.push(mk("🌿 МЭПР: Экологическое разрешение (год)", 1,31,"Обновление разрешений при природопользовании","МЭПР"));
+  }
+
+  // ════════════════════════════════════════════════════
+  //  ВРАЧ / МЕД. РАБОТНИК — КАЗАХСТАН
+  // ════════════════════════════════════════════════════
+  if(prof.includes("Врач") || prof.includes("Мед")) {
+    tasks.push(mk("🏥 МЗ: Медстатистическая отчётность (квартал)",  4,10,"Отчёт в Министерство здравоохранения","МЗ"));
+    tasks.push(mk("🏥 МЗ: Форма № 14 — Деятельность стационара (год)", 1,25,"Годовой отчёт стационара","МЗ"));
+    tasks.push(mk("🏥 МЗ: Форма № 30 — Амбулатория (год)",           1,25,"Годовой отчёт поликлиники","МЗ"));
+    tasks.push(mk("📋 КККМФД: Сертификация специалиста",             9,1, "Плановое подтверждение квалификации — раз в 5 лет","КККМФД"));
+    tasks.push(mk("💊 Отчёт по обороту наркотических средств (квартал)", 4,10,"В Комитет фарм.контроля","КФК"));
+    tasks.push(mk("🔍 Проверка лицензии медицинской деятельности",   1,15,"Срок действия лицензии — не пропусти","МЗ"));
+  }
+
+  // ════════════════════════════════════════════════════
+  //  ПЕДАГОГ — КАЗАХСТАН
+  // ════════════════════════════════════════════════════
+  if(prof.includes("Педагог")) {
+    tasks.push(mk("📚 МОН: Рабочие программы на уч.год",      9,1, "Сдать до начала учебного года в Министерство просвещения","МОН"));
+    tasks.push(mk("📚 МОН: Итоговый отчёт по четвертям",      11,5,"Отчёт по 1-й четверти","МОН"));
+    tasks.push(mk("📚 МОН: Итоговый отчёт 2-я четверть",       1,10,"","МОН"));
+    tasks.push(mk("📚 МОН: Самоанализ за учебный год",          6,1, "Годовой самоанализ педагога","МОН"));
+    tasks.push(mk("📋 Аттестация педагога (плановая)",          3,1, "Каждые 5 лет — подача документов в аттестационную комиссию","МОН"));
+    tasks.push(mk("📊 БНС: Форма ОО-1 — Образовательная организация (год)", 1,20,"Годовой статотчёт по образованию","БНС"));
+  }
+
+  // ════════════════════════════════════════════════════
+  //  ГОССЛУЖАЩИЙ — КАЗАХСТАН
+  // ════════════════════════════════════════════════════
+  if(prof.includes("Госслужащий")) {
+    tasks.push(mk("🏛 АДГС: Декларация о доходах госслужащего (год)", 3,31,"Обязательно — Агентство по делам гос.службы","АДГС"));
+    tasks.push(mk("🏛 АДГС: Декларация об имуществе (год)",           3,31,"Сведения об имуществе и обязательствах","АДГС"));
+    tasks.push(mk("🔍 Антикоррупционное уведомление (год)",            4,30,"Ежегодное уведомление — Агентство по противодействию коррупции","АПК"));
+    tasks.push(mk("📊 Отчёт об исполнении бюджета (1 кв.)",            4,15,"Квартальный отчёт в МФ РК","МФ"));
+    tasks.push(mk("📊 Отчёт об исполнении бюджета (2 кв.)",            7,15,"","МФ"));
+    tasks.push(mk("📊 Отчёт об исполнении бюджета (3 кв.)",           10,15,"","МФ"));
+    tasks.push(mk("📊 Отчёт об исполнении бюджета (год)",              2,15,"Годовой отчёт в Министерство финансов","МФ"));
+  }
+
+  return tasks;
+}
+
+  return tasks;
+}
+
 function WorkSection({profile,tasks,setTasks,today,kb,notify}) {
   const [modal,setModal]=useState(null);
   const [editSchedule,setEditSchedule]=useState(false);
   const [schedStart,setSchedStart]=useState(profile.workStart||"09:00");
   const [schedEnd,setSchedEnd]=useState(profile.workEnd||"18:00");
+  const [dlTab,setDlTab]=useState("upcoming");
+  const [addDlModal,setAddDlModal]=useState(false);
+  const [editDl,setEditDl]=useState(null);
+  const [newDl,setNewDl]=useState({title:"",deadline:"",notes:"",organ:"КГД"});
   const workTasks=tasks.filter(t=>t.section==="work");
+  const deadlineTasks=workTasks.filter(t=>t.isDeadline);
+  const addDeadlines=()=>{
+    const dl=getProfDeadlines(profile);
+    const exist=new Set(workTasks.filter(t=>t.isDeadline).map(t=>t.title));
+    const newDl=dl.filter(t=>!exist.has(t.title));
+    if(newDl.length===0){notify("Все дедлайны уже добавлены");return;}
+    setTasks(p=>[...p,...newDl]);
+    notify("Добавлено "+newDl.length+" дедлайнов в рабочие задачи ✦");
+  };
   const due=workTasks.filter(t=>isDue(t,today)||(t.freq==="once"&&!t.lastDone&&!t.doneDate));
   const isWorkDay=(profile.workDaysList||[1,2,3,4,5]).includes(new Date().getDay());
   return(
@@ -2180,8 +2960,272 @@ function WorkSection({profile,tasks,setTasks,today,kb,notify}) {
           <div className="pf-item"><div className="pf-l">График</div>{editSchedule?(<div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}><input type="time" value={schedStart} onChange={e=>setSchedStart(e.target.value)} style={{padding:"4px 8px",background:"rgba(255,255,255,0.7)",border:"1px solid "+T.bdr,borderRadius:7,fontSize:15,color:T.text0,outline:"none",width:100}}/><span>–</span><input type="time" value={schedEnd} onChange={e=>setSchedEnd(e.target.value)} style={{padding:"4px 8px",background:"rgba(255,255,255,0.7)",border:"1px solid "+T.bdr,borderRadius:7,fontSize:15,color:T.text0,outline:"none",width:100}}/><button className="btn btn-primary btn-sm" style={{padding:"4px 10px"}} onClick={()=>{profile.workStart=schedStart;profile.workEnd=schedEnd;setEditSchedule(false);notify("График обновлён");}}>✓</button></div>):(<div style={{display:"flex",alignItems:"center",gap:8}}><div className="pf-v">{profile.workStart||"?"}–{profile.workEnd||"?"}</div><button className="btn btn-ghost btn-sm" style={{padding:"3px 8px",fontSize:11}} onClick={()=>setEditSchedule(true)}>✏️</button></div>)}</div>
         </div>
         {profile.commuteTime&&<div style={{marginTop:10,fontSize:13,color:T.text3}}>🚌 {profile.commuteTime} · {profile.commuteWay||""}</div>}
+        {profile.profDeadlines&&!profile.profDeadlines.includes("Нет")&&(
+          <div style={{marginTop:12,padding:"8px 14px",background:"rgba(45,106,79,0.08)",borderRadius:10,display:"flex",alignItems:"center",justifyContent:"space-between",gap:10}}>
+            <div>
+              <div style={{fontSize:12,color:T.text2,fontFamily:"'JetBrains Mono'",letterSpacing:1}}>ОТЧЁТНОСТЬ</div>
+              <div style={{fontSize:14,color:T.text1,marginTop:2}}>{profile.profDeadlines} · Казахстан</div>
+            </div>
+            <button className="btn btn-primary btn-sm" style={{flexShrink:0}} onClick={addDeadlines}>+ Дедлайны</button>
+          </div>
+        )}
         {!isWorkDay&&<div style={{marginTop:12,padding:"8px 14px",background:"rgba(200,164,90,.08)",borderRadius:9,fontSize:14,color:T.gold,fontStyle:"italic"}}>Сегодня нерабочий день ✦ Отдыхай</div>}
       </div>
+      {/* ── Менеджер дедлайнов ── */}
+      {profile.profDeadlines&&!profile.profDeadlines.includes("Нет")&&(()=>{
+        const allDl=deadlineTasks.sort((a,b)=>a.deadline?.localeCompare(b.deadline||"")||0);
+        const upcoming=allDl.filter(t=>!t.doneDate&&t.deadline>=today).slice(0,10);
+        const overdue=allDl.filter(t=>!t.doneDate&&t.deadline&&t.deadline<today);
+        const done=allDl.filter(t=>t.doneDate);
+
+        // Google Calendar URL
+        const toGCal=(t)=>{
+          const d=new Date(t.deadline);
+          const pad=n=>String(n).padStart(2,"0");
+          const ymd=d.getFullYear()+""+pad(d.getMonth()+1)+""+pad(d.getDate());
+          const title=encodeURIComponent(t.title+(t.notes?" — "+t.notes:""));
+          return "https://calendar.google.com/calendar/render?action=TEMPLATE&text="+title+"&dates="+ymd+"/"+ymd+"&details="+encodeURIComponent("Дедлайн: "+(t.notes||""))+"&sf=true&output=xml";
+        };
+
+        // Экспорт всех в .ics
+        const exportICS=()=>{
+          const lines=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//LifeDiary//RU","CALSCALE:GREGORIAN"];
+          upcoming.concat(overdue).forEach(t=>{
+            if(!t.deadline) return;
+            const d=t.deadline.replace(/-/g,"");
+            const uid=t.id+"@lifediary";
+            const summary=t.title.replace(/[^\w\s\-а-яА-ЯёЁ().,]/g,"");
+            const desc=t.notes||"";
+            lines.push("BEGIN:VEVENT","UID:"+uid,"DTSTART;VALUE=DATE:"+d,"DTEND;VALUE=DATE:"+d,
+              "SUMMARY:"+summary,"DESCRIPTION:"+desc,"STATUS:CONFIRMED","END:VEVENT");
+          });
+          lines.push("END:VCALENDAR");
+          const blob=new Blob([lines.join("\r\n")],{type:"text/calendar"});
+          const url=URL.createObjectURL(blob);
+          const a=document.createElement("a");a.href=url;a.download="deadlines.ics";a.click();
+          URL.revokeObjectURL(url);
+          notify("Файл .ics скачан — импортируй в Google Calendar ✦");
+        };
+
+        const organs=["КГД","ЕНПФ","ФСМС","БНС","МЮ","АФН","МФ","МЗ","МОН","АДГС","АПК","МЭПР","КФМ","Другой орган"];
+
+        return(
+          <div className="card" style={{marginBottom:14,borderLeft:"3px solid "+T.danger}}>
+            <div className="card-hd">
+              <div className="card-title">📋 Отчётность</div>
+              <div style={{display:"flex",gap:6}}>
+                {overdue.length>0&&<span className="badge br">⚠ {overdue.length}</span>}
+                <button className="btn btn-ghost btn-sm" onClick={()=>setAddDlModal(true)}>+ Свой</button>
+                <button className="btn btn-ghost btn-sm" onClick={addDeadlines}>↻ Авто</button>
+              </div>
+            </div>
+
+            {/* Вкладки */}
+            <div className="tabs" style={{marginBottom:12}}>
+              {[["upcoming","Ближайшие"],["overdue","Просроченные"],["done","Выполненные"],["calendar","Календарь"],["gcal","Google Cal"]].map(([v,l])=>(
+                <div key={v} className={"tab"+(dlTab===v?" on":"")} onClick={()=>setDlTab(v)}
+                  style={{...(v==="overdue"&&overdue.length>0?{color:T.danger}:{})}}>{l}{v==="overdue"&&overdue.length>0?" ("+overdue.length+")":""}</div>
+              ))}
+            </div>
+
+            {/* Ближайшие */}
+            {dlTab==="upcoming"&&(
+              upcoming.length===0
+                ? <div className="empty"><span className="empty-ico">✅</span><p>Все дедлайны выполнены!</p></div>
+                : upcoming.map(t=>{
+                    const dl=new Date(t.deadline);
+                    const daysLeft=Math.ceil((dl-new Date())/86400000);
+                    const isClose=daysLeft<=7;
+                    return(
+                      <div key={t.id} style={{display:"flex",alignItems:"flex-start",gap:10,padding:"10px 0",borderBottom:"1px solid "+T.bdrS}}>
+                        <div className={"chk"+(t.doneDate?" done":"")} style={{flexShrink:0,marginTop:2}} onClick={()=>setTasks(p=>p.map(x=>x.id===t.id?{...x,doneDate:x.doneDate?null:today,lastDone:x.doneDate?x.lastDone:today}:x))}>
+                          {t.doneDate?"✓":""}
+                        </div>
+                        <div style={{flex:1,minWidth:0}}>
+                          <div style={{fontSize:15,color:T.text0,lineHeight:1.3}}>{t.title}</div>
+                          {t.notes&&<div style={{fontSize:12,color:T.text3,marginTop:2}}>{t.notes}</div>}
+                          <div style={{display:"flex",gap:6,marginTop:6,flexWrap:"wrap"}}>
+                            <button className="btn-mini" onClick={()=>window.open(toGCal(t),"_blank")}>📅 В Google Cal</button>
+                            <button className="btn-mini" onClick={()=>{setEditDl({...t});setAddDlModal(true);}}>✏️</button>
+                            <button className="btn-mini" style={{color:T.danger}} onClick={()=>setTasks(p=>p.filter(x=>x.id!==t.id))}>✕</button>
+                          </div>
+                        </div>
+                        <div style={{textAlign:"right",flexShrink:0}}>
+                          <div style={{fontSize:13,color:isClose?T.warn:T.text2,fontFamily:"'JetBrains Mono'",fontWeight:isClose?600:400}}>
+                            {daysLeft===0?"Сегодня!":daysLeft===1?"Завтра":daysLeft+" дн."}
+                          </div>
+                          <div style={{fontSize:11,color:T.text3}}>{dl.toLocaleDateString("ru-RU",{day:"numeric",month:"short"})}</div>
+                        </div>
+                      </div>
+                    );
+                  })
+            )}
+
+            {/* Просроченные */}
+            {dlTab==="overdue"&&(
+              overdue.length===0
+                ? <div className="empty"><span className="empty-ico">✅</span><p>Просроченных нет!</p></div>
+                : overdue.map(t=>{
+                    const dl=new Date(t.deadline);
+                    const daysOver=Math.ceil((new Date()-dl)/86400000);
+                    return(
+                      <div key={t.id} style={{display:"flex",alignItems:"flex-start",gap:10,padding:"10px 0",borderBottom:"1px solid "+T.bdrS,background:"rgba(139,32,32,0.04)",borderRadius:8,paddingLeft:10,marginBottom:4}}>
+                        <div className="chk" style={{flexShrink:0,marginTop:2}} onClick={()=>setTasks(p=>p.map(x=>x.id===t.id?{...x,doneDate:today,lastDone:today}:x))}>{""}
+                        </div>
+                        <div style={{flex:1}}>
+                          <div style={{fontSize:15,color:T.danger,fontWeight:600}}>{t.title}</div>
+                          {t.notes&&<div style={{fontSize:12,color:T.text3,marginTop:2}}>{t.notes}</div>}
+                          <div style={{display:"flex",gap:6,marginTop:6}}>
+                            <button className="btn-mini" onClick={()=>{setEditDl({...t});setAddDlModal(true);}}>✏️ Изменить дату</button>
+                            <button className="btn-mini" onClick={()=>setTasks(p=>p.map(x=>x.id===t.id?{...x,doneDate:today}:x))}>✓ Выполнено</button>
+                          </div>
+                        </div>
+                        <div style={{textAlign:"right",flexShrink:0}}>
+                          <div style={{fontSize:13,color:T.danger,fontFamily:"'JetBrains Mono'",fontWeight:700}}>-{daysOver} дн.</div>
+                          <div style={{fontSize:11,color:T.text3}}>{dl.toLocaleDateString("ru-RU",{day:"numeric",month:"short"})}</div>
+                        </div>
+                      </div>
+                    );
+                  })
+            )}
+
+            {/* Выполненные */}
+            {dlTab==="done"&&(
+              done.length===0
+                ? <div className="empty"><span className="empty-ico">📋</span><p>Выполненных ещё нет</p></div>
+                : done.slice(0,10).map(t=>(
+                    <div key={t.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderBottom:"1px solid "+T.bdrS,opacity:.7}}>
+                      <span style={{color:T.success,fontSize:18}}>✓</span>
+                      <div style={{flex:1}}>
+                        <div style={{fontSize:14,color:T.text2,textDecoration:"line-through"}}>{t.title}</div>
+                        <div style={{fontSize:11,color:T.text3}}>{t.doneDate}</div>
+                      </div>
+                      <button className="btn-mini" style={{color:T.text3}} onClick={()=>setTasks(p=>p.map(x=>x.id===t.id?{...x,doneDate:null}:x))}>↩</button>
+                    </div>
+                  ))
+            )}
+
+            {/* Календарь — визуальный вид по месяцам */}
+            {dlTab==="calendar"&&(()=>{
+              const byMonth={};
+              [...upcoming,...overdue].forEach(t=>{
+                if(!t.deadline) return;
+                const key=t.deadline.slice(0,7);
+                if(!byMonth[key]) byMonth[key]=[];
+                byMonth[key].push(t);
+              });
+              const months=Object.keys(byMonth).sort();
+              const MON_RU=["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"];
+              return months.length===0
+                ? <div className="empty"><span className="empty-ico">📅</span><p>Нет дедлайнов</p></div>
+                : months.map(m=>{
+                    const [y,mo]=m.split("-");
+                    const isOverMonth=m<today.slice(0,7);
+                    return(
+                      <div key={m} style={{marginBottom:16}}>
+                        <div style={{fontFamily:"'Cormorant Infant',serif",fontSize:18,color:isOverMonth?T.danger:T.gold,marginBottom:8,borderBottom:"1px solid "+T.bdrS,paddingBottom:4}}>
+                          {MON_RU[parseInt(mo)-1]} {y}
+                          {byMonth[m].length>0&&<span style={{fontSize:12,color:T.text3,marginLeft:8,fontFamily:"'JetBrains Mono'"}}>{byMonth[m].length} дедл.</span>}
+                        </div>
+                        {byMonth[m].map(t=>{
+                          const day=new Date(t.deadline).getDate();
+                          return(
+                            <div key={t.id} style={{display:"flex",gap:12,alignItems:"center",marginBottom:6}}>
+                              <div style={{width:32,height:32,borderRadius:8,background:isOverMonth?"rgba(139,32,32,0.15)":"rgba(45,106,79,0.12)",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'JetBrains Mono'",fontSize:13,color:isOverMonth?T.danger:T.gold,flexShrink:0}}>{day}</div>
+                              <div style={{flex:1,fontSize:14,color:T.text1}}>{t.title.replace(/^[📋🏛🏦📊🔍💰🔒]+\s*/,"")}</div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  });
+            })()}
+
+            {/* Google Calendar — инструкция + экспорт */}
+            {dlTab==="gcal"&&(
+              <div>
+                <div style={{padding:"14px 16px",background:"rgba(45,106,79,0.07)",borderRadius:12,marginBottom:14}}>
+                  <div style={{fontFamily:"'Cormorant Infant',serif",fontSize:18,color:T.gold,marginBottom:8}}>Два способа добавить в Google Calendar</div>
+
+                  <div style={{marginBottom:14}}>
+                    <div style={{fontSize:12,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:6}}>СПОСОБ 1 — КАЖДЫЙ ДЕДЛАЙН ОТДЕЛЬНО</div>
+                    <div style={{fontSize:14,color:T.text2,marginBottom:8,lineHeight:1.6}}>Нажми «📅 В Google Cal» рядом с любым дедлайном → откроется предзаполненная форма → нажми «Сохранить».</div>
+                  </div>
+
+                  <div style={{marginBottom:14}}>
+                    <div style={{fontSize:12,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:6}}>СПОСОБ 2 — ВСЕ СРАЗУ (файл .ics)</div>
+                    <div style={{fontSize:14,color:T.text2,marginBottom:10,lineHeight:1.6}}>Скачай файл с дедлайнами и импортируй его в Google Calendar одним действием.</div>
+                    <button className="btn btn-primary" style={{width:"100%"}} onClick={exportICS}>⬇️ Скачать все дедлайны (.ics)</button>
+                  </div>
+
+                  <div style={{borderTop:"1px solid "+T.bdr,paddingTop:14}}>
+                    <div style={{fontSize:12,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:8}}>КАК ИМПОРТИРОВАТЬ .ICS В GOOGLE CALENDAR</div>
+                    {["1. Скачай файл deadlines.ics выше","2. Открой Google Calendar на компьютере (calendar.google.com)","3. Нажми ⚙️ → Настройки → Импорт и экспорт","4. Выбери файл deadlines.ics → нажми «Импорт»","5. Все дедлайны появятся в твоём календаре!"].map((s,i)=>(
+                      <div key={i} style={{display:"flex",gap:8,marginBottom:6,fontSize:14,color:T.text2}}>
+                        <span style={{color:T.gold,fontFamily:"'JetBrains Mono'",flexShrink:0}}>{i+1}.</span>
+                        <span>{s.replace(/^\d+\. /,"")}</span>
+                      </div>
+                    ))}
+                    <div style={{marginTop:10,padding:"8px 12px",background:"rgba(45,32,16,0.05)",borderRadius:8,fontSize:13,color:T.text3,fontStyle:"italic"}}>
+                      💡 На телефоне: скачай .ics → открой файл → выбери «Добавить в календарь»
+                    </div>
+                  </div>
+                </div>
+
+                {/* Кнопки по одному */}
+                <div style={{fontSize:12,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:8}}>ИЛИ ДОБАВИТЬ ПО ОДНОМУ</div>
+                {upcoming.slice(0,5).map(t=>(
+                  <div key={t.id} style={{display:"flex",alignItems:"center",gap:10,marginBottom:8,padding:"8px 12px",background:"rgba(45,106,79,0.06)",borderRadius:10}}>
+                    <div style={{flex:1,fontSize:14,color:T.text1}}>{t.title.replace(/^[📋🏛🏦📊🔍💰🔒]+\s*/,"")}</div>
+                    <div style={{fontSize:11,color:T.text3,fontFamily:"'JetBrains Mono'",flexShrink:0}}>{new Date(t.deadline).toLocaleDateString("ru-RU",{day:"numeric",month:"short"})}</div>
+                    <button className="btn-mini" onClick={()=>window.open(toGCal(t),"_blank")}>📅</button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Модалка добавления/редактирования дедлайна */}
+            {addDlModal&&(
+              <div className="overlay" onClick={()=>{setAddDlModal(false);setEditDl(null);}}>
+                <div className="modal" onClick={e=>e.stopPropagation()}>
+                  <span className="modal-x" onClick={()=>{setAddDlModal(false);setEditDl(null);}}>✕</span>
+                  <div className="modal-title">{editDl?"Редактировать дедлайн":"Добавить дедлайн"}</div>
+                  <div className="fld"><label>Название отчёта</label>
+                    <input placeholder="НДС за 1 квартал..." value={editDl?editDl.title:newDl.title} onChange={e=>editDl?setEditDl(p=>({...p,title:e.target.value})):setNewDl(p=>({...p,title:e.target.value}))}/>
+                  </div>
+                  <div className="fld"><label>Орган контроля</label>
+                    <div className="chips">{organs.map(v=>(
+                      <div key={v} className={"chip "+((editDl?editDl.organ:newDl.organ)===v?"on":"")} onClick={()=>editDl?setEditDl(p=>({...p,organ:v})):setNewDl(p=>({...p,organ:v}))}>{v}</div>
+                    ))}</div>
+                  </div>
+                  <div className="fld"><label>Дата сдачи</label>
+                    <input type="date" value={editDl?editDl.deadline:newDl.deadline} onChange={e=>editDl?setEditDl(p=>({...p,deadline:e.target.value})):setNewDl(p=>({...p,deadline:e.target.value}))}/>
+                  </div>
+                  <div className="fld"><label>Примечание</label>
+                    <input placeholder="За какой период, куда сдавать..." value={editDl?editDl.notes:newDl.notes} onChange={e=>editDl?setEditDl(p=>({...p,notes:e.target.value})):setNewDl(p=>({...p,notes:e.target.value}))}/>
+                  </div>
+                  <div className="modal-foot">
+                    <button className="btn btn-ghost" onClick={()=>{setAddDlModal(false);setEditDl(null);}}>Отмена</button>
+                    <button className="btn btn-primary" onClick={()=>{
+                      if(editDl) {
+                        const prefix={"ФНС":"🏛 ФНС: ","СФР":"🏦 СФР: ","Росстат":"📊 Росстат: ","ФТС":"🏛 ФТС: ","ЦБ":"🔒 ЦБ: ","РПН":"🔍 РПН: ","Роспотребнадзор":"🔍 РПН: "}[editDl.organ]||"📋 ";
+                        const title=editDl.title.match(/^[📋🏛🏦📊🔍💰🔒]/)?editDl.title:prefix+editDl.title;
+                        setTasks(p=>p.map(x=>x.id===editDl.id?{...x,...editDl,title}:x));
+                      } else {
+                        const prefix={"ФНС":"🏛 ФНС: ","СФР":"🏦 СФР: ","Росстат":"📊 Росстат: "}[newDl.organ]||"📋 ";
+                        setTasks(p=>[...p,{...newDl,id:Date.now()+Math.random(),title:prefix+newDl.title,section:"work",freq:"once",priority:"h",lastDone:"",doneDate:"",preferredTime:"09:00",isDeadline:true}]);
+                      }
+                      setAddDlModal(false);setEditDl(null);
+                      setNewDl({title:"",deadline:"",notes:"",organ:"ФНС"});
+                      notify(editDl?"Дедлайн обновлён ✦":"Дедлайн добавлен ✦");
+                    }}>{editDl?"Сохранить":"Добавить"}</button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })()
       <AiBox kb={kb} prompt={`Как ${profile.profession||"мне"} организовать этот рабочий день? Меня выматывает: ${(profile.workDrain||[]).join(",")||"—"}, вдохновляет: ${profile.workInspire||"—"}. Дай 3-5 конкретных совета для моего типа личности.`} label="Рабочий день" btnText="Совет по дню" placeholder="Помогу сделать рабочий день продуктивнее..."/>
       <div className="card">
         <div className="card-hd"><div className="card-title">Рабочие задачи</div><button className="btn btn-ghost btn-sm" onClick={()=>setModal({})}>+ Задача</button></div>
@@ -2215,16 +3259,89 @@ function WorkSection({profile,tasks,setTasks,today,kb,notify}) {
 // ══════════════════════════════════════════════════════════════
 function HomeSection({profile,tasks,setTasks,today,kb,notify}) {
   const [modal,setModal]=useState(null);
+  const [ht,setHt]=useState({title:"", freq:"daily", priority:"m", preferredTime:"", notes:"", section:"home"});
+  const updHt = (k,v) => setHt(p=>({...p,[k]:v}));
   const autoHome=()=>{
-    const items=[
-      {title:"Вытереть пыль",freq:"daily",priority:"l"},{title:"Помыть посуду",freq:"daily",priority:"m"},
-      {title:"Вынести мусор",freq:"daily",priority:"m"},{title:"Протереть плиту",freq:"daily",priority:"l"},
-      {title:"Зеркала и полки",freq:"weekly:1",priority:"l"},{title:"Полы и пылесос",freq:"weekly:2",priority:"m"},
-      {title:"Сантехника",freq:"weekly:3",priority:"m"},{title:"Ванная",freq:"weekly:4",priority:"l"},
-      {title:"Чистка холодильника",freq:"weekly:5",priority:"l"},{title:"Смена постельного",freq:"every:14",priority:"m"},
-      {title:"Мытьё окон",freq:"every:30",priority:"l"},{title:"Генеральная уборка",freq:"every:90",priority:"h"},
-    ];
-    if(profile.plants&&profile.plants!=="Нет") items.push({title:"Полить цветы",freq:profile.plants.includes("день")?"daily":"every:2",priority:"m"});
+    const items=[];
+    const beds   = parseInt(profile.bedrooms)||1;
+    const baths  = parseInt(profile.bathrooms)||1;
+    const rooms  = profile.homeRooms||[];
+    const hasKitchen  = rooms.includes("Кухня")   || true; // кухня есть у всех
+    const hasHall     = rooms.includes("Коридор")  || true;
+    const hasLiving   = rooms.includes("Гостиная");
+    const hasBalcony  = rooms.includes("Балкон");
+    const hasStudy    = rooms.includes("Кабинет");
+    const hasNursery  = rooms.includes("Детская");
+    const hasPantry   = rooms.includes("Кладовка");
+
+    // ── Ежедневно ──
+    items.push({title:"Вытереть пыль",         freq:"daily",    priority:"l"});
+    items.push({title:"Помыть посуду",          freq:"daily",    priority:"m"});
+    items.push({title:"Вынести мусор",          freq:"daily",    priority:"m"});
+    if(hasKitchen) items.push({title:"Протереть плиту и варочную",freq:"daily",priority:"l"});
+    if(hasKitchen) items.push({title:"Протереть кухонные поверхности",freq:"every:2",priority:"l"});
+
+    // ── Спальни ──
+    for(let i=1;i<=beds;i++){
+      const lbl = beds>1 ? ` (спальня ${i})` : "";
+      items.push({title:`Проветрить спальню${lbl}`,  freq:"daily",    priority:"l"});
+      items.push({title:`Смена постельного${lbl}`,   freq:"every:7",  priority:"m"});
+      items.push({title:`Пылесос в спальне${lbl}`,   freq:"every:7",  priority:"m"});
+      items.push({title:`Влажная уборка спальни${lbl}`,freq:"every:14",priority:"l"});
+    }
+
+    // ── Санузлы ──
+    for(let i=1;i<=baths;i++){
+      const lbl = baths>1 ? ` (санузел ${i})` : "";
+      items.push({title:`Сантехника${lbl}`,          freq:"weekly:3", priority:"m"});
+      items.push({title:`Унитаз и раковина${lbl}`,   freq:"weekly:3", priority:"m"});
+      items.push({title:`Зеркала${lbl}`,             freq:"weekly:1", priority:"l"});
+      items.push({title:`Генуборка ванной${lbl}`,    freq:"every:14", priority:"h"});
+    }
+
+    // ── Коридор ──
+    if(hasHall){
+      items.push({title:"Подмести коридор",           freq:"every:2",  priority:"l"});
+      items.push({title:"Влажная уборка коридора",    freq:"weekly:5", priority:"l"});
+    }
+
+    // ── Гостиная ──
+    if(hasLiving){
+      items.push({title:"Пылесос в гостиной",         freq:"weekly:2", priority:"m"});
+      items.push({title:"Влажная уборка гостиной",    freq:"every:14", priority:"l"});
+      items.push({title:"Вытереть пыль с мебели",     freq:"weekly:1", priority:"l"});
+    }
+
+    // ── Балкон ──
+    if(hasBalcony){
+      items.push({title:"Уборка на балконе",          freq:"every:14", priority:"l"});
+    }
+
+    // ── Кабинет ──
+    if(hasStudy){
+      items.push({title:"Порядок в кабинете",         freq:"weekly:5", priority:"l"});
+    }
+
+    // ── Детская ──
+    if(hasNursery){
+      items.push({title:"Уборка детской",             freq:"every:2",  priority:"h"});
+      items.push({title:"Дезинфекция игрушек",        freq:"every:7",  priority:"m"});
+    }
+
+    // ── Кладовка ──
+    if(hasPantry){
+      items.push({title:"Разбор кладовки",            freq:"every:30", priority:"l"});
+    }
+
+    // ── Общее ──
+    items.push({title:"Мытьё окон",                   freq:"every:30", priority:"l"});
+    items.push({title:"Генеральная уборка",            freq:"every:90", priority:"h"});
+    items.push({title:"Чистка холодильника",           freq:"weekly:5", priority:"l"});
+
+    // ── Растения ──
+    if(profile.plants&&profile.plants!=="Нет")
+      items.push({title:"Полить цветы", freq:profile.plants.includes("день")?"daily":"every:2", priority:"m"});
+
     return items.map(t=>({...t,id:Date.now()+Math.random(),section:"home",lastDone:"",doneDate:"",notes:""}));
   };
   const homeTasks=tasks.filter(t=>t.section==="home");
@@ -2285,8 +3402,9 @@ function HomeSection({profile,tasks,setTasks,today,kb,notify}) {
                 <div className={"chk"+(task.doneDate===today?" done":"")} onClick={()=>setTasks(p=>p.map(t=>t.id===task.id?{...t,doneDate:t.doneDate===today?null:today,lastDone:t.doneDate===today?t.lastDone:today}:t))}>{task.doneDate===today?"✓":""}</div>
                 <div className="task-body">
                   <div className={"task-name"+(task.doneDate===today?" done":"")}>{task.title}</div>
-                  <div className="task-meta">{showFreq&&<span className="badge bt">{freqLabel(task.freq)}</span>}{task.lastDone&&<span className="badge bm">был: {task.lastDone}</span>}</div>
+                  <div className="task-meta">{showFreq&&<span className="badge bt">{freqLabel(task.freq)}</span>}{task.lastDone&&<span className="badge bm">был: {task.lastDone}</span>}{task.notes&&<span className="badge bm" style={{fontStyle:"italic"}}>{task.notes.slice(0,30)}</span>}</div>
                 </div>
+                <div className="ico-btn" style={{color:T.teal,opacity:.7}} onClick={()=>setModal(task)}>✏️</div>
                 <div className="ico-btn danger" onClick={()=>setTasks(p=>p.filter(t=>t.id!==task.id))}>✕</div>
               </div>
             ))}
@@ -2299,18 +3417,156 @@ function HomeSection({profile,tasks,setTasks,today,kb,notify}) {
               <div className="card-title">Дела по дому</div>
               <div className="btn-row">
                 <button className="btn btn-ghost btn-sm" onClick={()=>{const ts=autoHome();setTasks(p=>{const exist=new Set(p.filter(x=>x.section==="home").map(x=>x.title.toLowerCase()));const filtered=ts.filter(t=>!exist.has(t.title.toLowerCase()));notify(filtered.length>0?"Добавлено "+filtered.length:"Все задачи уже есть");return [...p,...filtered];});}}>+ Авто</button>
-                <button className="btn btn-ghost btn-sm" onClick={()=>setModal({})}>+ Своё</button>
+                <button className="btn btn-primary btn-sm" onClick={()=>setModal({})}>+ Своё дело</button>
               </div>
             </div>
-            {renderGroup("Сегодня", "☀️", "#7BCCA0", todayTasks, false)}
-            {renderGroup("На этой неделе", "📅", "#82AADD", weekTasks, true)}
-            {renderGroup("В этом месяце", "🗓️", "#E8A85A", monthTasks, true)}
-            {otherTasks.length>0 && renderGroup("Прочее", "📋", "#A8A49C", otherTasks, true)}
+            {renderGroup("Сегодня", "☀️", T.success, todayTasks, false)}
+            {renderGroup("На этой неделе", "📅", T.teal, weekTasks, true)}
+            {renderGroup("В этом месяце", "🗓️", T.warn, monthTasks, true)}
+            {otherTasks.length>0 && renderGroup("Прочее", "📋", T.text3, otherTasks, true)}
             {todayTasks.length===0&&weekTasks.length===0&&monthTasks.length===0&&<div className="empty"><span className="empty-ico">🏡</span><p>Дел нет!</p></div>}
           </>
         );
       })()}
-      {modal!==null&&<TaskModal task={modal.id?modal:null} defaultSection="home" onSave={t=>{setTasks(p=>modal.id?p.map(x=>x.id===t.id?t:x):[...p,t]);notify("Добавлено");}} onClose={()=>setModal(null)}/>}
+
+      {/* ── Специализированная модалка домашних дел ── */}
+      {modal!==null&&(()=>{
+        const isEdit = !!modal.id;
+        // При открытии редактирования — данные из task, при новом — из ht
+        const cur = isEdit ? modal : ht;
+        const upd = isEdit
+          ? (k,v) => setModal(p=>({...p,[k]:v}))
+          : updHt;
+
+        // Популярные домашние дела — быстрый выбор
+        const quickTasks = [
+          {emoji:"👕",title:"Постирать бельё",        freq:"every:7"},
+          {emoji:"🧺",title:"Погладить бельё",        freq:"every:7"},
+          {emoji:"🧹",title:"Подмести полы",          freq:"daily"},
+          {emoji:"🫧",title:"Помыть полы с мытьём",   freq:"every:3"},
+          {emoji:"🪣",title:"Протереть столешницы",   freq:"daily"},
+          {emoji:"🛁",title:"Помыть ванну/душ",       freq:"weekly:4"},
+          {emoji:"🚽",title:"Почистить унитаз",       freq:"weekly:3"},
+          {emoji:"🪟",title:"Протереть зеркала",      freq:"weekly:1"},
+          {emoji:"🧊",title:"Разморозить холодильник",freq:"every:90"},
+          {emoji:"🫙",title:"Разобрать шкаф/ящики",  freq:"every:90"},
+          {emoji:"📦",title:"Разобрать кладовку",     freq:"every:30"},
+          {emoji:"🌿",title:"Полить цветы",           freq:"every:2"},
+          {emoji:"🪴",title:"Пересадить растения",    freq:"every:180"},
+          {emoji:"💡",title:"Протереть лампы/плафоны",freq:"every:30"},
+          {emoji:"🧴",title:"Пополнить запасы химии", freq:"every:30"},
+          {emoji:"🗑",title:"Вынести мусор",          freq:"daily"},
+          {emoji:"🛏",title:"Застелить постель",      freq:"daily"},
+          {emoji:"🧦",title:"Разобрать чистое бельё", freq:"every:7"},
+          {emoji:"🪥",title:"Почистить духовку",      freq:"every:30"},
+          {emoji:"☕",title:"Почистить кофемашину",   freq:"every:14"},
+          {emoji:"🐾",title:"Помыть миску питомца",   freq:"every:2"},
+          {emoji:"🚗",title:"Помыть машину",          freq:"every:14"},
+          {emoji:"📺",title:"Протереть технику",      freq:"every:14"},
+          {emoji:"🧹",title:"Пропылесосить диван",    freq:"every:14"},
+        ];
+
+        const freqOptions = [
+          {v:"daily",     l:"Каждый день"},
+          {v:"every:2",   l:"Каждые 2 дня"},
+          {v:"every:3",   l:"Каждые 3 дня"},
+          {v:"weekly:1",  l:"Раз в неделю (пн)"},
+          {v:"weekly:2",  l:"Раз в неделю (вт)"},
+          {v:"weekly:3",  l:"Раз в неделю (ср)"},
+          {v:"weekly:4",  l:"Раз в неделю (чт)"},
+          {v:"weekly:5",  l:"Раз в неделю (пт)"},
+          {v:"weekly:6",  l:"Раз в неделю (сб)"},
+          {v:"weekly:0",  l:"Раз в неделю (вс)"},
+          {v:"every:7",   l:"Раз в 7 дней"},
+          {v:"every:14",  l:"Раз в 2 недели"},
+          {v:"every:30",  l:"Раз в месяц"},
+          {v:"every:90",  l:"Раз в 3 месяца"},
+          {v:"once",      l:"Один раз"},
+        ];
+
+        return(
+          <div className="overlay" onClick={()=>setModal(null)}>
+            <div className="modal" onClick={e=>e.stopPropagation()} style={{maxHeight:"92vh",overflowY:"auto"}}>
+              <button className="btn btn-ghost btn-sm" style={{position:"absolute",top:16,left:16}} onClick={()=>setModal(null)}>← Назад</button>
+              <span className="modal-x" onClick={()=>setModal(null)}>✕</span>
+              <div className="modal-title" style={{marginTop:8}}>{isEdit?"Редактировать дело":"Добавить домашнее дело"}</div>
+
+              {/* Быстрый выбор — только при добавлении нового */}
+              {!isEdit&&(
+                <div style={{marginBottom:18}}>
+                  <div style={{fontSize:11,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1.5,marginBottom:10}}>БЫСТРЫЙ ВЫБОР</div>
+                  <div style={{display:"flex",flexWrap:"wrap",gap:7}}>
+                    {quickTasks.map(q=>(
+                      <div key={q.title}
+                        onClick={()=>{upd("title",q.title);upd("freq",q.freq);}}
+                        style={{display:"flex",alignItems:"center",gap:6,padding:"6px 12px",
+                          borderRadius:20,border:"1px solid "+(cur.title===q.title?T.gold:T.bdr),
+                          background:cur.title===q.title?"rgba(45,106,79,0.12)":"rgba(255,255,255,0.5)",
+                          cursor:"pointer",fontSize:14,color:cur.title===q.title?T.gold:T.text1,
+                          transition:"all .15s"}}>
+                        <span>{q.emoji}</span><span>{q.title}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Название */}
+              <div className="fld">
+                <label>Название дела</label>
+                <input
+                  placeholder="Погладить бельё, помыть окна..."
+                  value={cur.title}
+                  onChange={e=>upd("title",e.target.value)}
+                  autoFocus
+                />
+              </div>
+
+              {/* Периодичность */}
+              <div className="fld">
+                <label>Как часто?</label>
+                <select value={cur.freq||"daily"} onChange={e=>upd("freq",e.target.value)}>
+                  {freqOptions.map(f=><option key={f.v} value={f.v}>{f.l}</option>)}
+                </select>
+              </div>
+
+              {/* Время */}
+              <div className="fld-row">
+                <div className="fld">
+                  <label>Удобное время</label>
+                  <input type="time" value={cur.preferredTime||""} onChange={e=>upd("preferredTime",e.target.value)}/>
+                </div>
+                <div className="fld">
+                  <label>Приоритет</label>
+                  <select value={cur.priority||"m"} onChange={e=>upd("priority",e.target.value)}>
+                    <option value="l">Низкий — когда придётся</option>
+                    <option value="m">Средний — в этот день</option>
+                    <option value="h">Высокий — обязательно</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Заметка */}
+              <div className="fld">
+                <label>Заметка (необязательно)</label>
+                <input placeholder="Тёмное бельё отдельно / использовать средство X..." value={cur.notes||""} onChange={e=>upd("notes",e.target.value)}/>
+              </div>
+
+              <div className="modal-foot">
+                <button className="btn btn-ghost" onClick={()=>setModal(null)}>Отмена</button>
+                <button className="btn btn-primary" onClick={()=>{
+                  if(!cur.title.trim()){notify("Введи название");return;}
+                  const task={...cur,id:modal.id||Date.now()+Math.random(),section:"home",lastDone:"",doneDate:cur.doneDate||""};
+                  setTasks(p=>modal.id?p.map(x=>x.id===task.id?task:x):[...p,task]);
+                  setModal(null);
+                  if(!isEdit) setHt({title:"",freq:"daily",priority:"m",preferredTime:"",notes:"",section:"home"});
+                  notify(isEdit?"Дело обновлено ✦":"Дело добавлено ✦");
+                }}>{isEdit?"Сохранить":"Добавить"}</button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
@@ -2506,12 +3762,20 @@ function HealthSection({profile,tasks,setTasks,setShopList,today,kb,notify}) {
           <div key={task.id} className="task-row">
             <div className={`chk${task.doneDate===today?" done":""}`} onClick={()=>setTasks(p=>p.map(t=>t.id===task.id?{...t,doneDate:t.doneDate===today?null:today,lastDone:t.doneDate===today?t.lastDone:today}:t))}>{task.doneDate===today?"✓":""}</div>
             <div className="task-body"><div className={`task-name${task.doneDate===today?" done":""}`}>{task.title}</div><div className="task-meta"><span className="badge bt">{freqLabel(task.freq)}</span></div></div>
+            <div className="ico-btn" onClick={()=>setModal(task)} style={{color:T.teal,opacity:.7}}>✏️</div>
+            <div className="ico-btn" onClick={()=>setModal(task)} style={{color:T.teal,opacity:.7}}>✏️</div>
             <div className="ico-btn danger" onClick={()=>setTasks(p=>p.filter(t=>t.id!==task.id))}>✕</div>
           </div>
         ))}
       </div>
       {modal!==null&&<TaskModal task={modal.id?modal:null} defaultSection="health" onSave={t=>{setTasks(p=>modal.id?p.map(x=>x.id===t.id?t:x):[...p,t]);notify("Добавлено");}} onClose={()=>setModal(null)}/>}
-      <AiBox kb={kb} prompt={"Составь меню на неделю с расчётом продуктов. Тип питания: "+(profile.nutrition||"обычное")+". Всегда дома: "+((profile.staples||[]).join(","))+". Зоны здоровья: "+((profile.healthFocus||[]).join(","))+". Хронические болезни: "+(profile.chronic||"нет")+". Луна: "+moonN+" ("+moonT+"). Сезон: "+season+". Пиши заголовки разделов БЕЗ опечаток в формате ##.\n\n## Меню на 7 дней\nДля каждого дня (Понедельник, Вторник и т.д.) — завтрак, обед, ужин с конкретными блюдами и порциями. Нумерованным списком 7 пунктов где номер = день.\n\n## Список покупок под это меню\nВсе нужные продукты с количеством и КАЖДЫЙ начинай с метки [Продукты] для добавления в список покупок. Например: 1) [Продукты] Куриное филе 1 кг 2) [Продукты] Гречка 500 г. Нумерованный список.\n\n## Что добавить в покупки сверх меню\nПусть будут также суперфуды и добавки, тоже с метками [Аптека] или [Продукты]. Нумерованный список 3-5 пунктов.\n\nВ конце выведи: \"Это меню сохранится в журнал — завтра вечером появится меню на следующий день\"."} label="Меню на неделю" btnText="Составить меню" placeholder="Составлю меню на неделю с возможностью добавить продукты в список покупок..." actionType="shopping" onShopAdd={setShopList}/>
+      <AiBox kb={kb} prompt={(()=>{
+        const tcm=getTCMFullProfile(profile);
+        const el=tcm?.el;
+        const cn=tcm?.cn;
+        return "Составь меню питания на неделю на основе полного профиля.\n\nПРОФИЛЬ ПИТАНИЯ:\n• Тип питания: "+(profile.nutrition||"обычное")+"\n• Цель: "+(profile.healthGoal||"—")+"\n• Зоны здоровья: "+((profile.healthFocus||[]).join(", ")||"—")+"\n• Хронические: "+(profile.chronic||"нет")+"\n\nТКМ-ПРОФИЛЬ:\n• Стихия: "+(el?el.name+" ("+(el.yin?"Инь":"Ян")+")":"—")+"\n• Органы стихии: "+(el?el.organ:"—")+"\n• Полезный вкус: "+(el?el.taste:"—")+"\n• Конституция: "+(cn?cn.type:"—")+"\n• Синдромы: "+((tcm?.syndromes||[]).join(", ")||"не определены")+"\n• Органы под вниманием: "+((tcm?.uniqueOrgans||[]).join(", ")||"—")+"\n• Пищеварение: "+(tcm?.digestionNote||"в норме")+"\n• Тяга к вкусу: "+(profile.tcmTaste?.split("(")[0]?.trim()||"—")+"\n• ТКМ-продукты: "+(tcm?.foodRecs||cn?.foods||"—")+"\n\nЛУНА И СЕЗОН:\n• Луна: "+moonN+" ("+moonT+"). Сезон: "+season+"\n• Всегда дома: "+((profile.staples||[]).join(", ")||"—")+"\n\nПРАВИЛА:\n1) Продукты поддерживают органы стихии и выявленные синдромы\n2) Учитывай вкус-союзник и тягу к вкусу\n3) При цели похудеть — ограничь простые углеводы\n4) Продукты сезонные и простые в приготовлении\n\n## Меню на 7 дней\nДля каждого дня — завтрак, обед, ужин. Нумерованный список.\n\n## Список продуктов\nКАЖДЫЙ продукт начинай с метки [Продукты] или [Аптека]. 15-20 позиций.";
+      })()}
+        label="Меню на неделю (ТКМ)" btnText="Составить меню по ТКМ" placeholder="Составлю меню с учётом твоей стихии, синдромов и конституции по ТКМ..." actionType="shopping" onShopAdd={setShopList}/>
       <AiBox kb={kb} prompt={"Дай рецепт на сегодня для "+( profile.name||"меня")+". Тип питания: "+(profile.nutrition||"обычное")+". Луна: "+moonN+" ("+moonT+"). Зоны здоровья: "+((profile.healthFocus||[]).join(","))+". Что есть дома: "+((profile.staples||[]).join(","))+". Сезон: "+season+". Дай: 1) один конкретный рецепт под эту фазу луны и мои зоны здоровья, 2) почему именно этот рецепт полезен для меня сегодня, 3) какие добавки или суперфуды добавить для усиления эффекта."} label="Рецепт на сегодня" btnText="Рецепт дня" placeholder="Подберу рецепт под фазу луны и твоё здоровье..." noActions={true}/>
     </div>
   );
@@ -2551,6 +3815,7 @@ function BeautySection({profile,tasks,setTasks,today,kb,notify}) {
           <div key={task.id} className="task-row">
             <div className={`chk${task.doneDate===today?" done":""}`} onClick={()=>setTasks(p=>p.map(t=>t.id===task.id?{...t,doneDate:t.doneDate===today?null:today,lastDone:t.doneDate===today?t.lastDone:today}:t))}>{task.doneDate===today?"✓":""}</div>
             <div className="task-body"><div className={`task-name${task.doneDate===today?" done":""}`}>{task.title}</div><div className="task-meta"><span className="badge bp">{freqLabel(task.freq)}</span></div></div>
+            <div className="ico-btn" onClick={()=>setModal(task)} style={{color:T.teal,opacity:.7}}>✏️</div>
             <div className="ico-btn danger" onClick={()=>setTasks(p=>p.filter(t=>t.id!==task.id))}>✕</div>
           </div>
         ))}
@@ -3090,6 +4355,76 @@ function ProfileSection({profile,setProfile,sections,setSections,notify,kb}) {
             <div className="card" style={{textAlign:"center"}}><div style={{fontSize:32,marginBottom:4}}>🐾</div><div style={{fontFamily:"'Cormorant Infant',serif",fontSize:16}}>{east}</div><div style={{fontSize:10,color:T.text3,marginTop:2,fontFamily:"'JetBrains Mono'",letterSpacing:1}}>ВОСТОК</div></div>
             <div className="card card-accent" style={{textAlign:"center"}}><div className="degree-big">{deg||"—"}</div><div style={{fontSize:9,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:2,marginTop:2}}>ГРАДУС СУДЬБЫ</div></div>
           </div>
+          {/* ── ТКМ блок ── */}
+          {profile.dob&&(()=>{
+            const tcm = getTCMFullProfile(profile);
+            if(!tcm) return null;
+            const {el, cn, syndromes, uniqueOrgans, digestionNote, foodRecs, birthOrgan, emotionOrgan, sleepOrgan, tasteOrgan} = tcm;
+            const hasDiag = profile.tcmTemp||profile.tcmEmotion||profile.tcmTaste||profile.tcmSleep;
+            return(<>
+              <div className="sec-lbl">Традиционная китайская медицина (ТКМ)</div>
+              <div className="card" style={{marginBottom:12,borderLeft:"3px solid "+T.gold}}>
+                {/* Стихия */}
+                <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:14}}>
+                  <div style={{fontSize:40}}>{el.emoji}</div>
+                  <div>
+                    <div style={{fontFamily:"'Cormorant Infant',serif",fontSize:24,color:T.gold}}>{el.name} {el.yin?"(Инь)":"(Ян)"}</div>
+                    <div style={{fontSize:13,color:T.text2,marginTop:2}}>{cn?.type}</div>
+                  </div>
+                </div>
+
+                {/* Базовые параметры */}
+                <div className="g2" style={{gap:8,marginBottom:12}}>
+                  <div style={{padding:"8px 12px",background:"rgba(45,106,79,0.08)",borderRadius:10}}>
+                    <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:3}}>ОРГАНЫ СТИХИИ</div>
+                    <div style={{fontSize:14,color:T.text1}}>{el.organ}</div>
+                  </div>
+                  <div style={{padding:"8px 12px",background:"rgba(45,106,79,0.08)",borderRadius:10}}>
+                    <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:3}}>СЕЗОН СИЛЫ</div>
+                    <div style={{fontSize:14,color:T.text1}}>{el.season}</div>
+                  </div>
+                  <div style={{padding:"8px 12px",background:"rgba(45,106,79,0.08)",borderRadius:10}}>
+                    <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:3}}>ВКУС-СОЮЗНИК</div>
+                    <div style={{fontSize:14,color:T.text1}}>{el.taste}</div>
+                  </div>
+                  <div style={{padding:"8px 12px",background:"rgba(45,106,79,0.08)",borderRadius:10}}>
+                    <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:3}}>ДОБРОДЕТЕЛЬ</div>
+                    <div style={{fontSize:14,color:T.text1}}>{el.virtue}</div>
+                  </div>
+                </div>
+
+                {/* Диагностика — если пройдена */}
+                {hasDiag && <>
+                  {syndromes.length>0&&<>
+                    <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:6}}>ВЫЯВЛЕННЫЕ СИНДРОМЫ</div>
+                    <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}>
+                      {syndromes.map(s=><span key={s} className="badge bw">{s}</span>)}
+                    </div>
+                  </>}
+                  {uniqueOrgans.length>0&&<>
+                    <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:6}}>ОРГАНЫ ТРЕБУЮЩИЕ ВНИМАНИЯ</div>
+                    <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}>
+                      {uniqueOrgans.map(o=><span key={o} className="badge br">{o}</span>)}
+                    </div>
+                  </>}
+                  {digestionNote&&<>
+                    <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:4}}>ПИЩЕВАРЕНИЕ</div>
+                    <div style={{fontSize:14,color:T.warn,marginBottom:12,fontStyle:"italic"}}>{digestionNote}</div>
+                  </>}
+                  {birthOrgan&&<>
+                    <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:4}}>МЕРИДИАН РОЖДЕНИЯ</div>
+                    <div style={{fontSize:14,color:T.text1,marginBottom:8}}>{birthOrgan}</div>
+                  </>}
+                </>}
+
+                {/* Питание */}
+                <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:4}}>ПИТАНИЕ ПО ТКМ</div>
+                <div style={{fontSize:14,color:T.success,fontStyle:"italic",lineHeight:1.6}}>{foodRecs||cn?.foods}</div>
+
+                {!hasDiag&&<div style={{marginTop:12,fontSize:13,color:T.text3,fontStyle:"italic"}}>Пройди ТКМ-диагностику в настройках профиля для расширенного анализа</div>}
+              </div>
+            </>);
+          })()}
           <div className="sec-lbl">Характер и личность</div>
           <div className="g2" style={{marginBottom:14}}>
             {[["Решения",profile.decisionStyle],["Энергия",profile.energySource],["Планы",profile.planningStyle],["Ценность",profile.coreValue]].map(([l,v])=>v?<div key={l} className="card"><div className="pf-l">{l}</div><div className="pf-v" style={{fontSize:15}}>{v}</div></div>:null)}
@@ -3127,6 +4462,7 @@ function ProfileSection({profile,setProfile,sections,setSections,notify,kb}) {
           <div className="g2" style={{marginBottom:14}}>
             <div className="card" style={{textAlign:"center"}}><div style={{fontSize:40,marginBottom:6}}>{z.emoji}</div><div style={{fontFamily:"'Cormorant Infant',serif",fontSize:20}}>{z.name}</div><div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",marginTop:4,letterSpacing:1}}>ЗНАК ЗОДИАКА</div></div>
             <div className="card" style={{textAlign:"center"}}><div style={{fontSize:40,marginBottom:6}}>🐾</div><div style={{fontFamily:"'Cormorant Infant',serif",fontSize:20}}>{east}</div><div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",marginTop:4,letterSpacing:1}}>ВОСТОЧНЫЙ ЗНАК</div></div>
+            {profile.dob&&(()=>{const el=getChineseElement(profile.dob);return(<div className="card" style={{textAlign:"center"}}><div style={{fontSize:40,marginBottom:6}}>{el.emoji}</div><div style={{fontFamily:"'Cormorant Infant',serif",fontSize:20}}>{el.name}</div><div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",marginTop:4,letterSpacing:1}}>СТИХИЯ ТКМ</div></div>);})()}
             <div className="card gfull"><div className="pf-l">Луна сегодня</div><div style={{fontFamily:"'Cormorant Infant',serif",fontSize:22,color:T.text0,marginTop:4}}>{getMoon().e} {getMoon().n}</div><div style={{fontSize:14,color:T.text3,marginTop:3,fontStyle:"italic"}}>{getMoon().t}</div></div>
           </div>
           <AiBox kb={kb} prompt={"Составь подробный астрологический и нумерологический портрет. ВАЖНО: говори ТОЛЬКО от второго лица (ты, твой, тебе) — никогда в третьем лице (она, Ирина). Дата рождения: "+(profile.dob||"—")+". Знак зодиака: "+z.name+", восточный: "+east+", градус судьбы: "+(deg||"—")+"°, дата рождения: "+(profile.dob||"—")+". Раздели ответ на чёткие блоки с заголовками: 1) **Характер и личность** — основные черты, 2) **Сильные стороны** — что использовать, 3) **Слабые места** — над чем работать, 4) **Здоровье** — на что обращать внимание, 5) **Любовь и отношения** — какой ты партнёр, 6) **Карьера и финансы** — где реализуешься. Каждый блок 3-5 пунктов нумерованным списком."} label="Персональный астропортрет" btnText="Составить мой портрет" placeholder="Получи свой полный астрологический портрет..." noActions={true} maxTokens={1800}/>
