@@ -2602,7 +2602,6 @@ function TodaySection({profile,tasks,setTasks,journal,setJournal,today,moon,kb,n
           </>);
         })()}
       </div>
-      </div>
       {addModal&&<TaskModal defaultSection="today" onSave={t=>{setTasks(p=>[...p,t]);notify("Задача добавлена");}} onClose={()=>setAddModal(false)}/>}
       {modal!==null&&<TaskModal task={modal.id?modal:null} defaultSection={modal.section||"tasks"} onSave={t=>{setTasks(p=>modal.id?p.map(x=>x.id===t.id?t:x):[...p,t]);setModal(null);notify("Сохранено");}} onClose={()=>setModal(null)}/>}
     </div>
@@ -3231,7 +3230,7 @@ function WorkSection({profile,tasks,setTasks,today,kb,notify}) {
             )}
           </div>
         );
-      })()
+      })()}
       <AiBox kb={kb} prompt={`Как ${profile.profession||"мне"} организовать этот рабочий день? Меня выматывает: ${(profile.workDrain||[]).join(",")||"—"}, вдохновляет: ${profile.workInspire||"—"}. Дай 3-5 конкретных совета для моего типа личности.`} label="Рабочий день" btnText="Совет по дню" placeholder="Помогу сделать рабочий день продуктивнее..."/>
       <div className="card">
         <div className="card-hd"><div className="card-title">Рабочие задачи</div><button className="btn btn-ghost btn-sm" onClick={()=>setModal({})}>+ Задача</button></div>
@@ -3951,7 +3950,7 @@ function GoalsSection({profile,kb,notify}) {
         <div style={{display:"flex",justifyContent:"center",marginBottom:14}}>
           <svg width="360" height="360" viewBox="-30 -30 380 380" style={{maxWidth:"100%"}}>
             {/* концентрические круги-направляющие */}
-            {[2,4,6,8,10].map(n=><circle key={n} cx={cx} cy={cy} r={(n/10)*maxR} fill="none" stroke=T.goldGlow strokeWidth="1"/>)}
+            {[2,4,6,8,10].map(n=><circle key={n} cx={cx} cy={cy} r={(n/10)*maxR} fill="none" stroke="rgba(45,32,16,0.1)" strokeWidth="1"/>)}
             {/* линии между секторами */}
             {WHEEL_AREAS.map((_,i)=>{
               const a = (i/sectorCount)*2*Math.PI - Math.PI/2;
@@ -4165,11 +4164,11 @@ function MentalSection({profile,kb,notify}) {
                   <div style={{fontSize:11,color:T.text2,fontFamily:"'JetBrains Mono'",marginTop:4}}>СР. НАСТР.</div>
                 </div>
                 <div style={{flex:1,background:"rgba(139,32,32,0.08)",borderRadius:12,padding:"12px",textAlign:"center"}}>
-                  <div style={{fontFamily:"'Cormorant Infant',serif",fontSize:28,color:"color:T.danger}}>{avgStress}</div>
+                  <div style={{fontFamily:"'Cormorant Infant',serif",fontSize:28,color:T.danger}}>{avgStress}</div>
                   <div style={{fontSize:11,color:T.text2,fontFamily:"'JetBrains Mono'",marginTop:4}}>СР. СТРЕСС</div>
                 </div>
                 <div style={{flex:1,background:T.tealGlow,borderRadius:12,padding:"12px",textAlign:"center"}}>
-                  <div style={{fontFamily:"'Cormorant Infant',serif",fontSize:28,color:"color:T.teal}}>{logs.length}</div>
+                  <div style={{fontFamily:"'Cormorant Infant',serif",fontSize:28,color:T.teal}}>{logs.length}</div>
                   <div style={{fontSize:11,color:T.text2,fontFamily:"'JetBrains Mono'",marginTop:4}}>ЗАПИСЕЙ</div>
                 </div>
               </div>
