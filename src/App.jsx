@@ -4031,26 +4031,38 @@ function WorkSection({profile,tasks,setTasks,today,kb,notify}) {
             )}
 
             {/* По органам */}
-            {Object.entries(byOrgan).map(([group, items])=>(
-              <div key={group} style={{marginBottom:6,borderRadius:10,border:"1px solid "+T.bdrS,overflow:"hidden"}}>
-                <div style={{padding:"8px 12px",background:"rgba(45,32,16,0.04)",display:"flex",justifyContent:"space-between",cursor:"pointer"}}
-                  onClick={()=>setExpandedGroup(expandedGroup===group?null:group)}>
-                  <div style={{display:"flex",alignItems:"center",gap:8}}>
-                    <span style={{fontSize:12,fontWeight:600,color:T.text0}}>{group}</span>
-                    <span style={{fontSize:11,color:T.text3}}>{items.length} дедл.</span>
-                    {items[0]?.deadline&&(
-                      <span style={{fontSize:11,color:T.gold,fontFamily:"'JetBrains Mono'"}}>
-                        ближ. {new Date(items[0].deadline).toLocaleDateString("ru-RU",{day:"numeric",month:"short"})}
-                      </span>
-                    )}
+            {Object.entries(byOrgan).map(([group, items])=>{
+              // Определить орган из группы для новой задачи
+              const groupOrgan = group.includes("КГД")?"КГД":group.includes("БНС")?"БНС":group.includes("Внутрен")?"HR":"КГД";
+              return (
+                <div key={group} style={{marginBottom:6,borderRadius:10,border:"1px solid "+T.bdrS,overflow:"hidden"}}>
+                  <div style={{padding:"8px 12px",background:"rgba(45,32,16,0.04)",display:"flex",justifyContent:"space-between",cursor:"pointer"}}
+                    onClick={()=>setExpandedGroup(expandedGroup===group?null:group)}>
+                    <div style={{display:"flex",alignItems:"center",gap:8}}>
+                      <span style={{fontSize:12,fontWeight:600,color:T.text0}}>{group}</span>
+                      <span style={{fontSize:11,color:T.text3}}>{items.length} дедл.</span>
+                      {items[0]?.deadline&&(
+                        <span style={{fontSize:11,color:T.gold,fontFamily:"'JetBrains Mono'"}}>
+                          ближ. {new Date(items[0].deadline).toLocaleDateString("ru-RU",{day:"numeric",month:"short"})}
+                        </span>
+                      )}
+                    </div>
+                    <div style={{display:"flex",alignItems:"center",gap:6}}>
+                      <button className="btn-mini" style={{fontSize:10,padding:"2px 6px",zIndex:1}} onClick={e=>{e.stopPropagation();setEditDl(null);setNewDl(p=>({...p,organ:groupOrgan}));setAddDlModal(true);}}>+</button>
+                      <span style={{fontSize:12,color:T.text3}}>{expandedGroup===group?"▲":"▼"}</span>
+                    </div>
                   </div>
-                  <span style={{fontSize:12,color:T.text3}}>{expandedGroup===group?"▲":"▼"}</span>
+                  {expandedGroup===group&&<>
+                    {items.map(t=>(
+                      <DlRow key={t.id} t={t} today={today} setTasks={setTasks} setEditDl={setEditDl} setAddDlModal={setAddDlModal}/>
+                    ))}
+                    <div style={{padding:"6px 12px"}}>
+                      <button className="btn btn-ghost btn-sm" style={{width:"100%",fontSize:11,border:"1px dashed rgba(200,164,90,0.25)"}} onClick={()=>{setEditDl(null);setNewDl(p=>({...p,organ:groupOrgan}));setAddDlModal(true);}}>+ Добавить в {group}</button>
+                    </div>
+                  </>}
                 </div>
-                {expandedGroup===group&&items.map(t=>(
-                  <DlRow key={t.id} t={t} today={today} setTasks={setTasks} setEditDl={setEditDl} setAddDlModal={setAddDlModal}/>
-                ))}
-              </div>
-            ))}
+              );
+            })}
           </div>
         );
       })()}
@@ -4270,68 +4282,89 @@ function HomeSection({profile,tasks,setTasks,today,kb,notify}) {
           <button className="btn btn-primary" onClick={()=>{const ts=autoHome();setTasks(p=>{const exist=new Set(p.filter(x=>x.section==="home").map(x=>x.title.toLowerCase()));const filtered=ts.filter(t=>!exist.has(t.title.toLowerCase()));notify("Добавлено "+filtered.length+" задач"+(filtered.length<ts.length?" (пропущено "+(ts.length-filtered.length)+" дубликатов)":""));return [...p,...filtered];});}}>✦ Создать расписание уборки</button>
         </div>
       )}
-      {homeTasks.length>0&&(()=>{
-        // Разбить дела по периодичности
-        // Классификация: каждая задача попадает РОВНО в одну группу по периоду
+      {(()=>{
         const classifyTask = (f) => {
-          if(!f) return "other";
-          if(f==="once") return "other";
-          if(f==="daily" || f==="workdays") return "today";
-          // every:N — N дней между повторами
-          const ev = f.match(/^every:(\d+)$/);
-          if(ev) {
-            const n = parseInt(ev[1]);
-            if(n <= 1) return "today";
-            if(n <= 7) return "week";
-            if(n <= 90) return "month";
-            return "other";
-          }
-          // weekly:N — конкретный день недели
+          if(!f||f==="once") return "other";
+          if(f==="daily"||f==="workdays") return "daily";
+          const ev=f.match(/^every:(\d+)$/);
+          if(ev){const n=parseInt(ev[1]);if(n<=1)return"daily";if(n<=7)return"week";if(n<=90)return"month";return"other";}
           if(f.startsWith("weekly:")) return "week";
-          // monthly:N — конкретный день месяца
           if(f.startsWith("monthly:")) return "month";
           return "other";
         };
-        
-        const todayTasks = homeTasks.filter(t=>classifyTask(t.freq)==="today" && isDue(t,today) && (t.freq==="daily"||t.freq==="workdays"||(t.freq.startsWith("every:")&&(parseInt(t.freq.split(":")[1])<=1||t.lastDone))||t.freq.startsWith("weekly:")));
-        const weekTasks = homeTasks.filter(t=>classifyTask(t.freq)==="week" && isDue(t,today) && t.lastDone);
-        const monthTasks = homeTasks.filter(t=>classifyTask(t.freq)==="month" && isDue(t,today) && t.lastDone);
-        const otherTasks = homeTasks.filter(t=>classifyTask(t.freq)==="other" && isDue(t,today) && t.lastDone);
-        
-        const renderGroup = (title, emoji, color, list, showFreq) => list.length===0 ? null : (
-          <div className="card" style={{marginBottom:12,borderLeft:"3px solid "+color}}>
-            <div className="card-hd">
-              <div className="card-title"><span style={{marginRight:8}}>{emoji}</span>{title}</div>
-              <span className="badge bm">{list.filter(t=>t.doneDate!==today).length}/{list.length}</span>
-            </div>
-            {list.map(task=>(
-              <div key={task.id} className="task-row">
-                <div className={"chk"+(task.doneDate===today?" done":"")} onClick={()=>setTasks(p=>p.map(t=>t.id===task.id?{...t,doneDate:t.doneDate===today?null:today,lastDone:t.doneDate===today?t.lastDone:today}:t))}>{task.doneDate===today?"✓":""}</div>
-                <div className="task-body">
-                  <div className={"task-name"+(task.doneDate===today?" done":"")}>{task.title}</div>
-                  <div className="task-meta">{showFreq&&<span className="badge bt">{freqLabel(task.freq)}</span>}{task.lastDone&&<span className="badge bm">был: {task.lastDone}</span>}{task.notes&&<span className="badge bm" style={{fontStyle:"italic"}}>{task.notes.slice(0,30)}</span>}</div>
+        const groups = [
+          {key:"daily", label:"Ежедневно",     emoji:"☀️", color:T.success},
+          {key:"week",  label:"Еженедельно",   emoji:"📅", color:T.teal},
+          {key:"month", label:"Ежемесячно",    emoji:"🗓️", color:T.warn},
+          {key:"other", label:"Разово/Сезонно",emoji:"📋", color:T.text3},
+        ];
+        const byGroup = {};
+        groups.forEach(g=>{byGroup[g.key]=homeTasks.filter(t=>classifyTask(t.freq)===g.key);});
+        const totalTasks = homeTasks.length;
+
+        const HomeTaskRow = ({task}) => {
+          const isDone = task.doneDate===today;
+          const isDueToday = isDue(task,today);
+          return (
+            <div style={{display:"flex",alignItems:"center",gap:8,padding:"7px 0",borderBottom:"1px solid rgba(255,255,255,0.03)"}}>
+              {/* Чекбокс — только если задача наступила */}
+              <div className={"chk"+(isDone?" done":"")} style={{opacity:isDueToday||isDone?1:0.3}} onClick={()=>{
+                if(!isDueToday&&!isDone)return;
+                setTasks(p=>p.map(t=>t.id===task.id?{...t,doneDate:t.doneDate===today?null:today,lastDone:t.doneDate===today?t.lastDone:today}:t));
+              }}>{isDone?"✓":isDueToday?"":""}</div>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:14,color:isDone?T.text3:T.text0,textDecoration:isDone?"line-through":"none",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{task.title}</div>
+                <div style={{display:"flex",gap:6,marginTop:2,flexWrap:"wrap"}}>
+                  <span style={{fontSize:10,color:isDueToday&&!isDone?T.warn:T.text3,fontFamily:"'JetBrains Mono'"}}>{freqLabel(task.freq)}</span>
+                  {task.preferredTime&&<span style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'"}}>🕐{task.preferredTime}</span>}
+                  {isDueToday&&!isDone&&<span style={{fontSize:10,color:T.warn,fontFamily:"'JetBrains Mono'"}}>★ сегодня</span>}
+                  {task.lastDone&&<span style={{fontSize:10,color:T.text3}}>был {task.lastDone}</span>}
                 </div>
-                <div className="ico-btn" style={{color:T.teal,opacity:.7}} onClick={()=>setModal(task)}>✏️</div>
-                <div className="ico-btn danger" onClick={()=>setTasks(p=>p.filter(t=>t.id!==task.id))}>✕</div>
               </div>
-            ))}
-          </div>
-        );
-        
+              <div style={{display:"flex",gap:4,flexShrink:0}}>
+                <button className="btn-mini" style={{padding:"3px 7px",fontSize:11}} onClick={()=>{
+                  const h=parseInt((task.preferredTime||"18:00").split(":")[0])||18;
+                  const m=parseInt((task.preferredTime||"18:00").split(":")[1])||0;
+                  const start=new Date();start.setHours(h,m,0,0);
+                  const end=new Date(start.getTime()+3600000);
+                  const f=d=>d.toISOString().replace(/[-:]/g,"").split(".")[0]+"Z";
+                  window.open("https://calendar.google.com/calendar/render?action=TEMPLATE&text="+encodeURIComponent(task.title)+"&dates="+f(start)+"/"+f(end),"_blank");
+                }}>📅</button>
+                <div className="ico-btn" style={{fontSize:13,padding:"2px 5px"}} onClick={()=>setModal(task)}>✏️</div>
+                <div className="ico-btn danger" style={{fontSize:13,padding:"2px 5px"}} onClick={()=>setTasks(p=>p.filter(t=>t.id!==task.id))}>✕</div>
+              </div>
+            </div>
+          );
+        };
+
         return (
           <>
-            <div className="card-hd" style={{marginBottom:8}}>
-              <div className="card-title">Дела по дому</div>
-              <div className="btn-row">
-                <button className="btn btn-ghost btn-sm" onClick={()=>{const ts=autoHome();setTasks(p=>{const exist=new Set(p.filter(x=>x.section==="home").map(x=>x.title.toLowerCase()));const filtered=ts.filter(t=>!exist.has(t.title.toLowerCase()));notify(filtered.length>0?"Добавлено "+filtered.length:"Все задачи уже есть");return [...p,...filtered];});}}>+ Авто</button>
-                <button className="btn btn-primary btn-sm" onClick={()=>setModal({})}>+ Своё дело</button>
-              </div>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+              <div style={{flex:1,fontSize:13,color:T.text2}}>Дела по дому · <span style={{color:T.gold}}>{totalTasks}</span></div>
+              <button className="btn btn-ghost btn-sm" style={{fontSize:11}} onClick={()=>{const ts=autoHome();setTasks(p=>{const exist=new Set(p.filter(x=>x.section==="home").map(x=>x.title.toLowerCase()));const filtered=ts.filter(t=>!exist.has(t.title.toLowerCase()));notify(filtered.length>0?"Добавлено "+filtered.length:"Все задачи уже есть");return [...p,...filtered];});}}>+ Авто</button>
+              <button className="btn btn-primary btn-sm" style={{fontSize:11}} onClick={()=>setModal({})}>+ Своё</button>
             </div>
-            {renderGroup("Сегодня", "☀️", T.success, todayTasks, false)}
-            {renderGroup("На этой неделе", "📅", T.teal, weekTasks, true)}
-            {renderGroup("В этом месяце", "🗓️", T.warn, monthTasks, true)}
-            {otherTasks.length>0 && renderGroup("Прочее", "📋", T.text3, otherTasks, true)}
-            {todayTasks.length===0&&weekTasks.length===0&&monthTasks.length===0&&<div className="empty"><span className="empty-ico">🏡</span><p>Дел нет!</p></div>}
+            {groups.map(g=>{
+              const list=byGroup[g.key];
+              if(!list.length) return null;
+              const dueCount=list.filter(t=>isDue(t,today)&&t.doneDate!==today).length;
+              const doneCount=list.filter(t=>t.doneDate===today).length;
+              return (
+                <details key={g.key} open={g.key==="daily"||dueCount>0} style={{marginBottom:8}}>
+                  <summary style={{display:"flex",alignItems:"center",gap:8,padding:"10px 14px",borderRadius:10,cursor:"pointer",background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.05)",listStyle:"none"}}>
+                    <span style={{fontSize:16}}>{g.emoji}</span>
+                    <span style={{flex:1,fontSize:14,fontFamily:"'Crimson Pro',serif",color:T.text0}}>{g.label}</span>
+                    {dueCount>0&&<span style={{fontSize:10,color:T.warn,fontFamily:"'JetBrains Mono'",background:"rgba(122,80,16,0.2)",padding:"1px 6px",borderRadius:6}}>{dueCount} сегодня</span>}
+                    {doneCount>0&&<span style={{fontSize:10,color:T.success,fontFamily:"'JetBrains Mono'",background:"rgba(45,106,79,0.15)",padding:"1px 6px",borderRadius:6}}>{doneCount}✓</span>}
+                    <span style={{fontSize:11,color:T.text3,fontFamily:"'JetBrains Mono'"}}>{list.length}</span>
+                  </summary>
+                  <div style={{padding:"4px 14px 8px",background:"rgba(255,255,255,0.01)",borderRadius:"0 0 10px 10px",border:"1px solid rgba(255,255,255,0.04)",borderTop:"none"}}>
+                    {list.map(task=><HomeTaskRow key={task.id} task={task}/>)}
+                  </div>
+                </details>
+              );
+            })}
+            {totalTasks===0&&<div className="empty"><span className="empty-ico">🏡</span><p>Нет дел. Нажми «+ Авто» для создания расписания</p></div>}
           </>
         );
       })()}
@@ -4649,41 +4682,65 @@ function PetsSection({profile,setProfile,petLog,setPetLog,today,kb,notify}) {
     <div>
       <AiBox kb={kb} prompt={`Советы по уходу за питомцами: ${pets.map(p=>`${p.name}(${p.type},${p.breed||"—"},особенности:${p.notes||"нет"})`).join(";")||"нет питомцев"}. Что важно для здоровья, на что обращать внимание?`} label="Уход за питомцами" btnText="Советы по уходу" placeholder="Дам советы по уходу за твоими питомцами..."/>
       {pets.length===0&&<div className="empty"><span className="empty-ico">🐾</span><p>Питомцев нет. Добавь в профиле!</p></div>}
-      {pets.map(pet=>{
-        const feeds=parseInt(pet.feedTimes)||2;
-        const log=petLog[today]?.[pet.id]||[];
-        const labels=feeds===1?["День"]:feeds===2?["Утро","Вечер"]:feeds===3?["Утро","День","Вечер"]:["1","2","3","4"];
-        const vacDays=daysUntil(pet.vacDate);
-        const parDays=daysUntil(pet.parasiteDate);
-        return(
-          <div key={pet.id} className="pet-card">
-            <div style={{display:"flex",gap:14,alignItems:"flex-start",marginBottom:14}}>
-              <div className="pet-ava">{petEmoji(pet.type)}</div>
-              <div style={{flex:1}}>
-                <div style={{fontFamily:"'Cormorant Infant',serif",fontSize:20,color:T.text0,marginBottom:3}}>{pet.name}</div>
-                <div style={{fontSize:13,color:T.text3}}>{pet.type}{pet.breed&&" · "+pet.breed}{pet.dob&&" · "+getAge(pet.dob)}</div>
-                {pet.food&&<div style={{fontSize:13,color:T.text2,marginTop:2}}>🍽 {pet.food}</div>}
-                {pet.notes&&<div style={{fontSize:13,color:T.warn,marginTop:2}}>⚠ {pet.notes}</div>}
-              </div>
-            </div>
-            <div style={{marginBottom:12}}>
-              <div style={{fontFamily:"'JetBrains Mono'",fontSize:9,color:T.text3,letterSpacing:2,marginBottom:8,textTransform:"uppercase"}}>Кормление ({log.length}/{feeds})</div>
+      {pets.length>0&&(()=>{
+        // Объединённый блок кормления
+        const feedTimes = ["Утро","День","Вечер","Ночь"];
+        // Найти все уникальные времена кормления среди питомцев
+        const maxFeeds = Math.max(...pets.map(p=>parseInt(p.feedTimes)||2));
+        const feedLabels = maxFeeds===1?["День"]:maxFeeds===2?["Утро","Вечер"]:maxFeeds===3?["Утро","День","Вечер"]:["1","2","3","4"];
+        return (
+          <>
+            {/* Объединённый трекер кормления */}
+            <div style={{padding:"10px 14px",background:"rgba(232,168,90,0.08)",borderRadius:12,border:"1px solid rgba(232,168,90,0.15)",marginBottom:10}}>
+              <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1.5,marginBottom:8}}>КОРМЛЕНИЕ</div>
               <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                {Array.from({length:feeds},(_,i)=>(
-                  <button key={i} className={`feed-btn${log.includes(i)?" done":""}`} onClick={()=>markFeed(pet.id,i)}>
-                    {log.includes(i)?"✓ ":""}{labels[i]}
-                  </button>
-                ))}
+                {feedLabels.map((label,feedIdx)=>{
+                  // Все питомцы которых нужно кормить в это время
+                  const petsFeed = pets.filter(p=>feedIdx < (parseInt(p.feedTimes)||2));
+                  const allFed = petsFeed.every(p=>(petLog[today]?.[p.id]||[]).includes(feedIdx));
+                  const anyFed = petsFeed.some(p=>(petLog[today]?.[p.id]||[]).includes(feedIdx));
+                  return (
+                    <button key={feedIdx}
+                      onClick={()=>{
+                        petsFeed.forEach(p=>markFeed(p.id,feedIdx));
+                      }}
+                      style={{padding:"8px 14px",borderRadius:10,border:"1px solid "+(allFed?"rgba(45,106,79,0.5)":anyFed?"rgba(200,164,90,0.4)":"rgba(255,255,255,0.1)"),background:allFed?"rgba(45,106,79,0.2)":anyFed?"rgba(200,164,90,0.1)":"rgba(255,255,255,0.03)",color:allFed?T.success:anyFed?T.gold:T.text2,fontSize:14,cursor:"pointer",transition:"all .15s"}}>
+                      {allFed?"✓ ":""}{label}
+                      <div style={{fontSize:10,color:T.text3,marginTop:2}}>{petsFeed.map(p=>(petLog[today]?.[p.id]||[]).includes(feedIdx)?"✓":"○").join(" ")}</div>
+                    </button>
+                  );
+                })}
+              </div>
+              <div style={{display:"flex",gap:6,marginTop:8,flexWrap:"wrap"}}>
+                {pets.map(p=><span key={p.id} style={{fontSize:12,color:T.text3}}>{petEmoji(p.type)} {p.name}: {(petLog[today]?.[p.id]||[]).length}/{parseInt(p.feedTimes)||2}</span>)}
               </div>
             </div>
-            <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
-              {vacDays!==null&&<span className={`badge ${vacDays<0?"br":vacDays<30?"bw":"bgr"}`}>💉 Вакцин.: {vacDays<0?"просрочена":vacDays===0?"сегодня":`через ${vacDays} дн.`}</span>}
-              {parDays!==null&&<span className={`badge ${parDays<0?"br":parDays<14?"bw":"bm"}`}>🪲 Антипараз.: {parDays<0?"просрочено":`через ${parDays} дн.`}</span>}
-            </div>
-            {vacDays!==null&&vacDays<30&&<div style={{marginTop:10}}><button className="btn btn-ghost btn-xs" onClick={()=>openGCal(`Вакцинация ${pet.name}`,new Date(Date.now()+vacDays*86400000).toISOString(),`${pet.name}(${pet.type})`)}>📅 В Calendar</button></div>}
-          </div>
+
+            {/* Карточки питомцев */}
+            {pets.map(pet=>{
+              const vacDays=daysUntil(pet.vacDate);
+              const parDays=daysUntil(pet.parasiteDate);
+              return(
+                <div key={pet.id} className="pet-card" style={{marginBottom:8}}>
+                  <div style={{display:"flex",gap:10,alignItems:"center"}}>
+                    <div className="pet-ava" style={{width:36,height:36,fontSize:22}}>{petEmoji(pet.type)}</div>
+                    <div style={{flex:1}}>
+                      <div style={{fontSize:16,color:T.text0,fontFamily:"'Cormorant Infant',serif"}}>{pet.name} <span style={{fontSize:12,color:T.text3}}>· {pet.type}{pet.breed?" "+pet.breed:""}</span></div>
+                      {pet.food&&<div style={{fontSize:12,color:T.text3}}>🍽 {pet.food}</div>}
+                    </div>
+                    <div style={{display:"flex",gap:6,flexWrap:"wrap",justifyContent:"flex-end"}}>
+                      {vacDays!==null&&<span className={"badge "+(vacDays<0?"br":vacDays<30?"bw":"bgr")} style={{fontSize:10}}>💉 {vacDays<0?"!":vacDays===0?"сег.":"через "+vacDays+"д."}</span>}
+                      {parDays!==null&&<span className={"badge "+(parDays<0?"br":parDays<14?"bw":"bm")} style={{fontSize:10}}>🪲 {parDays<0?"!":"через "+parDays+"д."}</span>}
+                    </div>
+                  </div>
+                  {pet.notes&&<div style={{fontSize:12,color:T.warn,marginTop:4}}>⚠ {pet.notes}</div>}
+                  {vacDays!==null&&vacDays<30&&<div style={{marginTop:6}}><button className="btn btn-ghost btn-xs" onClick={()=>openGCal("Вакцинация "+pet.name,new Date(Date.now()+vacDays*86400000).toISOString(),pet.name+"("+pet.type+")")}>📅 В Calendar</button></div>}
+                </div>
+              );
+            })}
+          </>
         );
-      })}
+      })()}
     </div>
   );
 }
@@ -5443,45 +5500,31 @@ function MentalSection({profile,kb,notify}) {
 
   return(
     <div>
-      {/* ── Блок состояния: шкала настроения + стресс ── */}
-      <div className="card card-accent" style={{marginBottom:12}}>
-        <div style={{fontFamily:"'Cormorant Infant',serif",fontSize:19,color:T.gold,marginBottom:14}}>Как ты сейчас?</div>
-        
-        {/* Настроение — шкала-бегунок */}
-        <div style={{marginBottom:14}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-            <div style={{fontSize:11,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1.5}}>НАСТРОЕНИЕ</div>
-            <div style={{display:"flex",alignItems:"center",gap:6}}>
-              <span style={{fontSize:26}}>{moodEmoji}</span>
-              <span style={{fontSize:13,color:T.text2,fontFamily:"'Crimson Pro',serif",fontStyle:"italic"}}>{moodLabel}</span>
+      {/* ── Состояние — компактно ── */}
+      <div style={{padding:"12px 14px",background:"rgba(200,164,90,0.06)",borderRadius:12,border:"1px solid rgba(200,164,90,0.15)",marginBottom:10}}>
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
+          <span style={{fontSize:28}}>{moodEmoji}</span>
+          <div style={{flex:1}}>
+            <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+              <span style={{fontSize:11,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1}}>НАСТРОЕНИЕ</span>
+              <span style={{fontSize:12,color:T.text2,fontStyle:"italic"}}>{moodLabel}</span>
             </div>
-          </div>
-          <input type="range" min="0" max="5" step="1" value={mood}
-            onChange={e=>setMood(parseInt(e.target.value))}
-            style={{width:"100%",accentColor:T.gold,height:6}}/>
-          <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:T.text3,marginTop:3}}>
-            <span>😔 Плохо</span><span>😐 Нейтрально</span><span>🤩 Отлично</span>
+            <input type="range" min="0" max="5" step="1" value={mood} onChange={e=>setMood(parseInt(e.target.value))} style={{width:"100%",accentColor:T.gold,height:4}}/>
           </div>
         </div>
-
-        {/* Стресс — шкала */}
-        <div style={{marginBottom:14}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-            <div style={{fontSize:11,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1.5}}>СТРЕСС</div>
-            <span style={{fontSize:16,fontWeight:700,color:stressColor,fontFamily:"'JetBrains Mono'"}}>{stress}/10</span>
-          </div>
-          <input type="range" min="1" max="10" step="1" value={stress}
-            onChange={e=>setStress(parseInt(e.target.value))}
-            style={{width:"100%",accentColor:stressColor,height:6}}/>
-          <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:T.text3,marginTop:3}}>
-            <span style={{color:T.success}}>Спокойно</span><span style={{color:T.warn}}>Умеренно</span><span style={{color:T.danger}}>Высокий</span>
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
+          <span style={{fontSize:16,width:28,textAlign:"center"}}>{stress<=3?"😌":stress<=6?"😤":"😰"}</span>
+          <div style={{flex:1}}>
+            <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+              <span style={{fontSize:11,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1}}>СТРЕСС</span>
+              <span style={{fontSize:12,fontWeight:700,color:stressColor,fontFamily:"'JetBrains Mono'"}}>{stress}/10</span>
+            </div>
+            <input type="range" min="1" max="10" step="1" value={stress} onChange={e=>setStress(parseInt(e.target.value))} style={{width:"100%",accentColor:stressColor,height:4}}/>
           </div>
         </div>
-
-        {/* Заметка */}
-        <textarea style={{width:"100%",padding:"9px 12px",background:"rgba(255,255,255,0.03)",border:"1px solid "+T.bdr,borderRadius:10,color:T.text0,fontFamily:"'Crimson Pro',serif",fontSize:15,outline:"none",resize:"none",minHeight:60,lineHeight:1.5,boxSizing:"border-box"}} placeholder="Что на душе сегодня?..." value={note} onChange={e=>setNote(e.target.value)}/>
-        <div style={{display:"flex",gap:8,marginTop:10}}>
-          <button className="btn btn-primary btn-sm" onClick={saveMoodLog}>{saved?"✓ Записано":"Сохранить"}</button>
+        <div style={{display:"flex",gap:8}}>
+          <input style={{flex:1,padding:"7px 10px",background:"rgba(255,255,255,0.03)",border:"1px solid "+T.bdr,borderRadius:8,color:T.text0,fontFamily:"'Crimson Pro',serif",fontSize:14,outline:"none"}} placeholder="Что на душе?..." value={note} onChange={e=>setNote(e.target.value)}/>
+          <button className="btn btn-primary btn-sm" onClick={saveMoodLog}>{saved?"✓":"Записать"}</button>
         </div>
       </div>
 
@@ -5519,8 +5562,7 @@ function MentalSection({profile,kb,notify}) {
         {!loadingPlan&&!recoveryPlan&&<div style={{fontSize:14,color:T.text3,fontStyle:"italic",padding:"10px 0",textAlign:"center"}}>Нажми «Получить план» — составлю под твоё сегодняшнее состояние</div>}
       </div>
 
-      {/* ── Практики — вертикальный список категорий ── */}
-      <div style={{marginBottom:8,fontSize:11,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1.5}}>ПРАКТИКИ И ТЕХНИКИ</div>
+      <div style={{marginBottom:6,marginTop:4,fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1.5}}>ПРАКТИКИ</div>
 
       {/* Вертикальный аккордеон категорий */}
       {Object.entries(PRACTICES).map(([catKey, cat])=>(
@@ -5535,29 +5577,6 @@ function MentalSection({profile,kb,notify}) {
           </div>
         ))}
 
-      {/* ── История ── */}
-      <details style={{marginTop:12}}>
-        <summary style={{fontSize:11,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1.5,cursor:"pointer",padding:"4px 0"}}>ИСТОРИЯ НАСТРОЕНИЯ</summary>
-            <div style={{marginTop:8}}>
-              {(()=>{
-                try {
-                  const logs = JSON.parse(localStorage.getItem("mental_log")||"[]");
-                  if(!logs.length) return <div className="empty"><span className="empty-ico">🧘</span><p>Нет записей</p></div>;
-                  const moods=["😔","😟","😐","🙂","😊","🤩"];
-                  return logs.slice(0,14).map((l,i)=>(
-                    <div key={i} style={{display:"flex",gap:10,alignItems:"center",padding:"7px 0",borderBottom:"1px solid rgba(255,255,255,0.03)"}}>
-                      <span style={{fontSize:20}}>{moods[l.mood]||"😐"}</span>
-                      <div style={{flex:1}}>
-                        <div style={{fontSize:12,color:T.text3,fontFamily:"'JetBrains Mono'"}}>{new Date(l.date).toLocaleDateString("ru-RU",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}</div>
-                        {l.note&&<div style={{fontSize:13,color:T.text2,fontStyle:"italic"}}>{l.note}</div>}
-                      </div>
-                      <span style={{fontSize:11,color:l.stress>6?T.danger:l.stress>3?T.warn:T.success,fontFamily:"'JetBrains Mono'"}}>{l.stress}/10</span>
-                    </div>
-                  ));
-                } catch { return null; }
-              })()}
-            </div>
-          </details>
         );
       })()}
 
