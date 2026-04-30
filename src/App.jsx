@@ -3565,6 +3565,7 @@ function WorkSection({profile,tasks,setTasks,today,kb,notify}) {
   const [addDlModal,setAddDlModal]=useState(false);
   const [editDl,setEditDl]=useState(null);
   const [newDl,setNewDl]=useState({title:"",deadline:"",notes:"",organ:"КГД"});
+  const [expandedGroup,setExpandedGroup]=useState(null);
   const workTasks=tasks.filter(t=>t.section==="work");
   const deadlineTasks=workTasks.filter(t=>t.isDeadline);
   const addDeadlines=()=>{
@@ -3573,8 +3574,19 @@ function WorkSection({profile,tasks,setTasks,today,kb,notify}) {
     const newDl=dl.filter(t=>!exist.has(t.title));
     if(newDl.length===0){notify("Все дедлайны уже добавлены");return;}
     setTasks(p=>[...p,...newDl]);
-    notify("Добавлено "+newDl.length+" дедлайнов в рабочие задачи ✦");
+    notify("Добавлено "+newDl.length+" дедлайнов ✦");
   };
+
+  // Автозагрузка дедлайнов при первом открытии раздела
+  useEffect(()=>{
+    if(profile.profDeadlines && !profile.profDeadlines.includes("Нет") && deadlineTasks.length===0) {
+      const dl = getProfDeadlines(profile);
+      if(dl.length>0) {
+        setTasks(p=>[...p,...dl]);
+        notify("Загружено "+dl.length+" дедлайнов для "+profile.profDeadlines+" ✦");
+      }
+    }
+  },[]);
   const due=workTasks.filter(t=>isDue(t,today)||(t.freq==="once"&&!t.lastDone&&!t.doneDate));
   const isWorkDay=(profile.workDaysList||[1,2,3,4,5]).includes(new Date().getDay());
   return(
@@ -3593,7 +3605,25 @@ function WorkSection({profile,tasks,setTasks,today,kb,notify}) {
           <span style={{cursor:"pointer"}} onClick={()=>setEditSchedule(true)}>{profile.workStart||"?"}–{profile.workEnd||"?"} ✏️</span>
         )}</span>
       </div>
-      {profile.commuteTime&&<div style={{fontSize:12,color:T.text3,marginBottom:8,paddingLeft:4}}>🚌 {profile.commuteTime} · {profile.commuteWay||""}</div>}
+      {/* Если profDeadlines не выбран — показываем выбор */}
+      {!profile.profDeadlines&&(
+        <div style={{padding:"12px 14px",background:"rgba(45,106,79,0.07)",borderRadius:12,marginBottom:12}}>
+          <div style={{fontSize:13,color:T.text1,marginBottom:10}}>📋 Выбери специализацию для загрузки дедлайнов:</div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+            {["Бухгалтер / ИП","HR / Кадры","Юрист","Врач / Мед. работник","Педагог","Госслужащий","Нет отчётности"].map(v=>(
+              <div key={v} className="chip" onClick={()=>{
+                const updated={...profile,profDeadlines:v};
+                setProfile&&setProfile(updated)||Object.assign(profile,{profDeadlines:v});
+                if(!v.includes("Нет")){
+                  const dl=getProfDeadlines({...profile,profDeadlines:v});
+                  setTasks(p=>[...p,...dl.filter(d=>!p.find(x=>x.title===d.title))]);
+                  notify("Загружено "+dl.length+" дедлайнов ✦");
+                }
+              }}>{v}</div>
+            ))}
+          </div>
+        </div>
+      )}
       {profile.profDeadlines&&!profile.profDeadlines.includes("Нет")&&(
         <div style={{marginBottom:10,padding:"8px 12px",background:"rgba(45,106,79,0.08)",borderRadius:10,display:"flex",alignItems:"center",justifyContent:"space-between",gap:10}}>
           <div style={{fontSize:13,color:T.text1}}>{profile.profDeadlines} · Казахстан</div>
@@ -3872,7 +3902,7 @@ function WorkSection({profile,tasks,setTasks,today,kb,notify}) {
       {/* ── Дедлайны — компактный вид ── */}
       {(()=>{
         const allDl = workTasks.filter(t=>t.isDeadline).sort((a,b)=>a.deadline?.localeCompare(b.deadline||"")||0);
-        if(!allDl.length && !profile.profDeadlines?.includes("Бухг") && !profile.profDeadlines?.includes("ИП")) return null;
+        if(!allDl.length && !profile.profDeadlines) return null;
         if(!allDl.length) return(
           <div style={{padding:"12px 14px",background:"rgba(45,106,79,0.07)",borderRadius:12,marginBottom:10,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
             <div style={{fontSize:13,color:T.text2}}>📋 Дедлайны не загружены</div>
@@ -3891,7 +3921,6 @@ function WorkSection({profile,tasks,setTasks,today,kb,notify}) {
           byOrgan[g].push(t);
         });
 
-        const [expandedGroup, setExpandedGroup] = useState(null);
         const organs = ["⚠️ Просроченные", ...Object.keys(byOrgan)].filter((k,i)=>i===0?overdue.length>0:true);
 
         return(
