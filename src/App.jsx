@@ -1732,7 +1732,7 @@ export default function LifeDiary() {
             {active==="health"   && <HealthSection profile={profile} tasks={tasks} setTasks={setTasks} setShopList={setShopList} today={today} kb={kb} notify={notify}/>}
             {active==="beauty"   && <BeautySection profile={profile} tasks={tasks} setTasks={setTasks} today={today} kb={kb} notify={notify}/>}
             {active==="hobbies"  && <HobbiesSection profile={profile} hobbies={hobbies} setHobbies={setHobbies} kb={kb} notify={notify}/>}
-            {active==="goals"    && <GoalsSection profile={profile} kb={kb} notify={notify}/>}
+            {active==="goals"    && <GoalsSection profile={profile} setProfile={setProfile} kb={kb} notify={notify}/>}
             {active==="mental"   && <MentalSection profile={profile} kb={kb} notify={notify}/>}
             {active==="travel"   && <TravelSection profile={profile} trips={trips} setTrips={setTrips} kb={kb} notify={notify}/>}
             {active==="journal"  && <JournalSection journal={journal} setJournal={setJournal} today={today} notify={notify}/>}
@@ -4095,159 +4095,339 @@ function HobbiesSection({profile,hobbies,setHobbies,kb,notify}) {
 // ══════════════════════════════════════════════════════════════
 //  GOALS
 // ══════════════════════════════════════════════════════════════
-function GoalsSection({profile,kb,notify}) {
-  const moon=getMoon();
-  const goalAreas=profile.goalAreas||[];
-  const goalBlocks=profile.goalBlocks||[];
-  const mainGoal=profile.mainGoal||"";
-  const AREA_EMOJI={"Здоровье":"💚","Карьера":"💼","Финансы":"💰","Отношения":"❤️","Саморазвитие":"📚","Творчество":"🎨","Путешествия":"✈️","Духовность":"🌟","Семья":"👨‍👩‍👧","Внешность":"✨"};
-  const BLOCK_TIP={"Нехватка времени":"Техника Помодоро + делегирование","Нехватка энергии":"Оптимизация сна + адаптогены + режим","Откладываю":"Правило 2 минут + декомпозиция задач","Не знаю с чего начать":"Разбить на шаги по 15 минут","Много отвлекаюсь":"Режим фокуса + уведомления выключить","Страх неудачи":"КПТ-техника + маленькие победы каждый день"};
-  
-  // 8 секторов колеса жизни
-  const WHEEL_AREAS = [
-    {name:"Здоровье", emoji:"💚", color:"#7BCCA0", desc:"Физическое и эмоциональное здоровье, энергия, сон, питание"},
-    {name:"Карьера", emoji:"💼", color:"#82AADD", desc:"Работа, профессиональный рост, реализация в деле"},
-    {name:"Финансы", emoji:"💰", color:"#E5C87A", desc:"Доход, накопления, финансовая стабильность"},
-    {name:"Отношения", emoji:"❤️", color:T.danger, desc:"Партнёр, друзья, близкое окружение"},
-    {name:"Семья", emoji:"👨‍👩‍👧", color:"#B882E8", desc:"Родители, дети, домашняя атмосфера"},
-    {name:"Саморазвитие", emoji:"📚", color:T.teal, desc:"Обучение, рост, новые навыки"},
-    {name:"Творчество", emoji:"🎨", color:"#E8A85A", desc:"Хобби, самовыражение, увлечения"},
-    {name:"Духовность", emoji:"🌟", color:T.text1, desc:"Ценности, смысл жизни, внутренний мир"}
-  ];
-  const [wheelScores, setWheelScores] = useState(()=>{
-    try { return JSON.parse(localStorage.getItem("ld_wheel")||"null") || WHEEL_AREAS.reduce((a,k)=>({...a,[k.name]:5}),{}); }
-    catch { return WHEEL_AREAS.reduce((a,k)=>({...a,[k.name]:5}),{}); }
-  });
+function GoalsSection({profile,setProfile,kb,notify}) {
+  const moon = getMoon();
+  const [editGoal, setEditGoal] = useState(false);
+  const [newGoal, setNewGoal] = useState(profile.mainGoal||"");
+  const [newAreas, setNewAreas] = useState(profile.goalAreas||[]);
+  const [newBlocks, setNewBlocks] = useState(profile.goalBlocks||[]);
+  const [newDeadline, setNewDeadline] = useState(profile.goalDeadline||"");
+  const [newMetric, setNewMetric] = useState(profile.goalMetric||"");
   const [activeArea, setActiveArea] = useState(null);
-  const updateScore = (areaName, val) => {
-    const next = {...wheelScores, [areaName]:val};
-    setWheelScores(next);
-    try { localStorage.setItem("ld_wheel", JSON.stringify(next)); } catch{}
+  const [tab, setTab] = useState("goal"); // goal | wheel | plan
+
+  const goalAreas = profile.goalAreas||[];
+  const goalBlocks = profile.goalBlocks||[];
+  const mainGoal = profile.mainGoal||"";
+
+  const [wheelScores, setWheelScores] = useState(()=>{
+    try { return JSON.parse(localStorage.getItem("ld_wheel")||"null")||{}; }
+    catch { return {}; }
+  });
+
+  const AREA_EMOJI = {"Здоровье":"💚","Карьера":"💼","Финансы":"💰","Отношения":"❤️","Саморазвитие":"📚","Творчество":"🎨","Путешествия":"✈️","Духовность":"🌟","Семья":"👨‍👩‍👧","Внешность":"✨"};
+  const BLOCK_TIP = {"Нехватка времени":"Помодоро + делегирование","Нехватка энергии":"Оптимизация сна + режим","Откладываю":"Правило 2 минут + декомпозиция","Не знаю с чего начать":"Шаги по 15 минут","Много отвлекаюсь":"Режим фокуса","Страх неудачи":"Маленькие победы каждый день"};
+
+  const GOAL_PRESETS = [
+    {emoji:"⚡",title:"Карьера и доход",   example:"Вырасти до руководителя / увеличить доход на 30%",   areas:["Карьера","Финансы"],    metric:"Должность / доход в тенге"},
+    {emoji:"💪",title:"Здоровье и фигура", example:"Похудеть на 10 кг / пробежать 5 км",                 areas:["Здоровье","Внешность"],  metric:"Вес / км"},
+    {emoji:"✨",title:"Внешность и уход",  example:"Выработать уходовый ритуал / улучшить кожу",          areas:["Внешность","Здоровье"], metric:"Привычки в неделю"},
+    {emoji:"❤️",title:"Отношения",         example:"Найти партнёра / улучшить отношения в семье",         areas:["Отношения","Семья"],     metric:"Качество времени"},
+    {emoji:"📚",title:"Обучение и рост",   example:"Получить сертификат / выучить язык",                  areas:["Саморазвитие"],          metric:"Часы обучения / уровень"},
+    {emoji:"💰",title:"Финансы",           example:"Создать финансовую подушку 3 млн тг",                 areas:["Финансы"],               metric:"Сумма накоплений"},
+    {emoji:"🌿",title:"Баланс и покой",    example:"Снизить стресс / выработать медитативную практику",   areas:["Здоровье","Духовность"], metric:"Уровень стресса 1-10"},
+    {emoji:"🎨",title:"Творчество",        example:"Запустить проект / освоить новый навык",              areas:["Творчество","Саморазвитие"],metric:"Готовый результат"},
+  ];
+
+  // Умные рекомендации под цель
+  const goalRecs = {
+    "Здоровье":    ["Трекай сон каждый день","Добавь 20 мин движения утром","Убери сахар на 2 недели","Пей 8 стаканов воды"],
+    "Внешность":   ["Утренний и вечерний уход — каждый день","Фото прогресса раз в неделю","Записаться к дерматологу","Трекай водный баланс"],
+    "Карьера":     ["Выдели 1 час в день на главный проект","Нетворкинг — 1 знакомство в неделю","Изучи 1 новый навык в месяц","Веди дневник профессиональных побед"],
+    "Финансы":     ["Фиксируй каждую трату","Отложи 10% до трат","Изучи 1 инвестиционный инструмент","Проведи ревизию подписок"],
+    "Отношения":   ["Осознанное время без телефона каждый день","Напиши близкому что ценишь его","Разговор о чувствах раз в неделю","Сюрприз без повода"],
+    "Саморазвитие":["30 мин чтения каждый день","Подкаст по пути на работу","1 онлайн-курс в месяц","Дневник инсайтов"],
+    "Духовность":  ["10 мин медитации утром","Дневник благодарности вечером","Прогулка в тишине","Практика осознанности"],
+    "Творчество":  ["15 мин на проект каждый день","Не оценивай — просто создавай","Найди сообщество по интересу","Закончи что-то маленькое"],
   };
 
-  // SVG: 8 секторов, каждый своего цвета, длина = score
-  const cx=160, cy=160, maxR=140;
-  const sectorCount = WHEEL_AREAS.length;
-  
-  // Координаты для текста-метки
-  const labelPos = (i) => {
-    const angle = ((i + 0.5)/sectorCount) * 2 * Math.PI - Math.PI/2;
-    return {
-      x: cx + (maxR + 22) * Math.cos(angle),
-      y: cy + (maxR + 22) * Math.sin(angle)
-    };
+  const saveGoal = () => {
+    setProfile(p=>({...p,
+      mainGoal: newGoal,
+      goalAreas: newAreas,
+      goalBlocks: newBlocks,
+      goalDeadline: newDeadline,
+      goalMetric: newMetric,
+    }));
+    setEditGoal(false);
+    notify("Цель обновлена ✦");
   };
-  
-  // Путь для сектора с радиусом по оценке
-  const sectorPath = (i, score) => {
-    const r = (score/10) * maxR;
-    const a1 = (i/sectorCount) * 2 * Math.PI - Math.PI/2;
-    const a2 = ((i+1)/sectorCount) * 2 * Math.PI - Math.PI/2;
-    const x1 = cx + r * Math.cos(a1);
-    const y1 = cy + r * Math.sin(a1);
-    const x2 = cx + r * Math.cos(a2);
-    const y2 = cy + r * Math.sin(a2);
-    return "M "+cx+" "+cy+" L "+x1+" "+y1+" A "+r+" "+r+" 0 0 1 "+x2+" "+y2+" Z";
+
+  const WHEEL_AREAS = [
+    {name:"Здоровье",emoji:"💚",color:"#7BCCA0"},
+    {name:"Карьера",emoji:"💼",color:"#82AADD"},
+    {name:"Финансы",emoji:"💰",color:"#E5C87A"},
+    {name:"Отношения",emoji:"❤️",color:"#E8556D"},
+    {name:"Семья",emoji:"👨‍👩‍👧",color:"#B882E8"},
+    {name:"Саморазвитие",emoji:"📚",color:"#4EC9BE"},
+    {name:"Творчество",emoji:"🎨",color:"#E8A85A"},
+    {name:"Духовность",emoji:"🌟",color:"#A8A49C"},
+  ];
+  const cx=150,cy=150,maxR=120;
+  const sectorPath=(i,score)=>{
+    const r=(score/10)*maxR;
+    const a1=(i/8)*2*Math.PI-Math.PI/2;
+    const a2=((i+1)/8)*2*Math.PI-Math.PI/2;
+    return `M ${cx} ${cy} L ${cx+r*Math.cos(a1)} ${cy+r*Math.sin(a1)} A ${r} ${r} 0 0 1 ${cx+r*Math.cos(a2)} ${cy+r*Math.sin(a2)} Z`;
   };
+  const updateScore=(name,val)=>{
+    const next={...wheelScores,[name]:val};
+    setWheelScores(next);
+    try{localStorage.setItem("ld_wheel",JSON.stringify(next));}catch{}
+  };
+
+  const activeRecs = newAreas.flatMap(a=>goalRecs[a]||[]).slice(0,6);
 
   return(
     <div>
-      {mainGoal&&<div className="card card-accent" style={{marginBottom:12}}>
-        <div style={{fontSize:11,color:T.text2,fontFamily:"'JetBrains Mono'",letterSpacing:2,marginBottom:8}}>ГЛАВНАЯ ЦЕЛЬ</div>
-        <div style={{fontFamily:"'Cormorant Infant',serif",fontSize:22,color:T.gold,lineHeight:1.3,marginBottom:8}}>{mainGoal}</div>
-        <div style={{fontSize:13,color:T.text2,fontStyle:"italic"}}>Луна {moon.n} — {moon.t}</div>
-      </div>}
-
-      {/* ГРАФИЧЕСКОЕ КОЛЕСО ЖИЗНИ */}
-      <div className="card" style={{marginBottom:12}}>
-        <div style={{fontSize:11,color:"#A8A49C",fontFamily:"'JetBrains Mono'",letterSpacing:2,marginBottom:14,textAlign:"center"}}>КОЛЕСО ЖИЗНИ</div>
-        <div style={{fontSize:13,color:"#A8A49C",textAlign:"center",marginBottom:10,fontStyle:"italic"}}>Нажми на сектор чтобы оценить и прочитать описание</div>
-        <div style={{display:"flex",justifyContent:"center",marginBottom:14}}>
-          <svg width="360" height="360" viewBox="-30 -30 380 380" style={{maxWidth:"100%"}}>
-            {/* концентрические круги-направляющие */}
-            {[2,4,6,8,10].map(n=><circle key={n} cx={cx} cy={cy} r={(n/10)*maxR} fill="none" stroke="rgba(45,32,16,0.1)" strokeWidth="1"/>)}
-            {/* линии между секторами */}
-            {WHEEL_AREAS.map((_,i)=>{
-              const a = (i/sectorCount)*2*Math.PI - Math.PI/2;
-              return <line key={i} x1={cx} y1={cy} x2={cx+maxR*Math.cos(a)} y2={cy+maxR*Math.sin(a)} stroke="rgba(200,164,90,0.15)" strokeWidth="1"/>;
-            })}
-            {/* секторы */}
-            {WHEEL_AREAS.map((area,i)=>(
-              <path key={area.name} d={sectorPath(i, wheelScores[area.name]||5)} 
-                fill={area.color} fillOpacity={activeArea===i?"0.75":"0.5"} 
-                stroke={area.color} strokeWidth={activeArea===i?"2.5":"1.5"}
-                style={{cursor:"pointer",transition:"all .2s"}}
-                onClick={()=>setActiveArea(activeArea===i?null:i)}/>
-            ))}
-            {/* эмодзи-метки */}
-            {WHEEL_AREAS.map((area,i)=>{
-              const p = labelPos(i);
-              return <text key={area.name} x={p.x} y={p.y} fontSize="22" textAnchor="middle" dominantBaseline="middle" style={{cursor:"pointer"}} onClick={()=>setActiveArea(activeArea===i?null:i)}>{area.emoji}</text>;
-            })}
-            {/* центр */}
-            <circle cx={cx} cy={cy} r="4" fill={T.gold}/>
-          </svg>
-        </div>
-        
-        {/* Описание выбранного сектора */}
-        {activeArea !== null && <div style={{padding:"14px 16px",background:"linear-gradient(135deg,"+WHEEL_AREAS[activeArea].color+"22,"+WHEEL_AREAS[activeArea].color+"08)",border:"1px solid "+WHEEL_AREAS[activeArea].color+"55",borderRadius:12,marginBottom:14}}>
-          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
-            <span style={{fontSize:24}}>{WHEEL_AREAS[activeArea].emoji}</span>
-            <div style={{flex:1,fontFamily:"'Cormorant Infant',serif",fontSize:20,color:WHEEL_AREAS[activeArea].color,fontWeight:600}}>{WHEEL_AREAS[activeArea].name}</div>
-            <span style={{fontFamily:"'JetBrains Mono'",fontSize:14,color:WHEEL_AREAS[activeArea].color,fontWeight:700}}>{wheelScores[WHEEL_AREAS[activeArea].name]||5}/10</span>
-          </div>
-          <div style={{fontSize:14,color:T.text1,lineHeight:1.6,marginBottom:12,fontFamily:"'Crimson Pro',serif",fontStyle:"italic"}}>{WHEEL_AREAS[activeArea].desc}</div>
-          <div style={{fontSize:12,color:T.text3,marginBottom:6}}>Твоя оценка:</div>
-          <input type="range" min="1" max="10" value={wheelScores[WHEEL_AREAS[activeArea].name]||5} 
-            onChange={e=>updateScore(WHEEL_AREAS[activeArea].name, parseInt(e.target.value))} 
-            style={{width:"100%",accentColor:WHEEL_AREAS[activeArea].color}}/>
-          <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:"#706C64",marginTop:4,fontFamily:"'JetBrains Mono'"}}>
-            <span>1 (плохо)</span><span>5</span><span>10 (отлично)</span>
-          </div>
-        </div>}
-        
-        {/* Сводка по всем сферам */}
-        <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:6,marginTop:8}}>
-          {WHEEL_AREAS.map((area,i)=>(
-            <div key={area.name} onClick={()=>setActiveArea(i)} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 10px",borderRadius:8,background:activeArea===i?area.color+"22":"transparent",border:"1px solid "+(activeArea===i?area.color:"transparent"),cursor:"pointer",transition:"all .15s"}}>
-              <span style={{fontSize:14}}>{area.emoji}</span>
-              <span style={{flex:1,fontSize:12,color:T.text1}}>{area.name}</span>
-              <span style={{fontFamily:"'JetBrains Mono'",fontSize:12,color:area.color,fontWeight:700}}>{wheelScores[area.name]||5}</span>
-            </div>
-          ))}
-        </div>
+      {/* ── Вкладки ── */}
+      <div className="tabs" style={{marginBottom:14}}>
+        {[["goal","🎯 Моя цель"],["wheel","🔄 Колесо"],["plan","📋 План"]].map(([v,l])=>(
+          <div key={v} className={"tab"+(tab===v?" on":"")} onClick={()=>setTab(v)}>{l}</div>
+        ))}
       </div>
 
-      {goalAreas.length>0&&<div className="card" style={{marginBottom:12}}>
-        <div style={{fontSize:11,color:"#A8A49C",fontFamily:"'JetBrains Mono'",letterSpacing:2,marginBottom:12}}>ПРИОРИТЕТНЫЕ СФЕРЫ</div>
-        <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-          {goalAreas.map(a=><div key={a} style={{display:"flex",alignItems:"center",gap:6,padding:"8px 14px",borderRadius:12,background:T.goldGlow,border:"1px solid rgba(200,164,90,0.25)"}}>
-            <span style={{fontSize:18}}>{AREA_EMOJI[a]||"⭐"}</span>
-            <span style={{fontSize:15,color:T.gold,fontFamily:"'Crimson Pro',serif"}}>{a}</span>
-          </div>)}
+      {/* ══ ВКЛАДКА: МОЯ ЦЕЛЬ ══ */}
+      {tab==="goal"&&<>
+        {/* Текущая цель */}
+        {!editGoal&&(
+          <div className="card card-accent" style={{marginBottom:12}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+              <div style={{fontSize:11,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:2}}>ТЕКУЩАЯ ЦЕЛЬ</div>
+              <button className="btn btn-ghost btn-sm" onClick={()=>{
+                setNewGoal(mainGoal);setNewAreas(goalAreas);setNewBlocks(goalBlocks);
+                setNewDeadline(profile.goalDeadline||"");setNewMetric(profile.goalMetric||"");
+                setEditGoal(true);
+              }}>✏️ Изменить</button>
+            </div>
+            {mainGoal
+              ? <>
+                  <div style={{fontFamily:"'Cormorant Infant',serif",fontSize:22,color:T.gold,lineHeight:1.3,marginBottom:8}}>{mainGoal}</div>
+                  {profile.goalDeadline&&<div style={{fontSize:12,color:T.text3,marginBottom:4}}>📅 Срок: {new Date(profile.goalDeadline).toLocaleDateString("ru-RU",{day:"numeric",month:"long",year:"numeric"})}</div>}
+                  {profile.goalMetric&&<div style={{fontSize:12,color:T.text3,marginBottom:8}}>📏 Как измеряю: {profile.goalMetric}</div>}
+                  {goalAreas.length>0&&<div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:8}}>
+                    {goalAreas.map(a=><span key={a} style={{fontSize:12,padding:"4px 10px",borderRadius:20,background:"rgba(45,106,79,0.12)",color:T.success}}>{AREA_EMOJI[a]||""} {a}</span>)}
+                  </div>}
+                  <div style={{fontSize:13,color:T.text3,fontStyle:"italic"}}>Луна {moon.n} — {moon.t}</div>
+                </>
+              : <div style={{fontSize:15,color:T.text3,fontStyle:"italic"}}>Цель не установлена. Нажми «Изменить» чтобы добавить.</div>
+            }
+          </div>
+        )}
+
+        {/* Редактор цели */}
+        {editGoal&&(
+          <div className="card" style={{marginBottom:12,borderLeft:"3px solid "+T.gold}}>
+            <div style={{fontSize:11,color:T.gold,fontFamily:"'JetBrains Mono'",letterSpacing:2,marginBottom:12}}>
+              {mainGoal?"ИЗМЕНИТЬ ЦЕЛЬ":"УСТАНОВИТЬ ЦЕЛЬ"}
+            </div>
+
+            {/* Быстрые шаблоны */}
+            <div style={{fontSize:12,color:T.text3,marginBottom:8}}>Выбери направление или напиши своё:</div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:7,marginBottom:14}}>
+              {GOAL_PRESETS.map(p=>(
+                <div key={p.title} onClick={()=>{
+                  setNewGoal(p.example);
+                  setNewAreas(p.areas);
+                  setNewMetric(p.metric);
+                }} style={{
+                  display:"flex",alignItems:"center",gap:6,padding:"6px 12px",
+                  borderRadius:20,cursor:"pointer",fontSize:13,
+                  border:"1px solid "+(newAreas.join()===p.areas.join()?T.gold:T.bdr),
+                  background:newAreas.join()===p.areas.join()?"rgba(45,106,79,0.12)":"transparent",
+                  color:newAreas.join()===p.areas.join()?T.gold:T.text1,
+                }}>
+                  <span>{p.emoji}</span><span>{p.title}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="fld">
+              <label>Моя цель</label>
+              <textarea placeholder="Конкретно и измеримо: похудеть на 10 кг к лету, вырасти до старшего менеджера..." value={newGoal} onChange={e=>setNewGoal(e.target.value)} style={{minHeight:72}}/>
+            </div>
+            <div className="fld-row">
+              <div className="fld">
+                <label>Срок достижения</label>
+                <input type="date" value={newDeadline} onChange={e=>setNewDeadline(e.target.value)}/>
+              </div>
+              <div className="fld">
+                <label>Как буду измерять</label>
+                <input placeholder="кг / тенге / уровень..." value={newMetric} onChange={e=>setNewMetric(e.target.value)}/>
+              </div>
+            </div>
+            <div className="fld">
+              <label>Сферы жизни (можно несколько)</label>
+              <div className="chips">{["Здоровье","Карьера","Финансы","Отношения","Саморазвитие","Творчество","Путешествия","Духовность","Семья","Внешность"].map(v=>(
+                <div key={v} className={"chip "+(newAreas.includes(v)?"on":"")} onClick={()=>setNewAreas(p=>p.includes(v)?p.filter(x=>x!==v):[...p,v])}>{AREA_EMOJI[v]||""} {v}</div>
+              ))}</div>
+            </div>
+            <div className="fld">
+              <label>Что сдерживает?</label>
+              <div className="chips">{["Нехватка времени","Нехватка энергии","Откладываю","Не знаю с чего начать","Много отвлекаюсь","Страх неудачи"].map(v=>(
+                <div key={v} className={"chip "+(newBlocks.includes(v)?"on":"")} onClick={()=>setNewBlocks(p=>p.includes(v)?p.filter(x=>x!==v):[...p,v])}>{v}</div>
+              ))}</div>
+            </div>
+            <div style={{display:"flex",gap:8,marginTop:4}}>
+              <button className="btn btn-ghost" onClick={()=>setEditGoal(false)}>Отмена</button>
+              <button className="btn btn-primary" onClick={saveGoal}>Сохранить цель ✦</button>
+            </div>
+          </div>
+        )}
+
+        {/* Умные рекомендации под цель */}
+        {activeRecs.length>0&&!editGoal&&(
+          <div className="card" style={{marginBottom:12}}>
+            <div style={{fontSize:11,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:2,marginBottom:10}}>ЧТО ПОМОГАЕТ ДОСТИЧЬ ЦЕЛИ</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+              {activeRecs.map((r,i)=>(
+                <div key={i} style={{padding:"8px 10px",background:"rgba(45,106,79,0.06)",borderRadius:10,fontSize:13,color:T.text1}}>✦ {r}</div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Что сдерживает + решения */}
+        {goalBlocks.length>0&&!editGoal&&(
+          <div className="card" style={{marginBottom:12}}>
+            <div style={{fontSize:11,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:2,marginBottom:10}}>КАК ПРЕОДОЛЕТЬ БАРЬЕРЫ</div>
+            {goalBlocks.map(b=>(
+              <div key={b} style={{padding:"8px 0",borderBottom:"1px solid "+T.bdrS}}>
+                <div style={{fontSize:14,color:T.text0,marginBottom:3}}>⚡ {b}</div>
+                <div style={{fontSize:12,color:T.text3,fontStyle:"italic"}}>→ {BLOCK_TIP[b]||"Разбей на маленькие шаги"}</div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* AI план */}
+        {!editGoal&&mainGoal&&(
+          <AiBox kb={kb} prompt={
+            "Составь персональный план достижения цели. Цель: "+(mainGoal)+
+            ". Срок: "+(profile.goalDeadline||"не указан")+
+            ". Как измеряю: "+(profile.goalMetric||"—")+
+            ". Сферы: "+(newAreas.join(",")||"—")+
+            ". Барьеры: "+(goalBlocks.join(",")||"—")+
+            ". Мотивирует: "+(profile.motivates||"—")+
+            ". Ценность: "+(profile.coreValue||"—")+
+            ". Свободное время: с "+(profile.workEnd||"18:00")+" до "+(profile.sleep||"23:00")+
+            ", "+(profile.selfTime||"30")+" мин/день на себя."+
+            " Луна: "+moon.n+"("+moon.t+")."+
+            " Дай: 1) 3 конкретных шага на эту неделю с точным временем, 2) как преодолеть каждый барьер из списка, 3) аффирмацию под ценность, 4) что сделать СЕГОДНЯ за 15 минут."
+          } label="AI план достижения цели" btnText="Составить план" placeholder="Составлю персональный план под твою цель..."/>
+        )}
+        {!editGoal&&mainGoal&&(
+          <AiBox kb={kb} prompt={
+            "Составь 5 персональных аффирмаций. Цель: "+mainGoal+
+            ". Ценность: "+(profile.coreValue||"—")+
+            ". Мотивирует: "+(profile.motivates||"—")+
+            ". Знак зодиака: "+getZodiac(profile.dob).name+
+            ". Луна: "+moon.n+". Хронотип: "+(profile.chronotype||"—")+
+            ". Аффирмации — в настоящем времени, от первого лица, конкретные. Когда и как произносить."
+          } label="Мои аффирмации" btnText="Создать аффирмации" placeholder="Создам аффирмации под твою цель..."/>
+        )}
+      </>}
+
+      {/* ══ ВКЛАДКА: КОЛЕСО ЖИЗНИ ══ */}
+      {tab==="wheel"&&<>
+        <div className="card" style={{marginBottom:12}}>
+          <div style={{fontSize:11,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:2,marginBottom:8,textAlign:"center"}}>КОЛЕСО ЖИЗНИ — нажми на сектор</div>
+          <div style={{display:"flex",justifyContent:"center",marginBottom:12}}>
+            <svg width="320" height="320" viewBox="-30 -30 360 360" style={{maxWidth:"100%"}}>
+              {[2,4,6,8,10].map(n=><circle key={n} cx={cx} cy={cy} r={(n/10)*maxR} fill="none" stroke="rgba(45,32,16,0.1)" strokeWidth="1"/>)}
+              {WHEEL_AREAS.map((_,i)=>{
+                const a=(i/8)*2*Math.PI-Math.PI/2;
+                return <line key={i} x1={cx} y1={cy} x2={cx+maxR*Math.cos(a)} y2={cy+maxR*Math.sin(a)} stroke="rgba(200,164,90,0.15)" strokeWidth="1"/>;
+              })}
+              {WHEEL_AREAS.map((area,i)=>(
+                <path key={area.name} d={sectorPath(i,wheelScores[area.name]||5)}
+                  fill={area.color} fillOpacity={activeArea===i?0.75:0.5}
+                  stroke={area.color} strokeWidth={activeArea===i?2.5:1.5}
+                  style={{cursor:"pointer",transition:"all .2s"}}
+                  onClick={()=>setActiveArea(activeArea===i?null:i)}/>
+              ))}
+              {WHEEL_AREAS.map((area,i)=>{
+                const a=((i+0.5)/8)*2*Math.PI-Math.PI/2;
+                return <text key={area.name} x={cx+(maxR+20)*Math.cos(a)} y={cy+(maxR+20)*Math.sin(a)}
+                  textAnchor="middle" dominantBaseline="middle" fontSize="11" fill={T.text2}>{area.emoji}</text>;
+              })}
+            </svg>
+          </div>
+          {activeArea!==null&&(
+            <div style={{padding:"12px 14px",background:"rgba(45,106,79,0.08)",borderRadius:12,marginBottom:8}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+                <span style={{fontSize:22}}>{WHEEL_AREAS[activeArea].emoji}</span>
+                <div style={{fontFamily:"'Cormorant Infant',serif",fontSize:18,color:T.text0}}>{WHEEL_AREAS[activeArea].name}</div>
+                <span style={{marginLeft:"auto",fontSize:20,fontWeight:700,color:WHEEL_AREAS[activeArea].color}}>{wheelScores[WHEEL_AREAS[activeArea].name]||5}/10</span>
+              </div>
+              <input type="range" min="1" max="10" value={wheelScores[WHEEL_AREAS[activeArea].name]||5}
+                onChange={e=>updateScore(WHEEL_AREAS[activeArea].name,parseInt(e.target.value))}
+                style={{width:"100%",marginBottom:8}}/>
+              <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:T.text3}}>
+                <span>1 — критично</span><span>10 — отлично</span>
+              </div>
+            </div>
+          )}
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginTop:8}}>
+            {WHEEL_AREAS.map((area,i)=>(
+              <div key={area.name} onClick={()=>setActiveArea(activeArea===i?null:i)}
+                style={{display:"flex",alignItems:"center",gap:8,padding:"7px 10px",borderRadius:10,cursor:"pointer",
+                  background:activeArea===i?"rgba(45,106,79,0.1)":"rgba(45,32,16,0.03)",border:"1px solid "+T.bdrS}}>
+                <span style={{fontSize:16}}>{area.emoji}</span>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:12,color:T.text1}}>{area.name}</div>
+                  <div style={{height:4,borderRadius:2,background:T.bdrS,marginTop:3}}>
+                    <div style={{height:4,borderRadius:2,background:area.color,width:((wheelScores[area.name]||5)/10*100)+"%",transition:"width .3s"}}/>
+                  </div>
+                </div>
+                <span style={{fontSize:13,fontWeight:700,color:area.color}}>{wheelScores[area.name]||5}</span>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>}
+        <AiBox kb={kb} prompt={
+          "Проанализируй колесо жизни. Оценки: "+WHEEL_AREAS.map(a=>a.name+":"+(wheelScores[a.name]||5)).join(", ")+
+          ". Приоритеты: "+(goalAreas.join(",")||"—")+
+          ". Главная цель: "+(mainGoal||"—")+
+          ". Дай с заголовками ##: Общий баланс; Слабые сферы — что делать; Сильные — как использовать; Действие на неделю по каждой слабой сфере."
+        } label="Анализ колеса жизни" btnText="Проанализировать" placeholder="Проанализирую твой баланс жизни..."/>
+      </>}
 
-      {goalBlocks.length>0&&<div className="card" style={{marginBottom:12}}>
-        <div style={{fontSize:11,color:"#A8A49C",fontFamily:"'JetBrains Mono'",letterSpacing:2,marginBottom:12}}>ЧТО МЕШАЕТ — И КАК ПРЕОДОЛЕТЬ</div>
-        {goalBlocks.map(b=><div key={b} style={{padding:"10px 0",borderBottom:"1px solid rgba(255,255,255,.04)"}}>
-          <div style={{fontSize:15,color:T.danger,marginBottom:3}}>⚠ {b}</div>
-          <div style={{fontSize:14,color:T.text3,fontStyle:"italic"}}>→ {BLOCK_TIP[b]||"Разбей на маленькие шаги"}</div>
-        </div>)}
-      </div>}
-
-      <AiBox kb={kb} prompt={"Составь персональный план достижения цели для "+( profile.name||"меня")+". Главная цель: "+(profile.mainGoal||"не указана")+". Приоритетные сферы: "+(goalAreas.join(",")||"—")+". Что мешает: "+(goalBlocks.join(",")||"—")+". Мотивирует: "+(profile.motivates||"—")+". Ключевая ценность: "+(profile.coreValue||"—")+". Свободное время: с "+(profile.workEnd||"18:00")+" до "+(profile.sleep||"23:00")+", "+(profile.selfTime||"30")+" мин/день на себя. Луна: "+moon.n+"("+moon.t+"). Дай: 1) декомпозицию цели на 3 шага на эту неделю с конкретным временем, 2) как обойти каждый блок из списка, 3) утреннюю аффирмацию под мою ценность и цель, 4) что сделать СЕГОДНЯ за 15 минут в направлении цели."} label="План достижения цели" btnText="Составить мой план" placeholder="Составлю персональный план под твою цель и ритм жизни..."/>
-
-      <AiBox kb={kb} prompt={"Проанализируй колесо жизни. Мои оценки сфер: "+WHEEL_AREAS.map(a=>a.name+":"+(wheelScores[a.name]||5)).join(", ")+". Приоритеты: "+(goalAreas.join(",")||"—")+". Главная цель: "+(profile.mainGoal||"—")+". Дай ответ с заголовками ##: ## Общая оценка баланса; ## Самые слабые сферы — что с ними делать; ## Самые сильные сферы — как использовать; ## Действие на эту неделю по каждой провисающей сфере (нумерованный список). Обращайся на ты, без имени."} label="Анализ моего колеса" btnText="Проанализировать колесо" placeholder="Проанализирую твой баланс по оценкам колеса..."/>
-
-      <AiBox kb={kb} prompt={"Составь персональные аффирмации для "+( profile.name||"меня")+". Ключевая ценность: "+(profile.coreValue||"—")+". Главная цель: "+(profile.mainGoal||"—")+". Мотивирует: "+(profile.motivates||"—")+". Знак зодиака: "+getZodiac(profile.dob).name+". Луна: "+moon.n+"("+moon.t+"). Дай 5 мощных аффирмаций в настоящем времени, от первого лица, конкретных и заряженных. Плюс: когда и как их лучше всего произносить под мой хронотип "+(profile.chronotype||"—")+"."} label="Мои аффирмации" btnText="Создать аффирмации" placeholder="Создам персональные аффирмации под твою цель и ценности..."/>
+      {/* ══ ВКЛАДКА: ПЛАН ══ */}
+      {tab==="plan"&&<>
+        {mainGoal?(
+          <>
+            <div style={{padding:"12px 14px",background:"rgba(45,106,79,0.07)",borderRadius:12,marginBottom:12,borderLeft:"3px solid "+T.gold}}>
+              <div style={{fontSize:11,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1.5,marginBottom:4}}>ЦЕЛЬ</div>
+              <div style={{fontSize:16,color:T.gold,fontFamily:"'Cormorant Infant',serif"}}>{mainGoal}</div>
+              {profile.goalDeadline&&<div style={{fontSize:12,color:T.text3,marginTop:4}}>
+                До: {new Date(profile.goalDeadline).toLocaleDateString("ru-RU",{day:"numeric",month:"long"})} · 
+                Осталось: {Math.max(0,Math.ceil((new Date(profile.goalDeadline)-new Date())/86400000))} дней
+              </div>}
+            </div>
+            <AiBox kb={kb} prompt={
+              "Составь детальный еженедельный план достижения цели: "+mainGoal+
+              ". Срок: "+(profile.goalDeadline||"3 месяца")+
+              ". Метрика: "+(profile.goalMetric||"—")+
+              ". Сферы: "+(goalAreas.join(",")||"—")+
+              ". Барьеры: "+(goalBlocks.join(",")||"—")+
+              ". Свободное время: "+(profile.selfTime||"30")+" мин/день после "+(profile.workEnd||"18:00")+
+              ". Хронотип: "+(profile.chronotype||"—")+
+              ". Дай: 1) план на ближайшие 4 недели (неделя → конкретные задачи), 2) ежедневные микродействия по 15-20 мин, 3) как отслеживать прогресс, 4) что делать если сорвался."
+            } label="Подробный план на месяц" btnText="Составить план" placeholder="Составлю пошаговый план к твоей цели..."/>
+          </>
+        ):(
+          <div style={{textAlign:"center",padding:"32px 16px",color:T.text3}}>
+            <div style={{fontSize:40,marginBottom:12}}>🎯</div>
+            <div style={{fontSize:16,marginBottom:8}}>Цель не установлена</div>
+            <button className="btn btn-primary" onClick={()=>{setTab("goal");setEditGoal(true);}}>Установить цель</button>
+          </div>
+        )}
+      </>}
     </div>
   );
 }
 
-// ══════════════════════════════════════════════════════════════
-//  MENTAL HEALTH
-// ══════════════════════════════════════════════════════════════
 function MentalSection({profile,kb,notify}) {
   const [mood,setMood]=useState(3);
   const [stress,setStress]=useState(5);
