@@ -3096,11 +3096,27 @@ function TodaySection({profile,tasks,setTasks,journal,setJournal,today,moon,kb,n
 // ══════════════════════════════════════════════════════════════
 function TasksSection({profile,tasks,setTasks,today,kb,notify}) {
   const [modal,setModal]=useState(null);
-  const [editId,setEditId]=useState(null);
   const [filter,setFilter]=useState("all");
   const [search,setSearch]=useState("");
-  const secs=[["all","Все"],["work","Работа"],["home","Дом"],["health","Здоровье"],["beauty","Красота"],["pets","Питомцы"],["shopping","Покупки"],["hobbies","Хобби"]];
-  const filtered=tasks.filter(t=>{if(filter!=="all"&&t.section!==filter)return false;if(search&&!t.title.toLowerCase().includes(search.toLowerCase()))return false;return true;});
+
+  // Цветные иконки разделов — вместо текстового бейджа
+  const SEC_META = {
+    work:    {emoji:"💼", color:"#82AADD"},
+    home:    {emoji:"🏠", color:"#7BCCA0"},
+    health:  {emoji:"💚", color:"#7BCCA0"},
+    beauty:  {emoji:"✨", color:"#E8A8C8"},
+    pets:    {emoji:"🐾", color:"#E8A85A"},
+    shopping:{emoji:"🛒", color:"#E5C87A"},
+    hobbies: {emoji:"🎨", color:"#B882E8"},
+    tasks:   {emoji:"📋", color:"#A8A49C"},
+  };
+
+  const secs=[["all","Все"],["work","💼"],["home","🏠"],["health","💚"],["beauty","✨"],["pets","🐾"],["shopping","🛒"],["hobbies","🎨"]];
+  const filtered=tasks.filter(t=>{
+    if(filter!=="all"&&t.section!==filter)return false;
+    if(search&&!t.title.toLowerCase().includes(search.toLowerCase()))return false;
+    return true;
+  });
   const isTrulyDue = (t) => {
     if(!t.freq) return false;
     if(t.freq==="once") return !t.lastDone && !t.doneDate;
@@ -3115,64 +3131,116 @@ function TasksSection({profile,tasks,setTasks,today,kb,notify}) {
   };
   const due=filtered.filter(isTrulyDue);
   const done=filtered.filter(t=>t.doneDate===today);
-  const recurring=tasks.filter(t=>t.freq&&t.freq!=="once"&&!due.includes(t)&&(filter==="all"||t.section===filter));
+  const recurring=tasks.filter(t=>t.freq&&t.freq!=="once"&&!due.find(x=>x.id===t.id)&&(filter==="all"||t.section===filter));
   const toggleDone=id=>{setTasks(p=>p.map(t=>t.id===id?{...t,doneDate:t.doneDate===today?null:today,lastDone:t.doneDate===today?t.lastDone:today}:t));};
+
+  // Компактная строка задачи
+  const TaskRow = ({task, dim=false}) => {
+    const sm = SEC_META[task.section]||SEC_META.tasks;
+    const isDone = task.doneDate===today;
+    return (
+      <div style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderBottom:"1px solid rgba(255,255,255,0.03)",opacity:dim?0.5:1}}>
+        {/* Приоритет — тонкая точка */}
+        <div style={{width:4,height:4,borderRadius:"50%",flexShrink:0,background:{h:"#E87878",m:"#E5C87A",l:"#7BCCA0"}[task.priority||"m"]||T.text3}}/>
+        {/* Чекбокс */}
+        <div className={"chk"+(isDone?" done":"")} style={{width:20,height:20,flexShrink:0,fontSize:12}} onClick={()=>!dim&&toggleDone(task.id)}>{isDone?"✓":""}</div>
+        {/* Иконка раздела */}
+        {filter==="all"&&<span style={{fontSize:14,flexShrink:0}} title={task.section}>{sm.emoji}</span>}
+        {/* Название */}
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontSize:14,color:isDone?T.text3:T.text0,textDecoration:isDone?"line-through":"none",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{task.title}</div>
+          {/* Мета — только если есть что-то важное */}
+          {(task.preferredTime||task.deadline||(!isDone&&task.freq&&task.freq!=="once"&&task.freq!=="daily"))&&(
+            <div style={{display:"flex",gap:4,marginTop:1,flexWrap:"wrap"}}>
+              {task.preferredTime&&<span style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'"}}>🕐{task.preferredTime}</span>}
+              {task.deadline&&<span style={{fontSize:10,color:T.gold,fontFamily:"'JetBrains Mono'"}}>📅{new Date(task.deadline).toLocaleDateString("ru-RU",{day:"numeric",month:"short"})}</span>}
+              {task.freq&&task.freq!=="once"&&task.freq!=="daily"&&<span style={{fontSize:10,color:T.text3}}>{freqLabel(task.freq)}</span>}
+            </div>
+          )}
+        </div>
+        {/* Действия */}
+        {!dim&&<div style={{display:"flex",gap:4,flexShrink:0}}>
+          <div className="ico-btn" style={{fontSize:13,padding:"2px 4px"}} onClick={()=>setModal(task)}>✏️</div>
+          <div className="ico-btn danger" style={{fontSize:13,padding:"2px 4px"}} onClick={()=>{setTasks(p=>p.filter(t=>t.id!==task.id));notify("Удалено");}}>✕</div>
+        </div>}
+      </div>
+    );
+  };
 
   return(
     <div>
-      <AiBox kb={kb} prompt={`Мои задачи: ${tasks.map(t=>t.title).join(", ")}. Помоги расставить приоритеты — что важнее всего сделать сегодня и почему, учитывая мой хронотип ${profile.chronotype||"—"} и то что меня стрессит: ${(profile.stressors||[]).join(", ")||"—"}.`} label="Как расставить приоритеты" btnText="Расставить приоритеты" placeholder="Помогу понять что сделать в первую очередь..."/>
-      <div style={{display:"flex",gap:8,marginBottom:14}}>
-        <input style={{flex:1,padding:"10px 14px",background:"rgba(255,255,255,.03)",border:"1px solid "+T.bdr,borderRadius:10,color:T.text0,fontFamily:"'Crimson Pro',serif",fontSize:16,outline:"none"}} placeholder="Поиск задач..." value={search} onChange={e=>setSearch(e.target.value)}/>
-        <button className="btn btn-primary btn-sm" onClick={()=>setModal({})}>+ Задача</button>
+      <AiBox kb={kb} prompt={"Мои задачи: "+tasks.map(t=>t.title).join(", ")+". Помоги расставить приоритеты — что важнее всего сделать сегодня и почему, учитывая мой хронотип "+(profile.chronotype||"—")+" и то что меня стрессит: "+((profile.stressors||[]).join(", ")||"—")+"."} label="Как расставить приоритеты" btnText="Расставить приоритеты" placeholder="Помогу понять что сделать в первую очередь..."/>
+
+      {/* Поиск + добавить */}
+      <div style={{display:"flex",gap:8,marginBottom:10}}>
+        <input style={{flex:1,padding:"8px 12px",background:"rgba(255,255,255,.03)",border:"1px solid "+T.bdr,borderRadius:10,color:T.text0,fontFamily:"'Crimson Pro',serif",fontSize:15,outline:"none"}} placeholder="Поиск..." value={search} onChange={e=>setSearch(e.target.value)}/>
+        <button className="btn btn-primary btn-sm" onClick={()=>setModal({})}>+</button>
       </div>
-      <div className="tabs">{secs.map(([v,l])=><div key={v} className={`tab${filter===v?" on":""}`} onClick={()=>setFilter(v)}>{l}</div>)}</div>
-      <div className="g3" style={{marginBottom:16}}>
-        <div className="stat"><div className="stat-n">{due.length}</div><div className="stat-l">На сегодня</div></div>
-        <div className="stat"><div className="stat-n">{done.length}</div><div className="stat-l">Выполнено</div></div>
-        <div className="stat"><div className="stat-n">{tasks.filter(t=>t.freq&&t.freq!=="once").length}</div><div className="stat-l">Регулярных</div></div>
+
+      {/* Фильтр разделов — иконки компактно */}
+      <div style={{display:"flex",gap:5,marginBottom:12,flexWrap:"wrap"}}>
+        {secs.map(([v,l])=>(
+          <div key={v} onClick={()=>setFilter(v)} style={{padding:"5px 10px",borderRadius:20,fontSize:13,cursor:"pointer",background:filter===v?"rgba(200,164,90,0.2)":"rgba(255,255,255,0.04)",border:"1px solid "+(filter===v?"rgba(200,164,90,0.5)":"transparent"),color:filter===v?T.gold:T.text2,fontFamily:v==="all"?"'JetBrains Mono'":"inherit",transition:"all .15s"}}>
+            {l}
+          </div>
+        ))}
       </div>
-      {due.length>0&&<><div className="sec-lbl">На сегодня</div>
-        <div className="card">{due.map(task=>(
-          <div key={task.id} className="task-row">
-            <div className={`prio p${task.priority||"m"}`}/>
-            <div className={`chk${task.doneDate===today?" done":""}`} onClick={()=>toggleDone(task.id)}>{task.doneDate===today?"✓":""}</div>
-            <div className="task-body">
-              <div className={`task-name${task.doneDate===today?" done":""}`}>{task.title}</div>
-              <div className="task-meta">
-                {task.section&&<span className="badge bm">{task.section}</span>}
-                {task.freq&&task.freq!=="once"&&<span className="badge bt">{freqLabel(task.freq)}</span>}
-                {task.preferredTime&&<span className="badge bg">🕐 {task.preferredTime}</span>}
-                {task.deadline&&<span className="badge bw">📅 {new Date(task.deadline).toLocaleDateString("ru-RU")}</span>}
-              </div>
-              {task.notes&&<div className="task-notes">{task.notes}</div>}
-            </div>
-            <div className="card-acts">
-              <div className="ico-btn" onClick={()=>setModal(task)}>✏️</div>
-              <div className="ico-btn" onClick={()=>setModal(task)} style={{color:T.teal,opacity:.7}}>✏️</div>
-              <div className="ico-btn danger" onClick={()=>{setTasks(p=>p.filter(t=>t.id!==task.id));notify("Удалено");}}>✕</div>
-            </div>
+
+      {/* Счётчики */}
+      <div style={{display:"flex",gap:8,marginBottom:12}}>
+        <div style={{flex:1,padding:"6px 10px",borderRadius:10,background:"rgba(200,164,90,0.08)",textAlign:"center"}}>
+          <div style={{fontSize:20,fontWeight:700,color:T.gold,fontFamily:"'JetBrains Mono'"}}>{due.length}</div>
+          <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1}}>СЕГОДНЯ</div>
+        </div>
+        <div style={{flex:1,padding:"6px 10px",borderRadius:10,background:"rgba(123,204,160,0.08)",textAlign:"center"}}>
+          <div style={{fontSize:20,fontWeight:700,color:"#7BCCA0",fontFamily:"'JetBrains Mono'"}}>{done.length}</div>
+          <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1}}>ГОТОВО</div>
+        </div>
+        <div style={{flex:1,padding:"6px 10px",borderRadius:10,background:"rgba(130,170,221,0.08)",textAlign:"center"}}>
+          <div style={{fontSize:20,fontWeight:700,color:"#82AADD",fontFamily:"'JetBrains Mono'"}}>{tasks.filter(t=>t.freq&&t.freq!=="once").length}</div>
+          <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1}}>РЕГУЛЯРНЫХ</div>
+        </div>
+      </div>
+
+      {/* На сегодня */}
+      {due.length>0&&(
+        <div style={{marginBottom:12}}>
+          <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:2,marginBottom:6}}>НА СЕГОДНЯ</div>
+          <div className="card" style={{padding:"4px 14px"}}>
+            {due.map(task=><TaskRow key={task.id} task={task}/>)}
           </div>
-        ))}</div></>}
-      {done.length>0&&<><div className="sec-lbl" style={{marginTop:16}}>Выполнено сегодня</div>
-        <div className="card" style={{opacity:.6}}>{done.map(task=>(
-          <div key={task.id} className="task-row">
-            <div className="chk done" onClick={()=>toggleDone(task.id)}>✓</div>
-            <div className="task-body"><div className="task-name done">{task.title}</div></div>
+        </div>
+      )}
+
+      {/* Выполнено сегодня */}
+      {done.length>0&&(
+        <div style={{marginBottom:12}}>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+            <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:2}}>ВЫПОЛНЕНО</div>
+            <button style={{fontSize:10,color:T.text3,background:"none",border:"none",cursor:"pointer",padding:0,fontFamily:"'JetBrains Mono'"}} onClick={()=>{
+              if(window.confirm("Сбросить все отметки выполнения сегодня?"))
+                setTasks(p=>p.map(t=>done.find(d=>d.id===t.id)?{...t,doneDate:null}:t));
+              notify("Сброшено");
+            }}>↩ сброс</button>
           </div>
-        ))}</div></>}
-      {recurring.length>0&&<><div className="sec-lbl" style={{marginTop:16}}>Регулярные (не сегодня)</div>
-        <div className="card">{recurring.map(task=>(
-          <div key={task.id} className="task-row" style={{opacity:.55}}>
-            <div className="task-body">
-              <div className="task-name">{task.title}</div>
-              <div className="task-meta"><span className="badge bm">{task.section}</span><span className="badge bt">{freqLabel(task.freq)}</span></div>
-            </div>
-            <div className="card-acts">
-              <div className="ico-btn" onClick={()=>setModal(task)}>✏️</div>
-              <div className="ico-btn danger" onClick={()=>setTasks(p=>p.filter(t=>t.id!==task.id))}>✕</div>
-            </div>
+          <div className="card" style={{padding:"4px 14px"}}>
+            {done.map(task=><TaskRow key={task.id} task={task} dim={true}/>)}
           </div>
-        ))}</div></>}
+        </div>
+      )}
+
+      {/* Регулярные */}
+      {recurring.length>0&&(
+        <details style={{marginBottom:12}}>
+          <summary style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:2,cursor:"pointer",padding:"4px 0"}}>
+            РЕГУЛЯРНЫЕ — НЕ СЕГОДНЯ ({recurring.length})
+          </summary>
+          <div className="card" style={{padding:"4px 14px",marginTop:6,opacity:.55}}>
+            {recurring.map(task=><TaskRow key={task.id} task={task} dim={true}/>)}
+          </div>
+        </details>
+      )}
+
       {filtered.length===0&&<div className="empty"><span className="empty-ico">✦</span><p>Задач нет. Добавь первую!</p></div>}
       {modal!==null&&<TaskModal task={modal.id?modal:null} defaultSection={filter!=="all"?filter:"tasks"} onSave={t=>{setTasks(p=>modal.id?p.map(x=>x.id===t.id?t:x):[...p,t]);notify(modal.id?"Обновлено":"Добавлено");}} onClose={()=>setModal(null)}/>}
     </div>
@@ -3983,7 +4051,14 @@ function WorkSection({profile,tasks,setTasks,today,kb,notify}) {
           <div className="card" style={{marginBottom:12}}>
             <div className="card-hd">
               <span style={{fontSize:13,fontWeight:600,color:T.teal}}>📋 Задачи</span>
-              <button className="btn btn-ghost btn-sm" onClick={()=>setModal({})}>+</button>
+              <div style={{display:"flex",gap:6}}>
+                {internal.some(t=>t.doneDate===today)&&<button className="btn btn-ghost btn-sm" style={{fontSize:11,padding:"3px 8px",color:T.text3}} onClick={()=>{
+                  if(window.confirm("Сбросить отметки выполнения рабочих задач?"))
+                    setTasks(p=>p.map(t=>t.section==="work"&&!t.isDeadline&&t.doneDate===today?{...t,doneDate:null}:t));
+                  notify("Сброшено ✦");
+                }}>↩ Сброс</button>}
+                <button className="btn btn-ghost btn-sm" onClick={()=>setModal({})}>+</button>
+              </div>
             </div>
             {internal.length===0&&<div style={{fontSize:13,color:T.text3,fontStyle:"italic",paddingTop:4}}>Нет рабочих задач</div>}
             {internal.map(t=>(
@@ -6130,7 +6205,8 @@ function ProfileSection({profile,setProfile,sections,setSections,notify,kb}) {
             <div style={{padding:"8px 12px",background:"rgba(45,32,16,0.04)",borderRadius:10}}>
               <div style={{fontSize:9,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:2}}>РАБОТА</div>
               <div style={{fontSize:13,color:T.text0}}>{profile.profession||"—"}</div>
-              <div style={{fontSize:11,color:T.text3}}>{profile.workType||""} · {profile.workStart||"?"}–{profile.workEnd||"?"}</div>
+              {profile.workType&&<div style={{display:"inline-block",marginTop:3,padding:"1px 7px",borderRadius:8,background:"rgba(200,164,90,0.12)",border:"1px solid rgba(200,164,90,0.25)",fontSize:10,color:T.gold,fontFamily:"'JetBrains Mono'"}}>{profile.workType}</div>}
+              <div style={{fontSize:11,color:T.text3,marginTop:2}}>{profile.workStart||"?"}–{profile.workEnd||"?"}</div>
             </div>
             <div style={{padding:"8px 12px",background:"rgba(45,32,16,0.04)",borderRadius:10}}>
               <div style={{fontSize:9,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:2}}>ХРОНОТИП</div>
