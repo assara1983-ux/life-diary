@@ -1080,7 +1080,7 @@ const DEF_SECTIONS = [
   {id:"goals",    emoji:"🎯",  name:"Мои цели",   vis:true},
   {id:"mental",   emoji:"🧘",  name:"Ментальное", vis:true},
   {id:"travel",   emoji:"✈️",  name:"Поездки",    vis:true},
-  {id:"journal",  emoji:"📖",  name:"Журнал",     vis:true},
+  {id:"journal",  emoji:"📖",  name:"Дневник",    vis:true},
   {id:"profile",  emoji:"👤",  name:"Профиль",    vis:true},
 ];
 // Адаптация текста под пол пользователя
@@ -3959,12 +3959,10 @@ function ShoppingSection({profile,shopList,setShopList,kb,notify}) {
   const doneN=shopList.filter(x=>x.done).length;
   return(
     <div>
-      <div className="card card-accent">
-        <div className="g3">
-          <div className="pf-item"><div className="pf-l">Походы</div><div className="pf-v">{profile.shopFreq||"—"}</div></div>
-          <div className="pf-item"><div className="pf-l">День закупки</div><div className="pf-v">{profile.shopDay||"—"}</div></div>
-          <div className="pf-item"><div className="pf-l">Онлайн</div><div className="pf-v">{profile.onlineShopping||"—"}</div></div>
-        </div>
+      <div style={{display:"flex",flexWrap:"wrap",gap:8,padding:"8px 12px",background:"rgba(45,32,16,0.05)",borderRadius:10,marginBottom:10,alignItems:"center"}}>
+        {profile.shopFreq&&<span style={{fontSize:12,color:T.text2}}>🛒 {profile.shopFreq}</span>}
+        {profile.shopDay&&<span style={{fontSize:12,color:T.gold}}>· 📅 {profile.shopDay}</span>}
+        {profile.familySize&&profile.familySize!=="1"&&<span style={{fontSize:12,color:T.text3,marginLeft:"auto"}}>👨‍👩‍👧 {profile.familySize} чел.</span>}
       </div>
       {/* Напоминание о дне закупки */}
       {(()=>{
@@ -4233,14 +4231,11 @@ function BeautySection({profile,tasks,setTasks,today,kb,notify}) {
   };
   return(
     <div>
-      <div className="card card-accent">
-        <div className="g2">
-          <div className="pf-item"><div className="pf-l">Кожа</div><div className="pf-v">{profile.skinType||"—"}</div></div>
-          <div className="pf-item"><div className="pf-l">Волосы</div><div className="pf-v">{profile.hairType||"—"}</div></div>
-          {profile.gender!=="Мужской"&&<div className="pf-item"><div className="pf-l">Ногти</div><div className="pf-v">{profile.nailFreq||"—"}</div></div>}
-          {profile.gender==="Мужской"&&<div className="pf-item"><div className="pf-l">Борода</div><div className="pf-v">{profile.beard||"—"}</div></div>}
-          <div className="pf-item"><div className="pf-l">Приоритет</div><div className="pf-v">{profile.beautyPriority||"—"}</div></div>
-        </div>
+      <div style={{display:"flex",flexWrap:"wrap",gap:8,padding:"8px 12px",background:"rgba(45,32,16,0.05)",borderRadius:10,marginBottom:10,alignItems:"center"}}>
+        {profile.skinType&&<span style={{fontSize:12,color:T.text2}}>✨ {profile.skinType}</span>}
+        {profile.gender!=="Мужской"&&profile.hairType&&<span style={{fontSize:12,color:T.text3}}>· 💇 {profile.hairType}</span>}
+        {profile.gender==="Мужской"&&profile.beard&&<span style={{fontSize:12,color:T.text3}}>· 🧔 {profile.beard}</span>}
+        {profile.beautyPriority&&<span style={{fontSize:12,color:T.gold,marginLeft:"auto"}}>⭐ {profile.beautyPriority}</span>}
       </div>
       <AiBox kb={kb} prompt={isMale
         ? "Дай советы по уходу за собой для мужчины. Тип кожи: "+(profile.skinType||"нормальная")+", борода: "+(profile.beard||"нет")+". Свободное время после "+(profile.workEnd||"18:00")+". Только мужской уход — НЕ упоминай маски, лак, педикюр. Структура:\n\n## Утренний уход\n3 шага нумерованным списком.\n\n## Вечерний уход\n3 шага.\n\n## Уход за бородой / бритьё\n3 совета.\n\n## Что сделать сегодня\n2 конкретных действия."
@@ -4786,7 +4781,7 @@ function MentalSection({profile,kb,notify}) {
           </div>
           <div style={{fontSize:14,color:"#A8A49C",lineHeight:1.6,marginLeft:32}}>{b.desc}</div>
           <div style={{marginTop:10,marginLeft:32}}>
-            <button className="btn btn-ghost btn-xs" onClick={()=>openGCal("Дыхательная практика: "+b.name,new Date().toISOString(),"Техника: "+b.desc)}>📅 В календарь</button>
+            <button className="btn btn-ghost btn-xs" onClick={()=>addToPlanner(b?.name||s?.name||"Практика","20:00",b?.desc||s?.desc||"")}>📅 В планировщик</button>
           </div>
         </div>)}
         <AiBox kb={kb} prompt={"Подбери дыхательную технику для "+( profile.name||"меня")+" прямо сейчас. Мои стрессоры: "+stressors+". Качество сна: "+(profile.sleepQuality||"—")+". Время суток: сейчас "+currentHour+":00. Хронотип: "+(profile.chronotype||"—")+". Объясни пошагово как выполнять выбранную технику и почему она подходит именно мне."} label="Подобрать технику" btnText="Подобрать мою технику" placeholder="Подберу дыхательную технику под твоё состояние..."/>
@@ -4825,7 +4820,7 @@ function MentalSection({profile,kb,notify}) {
           </div>
           <div style={{fontSize:14,color:"#A8A49C",lineHeight:1.6,marginLeft:32}}>{s.desc}</div>
           <div style={{marginTop:10,marginLeft:32}}>
-            <button className="btn btn-ghost btn-xs" onClick={()=>openGCal("Звукотерапия: "+s.name,new Date().toISOString(),s.hz+": "+s.desc)}>📅 В календарь</button>
+            <button className="btn btn-ghost btn-xs" onClick={()=>addToPlanner(b?.name||s?.name||"Практика","20:00",b?.desc||s?.desc||"")}>📅 В планировщик</button>
           </div>
         </div>)}
         <AiBox kb={kb} prompt={"Подбери звукотерапию для "+( profile.name||"меня")+" на сегодня. Стрессоры: "+stressors+". Качество сна: "+(profile.sleepQuality||"—")+". Восстановление: "+recovery+". Луна: "+moon.n+". Время суток: "+currentHour+":00. Дай: 1) какую частоту слушать сегодня и почему именно мне, 2) как правильно проводить сеанс (поза, время, условия), 3) с чем сочетать (дыхание, медитация, ароматерапия)."} label="Подобрать звукотерапию" btnText="Подобрать мою практику" placeholder="Подберу звуковую практику под твоё состояние и луну..."/>
@@ -5029,10 +5024,11 @@ function CarSection({profile,setProfile,tasks,setTasks,today,kb,notify}) {
   });
 
   if(profile.hasCar!=="Да") return(
-    <div style={{textAlign:"center",padding:"40px 16px"}}>
+    <div style={{textAlign:"center",padding:"32px 16px"}}>
       <div style={{fontSize:48,marginBottom:12}}>🚗</div>
-      <div style={{fontSize:16,color:T.text2,marginBottom:8}}>Автомобиль не указан в профиле</div>
-      <div style={{fontSize:13,color:T.text3}}>Зайди в настройки профиля → Дом и укажи данные автомобиля</div>
+      <div style={{fontSize:16,color:T.text2,marginBottom:8}}>Добавь данные автомобиля</div>
+      <div style={{fontSize:13,color:T.text3,marginBottom:16}}>Укажи марку, год и дату ТО — получишь напоминания о резине, страховке и обслуживании</div>
+      <button className="btn btn-primary" onClick={()=>{setProfile(p=>({...p,hasCar:"Да"}));}}>🚗 Добавить автомобиль</button>
     </div>
   );
 
