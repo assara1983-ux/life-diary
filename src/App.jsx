@@ -175,6 +175,160 @@ function getTCMFullProfile(profile) {
   return { el, cn, syndromes, birthOrgan, emotionOrgan, sleepOrgan, tasteOrgan, uniqueOrgans, digestionNote, foodRecs };
 }
 function calcDegree(name) { if(!name) return null; const ru="абвгдеёжзийклмнопрстуфхцчшщъыьэюя"; let s=0; for(const c of name.toLowerCase()){const i=ru.indexOf(c);if(i>=0)s+=i+1;} return s%360||360; }
+
+// ── Число личного года (нумерология) ────────────────────────
+function getPersonalYear(dob) {
+  if(!dob) return null;
+  const now = new Date();
+  const cy = now.getFullYear();
+  const bd = new Date(dob);
+  // Складываем: день рождения + месяц рождения + текущий год
+  const sum = d => { let s=d; while(s>9&&s!==11&&s!==22&&s!==33){s=String(s).split("").reduce((a,b)=>a+parseInt(b),0);} return s; };
+  const daySum = sum(bd.getDate());
+  const monSum = sum(bd.getMonth()+1);
+  const yearSum = sum(String(cy).split("").reduce((a,b)=>a+parseInt(b),0));
+  const py = sum(daySum+monSum+yearSum);
+  const themes = {
+    1:"Год новых начал. Время запускать проекты, делать первые шаги. Заложи фундамент на 9-летний цикл.",
+    2:"Год партнёрства. Время сотрудничества, терпения, дипломатии. Важны отношения и детали.",
+    3:"Год творчества. Время самовыражения, общения, радости. Твои идеи найдут отклик.",
+    4:"Год труда. Время строить фундамент, работать системно. Усилия окупятся позже.",
+    5:"Год перемен. Время свободы, движения, новых возможностей. Будь гибким.",
+    6:"Год ответственности. Время семьи, заботы, гармонии дома. Баланс работы и близких.",
+    7:"Год рефлексии. Время углублённого анализа, духовного поиска, уединения.",
+    8:"Год достижений. Время карьеры, финансового роста, реализации амбиций.",
+    9:"Год завершения. Время подводить итоги, отпускать старое, готовиться к новому циклу.",
+    11:"Год интуиции. Мастер-число — высокая чувствительность, духовные откровения, творческий подъём.",
+    22:"Год мастера. Масштабные достижения, строительство чего-то значимого для многих.",
+    33:"Год учителя. Служение, вдохновение других, духовная мудрость.",
+  };
+  const avoids = {
+    1:"Пассивность, ожидание. Не позволяй другим принимать решения за тебя.",
+    2:"Конфликты, торопливость. Не форсируй события.",
+    3:"Разбросанность. Сосредоточься на главном.",
+    4:"Лень, уклонение от обязательств. Без труда нет результата.",
+    5:"Хаос, безответственность. Не разбрасывайся.",
+    6:"Гиперконтроль. Не жертвуй собой ради всех.",
+    7:"Изоляция, паранойя. Доверяй близким.",
+    8:"Жадность, трудоголизм без смысла. Деньги — инструмент, не цель.",
+    9:"Цепляние за прошлое. Учись отпускать.",
+    11:"Тревожность, перфекционизм. Заземляйся.",
+    22:"Самонадеянность. Слушай команду.",
+    33:"Самопожертвование в ущерб себе.",
+  };
+  return {py, theme:themes[py]||"", avoid:avoids[py]||""};
+}
+
+// ── Биоритмы ─────────────────────────────────────────────────
+function getBiorhythms(dob) {
+  if(!dob) return null;
+  const now = new Date();
+  const birth = new Date(dob);
+  const days = Math.floor((now-birth)/86400000);
+  const physical  = Math.round(Math.sin(2*Math.PI*days/23)*100);
+  const emotional = Math.round(Math.sin(2*Math.PI*days/28)*100);
+  const mental    = Math.round(Math.sin(2*Math.PI*days/33)*100);
+  const level = v => v>50?"Высокий":v>0?"Нормальный":v>-50?"Низкий":"Критический";
+  const color = v => v>50?"#7BCCA0":v>0?"#E5C87A":v>-50?"#E8A85A":"#E8556D";
+  return {
+    physical:{v:physical,  label:"Физический",  emoji:"💪", level:level(physical),  color:color(physical),  tip:physical>50?"Отличный день для спорта и активности":physical<0?"Береги силы, не перегружайся":"Умеренная активность"},
+    emotional:{v:emotional, label:"Эмоциональный",emoji:"💚", level:level(emotional), color:color(emotional), tip:emotional>50?"Хороший день для общения и творчества":emotional<0?"Возможна раздражительность, будь мягче к себе":"Стабильный эмоциональный фон"},
+    mental:{v:mental,    label:"Интеллектуальный",emoji:"🧠", level:level(mental),   color:color(mental),   tip:mental>50?"Лучший день для сложных задач и решений":mental<0?"Избегай важных решений, делай рутину":"Хороший день для обучения"},
+  };
+}
+
+// ── Сезонные ТКМ-рекомендации ────────────────────────────────
+function getSeasonalTCM(profile) {
+  const month = new Date().getMonth()+1;
+  const age   = profile.dob ? new Date().getFullYear()-new Date(profile.dob).getFullYear() : 35;
+  const el    = getChineseElement(profile.dob);
+  // Сезон по месяцу
+  const season = month>=3&&month<=5?"Весна":month>=6&&month<=8?"Лето":month>=9&&month<=11?"Осень":"Зима";
+  const seasons = {
+    "Весна":{
+      element:"Дерево",organ:"Печень / Желчный пузырь",emotion:"Гнев → Решимость",
+      doList:["Зелёные овощи, проростки","Ранние прогулки на природе","Растяжка и йога","Завершай незаконченные дела","Очищение печени (вода с лимоном)"],
+      avoidList:["Алкоголь и жирная пища","Подавление эмоций","Длительное сидение","Поздние ужины"],
+      color:"#228B22",emoji:"🌿"
+    },
+    "Лето":{
+      element:"Огонь",organ:"Сердце / Тонкий кишечник",emotion:"Тревога → Радость",
+      doList:["Лёгкая пища, горькие травы","Активность в первой половине дня","Медитация и пение","Общение и праздники","Охлаждающие напитки"],
+      avoidList:["Перегрев и прямое солнце","Холодные напитки натощак","Переутомление","Сильные стрессы"],
+      color:"#DC143C",emoji:"☀️"
+    },
+    "Осень":{
+      element:"Металл",organ:"Лёгкие / Толстый кишечник",emotion:"Грусть → Принятие",
+      doList:["Белые продукты (груша, дайкон, лук)","Дыхательные практики","Уборка и порядок","Подводи итоги","Тёплая одежда"],
+      avoidList:["Сырая и холодная пища","Подавление грусти","Переохлаждение","Резкие перемены"],
+      color:"#A9A9A9",emoji:"🍂"
+    },
+    "Зима":{
+      element:"Вода",organ:"Почки / Мочевой пузырь",emotion:"Страх → Мудрость",
+      doList:["Тёплые супы, мясные бульоны","Ранний отбой","Глубокое дыхание","Планирование на год","Тепло на поясницу"],
+      avoidList:["Переохлаждение","Поздние ночи","Избыток солёного","Интенсивный спорт на холоде"],
+      color:"#1E3A5F",emoji:"❄️"
+    },
+  };
+  const s = seasons[season];
+  // Учитываем стихию пользователя
+  const interaction = el ? (
+    el.name===s.element ? "🔥 Твоя стихия совпадает с сезоном — двойная энергия. Будь внимателен к переизбытку."
+    : el.yin ? "⚡ Твоя стихия Инь — в этом сезоне важно поддерживать тепло и восстановление."
+    : "⚡ Твоя стихия Ян — в этом сезоне направь энергию в созидание."
+  ) : "";
+  // Возрастная коррекция
+  const ageNote = age<30?"В твоём возрасте энергия Ци сильна — используй сезон для активного роста.":
+    age<50?"В этом возрасте важно поддерживать баланс между активностью и восстановлением.":
+    "В зрелом возрасте особенно важно следовать сезонным ритмам и беречь почечную Ци.";
+  return {...s, season, interaction, ageNote, age};
+}
+
+// ── Сильные/слабые стороны ────────────────────────────────────
+function getStrengthsWeaknesses(profile) {
+  const zodiac = getZodiac(profile.dob).name;
+  const eastern = getEastern(profile.dob);
+  const py = getPersonalYear(profile.dob);
+
+  const zodiacSW = {
+    "Овен":{s:["Инициативность","Смелость","Энергия","Лидерство"],w:["Нетерпеливость","Импульсивность","Не доводит до конца"]},
+    "Телец":{s:["Надёжность","Упорство","Практичность","Верность"],w:["Упрямство","Медленная адаптация","Материализм"]},
+    "Близнецы":{s:["Гибкость ума","Коммуникабельность","Адаптивность"],w:["Непостоянство","Поверхностность","Тревожность"]},
+    "Рак":{s:["Интуиция","Забота","Эмпатия","Память"],w:["Обидчивость","Зависимость от настроения","Закрытость"]},
+    "Лев":{s:["Харизма","Щедрость","Творчество","Лидерство"],w:["Гордость","Зависимость от признания","Расточительность"]},
+    "Дева":{s:["Аналитика","Трудолюбие","Точность","Надёжность"],w:["Перфекционизм","Самокритика","Тревожность"]},
+    "Весы":{s:["Дипломатия","Справедливость","Чувство красоты"],w:["Нерешительность","Зависимость от мнения","Избегание конфликтов"]},
+    "Скорпион":{s:["Глубина","Интуиция","Трансформация","Страсть"],w:["Ревность","Подозрительность","Мстительность"]},
+    "Стрелец":{s:["Оптимизм","Широкий кругозор","Философский ум"],w:["Безответственность","Прямолинейность до грубости","Непоследовательность"]},
+    "Козерог":{s:["Дисциплина","Амбиции","Ответственность","Терпение"],w:["Холодность","Пессимизм","Трудоголизм"]},
+    "Водолей":{s:["Оригинальность","Гуманизм","Независимость"],w:["Отстранённость","Упрямство в идеях","Непрактичность"]},
+    "Рыбы":{s:["Интуиция","Сострадание","Творчество","Духовность"],w:["Избегание реальности","Жертвенность","Неопределённость"]},
+  };
+  const easternSW = {
+    "Крыса":{s:["Находчивость","Адаптивность","Острый ум"],w:["Тревожность","Жадность","Критичность"]},
+    "Бык":{s:["Терпение","Честность","Выносливость"],w:["Упрямство","Медлительность","Консерватизм"]},
+    "Тигр":{s:["Смелость","Харизма","Щедрость"],w:["Импульсивность","Самонадеянность","Конфликтность"]},
+    "Кролик":{s:["Дипломатия","Творчество","Интуиция"],w:["Нерешительность","Избегание конфликтов","Пессимизм"]},
+    "Дракон":{s:["Энергия","Удача","Магнетизм"],w:["Гордость","Нетерпимость","Перфекционизм"]},
+    "Змея":{s:["Мудрость","Интуиция","Дальновидность"],w:["Подозрительность","Замкнутость","Ревность"]},
+    "Лошадь":{s:["Энергия","Независимость","Харизма"],w:["Непостоянство","Эгоцентризм","Нетерпеливость"]},
+    "Коза":{s:["Творчество","Мягкость","Сострадание"],w:["Нерешительность","Зависимость","Пессимизм"]},
+    "Обезьяна":{s:["Интеллект","Гибкость","Находчивость"],w:["Непостоянство","Манипулятивность","Тщеславие"]},
+    "Петух":{s:["Точность","Честность","Работоспособность"],w:["Педантизм","Критичность к другим","Хвастовство"]},
+    "Собака":{s:["Верность","Честность","Справедливость"],w:["Тревожность","Упрямство","Цинизм"]},
+    "Свинья":{s:["Щедрость","Искренность","Оптимизм"],w:["Доверчивость","Чрезмерная мягкость","Самопотакание"]},
+  };
+
+  const zSW = zodiacSW[zodiac]||{s:[],w:[]};
+  const eSW = easternSW[eastern]||{s:[],w:[]};
+
+  // Объединяем уникальные
+  const strengths = [...new Set([...zSW.s, ...eSW.s])].slice(0,6);
+  const weaknesses = [...new Set([...zSW.w, ...eSW.w])].slice(0,6);
+
+  return {strengths, weaknesses, zodiac, eastern, personalYear:py};
+}
+
 function getMoon(dt=new Date()) { const p=((dt-new Date("2024-01-11"))/86400000%29.53+29.53)%29.53; if(p<1.85)return{n:"Новолуние",e:"🌑",t:"Начало — сей намерения"}; if(p<7.38)return{n:"Растущая",e:"🌒",t:"Рост — начинай новое"}; if(p<9.22)return{n:"Первая четверть",e:"🌓",t:"Действие — преодолевай"}; if(p<14.76)return{n:"Прибывающая",e:"🌔",t:"Сила — активно действуй"}; if(p<16.61)return{n:"Полнолуние",e:"🌕",t:"Пик — завершай"}; if(p<22.15)return{n:"Убывающая",e:"🌖",t:"Отдача — анализируй"}; if(p<23.99)return{n:"Последняя четверть",e:"🌗",t:"Итоги — очищай"}; return{n:"Тёмная луна",e:"🌘",t:"Отдых — переосмысли"}; }
 function openGCal(title,date,desc="") { const s=new Date(date),e=new Date(s.getTime()+3600000),f=d=>d.toISOString().replace(/[-:]/g,"").split(".")[0]+"Z"; window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${f(s)}/${f(e)}&details=${encodeURIComponent(desc)}`,"_blank"); }
 
@@ -2547,19 +2701,74 @@ function TodaySection({profile,tasks,setTasks,journal,setJournal,today,moon,kb,n
           </div>
         );
       })()}
-      {/* ═══ 2. ЛИЧНО ДЛЯ ТЕБЯ — ТКМ профиль ════════════════════ */}
-      {tcm?.el&&(tcm.syndromes?.length>0||tcm.uniqueOrgans?.length>0)&&(
-        <div style={{padding:"10px 14px",background:"rgba(45,106,79,0.07)",borderRadius:12,marginBottom:10,borderLeft:"3px solid "+T.gold}}>
-          <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1.5,marginBottom:6}}>ЛИЧНО ДЛЯ ТЕБЯ · ТКМ</div>
-          {tcm.syndromes?.length>0&&<div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:5}}>
-            {tcm.syndromes.map(s=><span key={s} className="badge bw" style={{fontSize:11}}>{s}</span>)}
-          </div>}
-          {tcm.uniqueOrgans?.length>0&&<div style={{fontSize:13,color:T.text2}}>
-            Внимание: <span style={{color:T.warn}}>{tcm.uniqueOrgans.join(" · ")}</span>
-          </div>}
-          {tcm.digestionNote&&<div style={{fontSize:12,color:T.text3,marginTop:3,fontStyle:"italic"}}>{tcm.digestionNote}</div>}
-        </div>
-      )}
+      {/* ═══ 2. ЛИЧНО ДЛЯ ТЕБЯ ════════════════════════════════ */}
+      {profile.dob&&(()=>{
+        const bio = getBiorhythms(profile.dob);
+        const seasonal = getSeasonalTCM(profile);
+        const sw = getStrengthsWeaknesses(profile);
+        const py = getPersonalYear(profile.dob);
+
+        return(
+          <div style={{marginBottom:12}}>
+            {/* Биоритмы */}
+            <div style={{padding:"10px 14px",background:"rgba(45,32,16,0.05)",borderRadius:12,marginBottom:8}}>
+              <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1.5,marginBottom:8}}>БИОРИТМЫ СЕГОДНЯ</div>
+              <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                {Object.values(bio).map(b=>(
+                  <div key={b.label} style={{display:"flex",alignItems:"center",gap:10}}>
+                    <span style={{fontSize:14,flexShrink:0}}>{b.emoji}</span>
+                    <div style={{flex:1}}>
+                      <div style={{display:"flex",justifyContent:"space-between",marginBottom:2}}>
+                        <span style={{fontSize:11,color:T.text2}}>{b.label}</span>
+                        <span style={{fontSize:11,color:b.color,fontFamily:"'JetBrains Mono'",fontWeight:600}}>{b.level}</span>
+                      </div>
+                      <div style={{height:4,borderRadius:2,background:"rgba(45,32,16,0.1)"}}>
+                        <div style={{height:4,borderRadius:2,background:b.color,
+                          width:Math.abs(b.v)+"%",marginLeft:b.v<0?"auto":0,transition:"width .3s"}}/>
+                      </div>
+                      <div style={{fontSize:10,color:T.text3,marginTop:2,fontStyle:"italic"}}>{b.tip}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Сезон по ТКМ */}
+            <div style={{padding:"10px 14px",background:"rgba(45,32,16,0.05)",borderRadius:12,marginBottom:8,borderLeft:"3px solid "+seasonal.color}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+                <span style={{fontSize:18}}>{seasonal.emoji}</span>
+                <div>
+                  <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1.5}}>СЕЗОН · ТКМ</div>
+                  <div style={{fontSize:14,color:seasonal.color,fontWeight:500}}>{seasonal.season} — стихия {seasonal.element}</div>
+                </div>
+              </div>
+              <div style={{fontSize:12,color:T.text2,marginBottom:4}}>🫀 Орган: <span style={{color:seasonal.color}}>{seasonal.organ}</span></div>
+              <div style={{fontSize:12,color:T.text2,marginBottom:8}}>💭 Эмоция: <span style={{color:T.text1}}>{seasonal.emotion}</span></div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:6}}>
+                <div style={{background:"rgba(45,106,79,0.08)",borderRadius:8,padding:"6px 8px"}}>
+                  <div style={{fontSize:9,color:T.success,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:4}}>ДЕЛАЙ</div>
+                  {seasonal.doList.slice(0,3).map((d,i)=><div key={i} style={{fontSize:11,color:T.text1,marginBottom:2}}>✦ {d}</div>)}
+                </div>
+                <div style={{background:"rgba(139,32,32,0.05)",borderRadius:8,padding:"6px 8px"}}>
+                  <div style={{fontSize:9,color:T.danger,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:4}}>ИЗБЕГАЙ</div>
+                  {seasonal.avoidList.slice(0,3).map((d,i)=><div key={i} style={{fontSize:11,color:T.text2,marginBottom:2}}>✗ {d}</div>)}
+                </div>
+              </div>
+              {seasonal.interaction&&<div style={{fontSize:11,color:T.gold,fontStyle:"italic",marginBottom:4}}>{seasonal.interaction}</div>}
+              <div style={{fontSize:11,color:T.text3,fontStyle:"italic"}}>{seasonal.ageNote}</div>
+            </div>
+
+            {/* ТКМ синдромы если есть */}
+            {tcm?.uniqueOrgans?.length>0&&(
+              <div style={{padding:"8px 12px",background:"rgba(45,32,16,0.05)",borderRadius:10,borderLeft:"3px solid "+T.warn}}>
+                <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:4}}>ОРГАНЫ ПОД ВНИМАНИЕМ</div>
+                <div style={{fontSize:13,color:T.warn}}>{tcm.uniqueOrgans.join(" · ")}</div>
+                {tcm.digestionNote&&<div style={{fontSize:11,color:T.text3,marginTop:3,fontStyle:"italic"}}>{tcm.digestionNote}</div>}
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* ═══ 3. ДЕНЬ ПО ТКМ ══════════════════════════════════════ */}
       <div className="card" style={{marginBottom:10,borderLeft:"3px solid "+dayInfo.color}}>
@@ -5457,6 +5666,45 @@ function ProfileSection({profile,setProfile,sections,setSections,notify,kb}) {
             </div>
           )}
 
+          {/* ── Сильные и слабые стороны ── */}
+          {profile.dob&&(()=>{
+            const sw = getStrengthsWeaknesses(profile);
+            const py = getPersonalYear(profile.dob);
+            return(
+              <div style={{marginBottom:12}}>
+                <div className="sec-lbl" style={{marginBottom:8}}>Сильные и слабые стороны</div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
+                  <div style={{padding:"10px 12px",background:"rgba(45,106,79,0.07)",borderRadius:12}}>
+                    <div style={{fontSize:10,color:T.success,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:8}}>✦ СИЛЬНЫЕ СТОРОНЫ</div>
+                    {sw.strengths.map((s,i)=>(
+                      <div key={i} style={{fontSize:12,color:T.text1,padding:"4px 0",borderBottom:"1px solid rgba(45,106,79,0.1)",lineHeight:1.3}}>{s}</div>
+                    ))}
+                  </div>
+                  <div style={{padding:"10px 12px",background:"rgba(139,32,32,0.05)",borderRadius:12}}>
+                    <div style={{fontSize:10,color:T.danger,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:8}}>✗ ЗОНЫ РОСТА</div>
+                    {sw.weaknesses.map((w,i)=>(
+                      <div key={i} style={{fontSize:12,color:T.text2,padding:"4px 0",borderBottom:"1px solid rgba(139,32,32,0.08)",lineHeight:1.3}}>{w}</div>
+                    ))}
+                  </div>
+                </div>
+                {/* Личный год */}
+                {py&&(
+                  <div style={{padding:"10px 14px",background:"rgba(200,164,90,0.08)",borderRadius:12,border:"1px solid rgba(200,164,90,0.2)"}}>
+                    <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
+                      <span style={{fontFamily:"'Cinzel',serif",fontSize:22,color:T.gold}}>{py.py}</span>
+                      <div>
+                        <div style={{fontSize:9,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1}}>ЛИЧНЫЙ ГОД · НУМЕРОЛОГИЯ</div>
+                        <div style={{fontSize:13,color:T.gold,fontWeight:500}}>Год {py.py} из 9-летнего цикла</div>
+                      </div>
+                    </div>
+                    <div style={{fontSize:13,color:T.text1,lineHeight:1.6,marginBottom:6}}>{py.theme}</div>
+                    {py.avoid&&<div style={{fontSize:12,color:T.text3,fontStyle:"italic"}}>Избегай: {py.avoid}</div>}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
           {/* ── График жизненных циклов ── */}
           {cycleData&&(()=>{
             const {spheres,birthYear,currentYear,currentAge} = cycleData;
@@ -5484,9 +5732,12 @@ function ProfileSection({profile,setProfile,sections,setSections,notify,kb}) {
                       stroke={T.gold} strokeWidth="1.5" strokeDasharray="4,3" opacity="0.7"/>
                     <text x={getX(currentAge)} y={H+14} textAnchor="middle" fontSize="9" fill={T.gold} fontWeight="600">сейчас</text>
 
-                    {/* Возраст по оси X */}
+                    {/* Возраст и год по оси X */}
                     {ageLabels.filter(a=>a<=maxAge).map(a=>(
-                      <text key={a} x={getX(a)} y={H+14} textAnchor="middle" fontSize="8" fill="rgba(45,32,16,0.3)">{a}</text>
+                      <g key={a}>
+                        <text x={getX(a)} y={H+12} textAnchor="middle" fontSize="9" fill="rgba(45,32,16,0.5)" fontWeight="500">{a}</text>
+                        <text x={getX(a)} y={H+22} textAnchor="middle" fontSize="7" fill="rgba(45,32,16,0.25)">{birthYear+a}</text>
+                      </g>
                     ))}
 
                     {/* Линии по сферам */}
@@ -5523,22 +5774,34 @@ function ProfileSection({profile,setProfile,sections,setSections,notify,kb}) {
                     ))}
                   </div>
 
-                  {/* Тултип при нажатии */}
+                  {/* Модалка снизу при нажатии */}
                   {tooltip&&(
-                    <div style={{marginTop:10,padding:"10px 14px",background:"rgba(45,32,16,0.05)",borderRadius:10,borderLeft:"3px solid "+tooltip.color}}>
-                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
-                        <span style={{fontSize:14,color:tooltip.color,fontWeight:600}}>{tooltip.emoji} {tooltip.sphere}</span>
-                        <span style={{fontSize:11,color:T.text3,fontFamily:"'JetBrains Mono'"}}>{tooltip.year} · возраст {tooltip.a}</span>
+                    <div style={{
+                      position:"fixed",bottom:0,left:0,right:0,zIndex:200,
+                      background:T.bg,borderRadius:"16px 16px 0 0",
+                      boxShadow:"0 -4px 24px rgba(45,32,16,0.18)",
+                      padding:"20px 20px 32px",
+                      borderTop:"3px solid "+tooltip.color,
+                      animation:"modalIn .2s ease"
+                    }}>
+                      <div style={{width:36,height:4,background:"rgba(45,32,16,0.2)",borderRadius:2,margin:"0 auto 16px"}}/>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                        <span style={{fontSize:18,color:tooltip.color,fontWeight:600}}>{tooltip.emoji} {tooltip.sphere}</span>
+                        <div style={{display:"flex",alignItems:"center",gap:10}}>
+                          <span style={{fontSize:13,color:T.text3}}>{tooltip.year} · {tooltip.a} лет</span>
+                          <button onClick={()=>setTooltip(null)} style={{background:"none",border:"none",fontSize:20,cursor:"pointer",color:T.text3}}>✕</button>
+                        </div>
                       </div>
-                      <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
+                      <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:10}}>
                         {[1,2,3,4,5,6,7,8,9].map(n=>(
-                          <div key={n} style={{height:4,width:16,borderRadius:2,background:n<=tooltip.s?tooltip.color:"rgba(45,32,16,0.1)"}}/>
+                          <div key={n} style={{height:6,flex:1,borderRadius:3,background:n<=tooltip.s?tooltip.color:"rgba(45,32,16,0.1)",transition:"background .2s"}}/>
                         ))}
-                        <span style={{fontSize:11,color:T.text3}}>{tooltip.s}/9</span>
+                        <span style={{fontSize:12,color:tooltip.color,fontWeight:700,minWidth:24}}>{tooltip.s}/9</span>
                       </div>
-                      <div style={{fontSize:13,color:T.text1,lineHeight:1.5}}>{tooltip.desc}</div>
+                      <div style={{fontSize:15,color:T.text1,lineHeight:1.65}}>{tooltip.desc}</div>
                     </div>
                   )}
+                  {tooltip&&<div style={{position:"fixed",inset:0,zIndex:199,background:"rgba(45,32,16,0.3)"}} onClick={()=>setTooltip(null)}/>}
                   <div style={{fontSize:9,color:T.text3,marginTop:6,textAlign:"center",fontFamily:"'JetBrains Mono'"}}>
                     Нажми на точку — описание периода
                   </div>
@@ -5578,6 +5841,27 @@ function ProfileSection({profile,setProfile,sections,setSections,notify,kb}) {
                 )}
                 {foodRecs&&<div style={{fontSize:12,color:T.success,fontStyle:"italic",lineHeight:1.5}}>{foodRecs}</div>}
                 {!hasDiag&&<div style={{fontSize:12,color:T.text3,fontStyle:"italic",marginTop:6}}>Пройди ТКМ-диагностику в профиле для персональных синдромов</div>}
+              </div>
+            </>);
+          })()}
+
+          {/* ── Психопортрет ── */}
+          {(()=>{
+            const intro = (profile.energySource||"").includes("Один") || (profile.energySource||"").includes("тишин");
+            const analyst = (profile.decisionStyle||"").includes("логик") || (profile.decisionStyle||"").includes("анализ");
+            const planner = (profile.planningStyle||"").includes("план") || (profile.planningStyle||"").includes("список");
+            const traits = [
+              intro ? "🔋 Интроверт — черпает энергию в уединении" : "⚡ Экстраверт — заряжается от общения",
+              analyst ? "🧠 Аналитик — решения через логику и факты" : "💡 Интуит — решения через ощущения и интуицию",
+              planner ? "📋 Планировщик — любит структуру и порядок" : "🌊 Адаптивный — действует по ситуации",
+            ].filter(Boolean);
+            if(!traits.length) return null;
+            return(<>
+              <div className="sec-lbl">Психопортрет</div>
+              <div style={{display:"flex",flexDirection:"column",gap:5,marginBottom:12}}>
+                {traits.map((t,i)=>(
+                  <div key={i} style={{fontSize:13,color:T.text1,padding:"6px 12px",background:"rgba(45,32,16,0.04)",borderRadius:9}}>{t}</div>
+                ))}
               </div>
             </>);
           })()}
