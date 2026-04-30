@@ -2957,287 +2957,233 @@ function TasksSection({profile,tasks,setTasks,today,kb,notify}) {
 //  SCHEDULE
 // ══════════════════════════════════════════════════════════════
 function ScheduleSection({profile,tasks,setTasks,today,kb,notify}) {
-  const [view,setView]=useState("week");
-  const [offset,setOffset]=useState(0);
-  const [aiText,setAiText]=useState("");
-  const [loading,setLoading]=useState(false);
+  const [view, setView] = useState("week");
+  const [offset, setOffset] = useState(0);
+  const [aiText, setAiText] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [selectedDay, setSelectedDay] = useState(null);
 
-  const weekDays=()=>{const d=new Date();d.setDate(d.getDate()-d.getDay()+1+offset*7);return Array.from({length:7},(_,i)=>{const dd=new Date(d);dd.setDate(d.getDate()+i);return toDay(dd);});};
-  const days=weekDays();
+  const getAiSchedule = async()=>{
+    setLoading(true);
+    const r = await askClaude(null,
+      `Составь детальное расписание на неделю для ${profile.name||"меня"}. `+
+      `Работа: ${profile.workStart||"9:00"}–${profile.workEnd||"18:00"} (${profile.workType||"офис"}), `+
+      `дорога: ${profile.commuteTime||"нет"}. Подъём: ${profile.wake||"7:00"}, отбой: ${profile.sleep||"23:00"}. `+
+      `Хронотип: ${profile.chronotype||"—"}. `+
+      `Практики: ${(profile.practices||[]).join(",")||"—"}. Спорт: ${(profile.sport||[]).join(",")||"—"}. `+
+      `ВАЖНО: практики и спорт ТОЛЬКО после ${profile.workEnd||"18:00"}. `+
+      `Дай конкретный план по дням с точным временем.`, 1000);
+    setAiText(r); setLoading(false);
+  };
 
-  const getAiSchedule=async()=>{setLoading(true);const r=await askClaude(kb,`Составь детальное расписание на неделю для ${profile.name||"меня"}. Работа: ${profile.workStart||"9:00"}–${profile.workEnd||"18:00"} (${profile.workType||"офис"}), дорога: ${profile.commuteTime||"нет"}. Подъём: ${profile.wake||"7:00"}, отбой: ${profile.sleep||"23:00"}. Хронотип: ${profile.chronotype||"—"}. Регулярные дела: ${tasks.filter(t=>t.freq&&t.freq!=="once").map(t=>`${t.title}(${freqLabel(t.freq)})`).join("; ")||"нет"}. Дни уборки: ${(profile.cleanDays||[]).join(", ")||"—"}. Закупки: ${profile.shopDay||"—"}. Практики: ${(profile.practices||[]).join(",")||"—"}. Спорт: ${(profile.sport||[]).join(",")||"—"}. ВАЖНО: все практики и спорт ТОЛЬКО после ${profile.workEnd||"18:00"}. Дай конкретный план по дням с точным временем.`,1000);setAiText(r);setLoading(false);};
+  // Строим неделю
+  const now = new Date();
+  const startOfWeek = new Date(now);
+  const dayOfWeek = now.getDay()===0?6:now.getDay()-1;
+  startOfWeek.setDate(now.getDate()-dayOfWeek + offset*7);
+  startOfWeek.setHours(0,0,0,0);
 
-  const SECT_COLORS={work:`rgba(90,142,200,.18)`,health:`rgba(91,173,122,.18)`,beauty:`rgba(140,90,200,.18)`,pets:`rgba(78,201,190,.18)`,home:`rgba(200,164,90,.12)`,shopping:`rgba(200,140,58,.15)`};
-  const SECT_TEXT={work:T.info,health:T.success,beauty:T.purple,pets:T.teal,home:T.gold,shopping:T.warn};
+  const weekDays = Array.from({length:7},(_,i)=>{
+    const d = new Date(startOfWeek);
+    d.setDate(startOfWeek.getDate()+i);
+    return d;
+  });
+
+  const DAY_RU = ["Пн","Вт","Ср","Чт","Пт","Сб","Вс"];
+  const todayStr = now.toISOString().split("T")[0];
+  const wakeH = parseInt((profile.wake||"07:00").split(":")[0]);
+  const workStartH = parseInt((profile.workStart||"09:00").split(":")[0]);
+  const workEndH = parseInt((profile.workEnd||"18:00").split(":")[0]);
+  const sleepH = parseInt((profile.sleep||"23:00").split(":")[0]);
+
+  // Якорные события дня
+  const getAnchors = (d) => {
+    const isWork = (profile.workDaysList||[1,2,3,4,5]).includes(d.getDay());
+    const anchors = [];
+    anchors.push({time:profile.wake||"07:00", label:"☀️ Подъём", type:"anchor"});
+    if(isWork && profile.commuteTime && profile.commuteTime!=="Дома") {
+      const mins=parseInt((profile.commuteTime.match(/\d+/)||["30"])[0]);
+      const h=workStartH-Math.ceil(mins/60);
+      anchors.push({time:h+":00", label:"🚌 Дорога", type:"commute"});
+    }
+    if(isWork) {
+      anchors.push({time:profile.workStart||"09:00", label:"💼 Работа", type:"work"});
+      anchors.push({time:profile.workEnd||"18:00", label:"✅ Конец работы", type:"work"});
+    } else {
+      anchors.push({time:(wakeH+2)+":00", label:"🌿 Свободное утро", type:"weekend"});
+    }
+    (profile.practices||[]).filter(p=>p&&p!=="Нет").forEach((pr,i)=>{
+      anchors.push({time:(workEndH+i)+":30", label:"🧘 "+pr, type:"health"});
+    });
+    if((profile.sport||[]).length>0 && !profile.sport.includes("Не занимаюсь")) {
+      anchors.push({time:(workEndH+1)+":00", label:"🏃 Спорт", type:"health"});
+    }
+    anchors.push({time:profile.sleep||"23:00", label:"🌙 Отбой", type:"anchor"});
+    return anchors.sort((a,b)=>a.time.localeCompare(b.time));
+  };
+
+  // Задачи дня
+  const getDayTasks = (d) => {
+    const dStr = d.toISOString().split("T")[0];
+    return tasks.filter(t=>
+      t.section!=="work" && !t.isDeadline &&
+      (isDue(t,dStr) || (t.doneDate===dStr))
+    );
+  };
+
+  const typeColor = {anchor:T.text3, work:T.info, commute:T.teal, health:T.success, weekend:T.gold, task:T.text1};
 
   return(
     <div>
-      <div className="tabs">{[["week","Неделя"],["ai","ИИ-план недели"]].map(([v,l])=><div key={v} className={`tab${view===v?" on":""}`} onClick={()=>setView(v)}>{l}</div>)}</div>
+      {/* Вкладки */}
+      <div className="tabs" style={{marginBottom:12}}>
+        <div className={"tab"+(view==="week"?" on":"")} onClick={()=>setView("week")}>Неделя</div>
+        <div className={"tab"+(view==="ai"?" on":"")} onClick={()=>setView("ai")}>ИИ-план недели</div>
+      </div>
+
+      {/* ═══ НЕДЕЛЯ — планировщик ═══ */}
       {view==="week"&&<>
-        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:14}}>
+        {/* Навигация */}
+        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
           <button className="btn btn-ghost btn-sm" onClick={()=>setOffset(o=>o-1)}>←</button>
-          <span style={{fontFamily:"'JetBrains Mono'",fontSize:11,color:T.text3}}>{offset===0?"Эта неделя":offset===1?"Следующая":`${offset>0?"+":""}${offset} нед.`}</span>
+          <span style={{flex:1,textAlign:"center",fontSize:14,color:T.text2}}>
+            {offset===0?"Эта неделя":offset===-1?"Прошлая неделя":offset===1?"Следующая неделя":
+              weekDays[0].toLocaleDateString("ru-RU",{day:"numeric",month:"short"})+
+              " – "+weekDays[6].toLocaleDateString("ru-RU",{day:"numeric",month:"short"})}
+          </span>
           <button className="btn btn-ghost btn-sm" onClick={()=>setOffset(o=>o+1)}>→</button>
           <button className="btn btn-ghost btn-sm" onClick={()=>setOffset(0)}>Сегодня</button>
         </div>
-        <div className="week-grid">
-          {days.map((day,i)=>{
-            const dt=new Date(day);
-            const dayTasks=tasks.filter(t=>isDue({...t},day));
-            const isToday=day===today;
+
+        {/* Дни недели — 2 колонки */}
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+          {weekDays.map((d,i)=>{
+            const dStr = d.toISOString().split("T")[0];
+            const isToday = dStr===todayStr;
+            const isSelected = selectedDay===dStr;
+            const isWork = (profile.workDaysList||[1,2,3,4,5]).includes(d.getDay());
+            const dayTasks = getDayTasks(d);
+            const anchors = getAnchors(d);
+            const doneTasks = dayTasks.filter(t=>t.doneDate===dStr);
+
             return(
-              <div key={day} className={`wday${isToday?" today":""}`}>
-                <div className="wday-hd">{DAY_RU[dt.getDay()]}</div>
-                <div className={`wday-n${isToday?" today-n":""}`}>{dt.getDate()}</div>
-                {dayTasks.slice(0,5).map(t=>(
-                  <div key={t.id} className={`wtask${t.doneDate===day?" done":""}`}
-                    style={{background:SECT_COLORS[t.section]||"rgba(200,164,90,.1)",color:SECT_TEXT[t.section]||T.gold}}>
-                    {t.title}
+              <div key={dStr} onClick={()=>setSelectedDay(isSelected?null:dStr)}
+                style={{
+                  borderRadius:12,padding:"10px 12px",cursor:"pointer",
+                  border:"1px solid "+(isToday?T.gold:isSelected?T.teal:T.bdr),
+                  background:isToday?"rgba(45,106,79,0.08)":isSelected?"rgba(78,201,190,0.06)":"rgba(45,32,16,0.03)",
+                  transition:"all .15s"
+                }}>
+                {/* Заголовок дня */}
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                  <div>
+                    <span style={{fontSize:11,color:isToday?T.gold:T.text3,fontFamily:"'JetBrains Mono'"}}>{DAY_RU[i]}</span>
+                    <span style={{fontSize:22,fontWeight:isToday?700:400,color:isToday?T.gold:T.text0,marginLeft:6,fontFamily:"'Cormorant Infant',serif"}}>{d.getDate()}</span>
+                  </div>
+                  {dayTasks.length>0&&<span style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'"}}>{doneTasks.length}/{dayTasks.length}</span>}
+                </div>
+
+                {/* Якорные события */}
+                {anchors.slice(0,isSelected?100:3).map((a,j)=>(
+                  <div key={j} style={{display:"flex",alignItems:"center",gap:5,marginBottom:3}}>
+                    <span style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",minWidth:32,flexShrink:0}}>{a.time}</span>
+                    <span style={{fontSize:12,color:typeColor[a.type]||T.text2,lineHeight:1.2}}>{a.label}</span>
                   </div>
                 ))}
-                {dayTasks.length>5&&<div style={{fontSize:9,color:T.text3,textAlign:"center",marginTop:2}}>+{dayTasks.length-5}</div>}
+
+                {/* Задачи с временем */}
+                {isSelected&&dayTasks.filter(t=>t.preferredTime).map(t=>(
+                  <div key={t.id} style={{display:"flex",alignItems:"center",gap:6,marginTop:4,padding:"4px 0",borderTop:"1px solid "+T.bdrS}}>
+                    <span style={{fontSize:10,color:T.gold,fontFamily:"'JetBrains Mono'",minWidth:32}}>{t.preferredTime}</span>
+                    <div onClick={e=>{e.stopPropagation();setTasks(p=>p.map(x=>x.id===t.id?{...x,doneDate:x.doneDate===dStr?null:dStr}:x));}}
+                      style={{width:14,height:14,borderRadius:3,border:"1.5px solid "+(t.doneDate===dStr?T.success:T.bdr),
+                        background:t.doneDate===dStr?"rgba(45,106,79,0.2)":"transparent",cursor:"pointer",
+                        display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:9,color:T.success}}>
+                      {t.doneDate===dStr?"✓":""}
+                    </div>
+                    <span style={{fontSize:12,color:t.doneDate===dStr?T.text3:T.text1,textDecoration:t.doneDate===dStr?"line-through":"none",flex:1}}>{t.title}</span>
+                  </div>
+                ))}
+
+                {/* Свернуто — показываем счётчик */}
+                {!isSelected&&anchors.length>3&&(
+                  <div style={{fontSize:10,color:T.text3,marginTop:3}}>+{anchors.length-3} событий</div>
+                )}
+                {!isSelected&&dayTasks.length>0&&(
+                  <div style={{fontSize:10,color:T.teal,marginTop:2}}>📌 {dayTasks.length} задач</div>
+                )}
               </div>
             );
           })}
         </div>
+
+        {/* Развёрнутый день — детальный планировщик */}
+        {selectedDay&&(()=>{
+          const d = new Date(selectedDay);
+          const anchors = getAnchors(d);
+          const dayTasks = getDayTasks(d);
+          const noTimeTasks = dayTasks.filter(t=>!t.preferredTime);
+          const nowMin = new Date().getHours()*60+new Date().getMinutes();
+
+          return(
+            <div className="card" style={{marginTop:12,borderLeft:"3px solid "+T.teal}}>
+              <div style={{fontFamily:"'Cormorant Infant',serif",fontSize:20,color:T.text0,marginBottom:12}}>
+                {DAY_RU[(d.getDay()===0?6:d.getDay()-1)]}, {d.toLocaleDateString("ru-RU",{day:"numeric",month:"long"})}
+              </div>
+              {/* Все события + задачи хронологически */}
+              {[...anchors.map(a=>({...a,isAnchor:true})),
+                ...dayTasks.filter(t=>t.preferredTime).map(t=>({time:t.preferredTime,label:t.title,type:"task",task:t}))
+              ].sort((a,b)=>a.time.localeCompare(b.time)).map((ev,i)=>{
+                const evMin=parseInt(ev.time.split(":")[0])*60+parseInt(ev.time.split(":")[1]||0);
+                const isNow=selectedDay===todayStr&&evMin<=nowMin;
+                const dStr=selectedDay;
+                return(
+                  <div key={i} style={{display:"flex",gap:8,padding:"6px 0",borderBottom:"1px solid "+T.bdrS}}>
+                    <span style={{fontSize:11,color:isNow?T.gold:T.text3,fontFamily:"'JetBrains Mono'",minWidth:44,flexShrink:0,fontWeight:isNow?700:400}}>{ev.time}</span>
+                    <div style={{width:2,background:isNow?T.gold:T.bdrS,borderRadius:1,flexShrink:0}}/>
+                    {ev.task&&(
+                      <div onClick={()=>setTasks(p=>p.map(x=>x.id===ev.task.id?{...x,doneDate:x.doneDate===dStr?null:dStr}:x))}
+                        style={{width:16,height:16,borderRadius:4,border:"1.5px solid "+(ev.task.doneDate===dStr?T.success:T.bdr),
+                          background:ev.task.doneDate===dStr?"rgba(45,106,79,0.2)":"transparent",
+                          cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:10,color:T.success}}>
+                        {ev.task.doneDate===dStr?"✓":""}
+                      </div>
+                    )}
+                    {!ev.task&&<div style={{width:16,flexShrink:0}}/>}
+                    <span style={{fontSize:13,color:ev.task?(ev.task.doneDate===dStr?T.text3:T.text1):typeColor[ev.type]||T.text2,
+                      textDecoration:ev.task?.doneDate===dStr?"line-through":"none",flex:1}}>
+                      {ev.label}
+                    </span>
+                  </div>
+                );
+              })}
+              {noTimeTasks.length>0&&(
+                <div style={{marginTop:8,fontSize:12,color:T.text3}}>
+                  📌 Без времени: {noTimeTasks.map(t=>t.title).join(", ")}
+                </div>
+              )}
+            </div>
+          );
+        })()}
       </>}
+
+      {/* ═══ ИИ-ПЛАН ═══ */}
       {view==="ai"&&<>
-        <div className="ai-box" style={{background:"linear-gradient(135deg,rgba(45,106,79,0.1),rgba(29,78,107,0.07))",borderColor:"rgba(45,106,79,0.3)"}}>
-          <div className="ai-hd"><div className="ai-pulse"/><div className="ai-lbl">ИИ-Планировщик недели</div></div>
-          {aiText?<div className="ai-text">{aiText}</div>:<div className="ai-dim">Составлю оптимальное расписание под твой ритм и задачи — нажми кнопку</div>}
-          <div style={{marginTop:14,display:"flex",gap:8}}>
-            <button className="btn btn-primary btn-sm" onClick={getAiSchedule} disabled={loading}>{loading?"Составляю...":"✦ Составить план недели"}</button>
-            {aiText&&<button className="btn btn-ghost btn-sm" onClick={()=>setAiText("")}>Обновить</button>}
+        {!aiText&&!loading&&(
+          <div style={{textAlign:"center",padding:"20px 0"}}>
+            <div style={{fontSize:40,marginBottom:12}}>🗓️</div>
+            <div style={{fontSize:15,color:T.text2,marginBottom:16}}>AI составит оптимальное расписание на неделю с учётом работы, практик и хронотипа</div>
+            <button className="btn btn-primary" onClick={getAiSchedule}>✦ Составить расписание</button>
           </div>
-        </div>
-        <AiBox kb={kb} prompt={`Как ${profile.name||"мне"} всё успевать и не надрываться? Хронотип: ${profile.chronotype||"—"}, работа до ${profile.workEnd||"18:00"}, подъём ${profile.wake||"7:00"}. Меня истощает: ${(profile.workDrain||[]).join(",")||"—"}, стрессоры: ${(profile.stressors||[]).join(",")||"—"}. Восстанавливаюсь через: ${(profile.recovery||[]).join(",")||"—"}. Тип планирования: ${profile.planningStyle||"—"}. Дай конкретные советы по управлению энергией именно для моего типа.`} label="Как всё успевать" btnText="Как организовать день" placeholder="Помогу найти твой ритм и баланс..."/>
+        )}
+        {loading&&<div style={{textAlign:"center",padding:"20px",color:T.text3,fontStyle:"italic"}}>Составляю расписание...</div>}
+        {aiText&&<>
+          <div className="card"><div className="ai-text">{aiText}</div></div>
+          <button className="btn btn-ghost" style={{marginTop:8}} onClick={()=>{setAiText("");getAiSchedule();}}>↻ Пересоставить</button>
+        </>}
       </>}
     </div>
   );
-}
-
-// ══════════════════════════════════════════════════════════════
-//  WORK
-// ══════════════════════════════════════════════════════════════
-
-// ══════════════════════════════════════════════════════════════
-//  ПРОФЕССИОНАЛЬНЫЕ ДЕДЛАЙНЫ ПО ОТЧЁТНОСТИ
-// ══════════════════════════════════════════════════════════════
-function getProfDeadlines(profile) {
-  const prof = profile.profDeadlines || "";
-  const year = new Date().getFullYear(); // 2026
-  const tasks = [];
-
-  // Создаёт дедлайн в ТЕКУЩЕМ году — не сдвигает в будущее
-  // Прошедшие → "Просроченные", будущие → "Ближайшие"
-  const mk = (title, month, day, note="", organ="") => ({
-    id: Date.now()+Math.random(),
-    title, section:"work", freq:"once", priority:"h",
-    deadline: new Date(year, month-1, day).toISOString().split("T")[0],
-    notes: note, organ,
-    lastDone:"", doneDate:"", preferredTime:"09:00", isDeadline:true,
-  });
-
-  // ══════════════════════════════════════════════════════
-  //  БУХГАЛТЕР / ИП — КАЗАХСТАН 2026
-  //  Источник: mybuh.kz/calendar/tax (официальный налоговый календарь КЗ)
-  //  НК РК: ст.209 (ФНО 200), ст.424 (НДС), ст.305 (КПН авансы)
-  //  ст.315 (КПН год), ст.524 (имущество/земля)
-  //
-  //  ТОЧНЫЕ СРОКИ С УЧЁТОМ ВЫХОДНЫХ И ПРАЗДНИКОВ 2026:
-  //
-  //  ФНО 200.00 — СДАЧА (до 15-го 2-го месяца после квартала):
-  //    1кв → 15.05 (пт) ✓
-  //    2кв → 15.08 (сб) → ПЕРЕНОС на 17.08 (пн)
-  //    3кв → 15.11 (вс) → ПЕРЕНОС на 16.11 (пн)
-  //    4кв → 15.02.2027 (пн) ✓
-  //
-  //  ФНО 300.00 — СДАЧА (те же даты что и ФНО 200):
-  //    1кв → 15.05.2026 | 2кв → 17.08 | 3кв → 16.11 | 4кв → 15.02.2027
-  //
-  //  УПЛАТА ИПН+ОПВ+ОСМС+СО+НДС (до 25-го 2-го месяца после квартала):
-  //    1кв → 25.05 (пн) ✓ | 2кв → 25.08 (вт) ✓
-  //    3кв → 25.11 (ср) ✓ | 4кв → 25.02.2027 (чт) ✓
-  //
-  //  КПН АВАНСЫ — 25-го каждого месяца (с учётом переносов):
-  //    июль → 27.07 (пн, т.к. 25.07 — сб)
-  //    октябрь → 27.10 (вт, т.к. 25.10 — праздник День Республики)
-  //    остальные месяцы — без переноса
-  //
-  //  ПРАЗДНИКИ 2026 влияющие на сроки:
-  //    9 мая (сб) → перенос на 11 мая (пн)
-  //    27 мая — Курбан-айт (ср) — но не влияет на 25 мая
-  //    30 авг (вс) → перенос на 31 авг (пн) — не влияет на 25 авг
-  //    25 окт — День Республики → перенос КПН аванса на 27 окт
-  // ══════════════════════════════════════════════════════
-  if(prof.includes("Бухгалтер") || prof.includes("ИП")) {
-
-    // ── МАЙ 2026 ─────────────────────────────────────
-    tasks.push(mk("🏛 КГД: ФНО 200.00 — СДАЧА (1 кв. 2026)",          5, 15,
-      "Декларация по ИПН, ОПВ, ВОСМС, ООСМС, СО за янв-март. Срок: 15 мая (пт). Ст.209 НК РК","КГД"));
-    tasks.push(mk("🏛 КГД: ФНО 300.00 — СДАЧА (1 кв. 2026)",          5, 15,
-      "Декларация по НДС за янв-март. Срок: 15 мая (пт). Ст.424 НК РК. Нельзя сдать раньше 15 апреля","КГД"));
-    tasks.push(mk("💰 КГД: УПЛАТА ИПН+ОПВ+ОСМС+СО (1 кв. 2026)",     5, 25,
-      "Уплата налогов из ФНО 200.00 за янв-март. Срок: 25 мая (пн)","КГД"));
-    tasks.push(mk("💰 КГД: УПЛАТА НДС (1 кв. 2026)",                   5, 25,
-      "Уплата НДС по ФНО 300.00 за янв-март. Срок: 25 мая (пн). Ст.424 НК РК","КГД"));
-    tasks.push(mk("💰 КГД: Аванс налог на имущество/землю (2-й срок)", 5, 25,
-      "2-й из 4 авансовых платежей — 1/4 от годовой суммы. 25 мая (пн). Ст.512, 523 НК РК","КГД"));
-    tasks.push(mk("💰 КГД: Аванс по КПН — май 2026",                   5, 25,
-      "Ежемесячный аванс по КПН. 25 мая (пн). Ст.305 НК РК","КГД"));
-    tasks.push(mk("🏛 КГД: ФНО 150.00 — Трансфертное ценообразование", 5, 31,
-      "При наличии контролируемых сделок с нерезидентами. Ст.295 НК РК","КГД"));
-
-    // ── ИЮНЬ 2026 ────────────────────────────────────
-    tasks.push(mk("💰 КГД: Аванс по КПН — июнь 2026",                  6, 25,
-      "Ежемесячный аванс по КПН. 25 июня (чт)","КГД"));
-    tasks.push(mk("📋 Годовое собрание ТОО / акционеров АО",           6, 30,
-      "Не позднее 6 месяцев после конца фин. года. ЗРК «О ТОО» ст.45","МЮ"));
-
-    // ── ИЮЛЬ 2026 ────────────────────────────────────
-    tasks.push(mk("📊 БНС: Форма 1-Т (2 кв. 2026) — Труд и зарплата", 7, 10,
-      "Численность и з/п за апрель-июнь 2026","БНС"));
-    tasks.push(mk("📊 БНС: Форма 1-П — Промышленность (июль 2026)",    7, 10,
-      "Ежемесячный отчёт за июль 2026 (для пром. предприятий)","БНС"));
-    // 25 июля — суббота → перенос на 27 июля (пн)
-    tasks.push(mk("💰 КГД: Аванс по КПН — июль 2026",                  7, 27,
-      "Ежемесячный аванс по КПН. Перенос: 25.07 (сб) → 27.07 (пн). Ст.305 НК РК","КГД"));
-
-    // ── АВГУСТ 2026 ───────────────────────────────────
-    tasks.push(mk("📊 БНС: Форма 1-П — Промышленность (август 2026)",  8, 10,
-      "Ежемесячный отчёт за август 2026","БНС"));
-    // 15 августа — суббота → перенос на 17 августа (пн)
-    tasks.push(mk("🏛 КГД: ФНО 200.00 — СДАЧА (2 кв. 2026)",          8, 17,
-      "Декларация по ИПН, ОПВ, ВОСМС, ООСМС, СО за апр-июнь. Перенос: 15.08 (сб) → 17.08 (пн)","КГД"));
-    tasks.push(mk("🏛 КГД: ФНО 300.00 — СДАЧА (2 кв. 2026)",          8, 17,
-      "Декларация по НДС за апр-июнь. Перенос: 15.08 (сб) → 17.08 (пн)","КГД"));
-    tasks.push(mk("🏛 КГД: ФНО 910.00 — СДАЧА (1 п/г 2026)",          8, 17,
-      "Упрощённая декларация за янв-июнь. Перенос: 15.08 (сб) → 17.08 (пн). Ст.688 НК РК","КГД"));
-    tasks.push(mk("💰 КГД: УПЛАТА ИПН+ОПВ+ОСМС+СО (2 кв. 2026)",     8, 25,
-      "Уплата налогов из ФНО 200.00 за апр-июнь. 25 авг (вт)","КГД"));
-    tasks.push(mk("💰 КГД: УПЛАТА НДС (2 кв. 2026)",                   8, 25,
-      "Уплата НДС по ФНО 300.00 за апр-июнь. 25 авг (вт)","КГД"));
-    tasks.push(mk("💰 КГД: УПЛАТА по ФНО 910.00 (1 п/г 2026)",        8, 25,
-      "Уплата ИПН/КПН + соцналог по упрощённой декларации. 25 авг (вт)","КГД"));
-    tasks.push(mk("💰 КГД: Аванс налог на имущество/землю (3-й срок)", 8, 25,
-      "3-й из 4 авансовых платежей. 25 авг (вт). Ст.512, 523 НК РК","КГД"));
-    tasks.push(mk("💰 КГД: Аванс по КПН — август 2026",                8, 25,
-      "Ежемесячный аванс по КПН. 25 авг (вт)","КГД"));
-
-    // ── СЕНТЯБРЬ 2026 ─────────────────────────────────
-    tasks.push(mk("📋 Воинский учёт — годовая сверка",                  9,  1,
-      "Ежегодная сверка списков с военкоматом (ВЦУ)","HR"));
-    tasks.push(mk("💰 КГД: Аванс по КПН — сентябрь 2026",              9, 25,
-      "Ежемесячный аванс по КПН. 25 сен (пт)","КГД"));
-
-    // ── ОКТЯБРЬ 2026 ──────────────────────────────────
-    tasks.push(mk("📊 БНС: Форма 1-П — Промышленность (октябрь 2026)", 10, 10,
-      "Ежемесячный отчёт за октябрь 2026","БНС"));
-    tasks.push(mk("📊 БНС: Форма 1-Т (3 кв. 2026) — Труд и зарплата", 10, 10,
-      "Численность и з/п за июль-сентябрь 2026","БНС"));
-    // 25 октября — День Республики (праздник) → перенос на 27 октября (вт)
-    tasks.push(mk("💰 КГД: Аванс по КПН — октябрь 2026",               10, 27,
-      "Ежемесячный аванс по КПН. Перенос: 25.10 (День Республики) → 27.10 (вт). Ст.305 НК РК","КГД"));
-
-    // ── НОЯБРЬ 2026 ───────────────────────────────────
-    tasks.push(mk("📊 БНС: Форма 1-П — Промышленность (ноябрь 2026)",  11, 10,
-      "Ежемесячный отчёт за ноябрь 2026","БНС"));
-    // 15 ноября — воскресенье → перенос на 16 ноября (пн)
-    tasks.push(mk("🏛 КГД: ФНО 200.00 — СДАЧА (3 кв. 2026)",          11, 16,
-      "Декларация за июль-сентябрь. Перенос: 15.11 (вс) → 16.11 (пн). Ст.209 НК РК","КГД"));
-    tasks.push(mk("🏛 КГД: ФНО 300.00 — СДАЧА (3 кв. 2026)",          11, 16,
-      "Декларация по НДС за июль-сентябрь. Перенос: 15.11 (вс) → 16.11 (пн). Ст.424 НК РК","КГД"));
-    tasks.push(mk("💰 КГД: УПЛАТА ИПН+ОПВ+ОСМС+СО (3 кв. 2026)",     11, 25,
-      "Уплата налогов из ФНО 200.00 за июль-сен. 25 ноя (ср)","КГД"));
-    tasks.push(mk("💰 КГД: УПЛАТА НДС (3 кв. 2026)",                   11, 25,
-      "Уплата НДС по ФНО 300.00 за июль-сен. 25 ноя (ср)","КГД"));
-    tasks.push(mk("💰 КГД: Аванс налог на имущество/землю (4-й срок)", 11, 25,
-      "Последний (4-й) авансовый платёж. 25 ноя (ср). Ст.512, 523 НК РК","КГД"));
-    tasks.push(mk("💰 КГД: Аванс по КПН — ноябрь 2026",               11, 25,
-      "Ежемесячный аванс по КПН. 25 ноя (ср)","КГД"));
-
-    // ── ДЕКАБРЬ 2026 ──────────────────────────────────
-    tasks.push(mk("🏛 КГД: Проверка и продление лицензий",             12,  1,
-      "Заблаговременно проверить сроки всех лицензий и разрешений","КГД"));
-    tasks.push(mk("📋 График отпусков на 2027 год",                    12, 15,
-      "Утвердить до 15 декабря. ТК РК ст.93","HR"));
-    tasks.push(mk("💰 КГД: Аванс по КПН — декабрь 2026",              12, 25,
-      "Ежемесячный аванс по КПН. 25 дек (пт)","КГД"));
-  }
-  // ══════════════════════════════════════════════════════
-  //  HR / КАДРЫ — КАЗАХСТАН 2026
-  // ══════════════════════════════════════════════════════
-  if(prof.includes("HR") || prof.includes("Кадры")) {
-    // ФНО 200 только если Бухгалтер не выбран (иначе дубль)
-    if(!prof.includes("Бухгалтер") && !prof.includes("ИП")) {
-      tasks.push(mk("🏛 КГД: ФНО 200.00 — СДАЧА (1 кв. 2026)",  5, 15, "Зарплатная декларация за янв-март 2026. Ст.209 НК РК","КГД"));
-      tasks.push(mk("💰 КГД: ФНО 200.00 — УПЛАТА (1 кв. 2026)", 5, 25, "Уплата ИПН + ОПВ + ОСМС + СО за янв-март 2026","КГД"));
-      tasks.push(mk("🏛 КГД: ФНО 200.00 — СДАЧА (2 кв. 2026)",  8, 15, "Зарплатная декларация за апр-июнь 2026","КГД"));
-      tasks.push(mk("💰 КГД: ФНО 200.00 — УПЛАТА (2 кв. 2026)", 8, 25, "Уплата ИПН + ОПВ + ОСМС + СО за апр-июнь 2026","КГД"));
-      tasks.push(mk("🏛 КГД: ФНО 200.00 — СДАЧА (3 кв. 2026)", 11, 15, "Зарплатная декларация за июль-сен 2026","КГД"));
-      tasks.push(mk("💰 КГД: ФНО 200.00 — УПЛАТА (3 кв. 2026)",11, 25, "Уплата ИПН + ОПВ + ОСМС + СО за июль-сен 2026","КГД"));
-    }
-    tasks.push(mk("📊 БНС: Форма 1-Т (2 кв. 2026) — Труд и зарплата",  7, 10, "Численность и з/п за 2 квартал 2026","БНС"));
-    tasks.push(mk("📋 Воинский учёт — годовая сверка",                  9,  1, "Сверка с военкоматом (ВЦУ). ЗРК «О воинской обязанности» ст.22","HR"));
-    tasks.push(mk("📊 БНС: Форма 1-Т (3 кв. 2026) — Труд и зарплата", 10, 10, "Численность и з/п за 3 квартал 2026","БНС"));
-    tasks.push(mk("📋 График отпусков на 2027 год",                    12, 15, "Утвердить до 15 декабря. ТК РК ст.93","HR"));
-  }
-
-  // ══════════════════════════════════════════════════════
-  //  ЮРИСТ — КАЗАХСТАН 2026
-  // ══════════════════════════════════════════════════════
-  if(prof.includes("Юрист")) {
-    tasks.push(mk("📋 Годовое собрание ТОО / акционеров АО",           6, 30,
-      "Не позднее 6 месяцев после конца фин. года. ЗРК «О ТОО» ст.45","МЮ"));
-    tasks.push(mk("🏛 КГД: Проверка и продление лицензий",            12,  1,
-      "Заблаговременно проверить сроки лицензий","КГД"));
-  }
-
-  // ══════════════════════════════════════════════════════
-  //  ВРАЧ / МЕД. РАБОТНИК — КАЗАХСТАН 2026
-  // ══════════════════════════════════════════════════════
-  if(prof.includes("Врач") || prof.includes("Мед")) {
-    tasks.push(mk("🏥 МЗ: Медстатистика (2 кв. 2026)",                 7, 10,
-      "Квартальный отчёт в Минздрав за апрель-июнь 2026","МЗ"));
-    tasks.push(mk("💊 Наркотические средства — отчёт (2 кв. 2026)",    7, 10,
-      "В Комитет фармконтроля за 2 квартал 2026","КФК"));
-    tasks.push(mk("🏥 МЗ: Медстатистика (3 кв. 2026)",                10, 10,
-      "Квартальный отчёт в Минздрав за июль-сентябрь 2026","МЗ"));
-    tasks.push(mk("💊 Наркотические средства — отчёт (3 кв. 2026)",   10, 10,
-      "В Комитет фармконтроля за 3 квартал 2026","КФК"));
-    tasks.push(mk("📋 КККМФД: Сертификация специалиста (плановая)",    9,  1,
-      "Раз в 5 лет — подача документов в аттестационную комиссию","КККМФД"));
-  }
-
-  // ══════════════════════════════════════════════════════
-  //  ПЕДАГОГ — КАЗАХСТАН 2026
-  // ══════════════════════════════════════════════════════
-  if(prof.includes("Педагог")) {
-    tasks.push(mk("📚 МОН: Самоанализ за учебный год",                  6,  1,
-      "Годовой самоанализ педагога","МОН"));
-    tasks.push(mk("📚 МОН: Рабочие программы на учебный год",           9,  1,
-      "Сдать до начала нового учебного года","МОН"));
-    tasks.push(mk("📚 МОН: Итоговый отчёт 1-я четверть",              11,  5,
-      "Отчёт по итогам 1-й четверти 2026-2027 уч.года","МОН"));
-    tasks.push(mk("📊 БНС: Форма ОО-1 — Образовательная организация", 12, 20,
-      "Годовой статотчёт по образованию за 2026 год","БНС"));
-  }
-
-  // ══════════════════════════════════════════════════════
-  //  ГОССЛУЖАЩИЙ — КАЗАХСТАН 2026
-  // ══════════════════════════════════════════════════════
-  if(prof.includes("Госслужащий")) {
-    tasks.push(mk("📊 МФ: Отчёт об исполнении бюджета (2 кв. 2026)",   7, 15,
-      "Квартальный бюджетный отчёт в МФ РК","МФ"));
-    tasks.push(mk("📊 МФ: Отчёт об исполнении бюджета (3 кв. 2026)",  10, 15,
-      "Квартальный бюджетный отчёт в МФ РК","МФ"));
-    tasks.push(mk("🔍 АПК: Антикоррупционное уведомление",             10, 31,
-      "Ежегодное уведомление об отсутствии конфликта интересов","АПК"));
-  }
-
-  // Дедупликация по названию — на случай если выбраны несколько профессий
-  const seen = new Set();
-  return tasks.filter(t => { if(seen.has(t.title)) return false; seen.add(t.title); return true; });
 }
 
 
@@ -3265,24 +3211,27 @@ function WorkSection({profile,tasks,setTasks,today,kb,notify}) {
   const isWorkDay=(profile.workDaysList||[1,2,3,4,5]).includes(new Date().getDay());
   return(
     <div>
-      <div className="card card-accent">
-        <div className="card-hd"><div className="card-title">Моя работа</div></div>
-        <div className="g2">
-          <div className="pf-item"><div className="pf-l">Должность</div><div className="pf-v">{profile.profession||"—"}</div></div>
-          <div className="pf-item"><div className="pf-l">Сфера</div><div className="pf-v">{profile.jobSphere||"—"}</div></div>
-          <div className="pf-item"><div className="pf-l">Формат</div><div className="pf-v">{profile.workType||"—"}</div></div>
-          <div className="pf-item"><div className="pf-l">График</div>{editSchedule?(<div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}><input type="time" value={schedStart} onChange={e=>setSchedStart(e.target.value)} style={{padding:"4px 8px",background:"rgba(255,255,255,0.7)",border:"1px solid "+T.bdr,borderRadius:7,fontSize:15,color:T.text0,outline:"none",width:100}}/><span>–</span><input type="time" value={schedEnd} onChange={e=>setSchedEnd(e.target.value)} style={{padding:"4px 8px",background:"rgba(255,255,255,0.7)",border:"1px solid "+T.bdr,borderRadius:7,fontSize:15,color:T.text0,outline:"none",width:100}}/><button className="btn btn-primary btn-sm" style={{padding:"4px 10px"}} onClick={()=>{profile.workStart=schedStart;profile.workEnd=schedEnd;setEditSchedule(false);notify("График обновлён");}}>✓</button></div>):(<div style={{display:"flex",alignItems:"center",gap:8}}><div className="pf-v">{profile.workStart||"?"}–{profile.workEnd||"?"}</div><button className="btn btn-ghost btn-sm" style={{padding:"3px 8px",fontSize:11}} onClick={()=>setEditSchedule(true)}>✏️</button></div>)}</div>
+      <div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",background:"rgba(45,32,16,0.05)",borderRadius:10,marginBottom:10,flexWrap:"wrap"}}>
+        {profile.profession&&<span style={{fontSize:13,color:T.text1,fontWeight:500}}>💼 {profile.profession}</span>}
+        {profile.workType&&<span style={{fontSize:12,color:T.text3}}>· {profile.workType}</span>}
+        <span style={{fontSize:12,color:T.gold,marginLeft:"auto"}}>🕐 {editSchedule?(
+          <span style={{display:"inline-flex",gap:4,alignItems:"center"}}>
+            <input type="time" value={schedStart} onChange={e=>setSchedStart(e.target.value)} style={{width:80,fontSize:12,padding:"2px 4px",borderRadius:5,border:"1px solid "+T.bdr,background:"transparent",color:T.text0}}/>
+            <span>–</span>
+            <input type="time" value={schedEnd} onChange={e=>setSchedEnd(e.target.value)} style={{width:80,fontSize:12,padding:"2px 4px",borderRadius:5,border:"1px solid "+T.bdr,background:"transparent",color:T.text0}}/>
+            <button className="btn btn-primary btn-sm" style={{padding:"2px 8px",fontSize:11}} onClick={()=>{profile.workStart=schedStart;profile.workEnd=schedEnd;setEditSchedule(false);notify("График обновлён");}}>✓</button>
+          </span>
+        ):(
+          <span style={{cursor:"pointer"}} onClick={()=>setEditSchedule(true)}>{profile.workStart||"?"}–{profile.workEnd||"?"} ✏️</span>
+        )}</span>
+      </div>
+      {profile.commuteTime&&<div style={{fontSize:12,color:T.text3,marginBottom:8,paddingLeft:4}}>🚌 {profile.commuteTime} · {profile.commuteWay||""}</div>}
+      {profile.profDeadlines&&!profile.profDeadlines.includes("Нет")&&(
+        <div style={{marginBottom:10,padding:"8px 12px",background:"rgba(45,106,79,0.08)",borderRadius:10,display:"flex",alignItems:"center",justifyContent:"space-between",gap:10}}>
+          <div style={{fontSize:13,color:T.text1}}>{profile.profDeadlines} · Казахстан</div>
+          <button className="btn btn-primary btn-sm" style={{flexShrink:0,fontSize:12}} onClick={addDeadlines}>+ Дедлайны</button>
         </div>
-        {profile.commuteTime&&<div style={{marginTop:10,fontSize:13,color:T.text3}}>🚌 {profile.commuteTime} · {profile.commuteWay||""}</div>}
-        {profile.profDeadlines&&!profile.profDeadlines.includes("Нет")&&(
-          <div style={{marginTop:12,padding:"8px 14px",background:"rgba(45,106,79,0.08)",borderRadius:10,display:"flex",alignItems:"center",justifyContent:"space-between",gap:10}}>
-            <div>
-              <div style={{fontSize:12,color:T.text2,fontFamily:"'JetBrains Mono'",letterSpacing:1}}>ОТЧЁТНОСТЬ</div>
-              <div style={{fontSize:14,color:T.text1,marginTop:2}}>{profile.profDeadlines} · Казахстан</div>
-            </div>
-            <button className="btn btn-primary btn-sm" style={{flexShrink:0}} onClick={addDeadlines}>+ Дедлайны</button>
-          </div>
-        )}
+      )}
         {!isWorkDay&&<div style={{marginTop:12,padding:"8px 14px",background:"rgba(200,164,90,.08)",borderRadius:9,fontSize:14,color:T.gold,fontStyle:"italic"}}>Сегодня нерабочий день ✦ Отдыхай</div>}
       </div>
       {/* ── Менеджер дедлайнов ── */}
@@ -3758,13 +3707,10 @@ function HomeSection({profile,tasks,setTasks,today,kb,notify}) {
   const due=homeTasks.filter(t=>isDue(t,today));
   return(
     <div>
-      <div className="card card-accent">
-        <div className="g3">
-          <div className="pf-item"><div className="pf-l">Жильё</div><div className="pf-v">{profile.homeType||"—"} {profile.homeArea&&profile.homeArea+"м²"}</div></div>
-          <div className="pf-item"><div className="pf-l">Комнат</div><div className="pf-v">{profile.rooms||"—"}</div></div>
-          <div className="pf-item"><div className="pf-l">С кем</div><div className="pf-v" style={{fontSize:14}}>{(profile.livesWith||[]).join(", ")||"один(а)"}</div></div>
-        </div>
-        {(profile.cleanDays||[]).length>0&&<div style={{marginTop:10,fontSize:13,color:T.text3}}>✦ Дни уборки: {profile.cleanDays.join(", ")}</div>}
+      <div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",background:"rgba(45,32,16,0.05)",borderRadius:10,marginBottom:10,flexWrap:"wrap"}}>
+        {profile.homeType&&<span style={{fontSize:12,color:T.text2}}>🏠 {profile.homeType}{profile.homeArea?" "+profile.homeArea+"м²":""}</span>}
+        {(profile.livesWith||[]).length>0&&<span style={{fontSize:12,color:T.text3}}>· {(profile.livesWith||[]).join(", ")}</span>}
+        {(profile.cleanDays||[]).length>0&&<span style={{fontSize:12,color:T.gold,marginLeft:"auto"}}>🧹 {profile.cleanDays.join(", ")}</span>}
       </div>
       <AiBox kb={kb} prompt={`Советы по домашним делам для ${profile.homeType||"квартиры"} ${profile.homeArea||"?"}м² где живут: ${(profile.livesWith||[]).join(",")||"я один(а)"}. Питомцы: ${(profile.pets||[]).map(p=>p.name).join(",")||"нет"}. Дни уборки по расписанию: ${(profile.cleanDays||[]).join(",")||"—"}. Я работаю до ${profile.workEnd||"18:00"} — дела планируй после этого. Тип личности: ${profile.planningStyle||"—"}. Что важнее всего сделать сегодня с учётом моего расписания?`} label="Быт и дом" btnText="Советы по быту" placeholder="Подскажу как организовать дом легко..."/>
       {homeTasks.length===0&&(
@@ -4026,7 +3972,7 @@ function ShoppingSection({profile,shopList,setShopList,kb,notify}) {
         const days={"Пн":1,"Вт":2,"Ср":3,"Чт":4,"Пт":5,"Сб":6,"Вс":0};
         const todayDay=new Date().getDay();
         const shopDayNum=days[profile.shopDay];
-        const isShopDay=shopDay!==undefined&&todayDay===shopDayNum;
+        const isShopDay=shopDayNum!==undefined&&todayDay===shopDayNum;
         const daysLeft=shopDayNum!==undefined?((shopDayNum-todayDay+7)%7||7):null;
         if(!profile.shopDay) return null;
         return(
