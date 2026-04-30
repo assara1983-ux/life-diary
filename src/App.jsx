@@ -3413,6 +3413,148 @@ function ScheduleSection({profile,tasks,setTasks,today,kb,notify}) {
 }
 
 
+// ══════════════════════════════════════════════════════════════
+//  ПРОФЕССИОНАЛЬНЫЕ ДЕДЛАЙНЫ — КАЗАХСТАН 2026
+// ══════════════════════════════════════════════════════════════
+function getProfDeadlines(profile) {
+  const prof = profile.profDeadlines||"";
+  const year = 2026;
+  const tasks = [];
+  const mk = (title, month, day, note="", organ="") => ({
+    id: Date.now()+Math.random(),
+    title, section:"work", freq:"once", priority:"h",
+    deadline: new Date(year, month-1, day).toISOString().split("T")[0],
+    notes: note, organ,
+    lastDone:"", doneDate:"", preferredTime:"09:00", isDeadline:true,
+  });
+
+  if(prof.includes("Бухгалтер") || prof.includes("ИП")) {
+    // ── МАЙ 2026 ─────────────────────────────────────
+    tasks.push(mk("🏛 КГД: ФНО 200.00 — СДАЧА (1 кв. 2026)",          5, 15,
+      "Декларация по ИПН, ОПВ, ВОСМС, ООСМС, СО за янв-март. Ст.209 НК РК","КГД"));
+    tasks.push(mk("🏛 КГД: ФНО 300.00 — СДАЧА (1 кв. 2026)",          5, 15,
+      "Декларация по НДС за янв-март. Ст.424 НК РК","КГД"));
+    tasks.push(mk("💰 КГД: УПЛАТА ИПН+ОПВ+ОСМС+СО (1 кв. 2026)",     5, 25,
+      "Уплата налогов из ФНО 200.00 за янв-март","КГД"));
+    tasks.push(mk("💰 КГД: УПЛАТА НДС (1 кв. 2026)",                   5, 25,
+      "Уплата НДС по ФНО 300.00 за янв-март. Ст.424 НК РК","КГД"));
+    tasks.push(mk("💰 КГД: Аванс налог на имущество/землю (2-й срок)", 5, 25,
+      "1/4 от годовой суммы. Ст.512, 523 НК РК","КГД"));
+    tasks.push(mk("💰 КГД: Аванс по КПН — май 2026",                   5, 25,
+      "Ежемесячный аванс. Ст.305 НК РК","КГД"));
+    tasks.push(mk("🏛 КГД: ФНО 150.00 — Трансфертное ценообразование", 5, 31,
+      "При наличии контролируемых сделок. Ст.295 НК РК","КГД"));
+    // ── ИЮНЬ ──────────────────────────────────────────
+    tasks.push(mk("💰 КГД: Аванс по КПН — июнь 2026",                  6, 25, "","КГД"));
+    tasks.push(mk("📋 Годовое собрание ТОО / АО",                      6, 30,
+      "Не позднее 6 мес. после конца фин. года. ЗРК «О ТОО» ст.45","МЮ"));
+    // ── ИЮЛЬ ──────────────────────────────────────────
+    tasks.push(mk("📊 БНС: Форма 1-Т (2 кв.) — Труд и зарплата",       7, 10, "","БНС"));
+    tasks.push(mk("💰 КГД: Аванс по КПН — июль 2026",                  7, 27,
+      "Перенос: 25.07 (сб) → 27.07 (пн)","КГД"));
+    // ── АВГУСТ ────────────────────────────────────────
+    tasks.push(mk("🏛 КГД: ФНО 200.00 — СДАЧА (2 кв. 2026)",          8, 17,
+      "Перенос: 15.08 (сб) → 17.08 (пн). Ст.209 НК РК","КГД"));
+    tasks.push(mk("🏛 КГД: ФНО 300.00 — СДАЧА (2 кв. 2026)",          8, 17,
+      "Перенос: 15.08 (сб) → 17.08 (пн). Ст.424 НК РК","КГД"));
+    tasks.push(mk("🏛 КГД: ФНО 910.00 — СДАЧА (1 п/г 2026)",          8, 17,
+      "Упрощённая декларация. Перенос → 17.08. Ст.688 НК РК","КГД"));
+    tasks.push(mk("💰 КГД: УПЛАТА ИПН+ОПВ+ОСМС+СО (2 кв. 2026)",     8, 25, "","КГД"));
+    tasks.push(mk("💰 КГД: УПЛАТА НДС (2 кв. 2026)",                   8, 25, "","КГД"));
+    tasks.push(mk("💰 КГД: УПЛАТА по ФНО 910.00 (1 п/г 2026)",        8, 25, "","КГД"));
+    tasks.push(mk("💰 КГД: Аванс налог на имущество/землю (3-й срок)", 8, 25, "","КГД"));
+    tasks.push(mk("💰 КГД: Аванс по КПН — август 2026",                8, 25, "","КГД"));
+    // ── СЕНТЯБРЬ ──────────────────────────────────────
+    tasks.push(mk("💰 КГД: Аванс по КПН — сентябрь 2026",              9, 25, "","КГД"));
+    // ── ОКТЯБРЬ ───────────────────────────────────────
+    tasks.push(mk("📊 БНС: Форма 1-Т (3 кв.) — Труд и зарплата",      10, 10, "","БНС"));
+    tasks.push(mk("💰 КГД: Аванс по КПН — октябрь 2026",               10, 27,
+      "Перенос: 25.10 (День Республики) → 27.10 (вт)","КГД"));
+    // ── НОЯБРЬ ────────────────────────────────────────
+    tasks.push(mk("🏛 КГД: ФНО 200.00 — СДАЧА (3 кв. 2026)",          11, 16,
+      "Перенос: 15.11 (вс) → 16.11 (пн). Ст.209 НК РК","КГД"));
+    tasks.push(mk("🏛 КГД: ФНО 300.00 — СДАЧА (3 кв. 2026)",          11, 16,
+      "Перенос: 15.11 (вс) → 16.11 (пн). Ст.424 НК РК","КГД"));
+    tasks.push(mk("💰 КГД: УПЛАТА ИПН+ОПВ+ОСМС+СО (3 кв. 2026)",     11, 25, "","КГД"));
+    tasks.push(mk("💰 КГД: УПЛАТА НДС (3 кв. 2026)",                   11, 25, "","КГД"));
+    tasks.push(mk("💰 КГД: Аванс налог на имущество/землю (4-й срок)", 11, 25, "","КГД"));
+    tasks.push(mk("💰 КГД: Аванс по КПН — ноябрь 2026",               11, 25, "","КГД"));
+    // ── ДЕКАБРЬ ───────────────────────────────────────
+    tasks.push(mk("🏛 КГД: Проверка и продление лицензий",             12,  1, "","КГД"));
+    tasks.push(mk("📋 График отпусков на 2027 год",                    12, 15,
+      "ТК РК ст.93","HR"));
+    tasks.push(mk("💰 КГД: Аванс по КПН — декабрь 2026",              12, 25, "","КГД"));
+  }
+
+  if(prof.includes("HR") || prof.includes("Кадры")) {
+    if(!prof.includes("Бухгалтер")&&!prof.includes("ИП")) {
+      tasks.push(mk("🏛 КГД: ФНО 200.00 — СДАЧА (1 кв.)",  5, 15, "","КГД"));
+      tasks.push(mk("💰 КГД: ФНО 200.00 — УПЛАТА (1 кв.)", 5, 25, "","КГД"));
+      tasks.push(mk("🏛 КГД: ФНО 200.00 — СДАЧА (2 кв.)",  8, 17, "","КГД"));
+      tasks.push(mk("💰 КГД: ФНО 200.00 — УПЛАТА (2 кв.)", 8, 25, "","КГД"));
+      tasks.push(mk("🏛 КГД: ФНО 200.00 — СДАЧА (3 кв.)", 11, 16, "","КГД"));
+      tasks.push(mk("💰 КГД: ФНО 200.00 — УПЛАТА (3 кв.)",11, 25, "","КГД"));
+    }
+    tasks.push(mk("📊 БНС: Форма 1-Т (2 кв.)",  7, 10, "","БНС"));
+    tasks.push(mk("📋 Воинский учёт — годовая сверка", 9, 1, "","HR"));
+    tasks.push(mk("📊 БНС: Форма 1-Т (3 кв.)", 10, 10, "","БНС"));
+    tasks.push(mk("📋 График отпусков на 2027 год", 12, 15, "ТК РК ст.93","HR"));
+  }
+
+  if(prof.includes("Юрист")) {
+    tasks.push(mk("📋 Годовое собрание ТОО / АО", 6, 30, "ЗРК «О ТОО» ст.45","МЮ"));
+    tasks.push(mk("🏛 КГД: Проверка лицензий", 12, 1, "","КГД"));
+  }
+
+  if(prof.includes("Врач")||prof.includes("Мед")) {
+    tasks.push(mk("🏥 МЗ: Медстатистика (2 кв.)",  7, 10, "","МЗ"));
+    tasks.push(mk("🏥 МЗ: Медстатистика (3 кв.)", 10, 10, "","МЗ"));
+  }
+
+  if(prof.includes("Педагог")) {
+    tasks.push(mk("📚 МОН: Рабочие программы на учебный год", 9, 1, "","МОН"));
+    tasks.push(mk("📚 МОН: Итоговый отчёт 1-я четверть",    11, 5, "","МОН"));
+  }
+
+  if(prof.includes("Госслужащий")) {
+    tasks.push(mk("📊 МФ: Отчёт об исполнении бюджета (2 кв.)",  7, 15, "","МФ"));
+    tasks.push(mk("📊 МФ: Отчёт об исполнении бюджета (3 кв.)", 10, 15, "","МФ"));
+    tasks.push(mk("🔍 АПК: Антикоррупционное уведомление",       10, 31, "","АПК"));
+  }
+
+  // Дедупликация
+  const seen = new Set();
+  return tasks.filter(t => { if(seen.has(t.title)) return false; seen.add(t.title); return true; });
+}
+
+// Компактная строка дедлайна
+function DlRow({t, today, setTasks, setEditDl, setAddDlModal}) {
+  const dl = t.deadline ? new Date(t.deadline) : null;
+  const daysLeft = dl ? Math.ceil((dl - new Date()) / 86400000) : null;
+  const isOver = t.deadline && t.deadline < today;
+  return(
+    <div style={{display:"flex",alignItems:"center",gap:8,padding:"7px 12px",borderBottom:"1px solid "+T.bdrS}}>
+      <div className={"chk"+(t.doneDate===today?" done":"")} style={{flexShrink:0,width:18,height:18,fontSize:11}}
+        onClick={()=>setTasks(p=>p.map(x=>x.id===t.id?{...x,doneDate:x.doneDate===today?null:today,lastDone:x.doneDate===today?x.lastDone:today}:x))}>
+        {t.doneDate===today?"✓":""}
+      </div>
+      <div style={{flex:1,minWidth:0}}>
+        <div style={{fontSize:13,color:t.doneDate===today?T.text3:T.text0,textDecoration:t.doneDate===today?"line-through":"none",lineHeight:1.3}}>
+          {t.title.replace(/^[📋🏛🏦📊🔍💰🔒]+\s*/,"")}
+        </div>
+        {t.notes&&<div style={{fontSize:11,color:T.text3,marginTop:1}}>{t.notes}</div>}
+      </div>
+      {dl&&<div style={{fontSize:11,color:isOver?T.danger:daysLeft<=3?T.warn:T.text3,fontFamily:"'JetBrains Mono'",flexShrink:0,fontWeight:isOver||daysLeft<=3?700:400}}>
+        {isOver?"просроч":daysLeft===0?"сегодня":daysLeft===1?"завтра":dl.toLocaleDateString("ru-RU",{day:"numeric",month:"short"})}
+      </div>}
+      <div className="ico-btn" style={{fontSize:11,color:T.teal,opacity:.6,flexShrink:0}}
+        onClick={()=>{setEditDl(t);setAddDlModal(true);}}>✏️</div>
+      <div className="ico-btn danger" style={{fontSize:11,flexShrink:0}}
+        onClick={()=>setTasks(p=>p.filter(x=>x.id!==t.id))}>✕</div>
+    </div>
+  );
+}
+
 function WorkSection({profile,tasks,setTasks,today,kb,notify}) {
   const [modal,setModal]=useState(null);
   const gp = genderPrompt(profile);
@@ -3725,79 +3867,148 @@ function WorkSection({profile,tasks,setTasks,today,kb,notify}) {
           </div>
         );
       })()}
-      <AiBox kb={kb} prompt={`${gp.address}. Как ${profile.profession||"мне"} организовать этот рабочий день? ${(profile.workDrain||[]).join(",")||"—"}, вдохновляет: ${profile.workInspire||"—"}. Дай 3-5 конкретных совета для моего типа личности.`} label="Рабочий день" btnText="Совет по дню" placeholder="Помогу сделать рабочий день продуктивнее..."/>
+      <AiBox kb={kb} prompt={`${gp.address}. Как ${profile.profession||"мне"} организовать этот рабочий день? Вдохновляет: ${profile.workInspire||"—"}. Дай 3 конкретных совета.`} label="Рабочий день" btnText="Совет по дню" placeholder="Помогу сделать рабочий день продуктивнее..."/>
 
-      {/* ── Рабочие задачи по подразделам ── */}
+      {/* ── Дедлайны — компактный вид ── */}
       {(()=>{
-        const govTasks     = workTasks.filter(t=>t.isDeadline && t.organ && !["ВНУТР","HR","внутр"].includes(t.organ));
-        const internalTasks= workTasks.filter(t=>!t.isDeadline || t.organ==="HR");
-        const paymentTasks = workTasks.filter(t=>t.isDeadline && t.title?.startsWith("💰"));
-
-        const renderSubTask=(task)=>(
-          <div key={task.id} style={{display:"flex",alignItems:"flex-start",gap:10,padding:"10px 0",borderBottom:"1px solid "+T.bdrS}}>
-            <div className={"chk"+(task.doneDate===today?" done":"")} style={{flexShrink:0,marginTop:2}}
-              onClick={()=>setTasks(p=>p.map(t=>t.id===task.id?{...t,doneDate:t.doneDate===today?null:today,lastDone:t.doneDate===today?t.lastDone:today}:t))}>
-              {task.doneDate===today?"✓":""}
-            </div>
-            <div style={{flex:1,minWidth:0}}>
-              <div style={{fontSize:15,color:task.doneDate===today?T.text3:T.text0,textDecoration:task.doneDate===today?"line-through":"none",lineHeight:1.3}}>{task.title.replace(/^[📋🏛🏦📊🔍💰🔒]+\s*/,"")}</div>
-              {task.notes&&<div style={{fontSize:12,color:T.text3,marginTop:2}}>{task.notes}</div>}
-              {task.deadline&&(()=>{
-                const dl=new Date(task.deadline);
-                const daysLeft=Math.ceil((dl-new Date())/86400000);
-                const isOver=task.deadline<today;
-                return <div style={{fontSize:12,marginTop:3,color:isOver?T.danger:daysLeft<=3?T.warn:T.text3,fontFamily:"'JetBrains Mono'",fontWeight:isOver||daysLeft<=3?600:400}}>
-                  {isOver?"⚠️ Просрочен":daysLeft===0?"🔴 Сегодня!":daysLeft===1?"🟡 Завтра":daysLeft<=3?"🟡 "+daysLeft+" дн.":"📅 "+dl.toLocaleDateString("ru-RU",{day:"numeric",month:"short"})}
-                </div>;
-              })()}
-            </div>
-            <div style={{display:"flex",gap:4,flexShrink:0}}>
-              <div className="ico-btn" style={{color:T.teal,opacity:.7}} onClick={()=>setModal(task)}>✏️</div>
-              <div className="ico-btn danger" onClick={()=>setTasks(p=>p.filter(t=>t.id!==task.id))}>✕</div>
-            </div>
+        const allDl = workTasks.filter(t=>t.isDeadline).sort((a,b)=>a.deadline?.localeCompare(b.deadline||"")||0);
+        if(!allDl.length && !profile.profDeadlines?.includes("Бухг") && !profile.profDeadlines?.includes("ИП")) return null;
+        if(!allDl.length) return(
+          <div style={{padding:"12px 14px",background:"rgba(45,106,79,0.07)",borderRadius:12,marginBottom:10,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+            <div style={{fontSize:13,color:T.text2}}>📋 Дедлайны не загружены</div>
+            <button className="btn btn-primary btn-sm" onClick={addDeadlines}>+ Загрузить</button>
           </div>
         );
+        const upcoming = allDl.filter(t=>!t.doneDate&&(!t.deadline||t.deadline>=today));
+        const overdue  = allDl.filter(t=>!t.doneDate&&t.deadline&&t.deadline<today);
+        const done     = allDl.filter(t=>t.doneDate).length;
 
-        const SubSection=({title,emoji,color,items,onAdd,emptyText})=>{
-          const doneCount=items.filter(t=>t.doneDate===today).length;
-          return(
-            <div className="card" style={{marginBottom:12,borderLeft:"3px solid "+color}}>
-              <div className="card-hd">
-                <div style={{display:"flex",alignItems:"center",gap:8}}>
-                  <span style={{fontSize:18}}>{emoji}</span>
-                  <div className="card-title">{title}</div>
-                  {items.length>0&&<span className="badge bm" style={{fontSize:11}}>{doneCount}/{items.length}</span>}
-                </div>
-                {onAdd&&<button className="btn btn-ghost btn-sm" onClick={e=>{e.stopPropagation();onAdd();}}
-                  style={{padding:"3px 10px",fontSize:12}}>+ Своя</button>}
-              </div>
-              {items.length===0&&<div style={{padding:"8px 0",fontSize:14,color:T.text3,fontStyle:"italic"}}>{emptyText}</div>}
-              {items.map(renderSubTask)}
-            </div>
-          );
-        };
+        // Группировка по органу
+        const byOrgan = {};
+        upcoming.concat(overdue).forEach(t=>{
+          const g = t.title.startsWith("💰")?"💰 Платежи":(t.organ==="БНС"?"📊 БНС":(t.organ==="HR"?"📋 Внутренние":"🏛 КГД"));
+          if(!byOrgan[g]) byOrgan[g]=[];
+          byOrgan[g].push(t);
+        });
+
+        const [expandedGroup, setExpandedGroup] = useState(null);
+        const organs = ["⚠️ Просроченные", ...Object.keys(byOrgan)].filter((k,i)=>i===0?overdue.length>0:true);
 
         return(
-          <>
-            <SubSection title="Отчётность в КГД" emoji="🏛" color={T.danger}
-              items={workTasks.filter(t=>t.isDeadline&&!t.title?.startsWith("💰")&&["КГД","ЕНПФ","ФСМС","МЮ","АФН","МФ","МЗ","МОН","АДГС","АПК","МЭПР","КФМ"].includes(t.organ||"")).sort((a,b)=>a.deadline?.localeCompare(b.deadline||"")||0)}
-              onAdd={()=>setModal({section:"work",isDeadline:true,organ:"КГД"})}
-              emptyText="Нет дедлайнов КГД. Нажми «+ Дедлайны» выше."/>
-            <SubSection title="Отчётность в БНС" emoji="📊" color="#1D4E6B"
-              items={workTasks.filter(t=>t.isDeadline&&!t.title?.startsWith("💰")&&t.organ==="БНС").sort((a,b)=>a.deadline?.localeCompare(b.deadline||"")||0)}
-              onAdd={()=>setModal({section:"work",isDeadline:true,organ:"БНС"})}
-              emptyText="Нет дедлайнов БНС."
-            />
-            <SubSection title="Платежи" emoji="💰" color={T.warn}
-              items={workTasks.filter(t=>t.isDeadline&&t.title?.startsWith("💰")).sort((a,b)=>a.deadline?.localeCompare(b.deadline||"")||0)}
-              emptyText="Нет платежей"/>
-            <SubSection title="Внутренние задачи" emoji="📋" color={T.teal}
-              items={workTasks.filter(t=>!t.isDeadline).sort((a,b)=>(a.priority==="h"?0:a.priority==="m"?1:2)-(b.priority==="h"?0:b.priority==="m"?1:2))}
-              onAdd={()=>setModal({})}
-              emptyText="Нет рабочих задач"/>
-          </>
+          <div style={{marginBottom:12}}>
+            {/* Шапка */}
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+              <span style={{fontSize:13,fontWeight:600,color:T.text0}}>Отчётность</span>
+              {overdue.length>0&&<span className="badge br">{overdue.length} просрочено</span>}
+              <span className="badge bm">{upcoming.length} предстоит</span>
+              {done>0&&<span className="badge bg">{done} сдано</span>}
+              <div style={{marginLeft:"auto",display:"flex",gap:6}}>
+                <button className="btn btn-ghost btn-sm" style={{fontSize:11,padding:"3px 8px"}} onClick={addDeadlines}>↻ Обновить</button>
+                <button className="btn btn-ghost btn-sm" style={{fontSize:11,padding:"3px 8px"}} onClick={()=>setAddDlModal(true)}>+</button>
+              </div>
+            </div>
+
+            {/* Просроченные */}
+            {overdue.length>0&&(
+              <div style={{marginBottom:6,borderRadius:10,border:"1px solid rgba(139,32,32,0.25)",overflow:"hidden"}}>
+                <div style={{padding:"8px 12px",background:"rgba(139,32,32,0.08)",display:"flex",justifyContent:"space-between",cursor:"pointer"}}
+                  onClick={()=>setExpandedGroup(expandedGroup==="overdue"?null:"overdue")}>
+                  <span style={{fontSize:12,color:T.danger,fontWeight:600}}>⚠️ Просроченные ({overdue.length})</span>
+                  <span style={{fontSize:12,color:T.text3}}>{expandedGroup==="overdue"?"▲":"▼"}</span>
+                </div>
+                {expandedGroup==="overdue"&&overdue.map(t=>(
+                  <DlRow key={t.id} t={t} today={today} setTasks={setTasks} setEditDl={setEditDl} setAddDlModal={setAddDlModal}/>
+                ))}
+              </div>
+            )}
+
+            {/* По органам */}
+            {Object.entries(byOrgan).map(([group, items])=>(
+              <div key={group} style={{marginBottom:6,borderRadius:10,border:"1px solid "+T.bdrS,overflow:"hidden"}}>
+                <div style={{padding:"8px 12px",background:"rgba(45,32,16,0.04)",display:"flex",justifyContent:"space-between",cursor:"pointer"}}
+                  onClick={()=>setExpandedGroup(expandedGroup===group?null:group)}>
+                  <div style={{display:"flex",alignItems:"center",gap:8}}>
+                    <span style={{fontSize:12,fontWeight:600,color:T.text0}}>{group}</span>
+                    <span style={{fontSize:11,color:T.text3}}>{items.length} дедл.</span>
+                    {items[0]?.deadline&&(
+                      <span style={{fontSize:11,color:T.gold,fontFamily:"'JetBrains Mono'"}}>
+                        ближ. {new Date(items[0].deadline).toLocaleDateString("ru-RU",{day:"numeric",month:"short"})}
+                      </span>
+                    )}
+                  </div>
+                  <span style={{fontSize:12,color:T.text3}}>{expandedGroup===group?"▲":"▼"}</span>
+                </div>
+                {expandedGroup===group&&items.map(t=>(
+                  <DlRow key={t.id} t={t} today={today} setTasks={setTasks} setEditDl={setEditDl} setAddDlModal={setAddDlModal}/>
+                ))}
+              </div>
+            ))}
+          </div>
         );
       })()}
+
+      {/* ── Внутренние задачи ── */}
+      {(()=>{
+        const internal = workTasks.filter(t=>!t.isDeadline);
+        return(
+          <div className="card" style={{marginBottom:12}}>
+            <div className="card-hd">
+              <span style={{fontSize:13,fontWeight:600,color:T.teal}}>📋 Задачи</span>
+              <button className="btn btn-ghost btn-sm" onClick={()=>setModal({})}>+</button>
+            </div>
+            {internal.length===0&&<div style={{fontSize:13,color:T.text3,fontStyle:"italic",paddingTop:4}}>Нет рабочих задач</div>}
+            {internal.map(t=>(
+              <div key={t.id} style={{display:"flex",alignItems:"center",gap:8,padding:"7px 0",borderBottom:"1px solid "+T.bdrS}}>
+                <div className={"chk"+(t.doneDate===today?" done":"")}
+                  onClick={()=>setTasks(p=>p.map(x=>x.id===t.id?{...x,doneDate:x.doneDate===today?null:today,lastDone:x.doneDate===today?x.lastDone:today}:x))}>
+                  {t.doneDate===today?"✓":""}
+                </div>
+                <span style={{flex:1,fontSize:14,color:t.doneDate===today?T.text3:T.text0,textDecoration:t.doneDate===today?"line-through":"none"}}>{t.title}</span>
+                <div className="ico-btn danger" style={{fontSize:12}} onClick={()=>setTasks(p=>p.filter(x=>x.id!==t.id))}>✕</div>
+              </div>
+            ))}
+          </div>
+        );
+      })()}
+
+      {profile.careerGoal&&<div className="card" style={{marginBottom:12,padding:"10px 14px"}}>
+        <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:4}}>КАРЬЕРНАЯ ЦЕЛЬ</div>
+        <div style={{fontFamily:"'Cormorant Infant',serif",fontSize:16,color:T.text0}}>{profile.careerGoal}</div>
+        {profile.workInspire&&<div style={{fontSize:12,color:T.text3,marginTop:3,fontStyle:"italic"}}>Вдохновляет: {profile.workInspire}</div>}
+      </div>}
+
+      {/* Модалка дедлайна */}
+      {addDlModal&&(
+        <div className="overlay" onClick={()=>{setAddDlModal(false);setEditDl(null);}}>
+          <div className="modal" onClick={e=>e.stopPropagation()}>
+            <span className="modal-x" onClick={()=>{setAddDlModal(false);setEditDl(null);}}>✕</span>
+            <div className="modal-title">{editDl?"Редактировать":"Добавить дедлайн"}</div>
+            <div className="fld"><label>Название</label>
+              <input value={editDl?editDl.title:newDl.title} onChange={e=>editDl?setEditDl(p=>({...p,title:e.target.value})):setNewDl(p=>({...p,title:e.target.value}))} placeholder="ФНО 200.00 за 1 квартал..."/>
+            </div>
+            <div className="fld"><label>Орган</label>
+              <div className="chips">{["КГД","БНС","ЕНПФ","ФСМС","МЮ","МФ","МЗ","МОН","Другой"].map(v=>(
+                <div key={v} className={"chip "+((editDl?editDl.organ:newDl.organ)===v?"on":"")} onClick={()=>editDl?setEditDl(p=>({...p,organ:v})):setNewDl(p=>({...p,organ:v}))}>{v}</div>
+              ))}</div>
+            </div>
+            <div className="fld"><label>Дата сдачи</label>
+              <input type="date" value={editDl?editDl.deadline:newDl.deadline} onChange={e=>editDl?setEditDl(p=>({...p,deadline:e.target.value})):setNewDl(p=>({...p,deadline:e.target.value}))}/>
+            </div>
+            <div className="fld"><label>Примечание</label>
+              <input value={editDl?editDl.notes:newDl.notes} onChange={e=>editDl?setEditDl(p=>({...p,notes:e.target.value})):setNewDl(p=>({...p,notes:e.target.value}))} placeholder="За какой период..."/>
+            </div>
+            <div className="modal-foot">
+              <button className="btn btn-ghost" onClick={()=>{setAddDlModal(false);setEditDl(null);}}>Отмена</button>
+              <button className="btn btn-primary" onClick={()=>{
+                if(editDl){setTasks(p=>p.map(x=>x.id===editDl.id?{...x,...editDl}:x));}
+                else{setTasks(p=>[...p,{...newDl,id:Date.now()+Math.random(),title:"📋 "+newDl.title,section:"work",freq:"once",priority:"h",lastDone:"",doneDate:"",preferredTime:"09:00",isDeadline:true}]);}
+                setAddDlModal(false);setEditDl(null);notify("Сохранено ✦");
+              }}>{editDl?"Сохранить":"Добавить"}</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {modal!==null&&<TaskModal task={modal?.id?modal:null} defaultSection="work" onSave={t=>{setTasks(p=>modal?.id?p.map(x=>x.id===t.id?t:x):[...p,t]);setModal(null);notify("Сохранено");}} onClose={()=>setModal(null)}/>}
       {profile.careerGoal&&<div className="card"><div className="card-hd"><div className="card-title">Карьерная цель</div></div><div style={{fontFamily:"'Cormorant Infant',serif",fontSize:18,color:T.text0}}>{profile.careerGoal}</div>{profile.workInspire&&<div style={{marginTop:6,fontSize:14,color:T.text3,fontStyle:"italic"}}>Вдохновляет: {profile.workInspire}</div>}</div>}
       {modal!==null&&<TaskModal task={modal.id?modal:null} defaultSection="work" onSave={t=>{setTasks(p=>modal.id?p.map(x=>x.id===t.id?t:x):[...p,t]);notify("Добавлено");}} onClose={()=>setModal(null)}/>}
     </div>
