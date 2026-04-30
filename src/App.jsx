@@ -5508,6 +5508,186 @@ function JournalSection({profile,journal,setJournal,today}) {
 }
 
 
+// ══════════════════════════════════════════════════════════════
+//  CAR SECTION
+// ══════════════════════════════════════════════════════════════
+function CarSection({profile,setProfile,tasks,setTasks,today,kb,notify}) {
+  const [editCar,setEditCar]=useState(false);
+  const [car,setCar]=useState({
+    model:profile.carModel||"",year:profile.carYear||"",
+    mileage:profile.carMileage||"",lastTO:profile.carLastTO||"",
+    tireType:profile.carTireType||"",tireDate:profile.carTireDate||"",
+    insurance:profile.carInsurance||"",techCheck:profile.carTechCheck||"",
+  });
+
+  if(profile.hasCar!=="Да") return(
+    <div style={{textAlign:"center",padding:"32px 16px"}}>
+      <div style={{fontSize:48,marginBottom:12}}>🚗</div>
+      <div style={{fontSize:16,color:T.text2,marginBottom:8}}>Добавь данные автомобиля</div>
+      <div style={{fontSize:13,color:T.text3,marginBottom:16}}>Получи напоминания о резине, страховке и ТО</div>
+      <button className="btn btn-primary" onClick={()=>setProfile(p=>({...p,hasCar:"Да"}))}>🚗 Добавить автомобиль</button>
+    </div>
+  );
+
+  const saveCar=()=>{
+    setProfile(p=>({...p,carModel:car.model,carYear:car.year,carMileage:car.mileage,
+      carLastTO:car.lastTO,carTireType:car.tireType,carTireDate:car.tireDate,
+      carInsurance:car.insurance,carTechCheck:car.techCheck}));
+    setEditCar(false); notify("Данные сохранены ✦");
+  };
+
+  const now=new Date(); const month=now.getMonth()+1;
+  const warnings=[];
+  if(profile.carLastTO){
+    const days=Math.floor((now-new Date(profile.carLastTO))/86400000);
+    if(days>300) warnings.push({emoji:"🔧",title:"Пора на ТО",desc:"Прошло "+Math.floor(days/30)+" мес.",color:T.danger,urgent:true});
+    else if(days>240) warnings.push({emoji:"🔧",title:"Скоро ТО",desc:"До ТО ~"+Math.floor((365-days)/30)+" мес.",color:T.warn});
+  }
+  const isSpring=month>=3&&month<=5; const isAutumn=month>=9&&month<=11;
+  if(profile.carTireType==="Зимняя"&&isSpring)
+    warnings.push({emoji:"🔄",title:"Меняй на летнюю резину",desc:"Стабильно выше +7°C — пора",color:T.warn,urgent:true});
+  if(profile.carTireType==="Летняя"&&isAutumn)
+    warnings.push({emoji:"🔄",title:"Меняй на зимнюю резину",desc:"Не жди первого снега",color:T.warn,urgent:true});
+  if(profile.carInsurance){
+    const d=Math.ceil((new Date(profile.carInsurance)-now)/86400000);
+    if(d<30&&d>=0) warnings.push({emoji:"📋",title:"Страховка истекает через "+d+" дн.",desc:"Обнови заранее",color:T.danger,urgent:true});
+    else if(d<60&&d>=0) warnings.push({emoji:"📋",title:"Страховка через "+Math.floor(d/7)+" нед.",desc:"Подбери предложения",color:T.warn});
+  }
+  if(profile.carTechCheck){
+    const d=Math.ceil((new Date(profile.carTechCheck)-now)/86400000);
+    if(d<30&&d>=0) warnings.push({emoji:"🔍",title:"Техосмотр через "+d+" дн.",desc:"Запишись заранее",color:T.danger,urgent:true});
+    else if(d<60&&d>=0) warnings.push({emoji:"🔍",title:"Техосмотр через "+Math.floor(d/7)+" нед.",color:T.warn});
+  }
+
+  const addCarTask=(title,notes="")=>{
+    setTasks(p=>[...p,{id:Date.now()+Math.random(),title,section:"work",freq:"once",priority:"h",
+      deadline:"",notes,preferredTime:"09:00",lastDone:"",doneDate:""}]);
+    notify("Добавлено в задачи ✦");
+  };
+
+  const SEASONAL=[
+    {s:"🌸 Весна",tasks:["Смена на летнюю резину","Мойка после зимы + антикор снизу","Проверка тормозов","Замена щёток","Уборка салона"]},
+    {s:"☀️ Лето",tasks:["Проверка кондиционера","Давление в шинах (жара)","Полироль кузова","Охлаждающая жидкость"]},
+    {s:"🍂 Осень",tasks:["Смена на зимнюю резину","Проверка аккумулятора","Антикор","Антифриз","Запас незамерзайки"]},
+    {s:"❄️ Зима",tasks:["Давление шин (холод)","Скребок в багажник","Прогрев двигателя","Зимние жидкости"]},
+  ];
+
+  return(
+    <div>
+      {/* Карточка авто */}
+      <div className="card card-accent" style={{marginBottom:12}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+          <div>
+            <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:2,marginBottom:4}}>МОЙ АВТОМОБИЛЬ</div>
+            <div style={{fontFamily:"'Cormorant Infant',serif",fontSize:20,color:T.text0}}>{profile.carModel||"—"} {profile.carYear&&"("+profile.carYear+")"}</div>
+            <div style={{fontSize:12,color:T.text3}}>Пробег: {profile.carMileage?profile.carMileage+" км":"не указан"}</div>
+          </div>
+          <button className="btn btn-ghost btn-sm" onClick={()=>setEditCar(e=>!e)}>✏️</button>
+        </div>
+        {!editCar&&(
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginTop:10}}>
+            {[
+              ["🔄 Резина",(profile.carTireType||"—")+(profile.carTireDate?" · "+profile.carTireDate:"")],
+              ["🔧 Последнее ТО",profile.carLastTO?new Date(profile.carLastTO).toLocaleDateString("ru-RU",{month:"long",year:"numeric"}):"—"],
+              ["📋 Страховка до",profile.carInsurance?new Date(profile.carInsurance).toLocaleDateString("ru-RU",{day:"numeric",month:"short",year:"numeric"}):"—"],
+              ["🔍 Техосмотр до",profile.carTechCheck?new Date(profile.carTechCheck).toLocaleDateString("ru-RU",{day:"numeric",month:"short",year:"numeric"}):"—"],
+            ].map(([l,v])=>(
+              <div key={l} style={{padding:"7px 9px",background:"rgba(45,32,16,0.05)",borderRadius:8}}>
+                <div style={{fontSize:10,color:T.text3,marginBottom:2}}>{l}</div>
+                <div style={{fontSize:12,color:T.text0}}>{v}</div>
+              </div>
+            ))}
+          </div>
+        )}
+        {editCar&&(
+          <div style={{marginTop:10}}>
+            <div className="fld-row">
+              <div className="fld"><label>Марка и модель</label><input value={car.model} onChange={e=>setCar(p=>({...p,model:e.target.value}))}/></div>
+              <div className="fld"><label>Год</label><input type="number" value={car.year} onChange={e=>setCar(p=>({...p,year:e.target.value}))}/></div>
+            </div>
+            <div className="fld-row">
+              <div className="fld"><label>Пробег (км)</label><input type="number" value={car.mileage} onChange={e=>setCar(p=>({...p,mileage:e.target.value}))}/></div>
+              <div className="fld"><label>Последнее ТО</label><input type="date" value={car.lastTO} onChange={e=>setCar(p=>({...p,lastTO:e.target.value}))}/></div>
+            </div>
+            <div className="fld"><label>Тип резины</label>
+              <div className="chips">{["Летняя","Зимняя","Всесезонная"].map(v=><div key={v} className={"chip "+(car.tireType===v?"on":"")} onClick={()=>setCar(p=>({...p,tireType:v}))}>{v}</div>)}</div>
+            </div>
+            <div className="fld-row">
+              <div className="fld"><label>Смена резины</label><input type="month" value={car.tireDate} onChange={e=>setCar(p=>({...p,tireDate:e.target.value}))}/></div>
+              <div className="fld"><label>Страховка до</label><input type="date" value={car.insurance} onChange={e=>setCar(p=>({...p,insurance:e.target.value}))}/></div>
+            </div>
+            <div className="fld"><label>Техосмотр до</label><input type="date" value={car.techCheck} onChange={e=>setCar(p=>({...p,techCheck:e.target.value}))}/></div>
+            <div style={{display:"flex",gap:8,marginTop:6}}>
+              <button className="btn btn-ghost" onClick={()=>setEditCar(false)}>Отмена</button>
+              <button className="btn btn-primary" onClick={saveCar}>Сохранить</button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Предупреждения */}
+      {warnings.length>0&&(
+        <div className="card" style={{marginBottom:12,borderLeft:"3px solid "+T.danger}}>
+          <div style={{fontSize:10,color:T.danger,fontFamily:"'JetBrains Mono'",letterSpacing:2,marginBottom:8}}>⚠️ ТРЕБУЕТ ВНИМАНИЯ</div>
+          {warnings.map((w,i)=>(
+            <div key={i} style={{display:"flex",gap:10,padding:"8px 0",borderBottom:"1px solid "+T.bdrS}}>
+              <span style={{fontSize:20,flexShrink:0}}>{w.emoji}</span>
+              <div style={{flex:1}}>
+                <div style={{fontSize:14,color:w.color,fontWeight:600}}>{w.title}</div>
+                <div style={{fontSize:12,color:T.text3}}>{w.desc}</div>
+              </div>
+              <button className="btn btn-ghost btn-sm" style={{fontSize:11,flexShrink:0}} onClick={()=>addCarTask(w.title,w.desc)}>+ задача</button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Плановое ТО */}
+      <div className="card" style={{marginBottom:12}}>
+        <div style={{fontSize:11,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1.5,marginBottom:10}}>ПЛАНОВОЕ ОБСЛУЖИВАНИЕ</div>
+        {[
+          {e:"🔧",t:"Замена масла и фильтров",n:"Каждые 10 000 км или раз в год"},
+          {e:"🔄",t:"Проверка тормозных колодок",n:"Каждые 20 000 км"},
+          {e:"💧",t:"Проверка уровня жидкостей",n:"Масло, охлаждающая, тормозная"},
+          {e:"🔋",t:"Проверка аккумулятора",n:"Перед зимой обязательно"},
+          {e:"💨",t:"Давление в шинах",n:"Норма 2.2–2.5 бар"},
+          {e:"🚿",t:"Мойка автомобиля",n:""},
+          {e:"🧹",t:"Уборка салона",n:""},
+        ].map((item,i)=>(
+          <div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderBottom:"1px solid "+T.bdrS}}>
+            <span style={{fontSize:16,flexShrink:0}}>{item.e}</span>
+            <div style={{flex:1}}>
+              <div style={{fontSize:13,color:T.text0}}>{item.t}</div>
+              {item.n&&<div style={{fontSize:11,color:T.text3}}>{item.n}</div>}
+            </div>
+            <button className="btn btn-ghost btn-sm" style={{fontSize:11,padding:"2px 8px",flexShrink:0}} onClick={()=>addCarTask(item.t,item.n)}>+</button>
+          </div>
+        ))}
+      </div>
+
+      {/* Сезонные задачи */}
+      <div className="card" style={{marginBottom:12}}>
+        <div style={{fontSize:11,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1.5,marginBottom:10}}>СЕЗОННЫЕ ЗАДАЧИ</div>
+        {SEASONAL.map(({s,tasks:st})=>(
+          <div key={s} style={{marginBottom:10}}>
+            <div style={{fontSize:12,color:T.gold,fontWeight:500,marginBottom:5}}>{s}</div>
+            {st.map((t,i)=>(
+              <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"4px 0",fontSize:12,color:T.text1,borderBottom:"1px solid "+T.bdrS}}>
+                <span>✦ {t}</span>
+                <button className="btn btn-ghost btn-sm" style={{fontSize:10,padding:"1px 6px"}} onClick={()=>addCarTask(s.split(" ")[1]+": "+t)}>+</button>
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+
+      <AiBox kb={kb}
+        prompt={"Советы по обслуживанию авто "+profile.carModel+" "+profile.carYear+" г., пробег "+profile.carMileage+" км. Резина: "+profile.carTireType+". Последнее ТО: "+profile.carLastTO+". Казахстан, "+new Date().toLocaleString("ru-RU",{month:"long"})+". Что нужно сделать сейчас и на ближайший месяц?"}
+        label="AI советы по авто" btnText="Получить советы" placeholder="Дам советы по обслуживанию..."/>
+    </div>
+  );
+}
+
 function ProfileSection({profile,setProfile,sections,setSections,notify,kb}) {
   const [view,setView]=useState("me");
   const [tooltip,setTooltip]=useState(null);
