@@ -5242,22 +5242,140 @@ function CarSection({profile,setProfile,tasks,setTasks,today,kb,notify}) {
 
 function ProfileSection({profile,setProfile,sections,setSections,notify,kb}) {
   const [view,setView]=useState("me");
-  const [tooltip,setTooltip]=useState(null); // для графика жизненных циклов
+  const [tooltip,setTooltip]=useState(null);
   const z=getZodiac(profile.dob);
   const east=getEastern(profile.dob);
   const deg=calcDegree(profile.fullName||profile.name);
+  const moon=getMoon();
+
+  const ZODIAC_DESC={
+    "Овен":"Лидер, первопроходец. Смелость, энергия, нетерпеливость. Стихия: Огонь · Планета: Марс",
+    "Телец":"Надёжность, упорство, любовь к комфорту. Чувственность и практичность. Стихия: Земля · Планета: Венера",
+    "Близнецы":"Коммуникабельность, гибкость ума, двойственность натуры. Стихия: Воздух · Планета: Меркурий",
+    "Рак":"Интуиция, глубокая забота, эмоциональность, привязанность к дому. Стихия: Вода · Планета: Луна",
+    "Лев":"Харизма, щедрость, лидерство, гордость. Творческое начало. Стихия: Огонь · Планета: Солнце",
+    "Дева":"Аналитический ум, порядок, трудолюбие, перфекционизм. Стихия: Земля · Планета: Меркурий",
+    "Весы":"Гармония, дипломатия, справедливость, красота. Стихия: Воздух · Планета: Венера",
+    "Скорпион":"Глубина, трансформация, страстность и интенсивность. Стихия: Вода · Планета: Плутон",
+    "Стрелец":"Свобода, оптимизм, философия, путешествия. Стихия: Огонь · Планета: Юпитер",
+    "Козерог":"Амбиции, дисциплина, практичность, ответственность. Стихия: Земля · Планета: Сатурн",
+    "Водолей":"Оригинальность, гуманизм, независимость. Нестандартное мышление. Стихия: Воздух · Планета: Уран",
+    "Рыбы":"Интуиция, сострадание, мечтательность, духовность. Стихия: Вода · Планета: Нептун",
+  };
+  const EASTERN_DESC={
+    "Крыса":"Ум, адаптивность, предприимчивость. Отлично чувствует возможности и привлекает удачу в деньгах.",
+    "Бык":"Терпение, трудолюбие, надёжность. Символ силы и выносливости, верный и последовательный.",
+    "Тигр":"Смелость, обаяние, харизма. Природный лидер, который вдохновляет окружающих.",
+    "Кролик":"Мягкость, дипломатия, творчество. Символ удачи, умеет создавать гармонию.",
+    "Дракон":"Магнетизм, мощь, удача. Самый сильный знак — вдохновляет и притягивает успех.",
+    "Змея":"Мудрость, интуиция, загадочность. Глубокий аналитический ум и дальновидность.",
+    "Лошадь":"Свобода, энергия, скорость. Неугомонный дух и жажда новых впечатлений.",
+    "Коза":"Творчество, мягкость, артистизм. Ценит красоту и создаёт уют вокруг.",
+    "Обезьяна":"Интеллект, изобретательность, юмор. Находчивость и способность решать сложные задачи.",
+    "Петух":"Наблюдательность, пунктуальность, прямолинейность. Ценит порядок и честность.",
+    "Собака":"Верность, честность, защита. Надёжный друг, всегда встаёт на защиту близких.",
+    "Свинья":"Щедрость, искренность, трудолюбие. Добросердечие и умение наслаждаться жизнью.",
+  };
+  const DEG_DESC={
+    1:"Лидерство, начало новых путей",2:"Дипломатия, партнёрство",3:"Творчество, самовыражение",
+    4:"Стабильность, дисциплина",5:"Свобода, перемены",6:"Забота, гармония, ответственность",
+    7:"Духовность, аналитика",8:"Власть, материальный успех",9:"Гуманизм, завершение цикла",
+    10:"Карьера, достижение целей",11:"Интуиция, нестандартное мышление",12:"Жертвенность, духовность",
+    13:"Трансформация",14:"Равновесие",15:"Мудрость",16:"Неожиданные повороты",
+    17:"Победа через усилие",18:"Иллюзии vs реальность",19:"Успех и признание",20:"Суд и карма",
+    21:"Завершение большого цикла",22:"Мастер-число: строитель",23:"Королевский градус — успех",
+    24:"Любовь и творчество",25:"Духовный поиск",26:"Карма денег",27:"Высшая мудрость",
+    28:"Независимость",29:"Критический градус — испытания и прорыв",30:"Полнота цикла",
+  };
+
+  // Жизненные циклы — по сферам, каждая своей линией
+  const buildCycles = () => {
+    if(!profile.dob) return null;
+    const by = new Date(profile.dob).getFullYear();
+    const cy = new Date().getFullYear();
+    const age = cy-by;
+    // Ключевые точки по сферам
+    const spheres = [
+      {name:"Карьера", color:"#82AADD", emoji:"💼", points:[
+        {a:0,s:3,desc:"Старт жизни"},
+        {a:12,s:5,desc:"Первые интересы и склонности"},
+        {a:21,s:4,desc:"Поиск профессионального пути"},
+        {a:29,s:3,desc:"Первый возврат Сатурна — испытание карьеры"},
+        {a:36,s:6,desc:"Стабилизация, рост в должности"},
+        {a:42,s:8,desc:"Пик карьеры — Юпитерианский расцвет"},
+        {a:50,s:7,desc:"Зрелость, экспертность"},
+        {a:58,s:8,desc:"Второй Сатурн — итоги и награда"},
+        {a:70,s:6,desc:"Мудрость, менторство"},
+      ]},
+      {name:"Отношения", color:"#E8556D", emoji:"❤️", points:[
+        {a:0,s:5,desc:"Семья — первые привязанности"},
+        {a:18,s:6,desc:"Нодальный цикл — первые серьёзные отношения"},
+        {a:25,s:7,desc:"Поиск партнёра и создание семьи"},
+        {a:29,s:4,desc:"Кризис отношений — возврат Сатурна"},
+        {a:35,s:7,desc:"Укрепление семьи"},
+        {a:42,s:5,desc:"Пересмотр отношений — кризис среднего возраста"},
+        {a:49,s:8,desc:"Хирон — исцеление и глубина"},
+        {a:58,s:9,desc:"Зрелая любовь и мудрость"},
+        {a:70,s:8,desc:"Опора и благодарность"},
+      ]},
+      {name:"Здоровье", color:"#7BCCA0", emoji:"💚", points:[
+        {a:0,s:9,desc:"Детство — высокий жизненный тонус"},
+        {a:18,s:8,desc:"Расцвет физической формы"},
+        {a:29,s:6,desc:"Первые хронические паттерны"},
+        {a:36,s:5,desc:"Кризис — важно заняться здоровьем"},
+        {a:42,s:6,desc:"Осознанное здоровье"},
+        {a:49,s:5,desc:"Хирон — возврат к телу"},
+        {a:58,s:6,desc:"Поддерживающий режим"},
+        {a:70,s:5,desc:"Мудрое отношение к телу"},
+      ]},
+      {name:"Финансы", color:"#E5C87A", emoji:"💰", points:[
+        {a:0,s:3,desc:"Зависимость от родителей"},
+        {a:18,s:4,desc:"Первые деньги"},
+        {a:29,s:5,desc:"Первый Сатурн — финансовые уроки"},
+        {a:36,s:7,desc:"Рост доходов"},
+        {a:42,s:8,desc:"Финансовый пик"},
+        {a:50,s:7,desc:"Стабильность и накопления"},
+        {a:58,s:8,desc:"Плоды труда"},
+        {a:70,s:7,desc:"Распределение наследия"},
+      ]},
+      {name:"Духовность", color:"#B882E8", emoji:"🌟", points:[
+        {a:0,s:7,desc:"Чистое восприятие мира"},
+        {a:12,s:5,desc:"Первые сомнения и вопросы"},
+        {a:21,s:4,desc:"Поиск смысла"},
+        {a:29,s:6,desc:"Сатурн — духовное испытание"},
+        {a:36,s:7,desc:"Углубление практики"},
+        {a:42,s:6,desc:"Переоценка ценностей"},
+        {a:49,s:9,desc:"Хирон — духовное пробуждение"},
+        {a:58,s:8,desc:"Мудрость и принятие"},
+        {a:70,s:9,desc:"Духовный пик жизни"},
+      ]},
+    ];
+    return {spheres, birthYear:by, currentYear:cy, currentAge:age};
+  };
+
+  const cycleData = buildCycles();
+
   return(
     <div>
-      <div className="tabs">{[["me","Мой профиль"],["astro","Астрология"],["sections","Разделы"]].map(([v,l])=><div key={v} className={`tab${view===v?" on":""}`} onClick={()=>setView(v)}>{l}</div>)}</div>
-      {view==="me"&&(
+      {/* Tabs: Мой профиль | Разделы */}
+      <div className="tabs" style={{marginBottom:14}}>
+        {[["me","Мой профиль"],["sections","⚙️ Разделы"]].map(([v,l])=>(
+          <div key={v} className={`tab${(view||"me")===v?" on":""}`}
+            onClick={()=>setView(v)}>{l}</div>
+        ))}
+      </div>
+
+      {/* ══ МОЙ ПРОФИЛЬ ══ */}
+      {(view==="me"||!view)&&(
         <div>
-          <div className="card card-accent">
+          {/* Шапка */}
+          <div className="card card-accent" style={{marginBottom:12}}>
             <div style={{display:"flex",gap:16,alignItems:"flex-start"}}>
-              <div style={{width:56,height:56,borderRadius:"50%",background:"linear-gradient(135deg,${T.gold}66,"+(T.goldD)+")",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0,border:"1px solid "+(T.gold)+"44"}}>{profile.gender==="Женский"?"👩":"👤"}</div>
-              <div>
-                <div style={{fontFamily:"'Cormorant Infant',serif",fontSize:26,color:T.gold,marginBottom:3,fontWeight:400}}>{profile.name||"—"}</div>
-                {profile.fullName&&profile.fullName!==profile.name&&<div style={{fontSize:14,color:T.text3,marginBottom:6}}>{profile.fullName}</div>}
-                <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
+              <div style={{width:52,height:52,borderRadius:"50%",background:"linear-gradient(135deg,"+T.gold+"66,"+T.goldD+")",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>{profile.gender==="Женский"?"👩":"👤"}</div>
+              <div style={{flex:1}}>
+                <div style={{fontFamily:"'Cormorant Infant',serif",fontSize:24,color:T.gold,marginBottom:4}}>{profile.name||"—"}</div>
+                {profile.fullName&&profile.fullName!==profile.name&&<div style={{fontSize:13,color:T.text3,marginBottom:4}}>{profile.fullName}</div>}
+                <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
                   {profile.dob&&<span className="badge bg">🎂 {new Date(profile.dob).toLocaleDateString("ru-RU",{day:"numeric",month:"long",year:"numeric"})}</span>}
                   {profile.dob&&<span className="badge bm">{new Date().getFullYear()-new Date(profile.dob).getFullYear()} лет</span>}
                   {profile.gender&&<span className="badge bm">{profile.gender}</span>}
@@ -5266,156 +5384,164 @@ function ProfileSection({profile,setProfile,sections,setSections,notify,kb}) {
               </div>
             </div>
           </div>
-          <div className="sec-lbl">Рассчитано автоматически</div>
-          {(()=>{
-            const ZODIAC_DESC={
-              "Овен":"Лидер, первопроходец. Смелость, энергия, нетерпеливость. Стихия: Огонь. Планета: Марс.",
-              "Телец":"Надёжность, упорство, любовь к комфорту. Стихия: Земля. Планета: Венера.",
-              "Близнецы":"Коммуникабельность, гибкость ума, двойственность. Стихия: Воздух. Планета: Меркурий.",
-              "Рак":"Интуиция, забота, эмоциональность, привязанность к дому. Стихия: Вода. Планета: Луна.",
-              "Лев":"Харизма, щедрость, лидерство, гордость. Стихия: Огонь. Планета: Солнце.",
-              "Дева":"Аналитический ум, порядок, трудолюбие, перфекционизм. Стихия: Земля. Планета: Меркурий.",
-              "Весы":"Гармония, дипломатия, справедливость. Стихия: Воздух. Планета: Венера.",
-              "Скорпион":"Глубина, трансформация, интенсивность. Стихия: Вода. Планета: Плутон.",
-              "Стрелец":"Свобода, оптимизм, философия, путешествия. Стихия: Огонь. Планета: Юпитер.",
-              "Козерог":"Амбиции, дисциплина, практичность. Стихия: Земля. Планета: Сатурн.",
-              "Водолей":"Оригинальность, гуманизм, независимость. Стихия: Воздух. Планета: Уран.",
-              "Рыбы":"Интуиция, сострадание, мечтательность. Стихия: Вода. Планета: Нептун.",
-            };
-            const EASTERN_DESC={
-              "Крыса":"Ум, адаптивность, предприимчивость. Привлекает удачу в деньгах.",
-              "Бык":"Терпение, трудолюбие, надёжность. Сила и выносливость.",
-              "Тигр":"Смелость, обаяние, харизма. Природный лидер.",
-              "Кролик":"Мягкость, дипломатия, творчество. Символ удачи.",
-              "Дракон":"Магнетизм, мощь, удача. Самый сильный знак.",
-              "Змея":"Мудрость, интуиция, загадочность. Глубокий ум.",
-              "Лошадь":"Свобода, энергия, скорость. Неугомонный дух.",
-              "Коза":"Творчество, мягкость, артистизм. Любовь к красоте.",
-              "Обезьяна":"Интеллект, изобретательность, юмор. Находчивость.",
-              "Петух":"Наблюдательность, пунктуальность, прямолинейность.",
-              "Собака":"Верность, честность, защита. Надёжный друг.",
-              "Свинья":"Щедрость, искренность, трудолюбие. Добросердечие.",
-            };
-            const DEG_DESC={
-              1:"Лидерство, начало новых путей",2:"Дипломатия, партнёрство",3:"Творчество, самовыражение",
-              4:"Стабильность, дисциплина",5:"Свобода, перемены",6:"Забота, гармония, ответственность",
-              7:"Духовность, аналитика",8:"Власть, материальный успех",9:"Гуманизм, завершение цикла",
-              10:"Карьера, достижение целей",11:"Интуиция, нестандартное мышление",12:"Жертвенность, духовность",
-              13:"Трансформация",14:"Равновесие",15:"Мудрость",16:"Неожиданные повороты",
-              17:"Победа через усилие",18:"Иллюзии vs реальность",19:"Успех и признание",20:"Суд и karma",
-              21:"Завершение большого цикла",22:"Мастер-число: строитель",23:"Королевский градус — успех",
-              24:"Любовь и творчество",25:"Духовный поиск",26:"Карма денег",27:"Высшая мудрость",
-              28:"Независимость",29:"Критический градус — испытания",30:"Полнота цикла",
-            };
-            return(
-              <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:12}}>
+
+          {/* ── Астро-портрет (авто) ── */}
+          {profile.dob&&(
+            <div style={{marginBottom:12}}>
+              <div className="sec-lbl" style={{marginBottom:8}}>Астрологический портрет</div>
+              <div style={{display:"flex",flexDirection:"column",gap:7}}>
                 {/* Знак зодиака */}
-                <div style={{display:"flex",alignItems:"center",gap:14,padding:"10px 14px",background:"rgba(45,32,16,0.05)",borderRadius:12}}>
-                  <span style={{fontSize:36,flexShrink:0}}>{z.emoji}</span>
+                <div style={{display:"flex",alignItems:"flex-start",gap:12,padding:"10px 14px",background:"rgba(45,32,16,0.05)",borderRadius:12}}>
+                  <span style={{fontSize:32,flexShrink:0,lineHeight:1}}>{z.emoji}</span>
                   <div>
-                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2}}>
-                      <span style={{fontFamily:"'Cormorant Infant',serif",fontSize:18,color:T.gold}}>{z.name}</span>
-                      <span style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'"}}>ЗОДИАК</span>
+                    <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:3}}>
+                      <span style={{fontFamily:"'Cormorant Infant',serif",fontSize:17,color:T.gold}}>{z.name}</span>
+                      <span style={{fontSize:9,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1}}>ЗОДИАК</span>
                     </div>
-                    <div style={{fontSize:13,color:T.text2,lineHeight:1.5}}>{ZODIAC_DESC[z.name]||""}</div>
+                    <div style={{fontSize:12,color:T.text2,lineHeight:1.5}}>{ZODIAC_DESC[z.name]||""}</div>
                   </div>
                 </div>
                 {/* Восточный знак */}
-                <div style={{display:"flex",alignItems:"center",gap:14,padding:"10px 14px",background:"rgba(45,32,16,0.05)",borderRadius:12}}>
-                  <span style={{fontSize:36,flexShrink:0}}>🐉</span>
+                <div style={{display:"flex",alignItems:"flex-start",gap:12,padding:"10px 14px",background:"rgba(45,32,16,0.05)",borderRadius:12}}>
+                  <span style={{fontSize:32,flexShrink:0,lineHeight:1}}>🐉</span>
                   <div>
-                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2}}>
-                      <span style={{fontFamily:"'Cormorant Infant',serif",fontSize:18,color:T.gold}}>{east}</span>
-                      <span style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'"}}>ВОСТОК</span>
+                    <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:3}}>
+                      <span style={{fontFamily:"'Cormorant Infant',serif",fontSize:17,color:T.gold}}>{east}</span>
+                      <span style={{fontSize:9,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1}}>ВОСТОК</span>
                     </div>
-                    <div style={{fontSize:13,color:T.text2,lineHeight:1.5}}>{EASTERN_DESC[east]||""}</div>
+                    <div style={{fontSize:12,color:T.text2,lineHeight:1.5}}>{EASTERN_DESC[east]||""}</div>
+                  </div>
+                </div>
+                {/* ТКМ Стихия */}
+                {(()=>{
+                  const el=getChineseElement(profile.dob);
+                  if(!el) return null;
+                  return(
+                    <div style={{display:"flex",alignItems:"flex-start",gap:12,padding:"10px 14px",background:"rgba(45,106,79,0.08)",borderRadius:12}}>
+                      <span style={{fontSize:32,flexShrink:0,lineHeight:1}}>{el.emoji}</span>
+                      <div>
+                        <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:3}}>
+                          <span style={{fontFamily:"'Cormorant Infant',serif",fontSize:17,color:T.gold}}>{el.name} {el.yin?"(Инь)":"(Ян)"}</span>
+                          <span style={{fontSize:9,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1}}>ТКМ-СТИХИЯ</span>
+                        </div>
+                        <div style={{fontSize:12,color:T.text2,lineHeight:1.5}}>Органы: {el.organ} · Сезон силы: {el.season} · Вкус-союзник: {el.taste}</div>
+                      </div>
+                    </div>
+                  );
+                })()}
+                {/* Луна */}
+                <div style={{display:"flex",alignItems:"flex-start",gap:12,padding:"10px 14px",background:"rgba(45,32,16,0.05)",borderRadius:12}}>
+                  <span style={{fontSize:32,flexShrink:0,lineHeight:1}}>{moon.e}</span>
+                  <div>
+                    <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:3}}>
+                      <span style={{fontFamily:"'Cormorant Infant',serif",fontSize:17,color:T.gold}}>{moon.n}</span>
+                      <span style={{fontSize:9,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1}}>ЛУНА СЕГОДНЯ</span>
+                    </div>
+                    <div style={{fontSize:12,color:T.text2,lineHeight:1.5}}>{moon.t}</div>
                   </div>
                 </div>
                 {/* Градус судьбы */}
-                {deg&&<div style={{display:"flex",alignItems:"center",gap:14,padding:"10px 14px",background:"rgba(200,164,90,0.08)",borderRadius:12,border:"1px solid rgba(200,164,90,0.2)"}}>
-                  <span style={{fontFamily:"'Cinzel',serif",fontSize:28,color:T.gold,flexShrink:0,minWidth:48,textAlign:"center"}}>{deg}°</span>
-                  <div>
-                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2}}>
-                      <span style={{fontFamily:"'Cormorant Infant',serif",fontSize:18,color:T.gold}}>Градус судьбы</span>
-                    </div>
-                    <div style={{fontSize:13,color:T.text2,lineHeight:1.5}}>{DEG_DESC[deg]||"Уникальный путь"}</div>
-                  </div>
-                </div>}
-              </div>
-            );
-          })()}
-          {/* ── График жизненных циклов ── */}
-          {profile.dob&&(()=>{
-            const birthYear = new Date(profile.dob).getFullYear();
-            const currentYear = new Date().getFullYear();
-            const age = currentYear - birthYear;
-            // Астрологические циклы на основе нумерологии и планетарных циклов
-            const cycles = [
-              {year:birthYear+7,  age:7,  label:"Первый Сатурн",  sphere:"Детство",      score:6, desc:"Формирование личности, первые уроки"},
-              {year:birthYear+12, age:12, label:"Юпитер",         sphere:"Образование",  score:7, desc:"Юпитер возвращается — расширение мира"},
-              {year:birthYear+18, age:18, label:"Нодальный цикл", sphere:"Самост-ть",    score:5, desc:"Лунные узлы: первый большой выбор"},
-              {year:birthYear+21, age:21, label:"Уран-квадрат",   sphere:"Карьера",      score:4, desc:"Кризис идентичности, поиск пути"},
-              {year:birthYear+29, age:29, label:"Возврат Сатурна",sphere:"Зрелость",     score:3, desc:"Первый возврат Сатурна — испытание на прочность"},
-              {year:birthYear+36, age:36, label:"Уран-оппоз.",    sphere:"Кризис",       score:2, desc:"Кризис среднего возраста, переоценка"},
-              {year:birthYear+42, age:42, label:"Юпитер+",        sphere:"Расцвет",      score:8, desc:"Юпитер — пик возможностей, мудрость"},
-              {year:birthYear+49, age:49, label:"Хирон",          sphere:"Исцеление",    score:6, desc:"Возврат Хирона — духовное исцеление"},
-              {year:birthYear+58, age:58, label:"Сатурн-2",       sphere:"Мудрость",     score:7, desc:"Второй возврат Сатурна — итоги и награда"},
-              {year:birthYear+63, age:63, label:"Нодал-3",        sphere:"Духовность",   score:8, desc:"Третий нодальный цикл — духовный пик"},
-              {year:birthYear+84, age:84, label:"Уран",           sphere:"Освобожд.",    score:9, desc:"Возврат Урана — полное освобождение"},
-            ].filter(e => e.age <= age+20); // Показываем до +20 лет в будущее
-
-            if(cycles.length < 2) return null;
-
-            // SVG график
-            const W = 320, H = 120, PAD = 20;
-            const minYear = cycles[0].year;
-            const maxYear = cycles[cycles.length-1].year;
-            const yearRange = maxYear - minYear || 1;
-            const getX = (year) => PAD + ((year-minYear)/yearRange)*(W-PAD*2);
-            const getY = (score) => H - PAD - ((score-1)/9)*(H-PAD*2);
-
-            const pathD = cycles.map((p,i) => `${i===0?"M":"L"} ${getX(p.year)} ${getY(p.score)}`).join(" ");
-            return(
-              <div style={{marginBottom:14}}>
-                <div className="sec-lbl" style={{marginBottom:8}}>📈 Жизненные циклы (астрологические)</div>
-                <div style={{background:"rgba(45,32,16,0.04)",borderRadius:12,padding:"12px",overflowX:"auto"}}>
-                  <svg width={W} height={H+30} style={{display:"block",minWidth:W}}>
-                    {/* Сетка */}
-                    {[2,4,6,8,10].map(n=>(
-                      <line key={n} x1={PAD} y1={getY(n)} x2={W-PAD} y2={getY(n)} stroke="rgba(45,32,16,0.08)" strokeWidth="1"/>
-                    ))}
-                    {/* Линия текущего года */}
-                    <line x1={getX(currentYear)} y1={PAD/2} x2={getX(currentYear)} y2={H-PAD} stroke={T.gold} strokeWidth="1.5" strokeDasharray="4,3" opacity="0.6"/>
-                    <text x={getX(currentYear)} y={H+14} textAnchor="middle" fontSize="9" fill={T.gold}>Сейчас</text>
-                    {/* Линия цикла */}
-                    <path d={pathD} fill="none" stroke={T.teal} strokeWidth="2" strokeLinejoin="round"/>
-                    {/* Заливка под линией */}
-                    <path d={pathD+" L "+getX(maxYear)+" "+getY(1)+" L "+getX(minYear)+" "+getY(1)+" Z"}
-                      fill={T.teal} fillOpacity="0.08"/>
-                    {/* Точки */}
-                    {cycles.map((p,i)=>(
-                      <g key={i}>
-                        <circle cx={getX(p.year)} cy={getY(p.score)} r="5"
-                          fill={p.year<=currentYear?T.gold:"rgba(45,106,79,0.4)"}
-                          stroke={T.teal} strokeWidth="1.5"
-                          style={{cursor:"pointer"}}
-                          onClick={()=>setTooltip(tooltip?.year===p.year?null:p)}/>
-                        <text x={getX(p.year)} y={H+14} textAnchor="middle" fontSize="8" fill="rgba(45,32,16,0.4)">{p.age}</text>
-                      </g>
-                    ))}
-                  </svg>
-                  {/* Подсказка при нажатии на точку */}
-                  {tooltip&&(
-                    <div style={{marginTop:8,padding:"8px 12px",background:"rgba(45,106,79,0.1)",borderRadius:8,borderLeft:"3px solid "+T.teal}}>
-                      <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
-                        <span style={{fontSize:13,color:T.gold,fontWeight:600}}>{tooltip.label}</span>
-                        <span style={{fontSize:12,color:T.text3}}>{tooltip.year} · возраст {tooltip.age}</span>
+                {deg&&(
+                  <div style={{display:"flex",alignItems:"flex-start",gap:12,padding:"10px 14px",background:"rgba(200,164,90,0.08)",borderRadius:12,border:"1px solid rgba(200,164,90,0.15)"}}>
+                    <span style={{fontFamily:"'Cinzel',serif",fontSize:26,color:T.gold,flexShrink:0,minWidth:44,textAlign:"center",lineHeight:1.2}}>{deg}°</span>
+                    <div>
+                      <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:3}}>
+                        <span style={{fontFamily:"'Cormorant Infant',serif",fontSize:17,color:T.gold}}>Градус судьбы</span>
+                        <span style={{fontSize:9,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1}}>НУМЕРОЛОГИЯ</span>
                       </div>
-                      <div style={{fontSize:12,color:T.text3,marginBottom:2}}>Сфера: {tooltip.sphere}</div>
+                      <div style={{fontSize:12,color:T.text2,lineHeight:1.5}}>{DEG_DESC[deg]||"Уникальный путь"}</div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ── График жизненных циклов ── */}
+          {cycleData&&(()=>{
+            const {spheres,birthYear,currentYear,currentAge} = cycleData;
+            const W=340, H=160, PAD=28;
+            const maxAge = Math.max(...spheres.flatMap(s=>s.points.map(p=>p.a)))+5;
+            const minAge = 0;
+            const getX = a => PAD + ((a-minAge)/(maxAge-minAge))*(W-PAD*2);
+            const getY = s => H - PAD - ((s-1)/9)*(H-PAD*2);
+            // Возраст-метки на оси X
+            const ageLabels = [0,10,20,30,40,50,60,70];
+
+            return(
+              <div style={{marginBottom:12}}>
+                <div className="sec-lbl" style={{marginBottom:8}}>📈 Жизненные циклы по сферам</div>
+                <div style={{background:"rgba(45,32,16,0.03)",borderRadius:12,padding:"10px",overflowX:"auto"}}>
+                  <svg width={W} height={H+24} style={{display:"block",minWidth:W}} onClick={e=>{
+                    // Обработчик клика вынесен наружу
+                  }}>
+                    {/* Сетка Y */}
+                    {[3,5,7,9].map(n=>(
+                      <line key={n} x1={PAD} y1={getY(n)} x2={W-PAD} y2={getY(n)} stroke="rgba(45,32,16,0.06)" strokeWidth="1"/>
+                    ))}
+                    {/* Линия сейчас */}
+                    <line x1={getX(currentAge)} y1={PAD/2} x2={getX(currentAge)} y2={H-PAD}
+                      stroke={T.gold} strokeWidth="1.5" strokeDasharray="4,3" opacity="0.7"/>
+                    <text x={getX(currentAge)} y={H+14} textAnchor="middle" fontSize="9" fill={T.gold} fontWeight="600">сейчас</text>
+
+                    {/* Возраст по оси X */}
+                    {ageLabels.filter(a=>a<=maxAge).map(a=>(
+                      <text key={a} x={getX(a)} y={H+14} textAnchor="middle" fontSize="8" fill="rgba(45,32,16,0.3)">{a}</text>
+                    ))}
+
+                    {/* Линии по сферам */}
+                    {spheres.map(sphere=>{
+                      const pts = sphere.points;
+                      const pathD = pts.map((p,i)=>`${i===0?"M":"L"} ${getX(p.a)} ${getY(p.s)}`).join(" ");
+                      return(
+                        <g key={sphere.name}>
+                          <path d={pathD} fill="none" stroke={sphere.color} strokeWidth="1.8" strokeLinejoin="round" opacity="0.8"/>
+                          {pts.map((p,i)=>(
+                            <circle key={i}
+                              cx={getX(p.a)} cy={getY(p.s)} r={p.a===currentAge?"5":"3.5"}
+                              fill={p.a<=currentAge?sphere.color:"rgba(255,255,255,0.6)"}
+                              stroke={sphere.color} strokeWidth="1.5"
+                              style={{cursor:"pointer"}}
+                              onClick={()=>setTooltip(tooltip&&tooltip.sphere===sphere.name&&tooltip.a===p.a?null:{
+                                sphere:sphere.name, emoji:sphere.emoji, color:sphere.color,
+                                a:p.a, year:birthYear+p.a, s:p.s, desc:p.desc,
+                              })}
+                            />
+                          ))}
+                        </g>
+                      );
+                    })}
+                  </svg>
+
+                  {/* Легенда */}
+                  <div style={{display:"flex",flexWrap:"wrap",gap:8,marginTop:8}}>
+                    {spheres.map(s=>(
+                      <div key={s.name} style={{display:"flex",alignItems:"center",gap:4,fontSize:10,color:T.text2}}>
+                        <div style={{width:16,height:2,background:s.color,borderRadius:1}}/>
+                        <span>{s.emoji} {s.name}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Тултип при нажатии */}
+                  {tooltip&&(
+                    <div style={{marginTop:10,padding:"10px 14px",background:"rgba(45,32,16,0.05)",borderRadius:10,borderLeft:"3px solid "+tooltip.color}}>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+                        <span style={{fontSize:14,color:tooltip.color,fontWeight:600}}>{tooltip.emoji} {tooltip.sphere}</span>
+                        <span style={{fontSize:11,color:T.text3,fontFamily:"'JetBrains Mono'"}}>{tooltip.year} · возраст {tooltip.a}</span>
+                      </div>
+                      <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
+                        {[1,2,3,4,5,6,7,8,9].map(n=>(
+                          <div key={n} style={{height:4,width:16,borderRadius:2,background:n<=tooltip.s?tooltip.color:"rgba(45,32,16,0.1)"}}/>
+                        ))}
+                        <span style={{fontSize:11,color:T.text3}}>{tooltip.s}/9</span>
+                      </div>
                       <div style={{fontSize:13,color:T.text1,lineHeight:1.5}}>{tooltip.desc}</div>
                     </div>
                   )}
-                  <div style={{fontSize:10,color:T.text3,marginTop:6,textAlign:"center"}}>Нажми на точку для описания · Цифры = возраст</div>
+                  <div style={{fontSize:9,color:T.text3,marginTop:6,textAlign:"center",fontFamily:"'JetBrains Mono'"}}>
+                    Нажми на точку — описание периода
+                  </div>
                 </div>
               </div>
             );
@@ -5425,124 +5551,104 @@ function ProfileSection({profile,setProfile,sections,setSections,notify,kb}) {
           {profile.dob&&(()=>{
             const tcm = getTCMFullProfile(profile);
             if(!tcm) return null;
-            const {el, cn, syndromes, uniqueOrgans, digestionNote, foodRecs, birthOrgan, emotionOrgan, sleepOrgan, tasteOrgan} = tcm;
+            const {el, cn, syndromes, uniqueOrgans, digestionNote, foodRecs, birthOrgan} = tcm;
             const hasDiag = profile.tcmTemp||profile.tcmEmotion||profile.tcmTaste||profile.tcmSleep;
             return(<>
-              <div className="sec-lbl">Традиционная китайская медицина (ТКМ)</div>
+              <div className="sec-lbl">ТКМ-профиль</div>
               <div className="card" style={{marginBottom:12,borderLeft:"3px solid "+T.gold}}>
-                {/* Стихия */}
-                <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:14}}>
-                  <div style={{fontSize:40}}>{el.emoji}</div>
+                <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:10}}>
+                  <span style={{fontSize:28}}>{el.emoji}</span>
                   <div>
-                    <div style={{fontFamily:"'Cormorant Infant',serif",fontSize:24,color:T.gold}}>{el.name} {el.yin?"(Инь)":"(Ян)"}</div>
-                    <div style={{fontSize:13,color:T.text2,marginTop:2}}>{cn?.type}</div>
+                    <div style={{fontFamily:"'Cormorant Infant',serif",fontSize:18,color:T.gold}}>{el.name} {el.yin?"(Инь)":"(Ян)"}</div>
+                    <div style={{fontSize:12,color:T.text2}}>{cn?.type}</div>
                   </div>
                 </div>
-
-                {/* Базовые параметры */}
-                <div className="g2" style={{gap:8,marginBottom:12}}>
-                  <div style={{padding:"8px 12px",background:"rgba(45,106,79,0.08)",borderRadius:10}}>
-                    <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:3}}>ОРГАНЫ СТИХИИ</div>
-                    <div style={{fontSize:14,color:T.text1}}>{el.organ}</div>
-                  </div>
-                  <div style={{padding:"8px 12px",background:"rgba(45,106,79,0.08)",borderRadius:10}}>
-                    <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:3}}>СЕЗОН СИЛЫ</div>
-                    <div style={{fontSize:14,color:T.text1}}>{el.season}</div>
-                  </div>
-                  <div style={{padding:"8px 12px",background:"rgba(45,106,79,0.08)",borderRadius:10}}>
-                    <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:3}}>ВКУС-СОЮЗНИК</div>
-                    <div style={{fontSize:14,color:T.text1}}>{el.taste}</div>
-                  </div>
-                  <div style={{padding:"8px 12px",background:"rgba(45,106,79,0.08)",borderRadius:10}}>
-                    <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:3}}>ДОБРОДЕТЕЛЬ</div>
-                    <div style={{fontSize:14,color:T.text1}}>{el.virtue}</div>
-                  </div>
+                <div className="g2" style={{gap:6,marginBottom:8}}>
+                  {[["Органы",el.organ],["Сезон",el.season],["Вкус",el.taste],["Добродетель",el.virtue]].map(([l,v])=>(
+                    <div key={l} style={{padding:"6px 10px",background:"rgba(45,106,79,0.07)",borderRadius:9}}>
+                      <div style={{fontSize:9,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:2}}>{l.toUpperCase()}</div>
+                      <div style={{fontSize:13,color:T.text1}}>{v}</div>
+                    </div>
+                  ))}
                 </div>
-
-                {/* Диагностика — если пройдена */}
-                {hasDiag && <>
-                  {syndromes.length>0&&<>
-                    <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:6}}>ВЫЯВЛЕННЫЕ СИНДРОМЫ</div>
-                    <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}>
-                      {syndromes.map(s=><span key={s} className="badge bw">{s}</span>)}
-                    </div>
-                  </>}
-                  {uniqueOrgans.length>0&&<>
-                    <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:6}}>ОРГАНЫ ТРЕБУЮЩИЕ ВНИМАНИЯ</div>
-                    <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}>
-                      {uniqueOrgans.map(o=><span key={o} className="badge br">{o}</span>)}
-                    </div>
-                  </>}
-                  {digestionNote&&<>
-                    <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:4}}>ПИЩЕВАРЕНИЕ</div>
-                    <div style={{fontSize:14,color:T.warn,marginBottom:12,fontStyle:"italic"}}>{digestionNote}</div>
-                  </>}
-                  {birthOrgan&&<>
-                    <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:4}}>МЕРИДИАН РОЖДЕНИЯ</div>
-                    <div style={{fontSize:14,color:T.text1,marginBottom:8}}>{birthOrgan}</div>
-                  </>}
-                </>}
-
-                {/* Питание */}
-                <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:4}}>ПИТАНИЕ ПО ТКМ</div>
-                <div style={{fontSize:14,color:T.success,fontStyle:"italic",lineHeight:1.6}}>{foodRecs||cn?.foods}</div>
-
-                {!hasDiag&&<div style={{marginTop:12,fontSize:13,color:T.text3,fontStyle:"italic"}}>Пройди ТКМ-диагностику в настройках профиля для расширенного анализа</div>}
+                {hasDiag&&syndromes?.length>0&&(
+                  <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:6}}>
+                    {syndromes.map(s=><span key={s} className="badge bw" style={{fontSize:11}}>{s}</span>)}
+                  </div>
+                )}
+                {foodRecs&&<div style={{fontSize:12,color:T.success,fontStyle:"italic",lineHeight:1.5}}>{foodRecs}</div>}
+                {!hasDiag&&<div style={{fontSize:12,color:T.text3,fontStyle:"italic",marginTop:6}}>Пройди ТКМ-диагностику в профиле для персональных синдромов</div>}
               </div>
             </>);
           })()}
+
+          {/* ── Характер ── */}
           <div className="sec-lbl">Характер и личность</div>
-          <div className="g2" style={{marginBottom:14}}>
-            {[["Решения",profile.decisionStyle],["Энергия",profile.energySource],["Планы",profile.planningStyle],["Ценность",profile.coreValue]].map(([l,v])=>v?<div key={l} className="card"><div className="pf-l">{l}</div><div className="pf-v" style={{fontSize:15}}>{v}</div></div>:null)}
+          <div className="g2" style={{marginBottom:12}}>
+            {[["Решения",profile.decisionStyle],["Энергия",profile.energySource],["Планы",profile.planningStyle],["Ценность",profile.coreValue]].map(([l,v])=>v?(
+              <div key={l} style={{padding:"8px 12px",background:"rgba(45,32,16,0.04)",borderRadius:10}}>
+                <div style={{fontSize:9,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:2}}>{l.toUpperCase()}</div>
+                <div style={{fontSize:13,color:T.text0}}>{v}</div>
+              </div>
+            ):null)}
           </div>
-          {(profile.stressors||[]).length>0&&<div className="card" style={{marginBottom:8}}><div className="pf-l" style={{marginBottom:8}}>Стрессоры</div><div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{profile.stressors.map(s=><span key={s} className="badge bw">{s}</span>)}</div></div>}
-          {(profile.recovery||[]).length>0&&<div className="card" style={{marginBottom:8}}><div className="pf-l" style={{marginBottom:8}}>Восстановление</div><div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{profile.recovery.map(s=><span key={s} className="badge bgr">{s}</span>)}</div></div>}
+          {(profile.stressors||[]).length>0&&<div style={{marginBottom:8,padding:"8px 12px",background:"rgba(45,32,16,0.04)",borderRadius:10}}>
+            <div style={{fontSize:9,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:6}}>СТРЕССОРЫ</div>
+            <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>{profile.stressors.map(s=><span key={s} className="badge bw">{s}</span>)}</div>
+          </div>}
+          {(profile.recovery||[]).length>0&&<div style={{marginBottom:12,padding:"8px 12px",background:"rgba(45,32,16,0.04)",borderRadius:10}}>
+            <div style={{fontSize:9,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:6}}>ВОССТАНОВЛЕНИЕ</div>
+            <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>{profile.recovery.map(s=><span key={s} className="badge bgr">{s}</span>)}</div>
+          </div>}
+
+          {/* ── Работа и жизнь ── */}
           <div className="sec-lbl">Работа и жизнь</div>
-          <div className="g2" style={{marginBottom:14}}>
-            <div className="card"><div className="pf-l">Работа</div><div className="pf-v">{profile.profession||"—"}</div><div className="pf-s">{profile.workType||""} · {profile.workStart||"?"}–{profile.workEnd||"?"}</div></div>
-            <div className="card"><div className="pf-l">Хронотип</div><div className="pf-v">{profile.chronotype?.split("—")[0]?.trim()||"—"}</div><div className="pf-s">Качество сна: {profile.sleepQuality||"—"}</div></div>
-          </div>
-          <div className="card" style={{marginBottom:14}}>
-            <div className="pf-l" style={{marginBottom:10}}>Режим дня</div>
-            <div style={{display:"flex",gap:16,flexWrap:"wrap"}}>
-              <div><div style={{fontSize:11,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1}}>ПОДЪЁМ</div><div style={{fontFamily:"'Cormorant Infant',serif",fontSize:22,color:T.gold}}>{profile.wake||"—"}</div></div>
-              <div><div style={{fontSize:11,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1}}>ОТБОЙ</div><div style={{fontFamily:"'Cormorant Infant',serif",fontSize:22,color:T.teal}}>{profile.sleep||"—"}</div></div>
-              <div><div style={{fontSize:11,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1}}>РАБОТА</div><div style={{fontFamily:"'Cormorant Infant',serif",fontSize:22,color:T.text1}}>{profile.workStart||"?"}–{profile.workEnd||"?"}</div></div>
-              <div><div style={{fontSize:11,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1}}>СВОБОДНО</div><div style={{fontFamily:"'Cormorant Infant',serif",fontSize:22,color:T.text1}}>{profile.workEnd||"?"}–{profile.sleep||"?"}</div></div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:8}}>
+            <div style={{padding:"8px 12px",background:"rgba(45,32,16,0.04)",borderRadius:10}}>
+              <div style={{fontSize:9,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:2}}>РАБОТА</div>
+              <div style={{fontSize:13,color:T.text0}}>{profile.profession||"—"}</div>
+              <div style={{fontSize:11,color:T.text3}}>{profile.workType||""} · {profile.workStart||"?"}–{profile.workEnd||"?"}</div>
+            </div>
+            <div style={{padding:"8px 12px",background:"rgba(45,32,16,0.04)",borderRadius:10}}>
+              <div style={{fontSize:9,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:2}}>ХРОНОТИП</div>
+              <div style={{fontSize:13,color:T.text0}}>{profile.chronotype?.split("—")[0]?.trim()||"—"}</div>
+              <div style={{fontSize:11,color:T.text3}}>Сон: {profile.sleepQuality||"—"}</div>
             </div>
           </div>
-          {(profile.hobbies||[]).length>0&&<div className="card" style={{marginBottom:8}}><div className="pf-l" style={{marginBottom:8}}>Хобби</div><div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{profile.hobbies.map(h=><span key={h} className="badge bp">{h}</span>)}</div></div>}
-          {(profile.pets||[]).length>0&&<div className="card" style={{marginBottom:8}}><div className="pf-l" style={{marginBottom:8}}>Питомцы</div><div style={{display:"flex",gap:12,flexWrap:"wrap"}}>{profile.pets.map(p=><span key={p.id} style={{fontSize:16}}>{{Кошка:"🐱",Собака:"🐶",Попугай:"🦜",Кролик:"🐰",Хомяк:"🐹"}[p.type]||"🐾"} {p.name}</span>)}</div></div>}
-          <div style={{marginTop:16,display:"flex",gap:8}}>
-            <button className="btn btn-ghost btn-sm" onClick={()=>{if(window.confirm("Пройти опрос заново?"))setProfile(null);}}>🔄 Обновить</button>
-            <button className="btn btn-danger btn-sm" onClick={()=>{if(window.confirm("Удалить ВСЕ данные?﻿")){localStorage.clear();window.location.reload();}}}>⚠ Сбросить</button>
+          <div style={{padding:"8px 12px",background:"rgba(45,32,16,0.04)",borderRadius:10,marginBottom:12}}>
+            <div style={{fontSize:9,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:6}}>РЕЖИМ ДНЯ</div>
+            <div style={{display:"flex",gap:16,flexWrap:"wrap"}}>
+              {[["☀️ Подъём",profile.wake],["🌙 Отбой",profile.sleep],["💼 Работа",(profile.workStart&&profile.workEnd)?profile.workStart+"–"+profile.workEnd:null]].map(([l,v])=>(
+                <div key={l}><div style={{fontSize:9,color:T.text3,fontFamily:"'JetBrains Mono'"}}>{l}</div><div style={{fontSize:14,color:T.text0,fontWeight:500}}>{v||"—"}</div></div>
+              ))}
+            </div>
           </div>
-        </div>
-      )}
-      {view==="astro"&&(
-        <div>
-          {deg&&<div className="card card-accent" style={{marginBottom:14,textAlign:"center",padding:"32px 24px"}}>
-            <div className="degree-big">{deg}°</div>
-            <div style={{fontFamily:"'Cormorant Infant',serif",fontSize:16,color:T.text2,marginTop:6}}>Градус судьбы по ФИО</div>
+          {(profile.hobbies||[]).length>0&&<div style={{marginBottom:12,padding:"8px 12px",background:"rgba(45,32,16,0.04)",borderRadius:10}}>
+            <div style={{fontSize:9,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:6}}>ХОББИ</div>
+            <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>{(profile.hobbies||[]).map(h=><span key={h} className="badge bm">{h}</span>)}</div>
           </div>}
-          <div className="g2" style={{marginBottom:14}}>
-            <div className="card" style={{textAlign:"center"}}><div style={{fontSize:40,marginBottom:6}}>{z.emoji}</div><div style={{fontFamily:"'Cormorant Infant',serif",fontSize:20}}>{z.name}</div><div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",marginTop:4,letterSpacing:1}}>ЗНАК ЗОДИАКА</div></div>
-            <div className="card" style={{textAlign:"center"}}><div style={{fontSize:40,marginBottom:6}}>🐾</div><div style={{fontFamily:"'Cormorant Infant',serif",fontSize:20}}>{east}</div><div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",marginTop:4,letterSpacing:1}}>ВОСТОЧНЫЙ ЗНАК</div></div>
-            {profile.dob&&(()=>{const el=getChineseElement(profile.dob);return(<div className="card" style={{textAlign:"center"}}><div style={{fontSize:40,marginBottom:6}}>{el.emoji}</div><div style={{fontFamily:"'Cormorant Infant',serif",fontSize:20}}>{el.name}</div><div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",marginTop:4,letterSpacing:1}}>СТИХИЯ ТКМ</div></div>);})()}
-            <div className="card gfull"><div className="pf-l">Луна сегодня</div><div style={{fontFamily:"'Cormorant Infant',serif",fontSize:22,color:T.text0,marginTop:4}}>{getMoon().e} {getMoon().n}</div><div style={{fontSize:14,color:T.text3,marginTop:3,fontStyle:"italic"}}>{getMoon().t}</div></div>
+          {(profile.pets||[]).length>0&&<div style={{marginBottom:12,padding:"8px 12px",background:"rgba(45,32,16,0.04)",borderRadius:10}}>
+            <div style={{fontSize:9,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:6}}>ПИТОМЦЫ</div>
+            <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>{profile.pets.map(p=><span key={p.id} style={{fontSize:15}}>{{Кошка:"🐱",Собака:"🐶",Попугай:"🦜",Кролик:"🐰",Хомяк:"🐹"}[p.type]||"🐾"} {p.name}</span>)}</div>
+          </div>}
+          <div style={{display:"flex",gap:8,marginTop:16}}>
+            <button className="btn btn-ghost" style={{flex:1,fontSize:13}} onClick={()=>{if(window.confirm("Обновить профиль? Откроется опросник."))setProfile(null);}}>⟳ Обновить</button>
+            <button className="btn btn-danger" style={{fontSize:13}} onClick={()=>{if(window.confirm("Сбросить весь профиль?"))setProfile(null);}}>⚠ Сбросить</button>
           </div>
-          <AiBox kb={kb} prompt={"Составь подробный астрологический и нумерологический портрет. ВАЖНО: говори ТОЛЬКО от второго лица (ты, твой, тебе) — никогда в третьем лице (она, Ирина). Дата рождения: "+(profile.dob||"—")+". Знак зодиака: "+z.name+", восточный: "+east+", градус судьбы: "+(deg||"—")+"°, дата рождения: "+(profile.dob||"—")+". Раздели ответ на чёткие блоки с заголовками: 1) **Характер и личность** — основные черты, 2) **Сильные стороны** — что использовать, 3) **Слабые места** — над чем работать, 4) **Здоровье** — на что обращать внимание, 5) **Любовь и отношения** — какой ты партнёр, 6) **Карьера и финансы** — где реализуешься. Каждый блок 3-5 пунктов нумерованным списком."} label="Персональный астропортрет" btnText="Составить мой портрет" placeholder="Получи свой полный астрологический портрет..." noActions={true} maxTokens={1800}/>
-          <AiBox kb={kb} prompt={"Расшифруй мой жизненный путь по годам. ВАЖНО: говори ТОЛЬКО от второго лица (ты, твой). Дата рождения: "+(profile.dob||"—")+". Знак: "+z.name+", восточный: "+east+", градус: "+(deg||"—")+"°, дата рождения: "+(profile.dob||"—")+", сейчас "+(profile.dob?(new Date().getFullYear()-new Date(profile.dob).getFullYear())+" лет":"—")+". Дай: 1) **Детство (0-12)** — какой я была, 2) **Юность (13-21)** — что формировало личность, 3) **Молодость (22-35)** — главные уроки, 4) **Зрелость (36-50)** — пик реализации, 5) **Мудрость (50+)** — что важно. По каждому периоду 3-4 ключевых пункта."} label="Жизненный путь по годам" btnText="Расшифровать" placeholder="Покажу твой жизненный путь по этапам..." noActions={true} maxTokens={1800}/>
-          <AiBox kb={kb} prompt={"Составь календарь ключевых дат прошлого и будущего для "+(profile.name||"меня")+". Знак: "+z.name+", восточный: "+east+", градус: "+(deg||"—")+"°, дата рождения: "+(profile.dob||"—")+". Используй нумерологию (личный год по дате рождения), астрологические циклы (Сатурн ~28-30 лет, Юпитер ~12 лет). Дай: 1) **Прошлые ключевые годы** — какие важные точки уже были (3-5 лет с пояснением), 2) **Этот год** — главная тема и события, 3) **Ближайшие 3 года** — что ждёт, к чему готовиться, 4) **Дальняя перспектива (5-10 лет)** — крупные циклы. Конкретные годы с месяцами где можно."} label="Ключевые даты жизни" btnText="Показать мои даты" placeholder="Покажу важные годы и события прошлого и будущего..." noActions={true}/>
         </div>
       )}
+
+      {/* ══ РАЗДЕЛЫ ══ */}
       {view==="sections"&&(
-        <div className="card">
-          <div className="card-hd"><div className="card-title">Управление разделами</div></div>
+        <div>
+          <div style={{fontSize:14,color:T.text2,marginBottom:12,lineHeight:1.5}}>Управляй видимостью разделов в навигации</div>
           {sections.map(s=>(
             <div key={s.id} className="vis-row">
-              <div className="vis-name">{s.emoji} {s.name}</div>
-              <div className={`tog${s.vis?" on":""}`} onClick={()=>setSections(p=>p.map(x=>x.id===s.id?{...x,vis:!x.vis}:x))}><div className="tog-th"/></div>
+              <div style={{display:"flex",alignItems:"center",gap:10}}>
+                <span style={{fontSize:20}}>{s.emoji}</span>
+                <span style={{fontSize:15,color:T.text0}}>{s.name}</span>
+              </div>
+              <div className={`tog${s.vis?" on":""}`} onClick={()=>setSections(p=>p.map(x=>x.id===s.id?{...x,vis:!x.vis}:x))}/>
             </div>
           ))}
         </div>
@@ -5550,3 +5656,5 @@ function ProfileSection({profile,setProfile,sections,setSections,notify,kb}) {
     </div>
   );
 }
+
+
