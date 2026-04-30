@@ -2376,7 +2376,7 @@ function TodaySection({profile,tasks,setTasks,journal,setJournal,today,moon,kb,n
   const nowMinutes = currentH*60 + currentMin;
   const dayInfo = getTCMDayInfo(now);
   const hourOrgan = getTCMHourOrgan(currentH);
-  const recs = getTCMDayRecs(profile, getTCMFullProfile(profile));
+  const recs = getTCMDayRecs(profile, dayInfo);
   const tcm = getTCMFullProfile(profile);
   const todayZodiac = getZodiac(now.toISOString().split("T")[0]);
   const isWorkDay = (profile.workDaysList||[1,2,3,4,5]).includes(now.getDay());
@@ -4781,7 +4781,7 @@ function MentalSection({profile,kb,notify}) {
           </div>
           <div style={{fontSize:14,color:"#A8A49C",lineHeight:1.6,marginLeft:32}}>{b.desc}</div>
           <div style={{marginTop:10,marginLeft:32}}>
-            <button className="btn btn-ghost btn-xs" onClick={()=>addToPlanner(b?.name||s?.name||"Практика","20:00",b?.desc||s?.desc||"")}>📅 В планировщик</button>
+            <button className="btn btn-ghost btn-xs" onClick={()=>notify("Добавь в профиле раздел Практики — они автоматически попадут в планировщик")}>💡 Подсказка</button>
           </div>
         </div>)}
         <AiBox kb={kb} prompt={"Подбери дыхательную технику для "+( profile.name||"меня")+" прямо сейчас. Мои стрессоры: "+stressors+". Качество сна: "+(profile.sleepQuality||"—")+". Время суток: сейчас "+currentHour+":00. Хронотип: "+(profile.chronotype||"—")+". Объясни пошагово как выполнять выбранную технику и почему она подходит именно мне."} label="Подобрать технику" btnText="Подобрать мою технику" placeholder="Подберу дыхательную технику под твоё состояние..."/>
@@ -4820,7 +4820,7 @@ function MentalSection({profile,kb,notify}) {
           </div>
           <div style={{fontSize:14,color:"#A8A49C",lineHeight:1.6,marginLeft:32}}>{s.desc}</div>
           <div style={{marginTop:10,marginLeft:32}}>
-            <button className="btn btn-ghost btn-xs" onClick={()=>addToPlanner(b?.name||s?.name||"Практика","20:00",b?.desc||s?.desc||"")}>📅 В планировщик</button>
+            <button className="btn btn-ghost btn-xs" onClick={()=>notify("Добавь в профиле раздел Практики — они автоматически попадут в планировщик")}>💡 Подсказка</button>
           </div>
         </div>)}
         <AiBox kb={kb} prompt={"Подбери звукотерапию для "+( profile.name||"меня")+" на сегодня. Стрессоры: "+stressors+". Качество сна: "+(profile.sleepQuality||"—")+". Восстановление: "+recovery+". Луна: "+moon.n+". Время суток: "+currentHour+":00. Дай: 1) какую частоту слушать сегодня и почему именно мне, 2) как правильно проводить сеанс (поза, время, условия), 3) с чем сочетать (дыхание, медитация, ароматерапия)."} label="Подобрать звукотерапию" btnText="Подобрать мою практику" placeholder="Подберу звуковую практику под твоё состояние и луну..."/>
