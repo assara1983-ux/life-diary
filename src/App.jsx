@@ -213,7 +213,7 @@ function buildKB(p) {
 ПИТОМЦЫ: ${(p.pets||[]).map(pt=>`${pt.name}(${pt.type},${pt.feedTimes}х/д,еда:${pt.food||"—"})`).join(";")||"нет"}
 ЗДОРОВЬЕ: зоны-${(p.healthFocus||[]).join(",")||"—"}, цель-${p.healthGoal||"—"}, хрон.-${p.chronic||"нет"}, спорт-${(p.sport||[]).join(",")||"—"}, практики-${(p.practices||[]).join(",")||"—"}
 ПИТАНИЕ: ${p.nutrition||"обычное"}, всегда дома-${(p.staples||[]).join(",")||"—"}, закупка-${p.shopDay||"—"}
-КРАСОТА: кожа-${p.skinType||"—"}, волосы-${p.hairType||"—"}, ногти-${p.nailFreq||"—"}, приоритет-${p.beautyPriority||"—"}
+УХОД: кожа-${p.skinType||"—"}, ${p.gender==="Мужской"?"борода-"+(p.beard||"—")+", барбер-"+(p.haircutFreq||"—"):"волосы-"+(p.hairType||"—")+", ногти-"+(p.nailFreq||"—")}, приоритет-${p.beautyPriority||"—"}
 ХОББИ: ${(p.hobbies||[]).join(",")||"—"}, проект-${p.hobbyProject||"—"}
 ЦЕЛИ: ${p.mainGoal||"—"}, вдохновляет-${p.workInspire||"—"}, истощает-${(p.workDrain||[]).join(",")||"—"}
 
@@ -1117,7 +1117,7 @@ const OB_STEPS = [
   {id:"pets",     title:"Питомцы",                       sub:"Добавь всех — кормление, ветеринарные дела войдут в расписание автоматически."},
   {id:"health",   title:"Здоровье",                      sub:"Чтобы расписание строилось с заботой о тебе, а не вопреки."},
   {id:"tcm",      title:"ТКМ-диагностика",               sub:"5 вопросов для точного профиля по традиционной китайской медицине. Это позволит составить меню и рекомендации, идеально подходящие именно твоему телу."},
-  {id:"beauty",   title:"Уход за собой",                 sub:"Уход за кожей, волосами, здоровые привычки — поставим в расписание."},
+  {id:"beauty",   title:"Уход за собой",                 sub:"Уход за кожей и внешним видом — поставим в расписание."}, 
   {id:"shopping", title:"Продукты и покупки",            sub:"Когда и как закупаешься — напомним вовремя."},
   {id:"hobbies",  title:"Хобби и увлечения",             sub:"Твои увлечения заслуживают места в жизни — не только дела."},
   {id:"travel",   title:"Путешествия",                   sub:"Куда хочешь поехать? Поможем спланировать мягко, шаг за шагом."},
@@ -1398,7 +1398,7 @@ function Onboarding({ onDone }) {
             <div className="chips">{["Похудеть","Набрать мышцы","Больше энергии","Улучшить сон","Снизить стресс","Лечение","Просто поддерживать"].map(v=><div key={v} className={`chip ${d.healthGoal===v?"on":""}`} onClick={()=>set("healthGoal",v)}>{v}</div>)}</div>
           </div>
           <div className="fld"><label>Физическая активность</label>
-            <div className="chips">{["Не занимаюсь","Прогулки","Йога","Цигун","Тренажёр","Бег","Плавание","Танцы","Велосипед"].map(v=><div key={v} className={`chip ${(d.sport||[]).includes(v)?"on":""}`} onClick={()=>tog("sport",v)}>{v}</div>)}</div>
+            <div className="chips">{(d.gender==="Мужской"?["Не занимаюсь","Тренажёр","Бег","Плавание","Велосипед","Единоборства","Футбол","Баскетбол","Йога","Цигун","Прогулки","Туризм","Лыжи","Теннис"]:["Не занимаюсь","Прогулки","Йога","Цигун","Тренажёр","Бег","Плавание","Танцы","Велосипед","Пилатес","Стретчинг"]).map(v=><div key={v} className={`chip ${(d.sport||[]).includes(v)?"on":""}`} onClick={()=>tog("sport",v)}>{v}</div>)}</div>
           </div>
           <div className="fld"><label>Практики</label>
             <div className="chips">{["Нет","Медитация","Цигун","Дыхательные","Молитва","Аффирмации","Ведение дневника"].map(v=><div key={v} className={`chip ${(d.practices||[]).includes(v)?"on":""}`} onClick={()=>tog("practices",v)}>{v}</div>)}</div>
@@ -1522,29 +1522,40 @@ function Onboarding({ onDone }) {
         </>}
 
         {s.id==="beauty" && <>
-          {d.gender==="Мужской"&&(
-            <div className="fld">
-              <label>Борода / усы</label>
+          {/* Тип кожи — для всех */}
+          <div className="fld"><label>Тип кожи</label>
+            <div className="chips">{["Нормальная","Сухая","Жирная","Комбинированная","Чувствительная"].map(v=><div key={v} className={`chip ${d.skinType===v?"on":""}`} onClick={()=>set("skinType",v)}>{v}</div>)}</div>
+          </div>
+
+          {d.gender==="Мужской" ? <>
+            {/* Мужской блок */}
+            <div className="fld"><label>Борода / усы</label>
               <div className="chips">{["Нет","Щетина","Короткая борода","Длинная борода","Усы"].map(v=><div key={v} className={"chip "+(d.beard===v?"on":"")} onClick={()=>set("beard",v)}>{v}</div>)}</div>
             </div>
-          )}
-          <div className="fld-row">
-            <div className="fld"><label>Тип кожи</label>
-              <div className="chips">{["Нормальная","Сухая","Жирная","Комбинированная","Чувствительная"].map(v=><div key={v} className={`chip ${d.skinType===v?"on":""}`} onClick={()=>set("skinType",v)}>{v}</div>)}</div>
+            <div className="fld"><label>Как часто бреешься / стрижёшь бороду</label>
+              <div className="chips">{["Каждый день","Раз в 2–3 дня","Раз в неделю","Реже"].map(v=><div key={v} className={`chip ${d.beardFreq===v?"on":""}`} onClick={()=>set("beardFreq",v)}>{v}</div>)}</div>
             </div>
+            <div className="fld"><label>Стрижка в барбершопе</label>
+              <div className="chips">{["Раз в 2–3 нед.","Раз в месяц","Раз в 2 мес.","Стригусь сам","Редко"].map(v=><div key={v} className={`chip ${d.haircutFreq===v?"on":""}`} onClick={()=>set("haircutFreq",v)}>{v}</div>)}</div>
+            </div>
+            <div className="fld"><label>Приоритет в уходе</label>
+              <div className="chips">{["Кожа лица","Борода","Тело","Всё одинаково"].map(v=><div key={v} className={`chip ${d.beautyPriority===v?"on":""}`} onClick={()=>set("beautyPriority",v)}>{v}</div>)}</div>
+            </div>
+          </> : <>
+            {/* Женский блок */}
             <div className="fld"><label>Волосы</label>
               <div className="chips">{["Нормальные","Сухие","Жирные","Окрашенные","Вьющиеся","Тонкие"].map(v=><div key={v} className={`chip ${d.hairType===v?"on":""}`} onClick={()=>set("hairType",v)}>{v}</div>)}</div>
             </div>
-          </div>
-          <div className="fld"><label>Ногти</label>
-            <div className="chips">{["Не делаю","Раз в 2–3 нед.","Раз в месяц","Нарощенные (коррекция 3 нед.)","Сама дома"].map(v=><div key={v} className={`chip ${d.nailFreq===v?"on":""}`} onClick={()=>set("nailFreq",v)}>{v}</div>)}</div>
-          </div>
-          <div className="fld"><label>Стрижка</label>
-            <div className="chips">{["Раз в месяц","Раз в 6 нед.","Раз в 2 мес.","Редко"].map(v=><div key={v} className={`chip ${d.haircutFreq===v?"on":""}`} onClick={()=>set("haircutFreq",v)}>{v}</div>)}</div>
-          </div>
-          <div className="fld"><label>Главный приоритет в уходе</label>
-            <div className="chips">{["Кожа лица","Тело","Волосы","Ногти","Всё одинаково"].map(v=><div key={v} className={`chip ${d.beautyPriority===v?"on":""}`} onClick={()=>set("beautyPriority",v)}>{v}</div>)}</div>
-          </div>
+            <div className="fld"><label>Ногти</label>
+              <div className="chips">{["Не делаю","Раз в 2–3 нед.","Раз в месяц","Нарощенные (коррекция 3 нед.)","Сама дома"].map(v=><div key={v} className={`chip ${d.nailFreq===v?"on":""}`} onClick={()=>set("nailFreq",v)}>{v}</div>)}</div>
+            </div>
+            <div className="fld"><label>Стрижка</label>
+              <div className="chips">{["Раз в месяц","Раз в 6 нед.","Раз в 2 мес.","Редко"].map(v=><div key={v} className={`chip ${d.haircutFreq===v?"on":""}`} onClick={()=>set("haircutFreq",v)}>{v}</div>)}</div>
+            </div>
+            <div className="fld"><label>Главный приоритет в уходе</label>
+              <div className="chips">{["Кожа лица","Тело","Волосы","Ногти","Всё одинаково"].map(v=><div key={v} className={`chip ${d.beautyPriority===v?"on":""}`} onClick={()=>set("beautyPriority",v)}>{v}</div>)}</div>
+            </div>
+          </>}
         </>}
 
         {s.id==="shopping" && <>
@@ -1564,9 +1575,14 @@ function Onboarding({ onDone }) {
 
         {s.id==="hobbies" && <>
           <div className="fld"><label>Хобби и увлечения</label>
-            <div className="chips">{["Чтение","Рисование","Вязание/шитьё","Фотография","Музыка","Готовка","Садоводство","Видеоигры","Кино","Путешествия","Танцы","Рукоделие","Блогинг","Языки","Спорт"].map(v=><div key={v} className={`chip ${(d.hobbies||[]).includes(v)?"on":""}`} onClick={()=>tog("hobbies",v)}>{v}</div>)}</div>
+            <div className="chips">{(d.gender==="Мужской"
+              ? ["Чтение","Фотография","Музыка","Готовка","Садоводство","Видеоигры","Кино","Путешествия","Спорт","Рисование","Блогинг","Языки","Рыбалка","Авто / мото","Туризм / походы","Единоборства","Программирование","Настольные игры"]
+              : ["Чтение","Рисование","Вязание/шитьё","Фотография","Музыка","Готовка","Садоводство","Видеоигры","Кино","Путешествия","Танцы","Рукоделие","Блогинг","Языки","Спорт","Йога","Декор / дизайн"]
+            ).map(v=><div key={v} className={`chip ${(d.hobbies||[]).includes(v)?"on":""}`} onClick={()=>tog("hobbies",v)}>{v}</div>)}</div>
           </div>
-          <div className="fld"><label>Хобби-проект — что хочешь развивать</label><input placeholder="Научиться акварели, прочитать 12 книг, освоить гитару..." value={d.hobbyProject||""} onChange={e=>set("hobbyProject",e.target.value)}/></div>
+          <div className="fld"><label>Хобби-проект — что {d.gender==="Мужской"?"хочешь":"хочешь"} развивать</label>
+            <input placeholder={d.gender==="Мужской"?"Освоить гитару, прочитать 12 книг, научиться сёрфингу...":"Научиться акварели, прочитать 12 книг, освоить гитару..."} value={d.hobbyProject||""} onChange={e=>set("hobbyProject",e.target.value)}/>
+          </div>
           <div className="fld"><label>Как часто удаётся заниматься хобби</label>
             <div className="chips">{["Почти никогда","Раз в месяц","Раз в неделю","Несколько раз в неделю","Каждый день"].map(v=><div key={v} className={`chip ${d.hobbyFreq===v?"on":""}`} onClick={()=>set("hobbyFreq",v)}>{v}</div>)}</div>
           </div>
@@ -4000,7 +4016,8 @@ function BeautySection({profile,tasks,setTasks,today,kb,notify}) {
         <div className="g2">
           <div className="pf-item"><div className="pf-l">Кожа</div><div className="pf-v">{profile.skinType||"—"}</div></div>
           <div className="pf-item"><div className="pf-l">Волосы</div><div className="pf-v">{profile.hairType||"—"}</div></div>
-          <div className="pf-item"><div className="pf-l">Ногти</div><div className="pf-v">{profile.nailFreq||"—"}</div></div>
+          {profile.gender!=="Мужской"&&<div className="pf-item"><div className="pf-l">Ногти</div><div className="pf-v">{profile.nailFreq||"—"}</div></div>}
+          {profile.gender==="Мужской"&&<div className="pf-item"><div className="pf-l">Борода</div><div className="pf-v">{profile.beard||"—"}</div></div>}
           <div className="pf-item"><div className="pf-l">Приоритет</div><div className="pf-v">{profile.beautyPriority||"—"}</div></div>
         </div>
       </div>
