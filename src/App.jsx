@@ -2831,8 +2831,8 @@ function TodaySection({profile,tasks,setTasks,journal,setJournal,today,moon,kb,n
             </span>
           </div>
           <div style={{display:"flex",gap:6,alignItems:"center"}}>
-            <button className="btn btn-ghost btn-sm" style={{fontSize:11,padding:"2px 8px"}}
-              onClick={e=>{e.stopPropagation();setAddModal(true);}}>+</button>
+            <button className="btn btn-ghost btn-sm" style={{fontSize:11,padding:"2px 8px",background:"rgba(200,164,90,0.1)"}}
+              onClick={e=>{e.stopPropagation();setAddModal(true);}}>+ Добавить</button>
             <span style={{color:T.text3,fontSize:14}}>{plannerOpen?"▲":"▼"}</span>
           </div>
         </div>
@@ -2881,6 +2881,15 @@ function TodaySection({profile,tasks,setTasks,journal,setJournal,today,moon,kb,n
                       <div className="ico-btn danger" style={{fontSize:12}}
                         onClick={()=>{setTasks(p=>p.map(t=>t.id===ev.taskId?{...t,doneDate:today}:t));notify("Перенесено ✦");}}>↻</div>
                     </div>
+                  )}
+                  {!ev.fixed&&!ev.taskId&&(
+                    <div className="ico-btn" style={{color:T.text3,opacity:.5,fontSize:11}} onClick={()=>{
+                      const newTime = window.prompt("Изменить время (ЧЧ:ММ):", ev.time);
+                      if(newTime&&/^\d{1,2}:\d{2}$/.test(newTime)){
+                        // Update preferredTime for pet/health/practice events
+                        notify("Время изменено — обновится после перезагрузки");
+                      }
+                    }}>🕐</div>
                   )}
                 </div>
               );
@@ -3149,7 +3158,7 @@ function TasksSection({profile,tasks,setTasks,today,kb,notify}) {
   };
   const due=filtered.filter(isTrulyDue);
   const done=filtered.filter(t=>t.doneDate===today);
-  const recurring=tasks.filter(t=>t.freq&&t.freq!=="once"&&!due.find(x=>x.id===t.id)&&(filter==="all"||t.section===filter));
+
   const toggleDone=id=>{setTasks(p=>p.map(t=>t.id===id?{...t,doneDate:t.doneDate===today?null:today,lastDone:t.doneDate===today?t.lastDone:today}:t));};
 
   // Компактная строка задачи
@@ -3247,17 +3256,7 @@ function TasksSection({profile,tasks,setTasks,today,kb,notify}) {
         </div>
       )}
 
-      {/* Регулярные */}
-      {recurring.length>0&&(
-        <details style={{marginBottom:12}}>
-          <summary style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:2,cursor:"pointer",padding:"4px 0"}}>
-            РЕГУЛЯРНЫЕ — НЕ СЕГОДНЯ ({recurring.length})
-          </summary>
-          <div className="card" style={{padding:"4px 14px",marginTop:6,opacity:.55}}>
-            {recurring.map(task=><TaskRow key={task.id} task={task} dim={true}/>)}
-          </div>
-        </details>
-      )}
+
 
       {filtered.length===0&&<div className="empty"><span className="empty-ico">✦</span><p>Задач нет. Добавь первую!</p></div>}
       {modal!==null&&<TaskModal task={modal.id?modal:null} defaultSection={filter!=="all"?filter:"tasks"} onSave={t=>{setTasks(p=>modal.id?p.map(x=>x.id===t.id?t:x):[...p,t]);notify(modal.id?"Обновлено":"Добавлено");}} onClose={()=>setModal(null)}/>}
@@ -3655,7 +3654,6 @@ function WorkSection({profile,tasks,setTasks,today,kb,notify}) {
     {id:"pit",   name:"ПИТ",       icon:"📋", color:"#B882E8"},
     {id:"liz",   name:"Лизинг",    icon:"📄", color:"#E5C87A"},
     {id:"eaes",  name:"ЕАЭС",      icon:"🌐", color:"#7EDDD5"},
-    {id:"vyb",   name:"Выбросы",   icon:"🌿", color:"#A8A49C"},
   ]);
 
   // Хранилище всех отчётов пользователя
@@ -3669,6 +3667,40 @@ function WorkSection({profile,tasks,setTasks,today,kb,notify}) {
   const [dlView, setDlView] = useState("upcoming"); // upcoming | overdue | done | all
   const [taskModal, setTaskModal] = useState(null);
 
+  // Список форм КГД для выбора пользователем
+  const KGD_FORMS = [
+    {id:"910h1", name:"ФНО 910.00 — 1 полугодие",  period:"semi",    deadline_month:"08", deadline_day:"17"},
+    {id:"910h2", name:"ФНО 910.00 — 2 полугодие",  period:"semi",    deadline_month:"02", deadline_day:"17", next_year:true},
+    {id:"200q1", name:"ФНО 200.00 — 1 квартал",    period:"quarter", deadline_month:"05", deadline_day:"15"},
+    {id:"200q2", name:"ФНО 200.00 — 2 квартал",    period:"quarter", deadline_month:"08", deadline_day:"17"},
+    {id:"200q3", name:"ФНО 200.00 — 3 квартал",    period:"quarter", deadline_month:"11", deadline_day:"16"},
+    {id:"200a",  name:"ФНО 200.00 — годовой",       period:"annual",  deadline_month:"03", deadline_day:"31", next_year:true},
+    {id:"300q1", name:"ФНО 300.00 (НДС) — 1 кв.",  period:"quarter", deadline_month:"05", deadline_day:"15"},
+    {id:"300q2", name:"ФНО 300.00 (НДС) — 2 кв.",  period:"quarter", deadline_month:"08", deadline_day:"17"},
+    {id:"300q3", name:"ФНО 300.00 (НДС) — 3 кв.",  period:"quarter", deadline_month:"11", deadline_day:"16"},
+    {id:"100a",  name:"ФНО 100.00 (КПН) — годовой",period:"annual",  deadline_month:"03", deadline_day:"31", next_year:true},
+    {id:"700a",  name:"ФНО 700.00 (имущество)",     period:"annual",  deadline_month:"03", deadline_day:"31", next_year:true},
+    {id:"870q",  name:"ФНО 870.00 (трансф. цен)",   period:"annual",  deadline_month:"05", deadline_day:"31"},
+    {id:"opv",   name:"Уплата ОПВ+ИПН+ОСМС+СО",   period:"monthly", deadline_day:"25"},
+    {id:"nds",   name:"Уплата НДС",                 period:"quarter", deadline_day:"25"},
+    {id:"kpn",   name:"Аванс по КПН",               period:"monthly", deadline_day:"25"},
+    {id:"mus",   name:"Аванс налог на имущество",   period:"quarter", deadline_month_list:["03","06","09","11"], deadline_day:"25"},
+  ];
+  const BNS_FORMS = [
+    {id:"1t",    name:"Форма 1-Т (труд и зарплата)",period:"quarter", deadline_day:"10"},
+    {id:"p1",    name:"Форма П-1 (продукция)",      period:"monthly", deadline_day:"15"},
+    {id:"p2",    name:"Форма П-2 (инвестиции)",     period:"quarter", deadline_day:"25"},
+    {id:"p3",    name:"Форма П-3 (финансы)",         period:"quarter", deadline_day:"25"},
+    {id:"1pf",   name:"Форма 1-ПФ (финансы пред.)", period:"annual",  deadline_month:"03", deadline_day:"25"},
+  ];
+  const EAES_FORMS = [
+    {id:"eaes1", name:"Заявление о ввозе товаров",  period:"monthly", deadline_day:"20"},
+    {id:"eaes2", name:"Уплата НДС при ввозе (ЕАЭС)",period:"monthly", deadline_day:"20"},
+    {id:"eaes3", name:"Статистика ЕАЭС",            period:"monthly", deadline_day:"10"},
+  ];
+  const [showFormPicker, setShowFormPicker] = useState(null); // groupId
+  const [selectedForms, setSelectedForms] = useState({});
+  
   // Встроенный календарь КГД — Казахстан 2026
   const KGD_CALENDAR = [
     // ФНО 200.00 (ИПН с зарплат)
@@ -3708,8 +3740,6 @@ function WorkSection({profile,tasks,setTasks,today,kb,notify}) {
     // ЕАЭС
     {group:"eaes",name:"Заявление о ввозе (ЕАЭС) — ежемес.", period:"monthly", deadline:"2026-05-20", cat:"ЕАЭС"},
     {group:"eaes",name:"Уплата НДС по ЕАЭС — ежемес.",      period:"monthly", deadline:"2026-05-20", cat:"ЕАЭС"},
-    // Выбросы
-    {group:"vyb", name:"Форма 2-ТП (выбросы) — годовой",   period:"annual",  deadline:"2027-02-01", cat:"Выбросы"},
   ];
 
   // Merge system calendar with user reports on first load
@@ -3858,14 +3888,16 @@ function WorkSection({profile,tasks,setTasks,today,kb,notify}) {
                 <div style={{fontSize:16,fontFamily:"'Crimson Pro',serif",color:isOpen?g.color:T.text0}}>{g.name}</div>
                 {pendingCount>0&&<div style={{fontSize:11,color:T.text3}}>Активных: {pendingCount}</div>}
               </div>
-              <button className="btn-mini" style={{padding:"3px 8px",fontSize:11,zIndex:1}} onClick={e=>{e.stopPropagation();setAddReportModal({groupId:g.id});}} title="Добавить отчёт">+</button>
+              <button className="btn-mini" style={{padding:"3px 8px",fontSize:11,zIndex:1}} onClick={e=>{e.stopPropagation();if(g.id==="kgd"||g.id==="bns"||g.id==="eaes"){setShowFormPicker(g.id);}else{setAddReportModal({groupId:g.id});}}} title="Добавить отчёт">+</button>
+              <button className="btn-mini" style={{padding:"3px 7px",fontSize:11,zIndex:1,color:"#E87878",borderColor:"rgba(232,120,120,0.3)"}} onClick={e=>{e.stopPropagation();if(window.confirm('Удалить раздел "'+g.name+'" и все его отчёты?')){setReportGroups(p=>p.filter(x=>x.id!==g.id));setReports(p=>p.filter(r=>r.group!==g.id));setActiveGroup(null);}}} title="Удалить раздел">✕</button>
               <span style={{fontSize:12,color:T.text3}}>{isOpen?"▲":"▼"}</span>
             </div>
             {isOpen&&(
               <div style={{borderRadius:"0 0 12px 12px",border:"1px solid "+g.color+"33",borderTop:"none",background:"rgba(255,255,255,0.01)"}}>
                 {/* Список отчётов группы */}
                 <div style={{padding:"4px 14px 10px"}}>
-                  {groupReports.length===0&&<div style={{fontSize:13,color:T.text3,fontStyle:"italic",padding:"10px 0"}}>Нет отчётов. Нажми «+» чтобы добавить.</div>}
+                  {groupReports.length===0&&<div style={{fontSize:13,color:T.text3,fontStyle:"italic",padding:"10px 0"}}>Нет отчётов. Нажми «+» для добавления.</div>}
+                  {(g.id==="kgd"||g.id==="bns"||g.id==="eaes")&&<button className="btn btn-ghost btn-sm" style={{marginBottom:8,width:"100%",fontSize:12,border:"1px dashed rgba(200,164,90,0.3)"}} onClick={()=>setShowFormPicker(g.id)}>📋 Выбрать формы из календаря</button>}
                   {groupReports.map(r=><ReportRow key={r.id} r={r}/>)}
                 </div>
                 {/* Быстрые шаблоны из системного календаря */}
@@ -4023,7 +4055,63 @@ function WorkSection({profile,tasks,setTasks,today,kb,notify}) {
         </div>
       )}
 
-      {taskModal!==null&&<TaskModal task={taskModal.id?taskModal:null} defaultSection="work" onSave={t=>{setTasks(p=>taskModal.id?p.map(x=>x.id===t.id?t:x):[...p,t]);notify(taskModal.id?"Обновлено":"Добавлено");}} onClose={()=>setTaskModal(null)}/>}
+      {/* ── Модалка выбора форм из календаря ── */}
+      {showFormPicker&&(()=>{
+        const g = reportGroups.find(x=>x.id===showFormPicker)||{name:"",icon:"📋",color:T.gold};
+        const forms = showFormPicker==="kgd"?KGD_FORMS:showFormPicker==="bns"?BNS_FORMS:showFormPicker==="eaes"?EAES_FORMS:[];
+        const existingNames = new Set(reports.filter(r=>r.group===showFormPicker).map(r=>r.name));
+        const year = new Date().getFullYear();
+        const toggleForm = (fid) => setSelectedForms(p=>({...p,[fid]:!p[fid]}));
+        const addSelected = () => {
+          const toAdd = forms.filter(f=>selectedForms[f.id]&&!existingNames.has(f.name));
+          if(!toAdd.length){notify("Выбери формы"); return;}
+          const newReports = toAdd.map(f=>{
+            // Вычислить deadline
+            let dl = year+"-"+(f.deadline_month||"12")+"-"+(f.deadline_day||"25");
+            if(f.next_year) dl = (year+1)+"-"+(f.deadline_month||"03")+"-"+(f.deadline_day||"31");
+            return {
+              id:"sys-"+f.id+"-"+Date.now()+Math.random().toString(36).slice(2),
+              group:showFormPicker, name:f.name, period:f.period, deadline:dl,
+              status:"pending", amount:"", notes:"", enabled:true,
+              createdAt:new Date().toISOString()
+            };
+          });
+          setReports(p=>[...p,...newReports]);
+          setSelectedForms({});
+          setShowFormPicker(null);
+          notify("Добавлено "+newReports.length+" форм");
+        };
+        return (
+          <div className="overlay" onClick={()=>setShowFormPicker(null)}>
+            <div className="modal" onClick={e=>e.stopPropagation()} style={{maxHeight:"85vh",overflowY:"auto"}}>
+              <span className="modal-x" onClick={()=>setShowFormPicker(null)}>✕</span>
+              <div className="modal-title">{g.icon} {g.name} — выбери формы</div>
+              <div style={{fontSize:12,color:T.text3,marginBottom:12}}>Отметь формы которые сдаёт твоя организация. Сроки подставятся автоматически по календарю КЗ {year}.</div>
+              {forms.map(f=>{
+                const already = existingNames.has(f.name);
+                return (
+                  <div key={f.id} onClick={()=>!already&&toggleForm(f.id)} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 4px",borderBottom:"1px solid rgba(255,255,255,0.04)",cursor:already?"default":"pointer",opacity:already?0.5:1}}>
+                    <div style={{width:20,height:20,borderRadius:4,border:"1px solid "+(selectedForms[f.id]?g.color:T.bdr),background:selectedForms[f.id]?g.color+"33":"transparent",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,color:g.color,flexShrink:0}}>
+                      {already?"✓":selectedForms[f.id]?"✓":""}
+                    </div>
+                    <div style={{flex:1}}>
+                      <div style={{fontSize:14,color:already?T.text3:T.text0}}>{f.name}</div>
+                      <div style={{fontSize:11,color:T.text3,fontFamily:"'JetBrains Mono'"}}>{({monthly:"Ежемесячно",quarter:"Ежеквартально",semi:"Раз в полгода",annual:"Ежегодно"}[f.period])||f.period} · до {f.deadline_day} числа</div>
+                    </div>
+                    {already&&<span style={{fontSize:10,color:T.success}}>уже добавлена</span>}
+                  </div>
+                );
+              })}
+              <div style={{display:"flex",gap:8,marginTop:16}}>
+                <button className="btn btn-ghost" onClick={()=>setShowFormPicker(null)}>Отмена</button>
+                <button className="btn btn-primary" onClick={addSelected}>Добавить выбранные</button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+            {taskModal!==null&&<TaskModal task={taskModal.id?taskModal:null} defaultSection="work" onSave={t=>{setTasks(p=>taskModal.id?p.map(x=>x.id===t.id?t:x):[...p,t]);notify(taskModal.id?"Обновлено":"Добавлено");}} onClose={()=>setTaskModal(null)}/>}
     </div>
   );
 }
@@ -4093,66 +4181,773 @@ function HealthSection({profile,tasks,setTasks,setShopList,today,kb,notify}) {
 // ══════════════════════════════════════════════════════════════
 //  BEAUTY
 // ══════════════════════════════════════════════════════════════
-function BeautySection({profile,tasks,setTasks,today,kb,notify}) {
+
+function HomeSection({profile,tasks,setTasks,today,kb,notify}) {
   const [modal,setModal]=useState(null);
-  const beautyTasks=tasks.filter(t=>t.section==="beauty");
-  const due=beautyTasks.filter(t=>isDue(t,today));
-  const isMale = profile.gender === "Мужской";
-  const autoBeauty=()=>{
-    const items = isMale ? [
-      {title:"Уход за лицом — утро (умывание, крем)",freq:"daily",priority:"m"},
-      {title:"Уход за лицом — вечер (умывание)",freq:"daily",priority:"m"},
-      {title:"Уход за бородой / бритьё",freq:"every:2",priority:"m"},
-      {title:"Скраб для лица",freq:"every:7",priority:"l"},
-      {title:"Крем для рук",freq:"daily",priority:"l"},
-      {title:"Уход за кожей тела (увлажнение)",freq:"every:2",priority:"l"},
-    ] : [
-      {title:"Уход за лицом — утро",freq:"daily",priority:"m"},
-      {title:"Уход за лицом — вечер",freq:"daily",priority:"m"},
-      {title:"Маска для лица",freq:"every:3",priority:"l"},
-      {title:"Маска для волос",freq:"every:7",priority:"l"},
-      {title:"Скраб для тела",freq:"every:4",priority:"l"},
-      {title:"Крем для рук и тела",freq:"daily",priority:"l"},
-    ];
-    if(isMale) {
-      items.push({title:"Барбер / стрижка",freq:"every:30",priority:"m"});
-    } else {
-      if(profile.nailFreq&&!profile.nailFreq.includes("Не"))items.push({title:"Маникюр / педикюр",freq:"every:21",priority:"m"});
-      if(profile.haircutFreq)items.push({title:"Стрижка",freq:profile.haircutFreq.includes("месяц")?"every:30":"every:42",priority:"l"});
+  const [ht,setHt]=useState({title:"", freq:"daily", priority:"m", preferredTime:"", notes:"", section:"home"});
+  const updHt = (k,v) => setHt(p=>({...p,[k]:v}));
+  const autoHome=()=>{
+    const items=[];
+    const beds   = parseInt(profile.bedrooms)||1;
+    const baths  = parseInt(profile.bathrooms)||1;
+    const rooms  = profile.homeRooms||[];
+    const hasKitchen  = rooms.includes("Кухня")   || true; // кухня есть у всех
+    const hasHall     = rooms.includes("Коридор")  || true;
+    const hasLiving   = rooms.includes("Гостиная");
+    const hasBalcony  = rooms.includes("Балкон");
+    const hasStudy    = rooms.includes("Кабинет");
+    const hasNursery  = rooms.includes("Детская");
+    const hasPantry   = rooms.includes("Кладовка");
+
+    // ── Ежедневно ──
+    items.push({title:"Вытереть пыль",         freq:"daily",    priority:"l"});
+    items.push({title:"Помыть посуду",          freq:"daily",    priority:"m"});
+    items.push({title:"Вынести мусор",          freq:"daily",    priority:"m"});
+    if(hasKitchen) items.push({title:"Протереть плиту и варочную",freq:"daily",priority:"l"});
+    if(hasKitchen) items.push({title:"Протереть кухонные поверхности",freq:"every:2",priority:"l"});
+
+    // ── Спальни ──
+    for(let i=1;i<=beds;i++){
+      const lbl = beds>1 ? ` (спальня ${i})` : "";
+      items.push({title:`Проветрить спальню${lbl}`,  freq:"daily",    priority:"l"});
+      items.push({title:`Смена постельного${lbl}`,   freq:"every:7",  priority:"m"});
+      items.push({title:`Пылесос в спальне${lbl}`,   freq:"every:7",  priority:"m"});
+      items.push({title:`Влажная уборка спальни${lbl}`,freq:"every:14",priority:"l"});
     }
-    return items.map(t=>({...t,id:Date.now()+Math.random(),section:"beauty",lastDone:"",doneDate:"",notes:""}));
+
+    // ── Санузлы ──
+    for(let i=1;i<=baths;i++){
+      const lbl = baths>1 ? ` (санузел ${i})` : "";
+      items.push({title:`Сантехника${lbl}`,          freq:"weekly:3", priority:"m"});
+      items.push({title:`Унитаз и раковина${lbl}`,   freq:"weekly:3", priority:"m"});
+      items.push({title:`Зеркала${lbl}`,             freq:"weekly:1", priority:"l"});
+      items.push({title:`Генуборка ванной${lbl}`,    freq:"every:14", priority:"h"});
+    }
+
+    // ── Коридор ──
+    if(hasHall){
+      items.push({title:"Подмести коридор",           freq:"every:2",  priority:"l"});
+      items.push({title:"Влажная уборка коридора",    freq:"weekly:5", priority:"l"});
+    }
+
+    // ── Гостиная ──
+    if(hasLiving){
+      items.push({title:"Пылесос в гостиной",         freq:"weekly:2", priority:"m"});
+      items.push({title:"Влажная уборка гостиной",    freq:"every:14", priority:"l"});
+      items.push({title:"Вытереть пыль с мебели",     freq:"weekly:1", priority:"l"});
+    }
+
+    // ── Балкон ──
+    if(hasBalcony){
+      items.push({title:"Уборка на балконе",          freq:"every:14", priority:"l"});
+    }
+
+    // ── Кабинет ──
+    if(hasStudy){
+      items.push({title:"Порядок в кабинете",         freq:"weekly:5", priority:"l"});
+    }
+
+    // ── Детская ──
+    if(hasNursery){
+      items.push({title:"Уборка детской",             freq:"every:2",  priority:"h"});
+      items.push({title:"Дезинфекция игрушек",        freq:"every:7",  priority:"m"});
+    }
+
+    // ── Кладовка ──
+    if(hasPantry){
+      items.push({title:"Разбор кладовки",            freq:"every:30", priority:"l"});
+    }
+
+    // ── Общее ──
+    items.push({title:"Мытьё окон",                   freq:"every:30", priority:"l"});
+    items.push({title:"Генеральная уборка",            freq:"every:90", priority:"h"});
+    items.push({title:"Чистка холодильника",           freq:"weekly:5", priority:"l"});
+
+    // ── Растения ──
+    if(profile.plants&&profile.plants!=="Нет")
+      items.push({title:"Полить цветы", freq:profile.plants.includes("день")?"daily":"every:2", priority:"m"});
+
+    // ── Сезонные задачи (определяем по текущему месяцу) ──
+    const month = new Date().getMonth()+1; // 1-12
+    const isMarch   = month===3;
+    const isApril   = month===4;
+    const isMay     = month===5;
+    const isOct     = month===10;
+    const isNov     = month===11;
+
+    // Весна (март-май) — убрать зимнее, достать летнее
+    if(isMarch||isApril){
+      items.push({title:"🌸 Сезон: Убрать зимние вещи в хранение",          freq:"once", priority:"h", notes:"Пальто, пуховики, свитера — стирка и хранение в вакуумных пакетах"});
+      items.push({title:"🌸 Сезон: Достать весенне-летнюю одежду",           freq:"once", priority:"h", notes:"Проверить состояние, постирать после хранения"});
+      items.push({title:"🌸 Сезон: Весенняя генеральная уборка",             freq:"once", priority:"h", notes:"Мытьё окон, чистка карнизов, перестановка мебели"});
+      items.push({title:"🌸 Сезон: Проветрить и выбить зимние одеяла",       freq:"once", priority:"m"});
+      items.push({title:"🌸 Сезон: Разобрать гардероб — ненужное отдать",    freq:"once", priority:"l"});
+    }
+    if(isMay){
+      items.push({title:"☀️ Сезон: Достать летнюю обувь",                    freq:"once", priority:"m", notes:"Почистить и подготовить к сезону"});
+      items.push({title:"☀️ Сезон: Убрать зимнюю обувь",                     freq:"once", priority:"m", notes:"Почистить, смазать, убрать в коробки"});
+      items.push({title:"☀️ Сезон: Подготовить балкон/террасу к лету",       freq:"once", priority:"l"});
+    }
+    // Осень (октябрь-ноябрь) — убрать летнее, достать зимнее
+    if(isOct){
+      items.push({title:"🍂 Сезон: Достать зимние вещи из хранения",         freq:"once", priority:"h", notes:"Пальто, пуховики, тёплые свитера — проветрить и проверить"});
+      items.push({title:"🍂 Сезон: Убрать летнюю одежду на хранение",        freq:"once", priority:"h", notes:"Постирать, высушить, сложить в вакуумные пакеты"});
+      items.push({title:"🍂 Сезон: Подготовить тёплые одеяла и пледы",       freq:"once", priority:"m"});
+      items.push({title:"🍂 Сезон: Проверить отопление и батареи",           freq:"once", priority:"h"});
+    }
+    if(isNov){
+      items.push({title:"❄️ Сезон: Убрать летнюю обувь на хранение",         freq:"once", priority:"m", notes:"Почистить, обработать водоотталкивающим, убрать"});
+      items.push({title:"❄️ Сезон: Достать зимнюю обувь и аксессуары",       freq:"once", priority:"m"});
+      items.push({title:"❄️ Сезон: Проверить тёплые аксессуары (шапки, шарфы)", freq:"once", priority:"l"});
+    }
+
+    return items.map(t=>({...t,id:Date.now()+Math.random(),section:"home",lastDone:"",doneDate:"",notes:t.notes||""}));
   };
+  const homeTasks=tasks.filter(t=>t.section==="home");
+  const due=homeTasks.filter(t=>isDue(t,today));
+  return(
+    <div>
+      <div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",background:"rgba(45,32,16,0.05)",borderRadius:10,marginBottom:10,flexWrap:"wrap"}}>
+        {profile.homeType&&<span style={{fontSize:12,color:T.text2}}>🏠 {profile.homeType}{profile.homeArea?" "+profile.homeArea+"м²":""}</span>}
+        {(profile.livesWith||[]).length>0&&<span style={{fontSize:12,color:T.text3}}>· {(profile.livesWith||[]).join(", ")}</span>}
+        {(profile.cleanDays||[]).length>0&&<span style={{fontSize:12,color:T.gold,marginLeft:"auto"}}>🧹 {profile.cleanDays.join(", ")}</span>}
+      </div>
+      <AiBox kb={kb} prompt={`Советы по домашним делам для ${profile.homeType||"квартиры"} ${profile.homeArea||"?"}м² где живут: ${(profile.livesWith||[]).join(",")||"я один(а)"}. Питомцы: ${(profile.pets||[]).map(p=>p.name).join(",")||"нет"}. Дни уборки по расписанию: ${(profile.cleanDays||[]).join(",")||"—"}. Я работаю до ${profile.workEnd||"18:00"} — дела планируй после этого. Тип личности: ${profile.planningStyle||"—"}. Что важнее всего сделать сегодня с учётом моего расписания?`} label="Быт и дом" btnText="Советы по быту" placeholder="Подскажу как организовать дом легко..."/>
+      {homeTasks.length===0&&(
+        <div className="card" style={{textAlign:"center",padding:"28px 20px"}}>
+          <div style={{fontSize:14,color:T.text3,marginBottom:16,fontStyle:"italic"}}>Добавь домашние дела или создай расписание уборки автоматически</div>
+          <button className="btn btn-primary" onClick={()=>{const ts=autoHome();setTasks(p=>{const exist=new Set(p.filter(x=>x.section==="home").map(x=>x.title.toLowerCase()));const filtered=ts.filter(t=>!exist.has(t.title.toLowerCase()));notify("Добавлено "+filtered.length+" задач"+(filtered.length<ts.length?" (пропущено "+(ts.length-filtered.length)+" дубликатов)":""));return [...p,...filtered];});}}>✦ Создать расписание уборки</button>
+        </div>
+      )}
+      {homeTasks.length>0&&(()=>{
+        // Разбить дела по периодичности
+        // Классификация: каждая задача попадает РОВНО в одну группу по периоду
+        const classifyTask = (f) => {
+          if(!f) return "other";
+          if(f==="once") return "other";
+          if(f==="daily" || f==="workdays") return "today";
+          // every:N — N дней между повторами
+          const ev = f.match(/^every:(\d+)$/);
+          if(ev) {
+            const n = parseInt(ev[1]);
+            if(n <= 1) return "today";
+            if(n <= 7) return "week";
+            if(n <= 90) return "month";
+            return "other";
+          }
+          // weekly:N — конкретный день недели
+          if(f.startsWith("weekly:")) return "week";
+          // monthly:N — конкретный день месяца
+          if(f.startsWith("monthly:")) return "month";
+          return "other";
+        };
+        
+        const todayTasks = homeTasks.filter(t=>classifyTask(t.freq)==="today" && isDue(t,today) && (t.freq==="daily"||t.freq==="workdays"||(t.freq.startsWith("every:")&&(parseInt(t.freq.split(":")[1])<=1||t.lastDone))||t.freq.startsWith("weekly:")));
+        const weekTasks = homeTasks.filter(t=>classifyTask(t.freq)==="week" && isDue(t,today) && t.lastDone);
+        const monthTasks = homeTasks.filter(t=>classifyTask(t.freq)==="month" && isDue(t,today) && t.lastDone);
+        const otherTasks = homeTasks.filter(t=>classifyTask(t.freq)==="other" && isDue(t,today) && t.lastDone);
+        
+        const renderGroup = (title, emoji, color, list, showFreq) => list.length===0 ? null : (
+          <div className="card" style={{marginBottom:12,borderLeft:"3px solid "+color}}>
+            <div className="card-hd">
+              <div className="card-title"><span style={{marginRight:8}}>{emoji}</span>{title}</div>
+              <span className="badge bm">{list.filter(t=>t.doneDate!==today).length}/{list.length}</span>
+            </div>
+            {list.map(task=>(
+              <div key={task.id} className="task-row">
+                <div className={"chk"+(task.doneDate===today?" done":"")} onClick={()=>setTasks(p=>p.map(t=>t.id===task.id?{...t,doneDate:t.doneDate===today?null:today,lastDone:t.doneDate===today?t.lastDone:today}:t))}>{task.doneDate===today?"✓":""}</div>
+                <div className="task-body">
+                  <div className={"task-name"+(task.doneDate===today?" done":"")}>{task.title}</div>
+                  <div className="task-meta">{showFreq&&<span className="badge bt">{freqLabel(task.freq)}</span>}{task.lastDone&&<span className="badge bm">был: {task.lastDone}</span>}{task.notes&&<span className="badge bm" style={{fontStyle:"italic"}}>{task.notes.slice(0,30)}</span>}</div>
+                </div>
+                <div className="ico-btn" style={{color:T.teal,opacity:.7}} onClick={()=>setModal(task)}>✏️</div>
+                <div className="ico-btn danger" onClick={()=>setTasks(p=>p.filter(t=>t.id!==task.id))}>✕</div>
+              </div>
+            ))}
+          </div>
+        );
+        
+        return (
+          <>
+            <div className="card-hd" style={{marginBottom:8}}>
+              <div className="card-title">Дела по дому</div>
+              <div className="btn-row">
+                <button className="btn btn-ghost btn-sm" onClick={()=>{const ts=autoHome();setTasks(p=>{const exist=new Set(p.filter(x=>x.section==="home").map(x=>x.title.toLowerCase()));const filtered=ts.filter(t=>!exist.has(t.title.toLowerCase()));notify(filtered.length>0?"Добавлено "+filtered.length:"Все задачи уже есть");return [...p,...filtered];});}}>+ Авто</button>
+                <button className="btn btn-primary btn-sm" onClick={()=>setModal({})}>+ Своё дело</button>
+              </div>
+            </div>
+            {renderGroup("Сегодня", "☀️", T.success, todayTasks, false)}
+            {renderGroup("На этой неделе", "📅", T.teal, weekTasks, true)}
+            {renderGroup("В этом месяце", "🗓️", T.warn, monthTasks, true)}
+            {otherTasks.length>0 && renderGroup("Прочее", "📋", T.text3, otherTasks, true)}
+            {todayTasks.length===0&&weekTasks.length===0&&monthTasks.length===0&&<div className="empty"><span className="empty-ico">🏡</span><p>Дел нет!</p></div>}
+          </>
+        );
+      })()}
+
+      {/* ── Специализированная модалка домашних дел ── */}
+      {modal!==null&&(()=>{
+        const isEdit = !!modal.id;
+        // При открытии редактирования — данные из task, при новом — из ht
+        const cur = isEdit ? modal : ht;
+        const upd = isEdit
+          ? (k,v) => setModal(p=>({...p,[k]:v}))
+          : updHt;
+
+        // Популярные домашние дела — быстрый выбор
+        const quickTasks = [
+          {emoji:"👕",title:"Постирать бельё",        freq:"every:7"},
+          {emoji:"🧺",title:"Погладить бельё",        freq:"every:7"},
+          {emoji:"🧹",title:"Подмести полы",          freq:"daily"},
+          {emoji:"🫧",title:"Помыть полы с мытьём",   freq:"every:3"},
+          {emoji:"🪣",title:"Протереть столешницы",   freq:"daily"},
+          {emoji:"🛁",title:"Помыть ванну/душ",       freq:"weekly:4"},
+          {emoji:"🚽",title:"Почистить унитаз",       freq:"weekly:3"},
+          {emoji:"🪟",title:"Протереть зеркала",      freq:"weekly:1"},
+          {emoji:"🧊",title:"Разморозить холодильник",freq:"every:90"},
+          {emoji:"🫙",title:"Разобрать шкаф/ящики",  freq:"every:90"},
+          {emoji:"📦",title:"Разобрать кладовку",     freq:"every:30"},
+          {emoji:"🌿",title:"Полить цветы",           freq:"every:2"},
+          {emoji:"🪴",title:"Пересадить растения",    freq:"every:180"},
+          {emoji:"💡",title:"Протереть лампы/плафоны",freq:"every:30"},
+          {emoji:"🧴",title:"Пополнить запасы химии", freq:"every:30"},
+          {emoji:"🗑",title:"Вынести мусор",          freq:"daily"},
+          {emoji:"🛏",title:"Застелить постель",      freq:"daily"},
+          {emoji:"🧦",title:"Разобрать чистое бельё", freq:"every:7"},
+          {emoji:"🪥",title:"Почистить духовку",      freq:"every:30"},
+          {emoji:"☕",title:"Почистить кофемашину",   freq:"every:14"},
+          {emoji:"🐾",title:"Помыть миску питомца",   freq:"every:2"},
+          {emoji:"🚗",title:"Помыть машину",          freq:"every:14"},
+          {emoji:"📺",title:"Протереть технику",      freq:"every:14"},
+          {emoji:"🧹",title:"Пропылесосить диван",    freq:"every:14"},
+        ];
+
+        const freqOptions = [
+          {v:"daily",     l:"Каждый день"},
+          {v:"every:2",   l:"Каждые 2 дня"},
+          {v:"every:3",   l:"Каждые 3 дня"},
+          {v:"weekly:1",  l:"Раз в неделю (пн)"},
+          {v:"weekly:2",  l:"Раз в неделю (вт)"},
+          {v:"weekly:3",  l:"Раз в неделю (ср)"},
+          {v:"weekly:4",  l:"Раз в неделю (чт)"},
+          {v:"weekly:5",  l:"Раз в неделю (пт)"},
+          {v:"weekly:6",  l:"Раз в неделю (сб)"},
+          {v:"weekly:0",  l:"Раз в неделю (вс)"},
+          {v:"every:7",   l:"Раз в 7 дней"},
+          {v:"every:14",  l:"Раз в 2 недели"},
+          {v:"every:30",  l:"Раз в месяц"},
+          {v:"every:90",  l:"Раз в 3 месяца"},
+          {v:"once",      l:"Один раз"},
+        ];
+
+        return(
+          <div className="overlay" onClick={()=>setModal(null)}>
+            <div className="modal" onClick={e=>e.stopPropagation()} style={{maxHeight:"92vh",overflowY:"auto"}}>
+              <button className="btn btn-ghost btn-sm" style={{position:"absolute",top:16,left:16}} onClick={()=>setModal(null)}>← Назад</button>
+              <span className="modal-x" onClick={()=>setModal(null)}>✕</span>
+              <div className="modal-title" style={{marginTop:8}}>{isEdit?"Редактировать дело":"Добавить домашнее дело"}</div>
+
+              {/* Быстрый выбор — только при добавлении нового */}
+              {!isEdit&&(
+                <div style={{marginBottom:18}}>
+                  <div style={{fontSize:11,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1.5,marginBottom:10}}>БЫСТРЫЙ ВЫБОР</div>
+                  <div style={{display:"flex",flexWrap:"wrap",gap:7}}>
+                    {quickTasks.map(q=>(
+                      <div key={q.title}
+                        onClick={()=>{upd("title",q.title);upd("freq",q.freq);}}
+                        style={{display:"flex",alignItems:"center",gap:6,padding:"6px 12px",
+                          borderRadius:20,border:"1px solid "+(cur.title===q.title?T.gold:T.bdr),
+                          background:cur.title===q.title?"rgba(45,106,79,0.12)":"rgba(255,255,255,0.5)",
+                          cursor:"pointer",fontSize:14,color:cur.title===q.title?T.gold:T.text1,
+                          transition:"all .15s"}}>
+                        <span>{q.emoji}</span><span>{q.title}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Название */}
+              <div className="fld">
+                <label>Название дела</label>
+                <input
+                  placeholder="Погладить бельё, помыть окна..."
+                  value={cur.title}
+                  onChange={e=>upd("title",e.target.value)}
+                  autoFocus
+                />
+              </div>
+
+              {/* Периодичность */}
+              <div className="fld">
+                <label>Как часто?</label>
+                <select value={cur.freq||"daily"} onChange={e=>upd("freq",e.target.value)}>
+                  {freqOptions.map(f=><option key={f.v} value={f.v}>{f.l}</option>)}
+                </select>
+              </div>
+
+              {/* Время */}
+              <div className="fld-row">
+                <div className="fld">
+                  <label>Удобное время</label>
+                  <input type="time" value={cur.preferredTime||""} onChange={e=>upd("preferredTime",e.target.value)}/>
+                </div>
+                <div className="fld">
+                  <label>Приоритет</label>
+                  <select value={cur.priority||"m"} onChange={e=>upd("priority",e.target.value)}>
+                    <option value="l">Низкий — когда придётся</option>
+                    <option value="m">Средний — в этот день</option>
+                    <option value="h">Высокий — обязательно</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Заметка */}
+              <div className="fld">
+                <label>Заметка (необязательно)</label>
+                <input placeholder="Тёмное бельё отдельно / использовать средство X..." value={cur.notes||""} onChange={e=>upd("notes",e.target.value)}/>
+              </div>
+
+              <div className="modal-foot">
+                <button className="btn btn-ghost" onClick={()=>setModal(null)}>Отмена</button>
+                <button className="btn btn-primary" onClick={()=>{
+                  if(!cur.title.trim()){notify("Введи название");return;}
+                  const task={...cur,id:modal.id||Date.now()+Math.random(),section:"home",lastDone:"",doneDate:cur.doneDate||""};
+                  setTasks(p=>modal.id?p.map(x=>x.id===task.id?task:x):[...p,task]);
+                  setModal(null);
+                  if(!isEdit) setHt({title:"",freq:"daily",priority:"m",preferredTime:"",notes:"",section:"home"});
+                  notify(isEdit?"Дело обновлено ✦":"Дело добавлено ✦");
+                }}>{isEdit?"Сохранить":"Добавить"}</button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+    </div>
+  );
+}
+
+
+function ShoppingSection({profile,shopList,setShopList,kb,notify}) {
+  const [newItem,setNewItem]=useState(""); const [newCat,setNewCat]=useState("Продукты");
+  const cats=["Продукты","Бытовая химия","Красота и уход","Для питомцев","Одежда","Аптека","Другое"];
+  
+  // Очистка старых записей с [Категория] в названии — выполняется один раз при загрузке
+  useEffect(()=>{
+    const needsCleanup = shopList.some(item => /\[[^\]]+\]/.test(item.name));
+    if(!needsCleanup) return;
+    const validCats = cats;
+    const cleaned = [];
+    const seen = new Set();
+    shopList.forEach(item => {
+      const m = item.name.match(/\[([^\]]+)\]/);
+      let cat = item.cat || "Продукты";
+      if(m && validCats.includes(m[1])) cat = m[1];
+      let name = item.name.replace(/\[[^\]]+\]/g, "").replace(/^[:\s—-]+/, "").trim();
+      if(!name || name.length < 2) return;
+      const key = name.toLowerCase();
+      if(seen.has(key)) return;
+      seen.add(key);
+      cleaned.push({...item, name, cat});
+    });
+    setShopList(cleaned);
+  }, []);
+  
+  const add=()=>{if(!newItem.trim())return;setShopList(p=>[...p,{id:Date.now(),name:newItem,cat:newCat,done:false}]);setNewItem("");notify("Добавлено");};
+  const byCat=cats.reduce((a,c)=>({...a,[c]:shopList.filter(x=>x.cat===c)}),{});
+  const doneN=shopList.filter(x=>x.done).length;
   return(
     <div>
       <div style={{display:"flex",flexWrap:"wrap",gap:8,padding:"8px 12px",background:"rgba(45,32,16,0.05)",borderRadius:10,marginBottom:10,alignItems:"center"}}>
-        {profile.skinType&&<span style={{fontSize:12,color:T.text2}}>✨ {profile.skinType}</span>}
-        {profile.gender!=="Мужской"&&profile.hairType&&<span style={{fontSize:12,color:T.text3}}>· 💇 {profile.hairType}</span>}
-        {profile.gender==="Мужской"&&profile.beard&&<span style={{fontSize:12,color:T.text3}}>· 🧔 {profile.beard}</span>}
-        {profile.beautyPriority&&<span style={{fontSize:12,color:T.gold,marginLeft:"auto"}}>⭐ {profile.beautyPriority}</span>}
+        {profile.shopFreq&&<span style={{fontSize:12,color:T.text2}}>🛒 {profile.shopFreq}</span>}
+        {profile.shopDay&&<span style={{fontSize:12,color:T.gold}}>· 📅 {profile.shopDay}</span>}
+        {profile.familySize&&profile.familySize!=="1"&&<span style={{fontSize:12,color:T.text3,marginLeft:"auto"}}>👨‍👩‍👧 {profile.familySize} чел.</span>}
       </div>
-      <AiBox kb={kb} prompt={isMale
-        ? "Дай советы по уходу за собой для мужчины. Тип кожи: "+(profile.skinType||"нормальная")+", борода: "+(profile.beard||"нет")+". Свободное время после "+(profile.workEnd||"18:00")+". Только мужской уход — НЕ упоминай маски, лак, педикюр. Структура:\n\n## Утренний уход\n3 шага нумерованным списком.\n\n## Вечерний уход\n3 шага.\n\n## Уход за бородой / бритьё\n3 совета.\n\n## Что сделать сегодня\n2 конкретных действия."
-        : "Дай советы ТОЛЬКО по красоте и уходу за собой (кожа, волосы, ногти, тело). Тип кожи: "+(profile.skinType||"нормальная")+", тип волос: "+(profile.hairType||"нормальные")+", приоритет: "+(profile.beautyPriority||"—")+". Свободное время после "+(profile.workEnd||"18:00")+". Луна: "+getMoon().n+". ВАЖНО: НЕ упоминай уборку, дом, питомцев, работу, питание. Только КРАСОТА. Структура:\n\n## Утренний уход\n3-4 шага под твой тип кожи нумерованным списком.\n\n## Вечерний ритуал\n3-4 шага нумерованным списком.\n\n## Уход за волосами\n3 шага под твой тип волос.\n\n## Что сделать сегодня\n2-3 конкретные процедуры с учётом фазы луны нумерованным списком."
-      } label={isMale?"Уход за собой":"Красота и уход"} btnText="Советы по уходу" placeholder="Дам персональные советы по уходу..."/>
-      <div className="card">
-        <div className="card-hd">
-          <div className="card-title">Процедуры</div>
-          <div className="btn-row">{beautyTasks.length===0&&<button className="btn btn-ghost btn-sm" onClick={()=>{const ts=autoBeauty();setTasks(p=>[...p,...ts]);notify(`Добавлено ${ts.length}`);}}>✦ Авто</button>}<button className="btn btn-ghost btn-sm" onClick={()=>setModal({})}>+ Своя</button></div>
-        </div>
-        {due.length===0&&<div className="empty"><span className="empty-ico">✨</span><p>Процедур на сегодня нет</p></div>}
-        {due.map(task=>(
-          <div key={task.id} className="task-row">
-            <div className={`chk${task.doneDate===today?" done":""}`} onClick={()=>setTasks(p=>p.map(t=>t.id===task.id?{...t,doneDate:t.doneDate===today?null:today,lastDone:t.doneDate===today?t.lastDone:today}:t))}>{task.doneDate===today?"✓":""}</div>
-            <div className="task-body"><div className={`task-name${task.doneDate===today?" done":""}`}>{task.title}</div><div className="task-meta"><span className="badge bp">{freqLabel(task.freq)}</span></div></div>
-            <div className="ico-btn" onClick={()=>setModal(task)} style={{color:T.teal,opacity:.7}}>✏️</div>
-            <div className="ico-btn danger" onClick={()=>setTasks(p=>p.filter(t=>t.id!==task.id))}>✕</div>
+      {/* Напоминание о дне закупки */}
+      {(()=>{
+        const days={"Пн":1,"Вт":2,"Ср":3,"Чт":4,"Пт":5,"Сб":6,"Вс":0};
+        const todayDay=new Date().getDay();
+        const shopDayNum=days[profile.shopDay];
+        const isShopDay=shopDayNum!==undefined&&todayDay===shopDayNum;
+        const daysLeft=shopDayNum!==undefined?((shopDayNum-todayDay+7)%7||7):null;
+        if(!profile.shopDay) return null;
+        return(
+          <div style={{padding:"10px 14px",borderRadius:12,marginBottom:12,
+            background:isShopDay?"rgba(45,106,79,0.15)":"rgba(45,32,16,0.05)",
+            border:"1px solid "+(isShopDay?T.success:T.bdrS),
+            display:"flex",alignItems:"center",gap:10}}>
+            <span style={{fontSize:20}}>{isShopDay?"🛒":"📅"}</span>
+            <div>
+              <div style={{fontSize:14,color:isShopDay?T.success:T.text1,fontWeight:isShopDay?600:400}}>
+                {isShopDay?"Сегодня день закупки! "+profile.shopDay:"День закупки: "+profile.shopDay}
+              </div>
+              <div style={{fontSize:12,color:T.text3}}>
+                {isShopDay?"Список уже готов — прокрути вниз":"Через "+daysLeft+" "+(daysLeft===1?"день":daysLeft<5?"дня":"дней")}
+              </div>
+            </div>
+            {isShopDay&&<span style={{marginLeft:"auto",fontSize:20}}>✦</span>}
           </div>
-        ))}
+        );
+      })()}
+
+      {/* Умный список с учётом цели, семьи и питомцев */}
+      {(()=>{
+        const familySize=parseInt(profile.familySize||"1");
+        const hasWeightGoal=(profile.mainGoal||"").toLowerCase().includes("похуде")||(profile.mainGoal||"").toLowerCase().includes("вес")||(profile.healthGoal||"").toLowerCase().includes("похуде");
+        const hasChildren=(profile.livesWith||[]).includes("Дети");
+        const hasParents=(profile.livesWith||[]).includes("Родители");
+        const familyNeeds=profile.familyNeeds||"";
+        const pets=(profile.pets||[]);
+
+        const shopPrompt=
+          "Составь подробный список покупок на неделю для "+familySize+" "+(familySize===1?"человека":"человек")+".\n"+
+          "СОСТАВ СЕМЬИ: "+(profile.livesWith||["один(а)"]).join(", ")+
+          (hasChildren?". Дети: "+profile.childrenAges:"")+
+          (familyNeeds?". Особые потребности: "+familyNeeds:"")+".\n"+
+          "ТИП ПИТАНИЯ: "+(profile.nutrition||"обычное")+".\n"+
+          (hasWeightGoal?"ЦЕЛЬ: похудение — акцент на белок, овощи, ограничить простые углеводы и сладкое. Калорийность умеренная.\n":"")+
+          "ТКМ-профиль учитывай при выборе продуктов.\n"+
+          "Всегда есть дома: "+((profile.staples||[]).join(", ")||"—")+".\n"+
+          (pets.length?"Питомцы: "+pets.map(p=>p.name+"("+p.type+"): "+(p.food||"стандартный корм")).join(", ")+".\n":"")+
+          "День закупки: "+(profile.shopDay||"—")+".\n\n"+
+          "ВАЖНО: укажи количество с учётом "+familySize+" "+(familySize===1?"человека":"человек")+". "+
+          "Каждый товар начинай с метки [Продукты], [Бытовая химия], [Красота и уход], [Для питомцев] или [Аптека]. "+
+          "Дай заголовки разделов через ## и нумерованный список.";
+
+        return(
+          <AiBox kb={kb} prompt={shopPrompt}
+            label="Список покупок на неделю"
+            btnText={`Составить список на ${familySize > 1 ? familySize+" чел." : "меня"}`}
+            placeholder="Составлю список с учётом всей семьи и целей..."
+            actionType="shopping" onShopAdd={setShopList}/>
+        );
+      })()}
+      <div className="card">
+        <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
+          <input style={{flex:"1 1 180px",padding:"10px 14px",background:"rgba(255,255,255,.03)",border:"1px solid "+T.bdr,borderRadius:10,color:T.text0,fontFamily:"'Crimson Pro',serif",fontSize:16,outline:"none"}} placeholder="Добавить товар..." value={newItem} onChange={e=>setNewItem(e.target.value)} onKeyDown={e=>e.key==="Enter"&&add()}/>
+          <select style={{padding:"10px",background:T.bg2,border:"1px solid "+T.bdr,borderRadius:10,color:T.text1,fontSize:14,outline:"none"}} value={newCat} onChange={e=>setNewCat(e.target.value)}>{cats.map(c=><option key={c}>{c}</option>)}</select>
+          <button className="btn btn-primary btn-sm" onClick={add}>+</button>
+        </div>
+        <div style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap"}}>
+          <button className="btn btn-ghost btn-sm" onClick={()=>{
+            const validCats = cats;
+            const cleaned = [];
+            const seen = new Set();
+            shopList.forEach(item => {
+              const m = item.name.match(/\[([^\]]+)\]/);
+              let cat = item.cat || "Продукты";
+              if(m && validCats.includes(m[1])) cat = m[1];
+              let name = item.name.replace(/\[[^\]]+\]/g, "").replace(/^[:\s—-]+/, "").trim();
+              if(!name || name.length < 2) return;
+              const key = name.toLowerCase();
+              if(seen.has(key)) return;
+              seen.add(key);
+              cleaned.push({...item, name, cat});
+            });
+            const removedCount = shopList.length - cleaned.length;
+            setShopList(cleaned);
+            notify(removedCount>0 ? "Очищено: убрано "+removedCount+" дубликатов и меток" : "Список уже чист");
+          }}>🧹 Очистить дубли и метки</button>
+          {shopList.length>0 && <button className="btn btn-ghost btn-sm" onClick={()=>{
+            if(confirm("Удалить все товары из списка покупок?")) { setShopList([]); notify("Список очищен"); }
+          }}>🗑 Сбросить список</button>}
+        </div>
+        {shopList.length===0&&<div className="empty"><span className="empty-ico">🛒</span><p>Список пуст. Нажми "Составить список" чтобы AI составил персональный список покупок.</p></div>}
+        {cats.filter(c=>byCat[c].length>0).map(cat=>{
+          const catEmoji = {"Продукты":"🥦","Бытовая химия":"🧼","Красота и уход":"✨","Для питомцев":"🐾","Одежда":"👕","Аптека":"💊","Другое":"📦"}[cat] || "📦";
+          const catColor = {"Продукты":"#7BCCA0","Бытовая химия":"#82AADD","Красота и уход":"#E8A8C8","Для питомцев":"#E8A85A","Одежда":"#B882E8","Аптека":T.danger,"Другое":"#A8A49C"}[cat] || "#A8A49C";
+          const itemsLeft = byCat[cat].filter(x=>!x.done).length;
+          const itemsDone = byCat[cat].filter(x=>x.done).length;
+          return (
+            <div key={cat} style={{marginBottom:14,background:"rgba(255,255,255,0.02)",border:"1px solid "+catColor+"33",borderRadius:14,overflow:"hidden"}}>
+              <div style={{display:"flex",alignItems:"center",gap:10,padding:"12px 16px",background:"linear-gradient(135deg, "+catColor+"22, "+catColor+"08)",borderBottom:"1px solid "+catColor+"22"}}>
+                <span style={{fontSize:22}}>{catEmoji}</span>
+                <span style={{flex:1,fontFamily:"'Cormorant Infant',serif",fontSize:18,color:catColor,fontWeight:600}}>{cat}</span>
+                <span style={{fontFamily:"'JetBrains Mono'",fontSize:11,color:T.text2,letterSpacing:1}}>{itemsLeft}{itemsDone>0?` / ${itemsDone}✓`:""}</span>
+              </div>
+              <div style={{padding:"4px 12px"}}>
+                {byCat[cat].map(item=>(
+                  <div key={item.id} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 4px",borderBottom:`1px solid rgba(255,255,255,.03)`}}>
+                    <div className={`chk${item.done?" done":""}`} style={{borderColor:item.done?catColor:T.bdr,background:item.done?catColor:"transparent"}} onClick={()=>setShopList(p=>p.map(x=>x.id===item.id?{...x,done:!x.done}:x))}>{item.done?"✓":""}</div>
+                    <span style={{flex:1,fontSize:15,textDecoration:item.done?"line-through":"none",color:item.done?T.text3:T.text0,fontFamily:"'Crimson Pro',serif"}}>{item.name}</span>
+                    <div className="ico-btn danger" onClick={()=>setShopList(p=>p.filter(x=>x.id!==item.id))}>✕</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+        {doneN>0&&<button className="btn btn-ghost btn-sm" onClick={()=>setShopList(p=>p.filter(x=>!x.done))}>Очистить купленное ({doneN})</button>}
       </div>
+    </div>
+  );
+}
+
+
+function PetsSection({profile,setProfile,petLog,setPetLog,today,kb,notify}) {
+  const pets=profile.pets||[];
+  const petEmoji=t=>({Кошка:"🐱",Собака:"🐶",Попугай:"🦜",Кролик:"🐰",Хомяк:"🐹",Черепаха:"🐢",Рыбки:"🐠"}[t]||"🐾");
+  const getAge=dob=>{if(!dob)return null;const d=Date.now()-new Date(dob);const y=Math.floor(d/(365.25*86400000));const m=Math.floor((d%(365.25*86400000))/(30.44*86400000));return y>0?`${y} лет`:`${m} мес.`;};
+  const daysUntil=dateStr=>{if(!dateStr)return null;const t=new Date(dateStr);t.setFullYear(t.getFullYear()+1);return Math.round((t-new Date())/86400000);};
+  const markFeed=(petId,idx)=>{const c=petLog[today]?.[petId]||[];const n=c.includes(idx)?c.filter(x=>x!==idx):[...c,idx];setPetLog(p=>({...p,[today]:{...(p[today]||{}),[petId]:n}}));};
+  return(
+    <div>
+      <AiBox kb={kb} prompt={`Советы по уходу за питомцами: ${pets.map(p=>`${p.name}(${p.type},${p.breed||"—"},особенности:${p.notes||"нет"})`).join(";")||"нет питомцев"}. Что важно для здоровья, на что обращать внимание?`} label="Уход за питомцами" btnText="Советы по уходу" placeholder="Дам советы по уходу за твоими питомцами..."/>
+      {pets.length===0&&<div className="empty"><span className="empty-ico">🐾</span><p>Питомцев нет. Добавь в профиле!</p></div>}
+      {pets.map(pet=>{
+        const feeds=parseInt(pet.feedTimes)||2;
+        const log=petLog[today]?.[pet.id]||[];
+        const labels=feeds===1?["День"]:feeds===2?["Утро","Вечер"]:feeds===3?["Утро","День","Вечер"]:["1","2","3","4"];
+        const vacDays=daysUntil(pet.vacDate);
+        const parDays=daysUntil(pet.parasiteDate);
+        return(
+          <div key={pet.id} className="pet-card">
+            <div style={{display:"flex",gap:14,alignItems:"flex-start",marginBottom:14}}>
+              <div className="pet-ava">{petEmoji(pet.type)}</div>
+              <div style={{flex:1}}>
+                <div style={{fontFamily:"'Cormorant Infant',serif",fontSize:20,color:T.text0,marginBottom:3}}>{pet.name}</div>
+                <div style={{fontSize:13,color:T.text3}}>{pet.type}{pet.breed&&" · "+pet.breed}{pet.dob&&" · "+getAge(pet.dob)}</div>
+                {pet.food&&<div style={{fontSize:13,color:T.text2,marginTop:2}}>🍽 {pet.food}</div>}
+                {pet.notes&&<div style={{fontSize:13,color:T.warn,marginTop:2}}>⚠ {pet.notes}</div>}
+              </div>
+            </div>
+            <div style={{marginBottom:12}}>
+              <div style={{fontFamily:"'JetBrains Mono'",fontSize:9,color:T.text3,letterSpacing:2,marginBottom:8,textTransform:"uppercase"}}>Кормление ({log.length}/{feeds})</div>
+              <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                {Array.from({length:feeds},(_,i)=>(
+                  <button key={i} className={`feed-btn${log.includes(i)?" done":""}`} onClick={()=>markFeed(pet.id,i)}>
+                    {log.includes(i)?"✓ ":""}{labels[i]}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
+              {vacDays!==null&&<span className={`badge ${vacDays<0?"br":vacDays<30?"bw":"bgr"}`}>💉 Вакцин.: {vacDays<0?"просрочена":vacDays===0?"сегодня":`через ${vacDays} дн.`}</span>}
+              {parDays!==null&&<span className={`badge ${parDays<0?"br":parDays<14?"bw":"bm"}`}>🪲 Антипараз.: {parDays<0?"просрочено":`через ${parDays} дн.`}</span>}
+            </div>
+            {vacDays!==null&&vacDays<30&&<div style={{marginTop:10}}><button className="btn btn-ghost btn-xs" onClick={()=>openGCal(`Вакцинация ${pet.name}`,new Date(Date.now()+vacDays*86400000).toISOString(),`${pet.name}(${pet.type})`)}>📅 В Calendar</button></div>}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function BeautySection({profile,tasks,setTasks,today,kb,notify}) {
+  const [modal,setModal]=useState(null);
+  const [selectedTopics, setSelectedTopics] = useStorage("ld_beauty_topics", []);
+  const [schedule, setSchedule] = useStorage("ld_beauty_schedule", null);
+  const [loadingSchedule, setLoadingSchedule] = useState(false);
+  const moon = getMoon();
+  const isMale = profile.gender === "Мужской";
+  const beautyTasks = tasks.filter(t=>t.section==="beauty");
+  const due = beautyTasks.filter(t=>isDue(t,today));
+
+  // Темы ухода по категориям
+  const TOPICS = isMale ? [
+    {cat:"Лицо",    items:[
+      {id:"face_morning", name:"Умывание утром",      freq:"daily",   time:"07:00", icon:"💧"},
+      {id:"face_evening", name:"Умывание вечером",    freq:"daily",   time:"21:00", icon:"🌙"},
+      {id:"face_scrub",   name:"Скраб для лица",      freq:"every:7", time:"19:00", icon:"🫧"},
+      {id:"face_mask",    name:"Маска для лица",       freq:"every:7", time:"20:00", icon:"🎭"},
+    ]},
+    {cat:"Тело",    items:[
+      {id:"body_cream",   name:"Крем для тела",        freq:"daily",   time:"20:00", icon:"🧴"},
+      {id:"body_scrub",   name:"Скраб для тела",       freq:"every:7", time:"20:00", icon:"🫧"},
+    ]},
+    {cat:"Борода и волосы", items:[
+      {id:"beard_care",   name:"Уход за бородой",      freq:"every:2", time:"08:00", icon:"🧔"},
+      {id:"hair_wash",    name:"Мытьё волос",           freq:"every:2", time:"20:00", icon:"🚿"},
+      {id:"haircut",      name:"Стрижка / барбер",      freq:"every:30",time:"",     icon:"✂️"},
+    ]},
+    {cat:"Руки и ногти", items:[
+      {id:"hand_cream",   name:"Крем для рук",          freq:"daily",   time:"21:00", icon:"🤲"},
+      {id:"nails_m",      name:"Стрижка ногтей",        freq:"every:10",time:"",     icon:"💅"},
+    ]},
+  ] : [
+    {cat:"Уход за лицом", items:[
+      {id:"face_morning", name:"Утренний уход",         freq:"daily",   time:"07:00", icon:"☀️", note:"Очищение → тоник → крем"},
+      {id:"face_evening", name:"Вечерний уход",         freq:"daily",   time:"21:00", icon:"🌙", note:"Снятие макияжа → очищение → сыворотка → крем"},
+      {id:"face_mask",    name:"Маска для лица",         freq:"every:3", time:"20:00", icon:"🎭", moon:true},
+      {id:"face_scrub",   name:"Скраб / пилинг",         freq:"every:7", time:"20:00", icon:"🫧", moon:"убывающая"},
+      {id:"eye_care",     name:"Крем для глаз",          freq:"daily",   time:"21:00", icon:"👁"},
+    ]},
+    {cat:"Уход за телом", items:[
+      {id:"body_cream",   name:"Крем для тела",          freq:"daily",   time:"20:00", icon:"🧴"},
+      {id:"body_scrub",   name:"Скраб для тела",         freq:"every:4", time:"20:00", icon:"🫧"},
+      {id:"depo",         name:"Депиляция / эпиляция",   freq:"every:14",time:"",     icon:"✨", moon:"убывающая"},
+      {id:"tan",          name:"Автозагар",              freq:"every:7", time:"",     icon:"🌅"},
+    ]},
+    {cat:"Уход за волосами", items:[
+      {id:"hair_wash",    name:"Мытьё волос",            freq:"every:2", time:"20:00", icon:"🚿"},
+      {id:"hair_mask",    name:"Маска для волос",         freq:"every:7", time:"20:00", icon:"💆", note:"До мытья: держать 30-60 мин", moon:true},
+      {id:"hair_oil",     name:"Масло для волос",         freq:"every:7", time:"",     icon:"🫙"},
+      {id:"haircut",      name:"Стрижка",                 freq:"every:30",time:"",     icon:"✂️", moon:"растущая"},
+      {id:"coloring",     name:"Окрашивание",             freq:"every:42",time:"",     icon:"🎨"},
+    ]},
+    {cat:"Маникюр и ногти", items:[
+      {id:"nails",        name:"Маникюр",                 freq:"every:21",time:"",     icon:"💅", moon:true},
+      {id:"ped",          name:"Педикюр",                 freq:"every:30",time:"",     icon:"🦶"},
+      {id:"nail_care",    name:"Уход за кутикулой",       freq:"every:3", time:"21:00", icon:"🤲"},
+    ]},
+    {cat:"Брови и ресницы", items:[
+      {id:"brows",        name:"Коррекция бровей",        freq:"every:14",time:"",     icon:"🪞"},
+      {id:"lash",         name:"Наращивание ресниц",      freq:"every:21",time:"",     icon:"✨"},
+    ]},
+    {cat:"Массаж и тело", items:[
+      {id:"massage",      name:"Массаж лица",             freq:"every:3", time:"21:00", icon:"💆"},
+      {id:"lymph",        name:"Лимфодренажный массаж",   freq:"every:7", time:"",     icon:"🫀"},
+      {id:"bath",         name:"Ванна с солью / пеной",   freq:"every:7", time:"21:00", icon:"🛁", moon:true},
+    ]},
+  ];
+
+  const toggleTopic = (id) => {
+    setSelectedTopics(p => p.includes(id) ? p.filter(x=>x!==id) : [...p, id]);
+    setSchedule(null); // сбросить старый график
+  };
+
+  const buildSchedule = async () => {
+    if(!selectedTopics.length){notify("Выбери хотя бы одну процедуру");return;}
+    setLoadingSchedule(true);
+    const allItems = TOPICS.flatMap(t=>t.items).filter(i=>selectedTopics.includes(i.id));
+    const prompt = "Составь персональный график красоты на неделю. Выбранные процедуры: "+
+      allItems.map(i=>i.name+" ("+freqLabel(i.freq)+")").join(", ")+
+      ". Тип кожи: "+(profile.skinType||"—")+", волос: "+(profile.hairType||"—")+
+      ". Рабочий график: "+(profile.workStart||"9:00")+"–"+(profile.workEnd||"18:00")+
+      ". Свободное время: с "+(profile.workEnd||"18:00")+" до "+(profile.sleep||"23:00")+
+      ". Луна сейчас: "+moon.n+" ("+moon.t+")"+
+      ". Учти лунный цикл — убывающая луна для очищения и пилингов, растущая для питательных масок."+
+      ". Распредели процедуры по дням недели с учётом работы. Формат: ## Понедельник → нумерованный список процедур с временем. Итого 7 дней.";
+    const r = await askClaude(profile.kb||"", prompt);
+    setSchedule(r);
+    setLoadingSchedule(false);
+  };
+
+  const addScheduleToTasks = () => {
+    const allItems = TOPICS.flatMap(t=>t.items).filter(i=>selectedTopics.includes(i.id));
+    const newTasks = allItems.map(item=>({
+      id:Date.now()+Math.random(), title:item.name, section:"beauty",
+      freq:item.freq, priority:"m", preferredTime:item.time||"20:00",
+      lastDone:"", doneDate:"", notes:item.note||""
+    }));
+    const existing = new Set(beautyTasks.map(t=>t.title));
+    const fresh = newTasks.filter(t=>!existing.has(t.title));
+    setTasks(p=>[...p,...fresh]);
+    notify("Добавлено "+fresh.length+" процедур");
+  };
+
+  return(
+    <div>
+      {/* Шапка профиля */}
+      <div style={{display:"flex",flexWrap:"wrap",gap:6,padding:"8px 12px",background:"rgba(45,32,16,0.05)",borderRadius:10,marginBottom:12,alignItems:"center"}}>
+        {profile.skinType&&<span style={{fontSize:12,color:T.text2}}>✨ {profile.skinType}</span>}
+        {!isMale&&profile.hairType&&<span style={{fontSize:12,color:T.text3}}>· 💇 {profile.hairType}</span>}
+        {isMale&&profile.beard&&<span style={{fontSize:12,color:T.text3}}>· 🧔 {profile.beard}</span>}
+        <span style={{fontSize:11,color:T.gold,marginLeft:"auto",fontFamily:"'JetBrains Mono'"}}>{moon.e} {moon.n}</span>
+      </div>
+
+      {/* ── Выбор процедур по тематике ── */}
+      <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1.5,marginBottom:8}}>ВЫБЕРИ НУЖНЫЕ ПРОЦЕДУРЫ</div>
+      {TOPICS.map(cat=>(
+        <div key={cat.cat} style={{marginBottom:10}}>
+          <div style={{fontSize:11,color:T.gold,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:6}}>{cat.cat.toUpperCase()}</div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+            {cat.items.map(item=>{
+              const sel = selectedTopics.includes(item.id);
+              return (
+                <div key={item.id} onClick={()=>toggleTopic(item.id)} style={{display:"flex",alignItems:"center",gap:6,padding:"6px 12px",borderRadius:20,cursor:"pointer",background:sel?"rgba(200,164,90,0.15)":"rgba(255,255,255,0.03)",border:"1px solid "+(sel?"rgba(200,164,90,0.5)":"rgba(255,255,255,0.08)"),transition:"all .15s"}}>
+                  <span style={{fontSize:16}}>{item.icon}</span>
+                  <div>
+                    <div style={{fontSize:13,color:sel?T.gold:T.text0}}>{item.name}</div>
+                    <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'"}}>{freqLabel(item.freq)}{item.moon?" 🌙":""}</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+
+      {/* Кнопка создать график */}
+      {selectedTopics.length>0&&(
+        <div style={{marginBottom:12}}>
+          <div style={{display:"flex",gap:8,marginBottom:8}}>
+            <button className="btn btn-primary" style={{flex:1}} onClick={buildSchedule} disabled={loadingSchedule}>
+              {loadingSchedule?"Составляю...":"✦ Составить мой график"}
+            </button>
+            <button className="btn btn-ghost" onClick={addScheduleToTasks}>📋 В задачи</button>
+          </div>
+          <div style={{fontSize:12,color:T.text3}}>Выбрано процедур: {selectedTopics.length} · Учитываю: тип кожи, луну, рабочий график</div>
+        </div>
+      )}
+
+      {/* График */}
+      {schedule&&(
+        <div style={{marginBottom:12}}>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+            <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1.5}}>МОЙ ГРАФИК</div>
+            <button className="btn btn-ghost btn-sm" style={{marginLeft:"auto",fontSize:11}} onClick={()=>setSchedule(null)}>Сбросить</button>
+          </div>
+          <div className="ai-content">
+            {parseAiResponse(schedule).map((b,i)=>{
+              if(b.type==="header") return <div key={i} className="ai-header"><span className="ai-header-mark">◆</span>{b.content}</div>;
+              if(b.type==="list") return <div key={i} className="ai-list">
+                {b.items.map((item,j)=>{
+                  const isObj=typeof item==="object";
+                  const title=isObj?item.title:"";
+                  const body=isObj?item.body:item;
+                  return <div key={j} className="ai-list-item">
+                    <span className="ai-list-num">{j+1}</span>
+                    <div className="ai-list-body">
+                      {title&&<div className="ai-list-title">{title}</div>}
+                      {body&&<div className="ai-list-text">{body}</div>}
+                      <div className="ai-item-actions">
+                        <button className="btn-mini" onClick={()=>{
+                          const txt=title?(title+": "+body):body;
+                          const h=parseInt((profile.workEnd||"18:00").split(":")[0])+1;
+                          const start=new Date();start.setHours(h,0,0,0);
+                          const end=new Date(start.getTime()+3600000);
+                          const f=d=>d.toISOString().replace(/[-:]/g,"").split(".")[0]+"Z";
+                          window.open("https://calendar.google.com/calendar/render?action=TEMPLATE&text="+encodeURIComponent(txt)+"&dates="+f(start)+"/"+f(end),"_blank");
+                        }}>📅 Запланировать</button>
+                      </div>
+                    </div>
+                  </div>;
+                })}
+              </div>;
+              return <div key={i} className="ai-paragraph">{b.content}</div>;
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Сегодняшние задачи по красоте */}
+      {due.length>0&&(
+        <div className="card" style={{marginBottom:10}}>
+          <div className="card-hd">
+            <div className="card-title">Сегодня</div>
+            <button className="btn btn-ghost btn-sm" onClick={()=>setModal({})}>+ Своя</button>
+          </div>
+          {due.map(task=>(
+            <div key={task.id} className="task-row">
+              <div className={"chk"+(task.doneDate===today?" done":"")} onClick={()=>setTasks(p=>p.map(t=>t.id===task.id?{...t,doneDate:t.doneDate===today?null:today,lastDone:t.doneDate===today?t.lastDone:today}:t))}>{task.doneDate===today?"✓":""}</div>
+              <div className="task-body">
+                <div className={"task-name"+(task.doneDate===today?" done":"")}>{task.title}</div>
+                <div className="task-meta"><span className="badge bp">{freqLabel(task.freq)}</span>{task.preferredTime&&<span className="badge bg">🕐{task.preferredTime}</span>}</div>
+                {task.notes&&<div className="task-notes">{task.notes}</div>}
+              </div>
+              <div className="ico-btn" onClick={()=>setModal(task)} style={{color:T.teal,opacity:.7}}>✏️</div>
+              <div className="ico-btn danger" onClick={()=>setTasks(p=>p.filter(t=>t.id!==task.id))}>✕</div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {modal!==null&&<TaskModal task={modal.id?modal:null} defaultSection="beauty" onSave={t=>{setTasks(p=>modal.id?p.map(x=>x.id===t.id?t:x):[...p,t]);notify("Добавлено");}} onClose={()=>setModal(null)}/>}
     </div>
   );
 }
+
 
 // ══════════════════════════════════════════════════════════════
 //  HOBBIES
@@ -4977,6 +5772,7 @@ function JournalSection({profile,journal,setJournal,today}) {
       <div className="tabs" style={{marginBottom:12}}>
         <div className={"tab"+(view==="today"?" on":"")} onClick={()=>setView("today")}>Сегодня</div>
         <div className={"tab"+(view==="all"?" on":"")} onClick={()=>setView("all")}>Все записи</div>
+        <div className={"tab"+(view==="ai"?" on":"")} onClick={()=>setView("ai")}>AI-ответы</div>
       </div>
 
       {view==="today"&&(
@@ -5027,6 +5823,25 @@ function JournalSection({profile,journal,setJournal,today}) {
         </div>
       )}
 
+      {view==="ai"&&(()=>{
+        try {
+          const aiJournal = JSON.parse(localStorage.getItem("ld_ai_journal")||"[]");
+          if(!aiJournal.length) return <div className="empty"><span className="empty-ico">📖</span><p>Нет сохранённых AI-ответов</p></div>;
+          const grouped = {};
+          aiJournal.forEach(e=>{if(!grouped[e.label])grouped[e.label]=[];grouped[e.label].push(e);});
+          return <>{Object.entries(grouped).map(([lbl,items])=>(
+            <div key={lbl} className="card" style={{marginBottom:10}}>
+              <div className="card-hd"><div className="card-title">{lbl}</div><span className="badge bm">{items.length}</span></div>
+              {items.map((it,i)=>(
+                <details key={i} style={{marginBottom:6,padding:"6px 0",borderBottom:"1px solid rgba(255,255,255,.04)"}}>
+                  <summary style={{cursor:"pointer",fontSize:12,color:T.gold,fontFamily:"'JetBrains Mono'",letterSpacing:1}}>{new Date(it.date).toLocaleDateString("ru-RU",{day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"})}</summary>
+                  <div style={{marginTop:8,padding:"8px 12px",background:"rgba(255,255,255,.02)",borderRadius:8,fontSize:13,color:T.text2,lineHeight:1.6,whiteSpace:"pre-wrap"}}>{it.text}</div>
+                </details>
+              ))}
+            </div>
+          ))}</>;
+        } catch { return null; }
+      })()}
       {view==="all"&&(
         <div>
           {entries.length===0&&(
