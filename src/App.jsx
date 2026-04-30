@@ -2530,6 +2530,23 @@ function TodaySection({profile,tasks,setTasks,journal,setJournal,today,moon,kb,n
         </div>
       </div>
 
+
+      {/* Мини-статистика дневника в шапке */}
+      {(()=>{
+        const entries = Object.values(journal||{}).filter(e=>e.mood||e.win||e.insight);
+        const thisWeek = entries.filter(e=>{
+          const d=new Date(Object.keys(journal||{}).find(k=>journal[k]===e)||"");
+          return (new Date()-d)<7*86400000;
+        }).length;
+        if(!entries.length) return null;
+        return(
+          <div style={{display:"flex",gap:8,padding:"4px 0",marginBottom:8}}>
+            <div style={{fontSize:11,color:T.text3,fontFamily:"'JetBrains Mono'"}}>
+              📖 {entries.length} записей · {thisWeek} на этой неделе
+            </div>
+          </div>
+        );
+      })()}
       {/* ═══ 2. ЛИЧНО ДЛЯ ТЕБЯ — ТКМ профиль ════════════════════ */}
       {tcm?.el&&(tcm.syndromes?.length>0||tcm.uniqueOrgans?.length>0)&&(
         <div style={{padding:"10px 14px",background:"rgba(45,106,79,0.07)",borderRadius:12,marginBottom:10,borderLeft:"3px solid "+T.gold}}>
@@ -4957,7 +4974,7 @@ function JournalSection({journal,setJournal,today,notify}) {
   const entries=Object.entries(journal).sort((a,b)=>b[0].localeCompare(a[0]));
   return(
     <div>
-      <div className="tabs">{[["today","Сегодня"],["all","Все записи"],["stats","Статистика"]].map(([v,l])=><div key={v} className={`tab${view===v?" on":""}`} onClick={()=>setView(v)}>{l}</div>)}</div>
+      <div className="tabs">{[["today","Сегодня"],["all","Все записи"]].map(([v,l])=><div key={v} className={`tab${view===v?" on":""}`} onClick={()=>setView(v)}>{l}</div>)}</div>
       {view==="today"&&(
         <div className="card">
           <div style={{fontFamily:"'JetBrains Mono'",fontSize:9,color:T.goldD,letterSpacing:3,marginBottom:16,textTransform:"uppercase"}}>{new Date().toLocaleDateString("ru-RU",{weekday:"long",day:"numeric",month:"long",year:"numeric"})}</div>
@@ -5225,6 +5242,7 @@ function CarSection({profile,setProfile,tasks,setTasks,today,kb,notify}) {
 
 function ProfileSection({profile,setProfile,sections,setSections,notify,kb}) {
   const [view,setView]=useState("me");
+  const [tooltip,setTooltip]=useState(null); // для графика жизненных циклов
   const z=getZodiac(profile.dob);
   const east=getEastern(profile.dob);
   const deg=calcDegree(profile.fullName||profile.name);
@@ -5249,11 +5267,160 @@ function ProfileSection({profile,setProfile,sections,setSections,notify,kb}) {
             </div>
           </div>
           <div className="sec-lbl">Рассчитано автоматически</div>
-          <div className="g3" style={{marginBottom:14}}>
-            <div className="card" style={{textAlign:"center"}}><div style={{fontSize:32,marginBottom:4}}>{z.emoji}</div><div style={{fontFamily:"'Cormorant Infant',serif",fontSize:16}}>{z.name}</div><div style={{fontSize:10,color:T.text3,marginTop:2,fontFamily:"'JetBrains Mono'",letterSpacing:1}}>ЗОДИАК</div></div>
-            <div className="card" style={{textAlign:"center"}}><div style={{fontSize:32,marginBottom:4}}>🐾</div><div style={{fontFamily:"'Cormorant Infant',serif",fontSize:16}}>{east}</div><div style={{fontSize:10,color:T.text3,marginTop:2,fontFamily:"'JetBrains Mono'",letterSpacing:1}}>ВОСТОК</div></div>
-            <div className="card card-accent" style={{textAlign:"center"}}><div className="degree-big">{deg||"—"}</div><div style={{fontSize:9,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:2,marginTop:2}}>ГРАДУС СУДЬБЫ</div></div>
-          </div>
+          {(()=>{
+            const ZODIAC_DESC={
+              "Овен":"Лидер, первопроходец. Смелость, энергия, нетерпеливость. Стихия: Огонь. Планета: Марс.",
+              "Телец":"Надёжность, упорство, любовь к комфорту. Стихия: Земля. Планета: Венера.",
+              "Близнецы":"Коммуникабельность, гибкость ума, двойственность. Стихия: Воздух. Планета: Меркурий.",
+              "Рак":"Интуиция, забота, эмоциональность, привязанность к дому. Стихия: Вода. Планета: Луна.",
+              "Лев":"Харизма, щедрость, лидерство, гордость. Стихия: Огонь. Планета: Солнце.",
+              "Дева":"Аналитический ум, порядок, трудолюбие, перфекционизм. Стихия: Земля. Планета: Меркурий.",
+              "Весы":"Гармония, дипломатия, справедливость. Стихия: Воздух. Планета: Венера.",
+              "Скорпион":"Глубина, трансформация, интенсивность. Стихия: Вода. Планета: Плутон.",
+              "Стрелец":"Свобода, оптимизм, философия, путешествия. Стихия: Огонь. Планета: Юпитер.",
+              "Козерог":"Амбиции, дисциплина, практичность. Стихия: Земля. Планета: Сатурн.",
+              "Водолей":"Оригинальность, гуманизм, независимость. Стихия: Воздух. Планета: Уран.",
+              "Рыбы":"Интуиция, сострадание, мечтательность. Стихия: Вода. Планета: Нептун.",
+            };
+            const EASTERN_DESC={
+              "Крыса":"Ум, адаптивность, предприимчивость. Привлекает удачу в деньгах.",
+              "Бык":"Терпение, трудолюбие, надёжность. Сила и выносливость.",
+              "Тигр":"Смелость, обаяние, харизма. Природный лидер.",
+              "Кролик":"Мягкость, дипломатия, творчество. Символ удачи.",
+              "Дракон":"Магнетизм, мощь, удача. Самый сильный знак.",
+              "Змея":"Мудрость, интуиция, загадочность. Глубокий ум.",
+              "Лошадь":"Свобода, энергия, скорость. Неугомонный дух.",
+              "Коза":"Творчество, мягкость, артистизм. Любовь к красоте.",
+              "Обезьяна":"Интеллект, изобретательность, юмор. Находчивость.",
+              "Петух":"Наблюдательность, пунктуальность, прямолинейность.",
+              "Собака":"Верность, честность, защита. Надёжный друг.",
+              "Свинья":"Щедрость, искренность, трудолюбие. Добросердечие.",
+            };
+            const DEG_DESC={
+              1:"Лидерство, начало новых путей",2:"Дипломатия, партнёрство",3:"Творчество, самовыражение",
+              4:"Стабильность, дисциплина",5:"Свобода, перемены",6:"Забота, гармония, ответственность",
+              7:"Духовность, аналитика",8:"Власть, материальный успех",9:"Гуманизм, завершение цикла",
+              10:"Карьера, достижение целей",11:"Интуиция, нестандартное мышление",12:"Жертвенность, духовность",
+              13:"Трансформация",14:"Равновесие",15:"Мудрость",16:"Неожиданные повороты",
+              17:"Победа через усилие",18:"Иллюзии vs реальность",19:"Успех и признание",20:"Суд и karma",
+              21:"Завершение большого цикла",22:"Мастер-число: строитель",23:"Королевский градус — успех",
+              24:"Любовь и творчество",25:"Духовный поиск",26:"Карма денег",27:"Высшая мудрость",
+              28:"Независимость",29:"Критический градус — испытания",30:"Полнота цикла",
+            };
+            return(
+              <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:12}}>
+                {/* Знак зодиака */}
+                <div style={{display:"flex",alignItems:"center",gap:14,padding:"10px 14px",background:"rgba(45,32,16,0.05)",borderRadius:12}}>
+                  <span style={{fontSize:36,flexShrink:0}}>{z.emoji}</span>
+                  <div>
+                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2}}>
+                      <span style={{fontFamily:"'Cormorant Infant',serif",fontSize:18,color:T.gold}}>{z.name}</span>
+                      <span style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'"}}>ЗОДИАК</span>
+                    </div>
+                    <div style={{fontSize:13,color:T.text2,lineHeight:1.5}}>{ZODIAC_DESC[z.name]||""}</div>
+                  </div>
+                </div>
+                {/* Восточный знак */}
+                <div style={{display:"flex",alignItems:"center",gap:14,padding:"10px 14px",background:"rgba(45,32,16,0.05)",borderRadius:12}}>
+                  <span style={{fontSize:36,flexShrink:0}}>🐉</span>
+                  <div>
+                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2}}>
+                      <span style={{fontFamily:"'Cormorant Infant',serif",fontSize:18,color:T.gold}}>{east}</span>
+                      <span style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'"}}>ВОСТОК</span>
+                    </div>
+                    <div style={{fontSize:13,color:T.text2,lineHeight:1.5}}>{EASTERN_DESC[east]||""}</div>
+                  </div>
+                </div>
+                {/* Градус судьбы */}
+                {deg&&<div style={{display:"flex",alignItems:"center",gap:14,padding:"10px 14px",background:"rgba(200,164,90,0.08)",borderRadius:12,border:"1px solid rgba(200,164,90,0.2)"}}>
+                  <span style={{fontFamily:"'Cinzel',serif",fontSize:28,color:T.gold,flexShrink:0,minWidth:48,textAlign:"center"}}>{deg}°</span>
+                  <div>
+                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2}}>
+                      <span style={{fontFamily:"'Cormorant Infant',serif",fontSize:18,color:T.gold}}>Градус судьбы</span>
+                    </div>
+                    <div style={{fontSize:13,color:T.text2,lineHeight:1.5}}>{DEG_DESC[deg]||"Уникальный путь"}</div>
+                  </div>
+                </div>}
+              </div>
+            );
+          })()}
+          {/* ── График жизненных циклов ── */}
+          {profile.dob&&(()=>{
+            const birthYear = new Date(profile.dob).getFullYear();
+            const currentYear = new Date().getFullYear();
+            const age = currentYear - birthYear;
+            // Астрологические циклы на основе нумерологии и планетарных циклов
+            const cycles = [
+              {year:birthYear+7,  age:7,  label:"Первый Сатурн",  sphere:"Детство",      score:6, desc:"Формирование личности, первые уроки"},
+              {year:birthYear+12, age:12, label:"Юпитер",         sphere:"Образование",  score:7, desc:"Юпитер возвращается — расширение мира"},
+              {year:birthYear+18, age:18, label:"Нодальный цикл", sphere:"Самост-ть",    score:5, desc:"Лунные узлы: первый большой выбор"},
+              {year:birthYear+21, age:21, label:"Уран-квадрат",   sphere:"Карьера",      score:4, desc:"Кризис идентичности, поиск пути"},
+              {year:birthYear+29, age:29, label:"Возврат Сатурна",sphere:"Зрелость",     score:3, desc:"Первый возврат Сатурна — испытание на прочность"},
+              {year:birthYear+36, age:36, label:"Уран-оппоз.",    sphere:"Кризис",       score:2, desc:"Кризис среднего возраста, переоценка"},
+              {year:birthYear+42, age:42, label:"Юпитер+",        sphere:"Расцвет",      score:8, desc:"Юпитер — пик возможностей, мудрость"},
+              {year:birthYear+49, age:49, label:"Хирон",          sphere:"Исцеление",    score:6, desc:"Возврат Хирона — духовное исцеление"},
+              {year:birthYear+58, age:58, label:"Сатурн-2",       sphere:"Мудрость",     score:7, desc:"Второй возврат Сатурна — итоги и награда"},
+              {year:birthYear+63, age:63, label:"Нодал-3",        sphere:"Духовность",   score:8, desc:"Третий нодальный цикл — духовный пик"},
+              {year:birthYear+84, age:84, label:"Уран",           sphere:"Освобожд.",    score:9, desc:"Возврат Урана — полное освобождение"},
+            ].filter(e => e.age <= age+20); // Показываем до +20 лет в будущее
+
+            if(cycles.length < 2) return null;
+
+            // SVG график
+            const W = 320, H = 120, PAD = 20;
+            const minYear = cycles[0].year;
+            const maxYear = cycles[cycles.length-1].year;
+            const yearRange = maxYear - minYear || 1;
+            const getX = (year) => PAD + ((year-minYear)/yearRange)*(W-PAD*2);
+            const getY = (score) => H - PAD - ((score-1)/9)*(H-PAD*2);
+
+            const pathD = cycles.map((p,i) => `${i===0?"M":"L"} ${getX(p.year)} ${getY(p.score)}`).join(" ");
+            return(
+              <div style={{marginBottom:14}}>
+                <div className="sec-lbl" style={{marginBottom:8}}>📈 Жизненные циклы (астрологические)</div>
+                <div style={{background:"rgba(45,32,16,0.04)",borderRadius:12,padding:"12px",overflowX:"auto"}}>
+                  <svg width={W} height={H+30} style={{display:"block",minWidth:W}}>
+                    {/* Сетка */}
+                    {[2,4,6,8,10].map(n=>(
+                      <line key={n} x1={PAD} y1={getY(n)} x2={W-PAD} y2={getY(n)} stroke="rgba(45,32,16,0.08)" strokeWidth="1"/>
+                    ))}
+                    {/* Линия текущего года */}
+                    <line x1={getX(currentYear)} y1={PAD/2} x2={getX(currentYear)} y2={H-PAD} stroke={T.gold} strokeWidth="1.5" strokeDasharray="4,3" opacity="0.6"/>
+                    <text x={getX(currentYear)} y={H+14} textAnchor="middle" fontSize="9" fill={T.gold}>Сейчас</text>
+                    {/* Линия цикла */}
+                    <path d={pathD} fill="none" stroke={T.teal} strokeWidth="2" strokeLinejoin="round"/>
+                    {/* Заливка под линией */}
+                    <path d={pathD+" L "+getX(maxYear)+" "+getY(1)+" L "+getX(minYear)+" "+getY(1)+" Z"}
+                      fill={T.teal} fillOpacity="0.08"/>
+                    {/* Точки */}
+                    {cycles.map((p,i)=>(
+                      <g key={i}>
+                        <circle cx={getX(p.year)} cy={getY(p.score)} r="5"
+                          fill={p.year<=currentYear?T.gold:"rgba(45,106,79,0.4)"}
+                          stroke={T.teal} strokeWidth="1.5"
+                          style={{cursor:"pointer"}}
+                          onClick={()=>setTooltip(tooltip?.year===p.year?null:p)}/>
+                        <text x={getX(p.year)} y={H+14} textAnchor="middle" fontSize="8" fill="rgba(45,32,16,0.4)">{p.age}</text>
+                      </g>
+                    ))}
+                  </svg>
+                  {/* Подсказка при нажатии на точку */}
+                  {tooltip&&(
+                    <div style={{marginTop:8,padding:"8px 12px",background:"rgba(45,106,79,0.1)",borderRadius:8,borderLeft:"3px solid "+T.teal}}>
+                      <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
+                        <span style={{fontSize:13,color:T.gold,fontWeight:600}}>{tooltip.label}</span>
+                        <span style={{fontSize:12,color:T.text3}}>{tooltip.year} · возраст {tooltip.age}</span>
+                      </div>
+                      <div style={{fontSize:12,color:T.text3,marginBottom:2}}>Сфера: {tooltip.sphere}</div>
+                      <div style={{fontSize:13,color:T.text1,lineHeight:1.5}}>{tooltip.desc}</div>
+                    </div>
+                  )}
+                  <div style={{fontSize:10,color:T.text3,marginTop:6,textAlign:"center"}}>Нажми на точку для описания · Цифры = возраст</div>
+                </div>
+              </div>
+            );
+          })()}
+
           {/* ── ТКМ блок ── */}
           {profile.dob&&(()=>{
             const tcm = getTCMFullProfile(profile);
