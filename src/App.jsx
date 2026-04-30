@@ -386,6 +386,7 @@ body::before {
 /* ── PAGE ── */
 .page { padding:28px 32px; flex:1; max-width:1000px; animation:pageIn .3s ease; }
 @keyframes pageIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+@keyframes spin { to { transform:rotate(360deg); } }
 
 /* ── CARDS ── */
 .card {
@@ -2327,6 +2328,25 @@ function TodaySection({profile,tasks,setTasks,journal,setJournal,today,moon,kb,n
   const [commuteOpen, setCommuteOpen] = useState(false);
   const [commuteRec, setCommuteRec] = useState("");
   const [commuteLoading, setCommuteLoading] = useState(false);
+  const [askOpen, setAskOpen] = useState(false);
+  const [askQuestion, setAskQuestion] = useState("");
+  const [askAnswer, setAskAnswer] = useState("");
+  const [askLoading, setAskLoading] = useState(false);
+  const [askHistory, setAskHistory] = useState([]);
+
+  const askMe = async () => {
+    if(!askQuestion.trim()) return;
+    const q = askQuestion.trim();
+    setAskLoading(true);
+    setAskQuestion("");
+    const answer = await askClaude(kb,
+      `Пользователь задаёт вопрос: "${q}"\n\nОтветь как умный личный помощник — тепло, конкретно, по делу. Учитывай весь профиль пользователя при ответе. Если вопрос о здоровье, питании, режиме — используй ТКМ-профиль. Если о работе — учти профессию и расписание. Если личный — будь деликатен.`,
+      800
+    );
+    setAskHistory(h => [{q, a: answer, time: new Date().toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit"})}, ...h.slice(0,9)]);
+    setAskAnswer(answer);
+    setAskLoading(false);
+  };
   const [expandedBlock, setExpandedBlock] = useState(null);
 
   const todayE = journal[today]||{};
@@ -2741,6 +2761,102 @@ function TodaySection({profile,tasks,setTasks,journal,setJournal,today,moon,kb,n
           )}
         </div>
       )}
+
+      {/* ═══ СПРОСИ МЕНЯ ══════════════════════════════════════════ */}
+      <div className="card" style={{marginBottom:12,borderLeft:"3px solid "+T.gold}}>
+        <div className="card-hd" style={{cursor:"pointer"}} onClick={()=>setAskOpen(o=>!o)}>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <span style={{fontSize:18}}>💬</span>
+            <div className="card-title">Спроси меня</div>
+            {askHistory.length>0&&<span className="badge bm" style={{fontSize:10}}>{askHistory.length}</span>}
+          </div>
+          <span style={{color:T.text3,fontSize:14}}>{askOpen?"▲":"▼"}</span>
+        </div>
+        {askOpen&&(
+          <div style={{marginTop:10}}>
+            {/* Поле ввода */}
+            <div style={{display:"flex",gap:8,marginBottom:12}}>
+              <textarea
+                value={askQuestion}
+                onChange={e=>setAskQuestion(e.target.value)}
+                onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();askMe();}}}
+                placeholder="Задай любой вопрос — о здоровье, питании, работе, жизни..."
+                style={{flex:1,minHeight:52,resize:"none",fontSize:14,lineHeight:1.5,
+                  padding:"10px 12px",borderRadius:10,border:"1px solid "+T.bdr,
+                  background:"rgba(45,32,16,0.03)",color:T.text0,fontFamily:"'Crimson Pro',serif"}}
+                disabled={askLoading}
+              />
+              <button className="btn btn-primary" onClick={askMe} disabled={askLoading||!askQuestion.trim()}
+                style={{alignSelf:"flex-end",padding:"10px 16px",minWidth:56}}>
+                {askLoading?"⏳":"✦"}
+              </button>
+            </div>
+
+            {/* Быстрые вопросы */}
+            {askHistory.length===0&&!askLoading&&(
+              <div style={{marginBottom:12}}>
+                <div style={{fontSize:11,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:8}}>БЫСТРЫЕ ВОПРОСЫ</div>
+                <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                  {[
+                    "Что мне съесть сегодня по ТКМ?",
+                    "Как лучше организовать сегодняшний день?",
+                    "Какая практика подойдёт мне сейчас?",
+                    "Что важно учесть при текущей фазе луны?",
+                    "Как снизить стресс прямо сейчас?",
+                    "Что приготовить на ужин?",
+                  ].map(q=>(
+                    <div key={q} onClick={()=>{setAskQuestion(q);}}
+                      style={{fontSize:12,color:T.text2,padding:"5px 10px",borderRadius:16,
+                        border:"1px solid "+T.bdr,cursor:"pointer",
+                        background:"rgba(45,32,16,0.03)"}}>
+                      {q}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Загрузка */}
+            {askLoading&&(
+              <div style={{display:"flex",alignItems:"center",gap:10,padding:"12px 0",color:T.text3,fontSize:14,fontStyle:"italic"}}>
+                <div style={{width:20,height:20,borderRadius:"50%",border:"2px solid "+T.gold,
+                  borderTopColor:"transparent",animation:"spin 1s linear infinite"}}/>
+                Думаю...
+              </div>
+            )}
+
+            {/* История диалога */}
+            {askHistory.length>0&&(
+              <div>
+                {askHistory.map((item,i)=>(
+                  <div key={i} style={{marginBottom:14}}>
+                    {/* Вопрос */}
+                    <div style={{display:"flex",justifyContent:"flex-end",marginBottom:6}}>
+                      <div style={{maxWidth:"85%",padding:"8px 12px",borderRadius:"12px 12px 4px 12px",
+                        background:"rgba(45,106,79,0.12)",border:"1px solid rgba(45,106,79,0.2)"}}>
+                        <div style={{fontSize:14,color:T.text0,lineHeight:1.4}}>{item.q}</div>
+                        <div style={{fontSize:10,color:T.text3,marginTop:3,textAlign:"right",fontFamily:"'JetBrains Mono'"}}>{item.time}</div>
+                      </div>
+                    </div>
+                    {/* Ответ */}
+                    <div style={{display:"flex",gap:8,alignItems:"flex-start"}}>
+                      <div style={{width:28,height:28,borderRadius:"50%",background:"rgba(45,106,79,0.15)",
+                        display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:14}}>✦</div>
+                      <div style={{flex:1,padding:"8px 12px",borderRadius:"4px 12px 12px 12px",
+                        background:"rgba(45,32,16,0.04)",border:"1px solid "+T.bdrS}}>
+                        <div style={{fontSize:14,color:T.text1,lineHeight:1.65,whiteSpace:"pre-wrap"}}>{item.a}</div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                <div style={{textAlign:"center",marginTop:4}}>
+                  <button className="btn btn-ghost btn-sm" onClick={()=>setAskHistory([])}>Очистить историю</button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       {addModal&&<TaskModal defaultSection="today" onSave={t=>{setTasks(p=>[...p,t]);notify("Задача добавлена");}} onClose={()=>setAddModal(false)}/>}
       {modal!==null&&<TaskModal task={modal?.id?modal:null} defaultSection={modal?.section||"tasks"} onSave={t=>{setTasks(p=>modal?.id?p.map(x=>x.id===t.id?t:x):[...p,t]);setModal(null);notify("Сохранено");}} onClose={()=>setModal(null)}/>}
