@@ -212,7 +212,8 @@ function buildKB(p) {
 ДОМ: ${p.homeType||"—"} ${p.homeArea||"?"}м², с: ${(p.livesWith||[]).join(",")||"один(а)"}, уборка: ${(p.cleanDays||[]).join(",")||"—"}
 ПИТОМЦЫ: ${(p.pets||[]).map(pt=>`${pt.name}(${pt.type},${pt.feedTimes}х/д,еда:${pt.food||"—"})`).join(";")||"нет"}
 ЗДОРОВЬЕ: зоны-${(p.healthFocus||[]).join(",")||"—"}, цель-${p.healthGoal||"—"}, хрон.-${p.chronic||"нет"}, спорт-${(p.sport||[]).join(",")||"—"}, практики-${(p.practices||[]).join(",")||"—"}
-ПИТАНИЕ: ${p.nutrition||"обычное"}, всегда дома-${(p.staples||[]).join(",")||"—"}, закупка-${p.shopDay||"—"}
+ПИТАНИЕ: ${p.nutrition||"обычное"}, цель-${p.healthGoal||p.mainGoal||"—"}, всегда дома-${(p.staples||[]).join(",")||"—"}, закупка-${p.shopDay||"—"}
+СЕМЬЯ: ${(p.livesWith||["один(а)"]).join(", ")}, человек-${p.familySize||"1"}, дети-${p.childrenAges||"нет"}, особые потребности-${p.familyNeeds||"нет"}
 УХОД: кожа-${p.skinType||"—"}, ${p.gender==="Мужской"?"борода-"+(p.beard||"—")+", барбер-"+(p.haircutFreq||"—"):"волосы-"+(p.hairType||"—")+", ногти-"+(p.nailFreq||"—")}, приоритет-${p.beautyPriority||"—"}
 ХОББИ: ${(p.hobbies||[]).join(",")||"—"}, проект-${p.hobbyProject||"—"}
 ЦЕЛИ: ${p.mainGoal||"—"}, вдохновляет-${p.workInspire||"—"}, истощает-${(p.workDrain||[]).join(",")||"—"}
@@ -1559,17 +1560,40 @@ function Onboarding({ onDone }) {
         </>}
 
         {s.id==="shopping" && <>
-          <div className="fld"><label>Как часто ходишь за продуктами</label>
+          {/* Состав семьи */}
+          <div className="fld">
+            <label>Кто живёт с тобой?</label>
+            <div className="chips">{["Живу один(а)","Партнёр/супруг(а)","Дети","Родители","Другие родственники"].map(v=><div key={v} className={"chip "+((d.livesWith||[]).includes(v)?"on":"")} onClick={()=>tog("livesWith",v)}>{v}</div>)}</div>
+          </div>
+          {(d.livesWith||[]).some(x=>["Партнёр/супруг(а)","Дети","Родители","Другие родственники"].includes(x))&&<>
+            <div className="fld">
+              <label>Общее количество человек в семье (включая тебя)</label>
+              <div className="chips">{["1","2","3","4","5","6+"].map(v=><div key={v} className={"chip "+(d.familySize===v?"on":"")} onClick={()=>set("familySize",v)}>{v}</div>)}</div>
+            </div>
+            {(d.livesWith||[]).includes("Дети")&&(
+              <div className="fld">
+                <label>Дети — возраст</label>
+                <input placeholder="Например: 3 года, 7 лет, 12 лет" value={d.childrenAges||""} onChange={e=>set("childrenAges",e.target.value)}/>
+              </div>
+            )}
+            {(d.livesWith||[]).includes("Родители")&&(
+              <div className="fld">
+                <label>Особые потребности у членов семьи</label>
+                <input placeholder="Диабет, аллергия на глютен, вегетарианец..." value={d.familyNeeds||""} onChange={e=>set("familyNeeds",e.target.value)}/>
+              </div>
+            )}
+          </>}
+          <div className="fld"><label>Как часто закупаешься</label>
             <div className="chips">{["Каждый день","2–3 раза в неделю","Раз в неделю","Раз в 2 недели","Заказываю онлайн"].map(v=><div key={v} className={`chip ${d.shopFreq===v?"on":""}`} onClick={()=>set("shopFreq",v)}>{v}</div>)}</div>
           </div>
-          <div className="fld"><label>Удобный день для закупки</label>
+          <div className="fld"><label>Удобный день для основной закупки</label>
             <div className="chips">{["Пн","Вт","Ср","Чт","Пт","Сб","Вс"].map(v=><div key={v} className={`chip ${d.shopDay===v?"on":""}`} onClick={()=>set("shopDay",v)}>{v}</div>)}</div>
           </div>
           <div className="fld"><label>Онлайн-заказы</label>
             <div className="chips">{["Нет","Иногда","Продукты онлайн","Всё онлайн"].map(v=><div key={v} className={`chip ${d.onlineShopping===v?"on":""}`} onClick={()=>set("onlineShopping",v)}>{v}</div>)}</div>
           </div>
           <div className="fld"><label>Что всегда должно быть дома</label>
-            <div className="chips">{["Яйца","Крупы","Молочное","Фрукты","Овощи","Мясо","Рыба","Хлеб","Консервы","Орехи"].map(v=><div key={v} className={`chip ${(d.staples||[]).includes(v)?"on":""}`} onClick={()=>tog("staples",v)}>{v}</div>)}</div>
+            <div className="chips">{["Яйца","Крупы","Молочное","Фрукты","Овощи","Мясо","Рыба","Хлеб","Консервы","Орехи","Бобовые","Зелень"].map(v=><div key={v} className={`chip ${(d.staples||[]).includes(v)?"on":""}`} onClick={()=>tog("staples",v)}>{v}</div>)}</div>
           </div>
         </>}
 
@@ -2335,6 +2359,16 @@ function TodaySection({profile,tasks,setTasks,journal,setJournal,today,moon,kb,n
 
   // ── Планировщик: формируем события ────────────────────────
   const plannerEvents = [];
+  // Напоминание о дне закупки
+  const SHOP_DAYS={"Пн":1,"Вт":2,"Ср":3,"Чт":4,"Пт":5,"Сб":6,"Вс":0};
+  const todayDayNum=now.getDay();
+  const shopDayNum=SHOP_DAYS[profile.shopDay];
+  if(profile.shopDay&&todayDayNum===shopDayNum){
+    plannerEvents.push({id:"shopping",type:"anchor",emoji:"🛒",
+      title:"День закупки продуктов"+((profile.familySize&&profile.familySize!=="1")?" (на "+profile.familySize+" чел.)":""),
+      time:"10:00",timeH:10,timeM:0,done:false,fixed:true});
+  }
+
   plannerEvents.push({id:"wake",type:"anchor",emoji:"☀️",title:"Подъём",time:profile.wake||"07:00",timeH:wakeH,timeM:0,done:false,fixed:true});
 
   // Кормление питомцев
@@ -3807,7 +3841,76 @@ function ShoppingSection({profile,shopList,setShopList,kb,notify}) {
           <div className="pf-item"><div className="pf-l">Онлайн</div><div className="pf-v">{profile.onlineShopping||"—"}</div></div>
         </div>
       </div>
-      <AiBox kb={kb} prompt={"Составь подробный список покупок на неделю. Тип питания: "+(profile.nutrition||"обычное")+". Всегда есть дома: "+((profile.staples||[]).join(",")||"—")+". Питомцы и их еда: "+((profile.pets||[]).map(p=>p.name+"("+p.type+"):"+(p.food||"стандартный корм")).join(",")||"нет")+". Живу: "+((profile.livesWith||[]).join(",")||"один(а)")+". Закупка: "+(profile.shopDay||"—")+". ВАЖНО: каждый товар в списке начинай с метки в квадратных скобках указывая категорию. Категории: [Продукты], [Бытовая химия], [Красота и уход], [Для питомцев], [Аптека]. Пример: 1) [Продукты] Куриная грудка 1 кг 2) [Бытовая химия] Гель для посуды 1 шт 3) [Для питомцев] Корм для кошки 2 кг. Дай заголовки разделов через ## и под каждым нумерованный список товаров с метками."} label="Список покупок на неделю" btnText="Составить список" placeholder="Составлю список покупок на неделю..." actionType="shopping" onShopAdd={setShopList}/>
+      {/* Напоминание о дне закупки */}
+      {(()=>{
+        const days={"Пн":1,"Вт":2,"Ср":3,"Чт":4,"Пт":5,"Сб":6,"Вс":0};
+        const todayDay=new Date().getDay();
+        const shopDayNum=days[profile.shopDay];
+        const isShopDay=shopDay!==undefined&&todayDay===shopDayNum;
+        const daysLeft=shopDayNum!==undefined?((shopDayNum-todayDay+7)%7||7):null;
+        if(!profile.shopDay) return null;
+        return(
+          <div style={{padding:"10px 14px",borderRadius:12,marginBottom:12,
+            background:isShopDay?"rgba(45,106,79,0.15)":"rgba(45,32,16,0.05)",
+            border:"1px solid "+(isShopDay?T.success:T.bdrS),
+            display:"flex",alignItems:"center",gap:10}}>
+            <span style={{fontSize:20}}>{isShopDay?"🛒":"📅"}</span>
+            <div>
+              <div style={{fontSize:14,color:isShopDay?T.success:T.text1,fontWeight:isShopDay?600:400}}>
+                {isShopDay?"Сегодня день закупки! "+profile.shopDay:"День закупки: "+profile.shopDay}
+              </div>
+              <div style={{fontSize:12,color:T.text3}}>
+                {isShopDay?"Список уже готов — прокрути вниз":"Через "+daysLeft+" "+(daysLeft===1?"день":daysLeft<5?"дня":"дней")}
+              </div>
+            </div>
+            {isShopDay&&<span style={{marginLeft:"auto",fontSize:20}}>✦</span>}
+          </div>
+        );
+      })()}
+
+      {/* Умный список с учётом цели, семьи и питомцев */}
+      {(()=>{
+        const familySize=parseInt(profile.familySize||"1");
+        const hasWeightGoal=(profile.mainGoal||"").toLowerCase().includes("похуде")||(profile.mainGoal||"").toLowerCase().includes("вес")||(profile.healthGoal||"").toLowerCase().includes("похуде");
+        const hasChildren=(profile.livesWith||[]).includes("Дети");
+        const hasParents=(profile.livesWith||[]).includes("Родители");
+        const familyNeeds=profile.familyNeeds||"";
+        const pets=(profile.pets||[]);
+
+        const shopPrompt=
+          "Составь подробный список покупок на неделю для "+familySize+" "+(familySize===1?"человека":familySize<5?"человек":"человек")+".
+
+"+
+          "СОСТАВ СЕМЬИ: "+(profile.livesWith||["один(а)"]).join(", ")+
+          (hasChildren?". Дети: "+profile.childrenAges:"")+".
+"+
+          (familyNeeds?"Особые потребности: "+familyNeeds+".
+":"")+
+          "ТИП ПИТАНИЯ: "+(profile.nutrition||"обычное")+".
+"+
+          (hasWeightGoal?"ЦЕЛЬ: похудение — акцент на белок, овощи, ограничить простые углеводы и сладкое. Калорийность умеренная.
+":"")+
+          "ТКМ-профиль учитывай при выборе продуктов.
+"+
+          "Всегда есть дома: "+((profile.staples||[]).join(", ")||"—")+".
+"+
+          (pets.length?"Питомцы: "+pets.map(p=>p.name+"("+p.type+"): "+(p.food||"стандартный корм")).join(", ")+".
+":"")+
+          "День закупки: "+(profile.shopDay||"—")+".
+
+"+
+          "ВАЖНО: укажи количество с учётом "+familySize+" "+(familySize===1?"человека":"человек")+". "+
+          "Каждый товар начинай с метки [Продукты], [Бытовая химия], [Красота и уход], [Для питомцев] или [Аптека]. "+
+          "Дай заголовки разделов через ## и нумерованный список.";
+
+        return(
+          <AiBox kb={kb} prompt={shopPrompt}
+            label="Список покупок на неделю"
+            btnText={`Составить список на ${familySize > 1 ? familySize+" чел." : "меня"}`}
+            placeholder="Составлю список с учётом всей семьи и целей..."
+            actionType="shopping" onShopAdd={setShopList}/>
+        );
+      })()}
       <div className="card">
         <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
           <input style={{flex:"1 1 180px",padding:"10px 14px",background:"rgba(255,255,255,.03)",border:"1px solid "+T.bdr,borderRadius:10,color:T.text0,fontFamily:"'Crimson Pro',serif",fontSize:16,outline:"none"}} placeholder="Добавить товар..." value={newItem} onChange={e=>setNewItem(e.target.value)} onKeyDown={e=>e.key==="Enter"&&add()}/>
@@ -3970,7 +4073,13 @@ function HealthSection({profile,tasks,setTasks,setShopList,today,kb,notify}) {
         const tcm=getTCMFullProfile(profile);
         const el=tcm?.el;
         const cn=tcm?.cn;
-        return "Составь меню питания на неделю на основе полного профиля.\n\nПРОФИЛЬ ПИТАНИЯ:\n• Тип питания: "+(profile.nutrition||"обычное")+"\n• Цель: "+(profile.healthGoal||"—")+"\n• Зоны здоровья: "+((profile.healthFocus||[]).join(", ")||"—")+"\n• Хронические: "+(profile.chronic||"нет")+"\n\nТКМ-ПРОФИЛЬ:\n• Стихия: "+(el?el.name+" ("+(el.yin?"Инь":"Ян")+")":"—")+"\n• Органы стихии: "+(el?el.organ:"—")+"\n• Полезный вкус: "+(el?el.taste:"—")+"\n• Конституция: "+(cn?cn.type:"—")+"\n• Синдромы: "+((tcm?.syndromes||[]).join(", ")||"не определены")+"\n• Органы под вниманием: "+((tcm?.uniqueOrgans||[]).join(", ")||"—")+"\n• Пищеварение: "+(tcm?.digestionNote||"в норме")+"\n• Тяга к вкусу: "+(profile.tcmTaste?.split("(")[0]?.trim()||"—")+"\n• ТКМ-продукты: "+(tcm?.foodRecs||cn?.foods||"—")+"\n\nЛУНА И СЕЗОН:\n• Луна: "+moonN+" ("+moonT+"). Сезон: "+season+"\n• Всегда дома: "+((profile.staples||[]).join(", ")||"—")+"\n\nПРАВИЛА:\n1) Продукты поддерживают органы стихии и выявленные синдромы\n2) Учитывай вкус-союзник и тягу к вкусу\n3) При цели похудеть — ограничь простые углеводы\n4) Продукты сезонные и простые в приготовлении\n\n## Меню на 7 дней\nДля каждого дня — завтрак, обед, ужин. Нумерованный список.\n\n## Список продуктов\nКАЖДЫЙ продукт начинай с метки [Продукты] или [Аптека]. 15-20 позиций.";
+        const familySize2 = parseInt(profile.familySize||"1");
+        const hasWeightGoalH = (profile.mainGoal||"").toLowerCase().includes("похуде")||(profile.mainGoal||"").toLowerCase().includes("вес")||(profile.healthGoal||"").toLowerCase().includes("похуде");
+        const weightTarget = hasWeightGoalH?"
+• ЦЕЛЬ ПОХУДЕНИЯ: высокий белок (курица, рыба, яйца, бобовые), много овощей и клетчатки, минимум простых углеводов, сахара и мучного. Дефицит калорий ~300-500 ккал. Дробное питание 4-5 раз.":"";
+        const familyNote2 = familySize2>1?"
+• Семья: "+familySize2+" чел. — "+(profile.livesWith||[]).join(", ")+(profile.childrenAges?", дети "+profile.childrenAges:"")+(profile.familyNeeds?". Особые потребности: "+profile.familyNeeds:""):"";
+        return "Составь меню питания на неделю.\n\nПРОФИЛЬ ПИТАНИЯ:\n• Тип питания: "+(profile.nutrition||"обычное")+"\n• Цель здоровья: "+(profile.healthGoal||"—")+"\n• Главная цель: "+(profile.mainGoal||"—")+weightTarget+"\n• Зоны здоровья: "+((profile.healthFocus||[]).join(", ")||"—")+"\n• Хронические: "+(profile.chronic||"нет")+familyNote2+"\n\nТКМ-ПРОФИЛЬ:\n• Стихия: "+(el?el.name+" ("+(el.yin?"Инь":"Ян")+")":"—")+"\n• Органы: "+(el?el.organ:"—")+"\n• Вкус: "+(el?el.taste:"—")+"\n• Конституция: "+(cn?cn.type:"—")+"\n• Синдромы: "+((tcm?.syndromes||[]).join(", ")||"не определены")+"\n• Органы под вниманием: "+((tcm?.uniqueOrgans||[]).join(", ")||"—")+"\n• Пищеварение: "+(tcm?.digestionNote||"в норме")+"\n• ТКМ-продукты: "+(tcm?.foodRecs||cn?.foods||"—")+"\n\nЛУНА И СЕЗОН:\n• Луна: "+moonN+" ("+moonT+"). Сезон: "+season+"\n• Всегда дома: "+((profile.staples||[]).join(", ")||"—")+"\n\nПРАВИЛА:\n1) Продукты поддерживают органы стихии\n2) Учитывай вкус-союзник\n"+(hasWeightGoalH?"3) ПРИОРИТЕТ: цель похудения — калорийный дефицит, много белка и овощей\n":"3) Продукты простые и сезонные\n")+"4) Порции на "+familySize2+" "+(familySize2===1?"человека":"человек")+"\n\n## Меню на 7 дней\nЗавтрак, обед, ужин. Калорийность завтрака/обеда/ужина если цель похудение.\n\n## Список продуктов\nКАЖДЫЙ продукт с меткой [Продукты] или [Аптека], количество на "+familySize2+" чел.";
       })()}
         label="Меню на неделю (ТКМ)" btnText="Составить меню по ТКМ" placeholder="Составлю меню с учётом твоей стихии, синдромов и конституции по ТКМ..." actionType="shopping" onShopAdd={setShopList}/>
       <AiBox kb={kb} prompt={"Дай рецепт на сегодня для "+( profile.name||"меня")+". Тип питания: "+(profile.nutrition||"обычное")+". Луна: "+moonN+" ("+moonT+"). Зоны здоровья: "+((profile.healthFocus||[]).join(","))+". Что есть дома: "+((profile.staples||[]).join(","))+". Сезон: "+season+". Дай: 1) один конкретный рецепт под эту фазу луны и мои зоны здоровья, 2) почему именно этот рецепт полезен для меня сегодня, 3) какие добавки или суперфуды добавить для усиления эффекта."} label="Рецепт на сегодня" btnText="Рецепт дня" placeholder="Подберу рецепт под фазу луны и твоё здоровье..." noActions={true}/>
