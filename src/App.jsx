@@ -3232,8 +3232,7 @@ function WorkSection({profile,tasks,setTasks,today,kb,notify}) {
           <button className="btn btn-primary btn-sm" style={{flexShrink:0,fontSize:12}} onClick={addDeadlines}>+ Дедлайны</button>
         </div>
       )}
-        {!isWorkDay&&<div style={{marginTop:12,padding:"8px 14px",background:"rgba(200,164,90,.08)",borderRadius:9,fontSize:14,color:T.gold,fontStyle:"italic"}}>Сегодня нерабочий день ✦ Отдыхай</div>}
-      </div>
+      {!isWorkDay&&<div style={{marginBottom:10,padding:"8px 14px",background:"rgba(200,164,90,.08)",borderRadius:9,fontSize:14,color:T.gold,fontStyle:"italic"}}>Сегодня нерабочий день ✦ Отдыхай</div>}
       {/* ── Менеджер дедлайнов ── */}
       {profile.profDeadlines&&!profile.profDeadlines.includes("Нет")&&(()=>{
         const allDl=deadlineTasks.sort((a,b)=>a.deadline?.localeCompare(b.deadline||"")||0);
