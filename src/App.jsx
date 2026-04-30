@@ -210,6 +210,7 @@ function buildKB(p) {
 РАБОТА: ${p.profession||"—"} в ${p.jobSphere||"—"}, формат-${p.workType||"—"}, график: ${p.workStart||"?"}–${p.workEnd||"?"}, дорога-${p.commuteTime||"нет"}
 СВОБОДНОЕ ВРЕМЯ: с ${freeFrom} до ${p.sleep||"23:00"} (практики ТОЛЬКО в это время!)
 ДОМ: ${p.homeType||"—"} ${p.homeArea||"?"}м², с: ${(p.livesWith||[]).join(",")||"один(а)"}, уборка: ${(p.cleanDays||[]).join(",")||"—"}
+АВТО: ${p.hasCar==="Да"?p.carModel+" "+p.carYear+", пробег "+p.carMileage+" км, последнее ТО "+p.carLastTO+", резина "+p.carTireType:"нет"}
 ПИТОМЦЫ: ${(p.pets||[]).map(pt=>`${pt.name}(${pt.type},${pt.feedTimes}х/д,еда:${pt.food||"—"})`).join(";")||"нет"}
 ЗДОРОВЬЕ: зоны-${(p.healthFocus||[]).join(",")||"—"}, цель-${p.healthGoal||"—"}, хрон.-${p.chronic||"нет"}, спорт-${(p.sport||[]).join(",")||"—"}, практики-${(p.practices||[]).join(",")||"—"}
 ПИТАНИЕ: ${p.nutrition||"обычное"}, цель-${p.healthGoal||p.mainGoal||"—"}, всегда дома-${(p.staples||[]).join(",")||"—"}, закупка-${p.shopDay||"—"}
@@ -1071,6 +1072,7 @@ const DEF_SECTIONS = [
   {id:"home",     emoji:"🏡",  name:"Дом",        vis:true},
   {id:"shopping", emoji:"🛒",  name:"Покупки",    vis:true},
   {id:"pets",     emoji:"🐾",  name:"Питомцы",    vis:true},
+  {id:"car",      emoji:"🚗",  name:"Авто",       vis:true},
   {id:"health",   emoji:"🌿",  name:"Здоровье",   vis:true},
   {id:"beauty",   emoji:"✨",  name:"Красота",    vis:true},
   {id:"hobbies",  emoji:"🎨",  name:"Хобби",      vis:true},
@@ -1346,6 +1348,33 @@ function Onboarding({ onDone }) {
           <div className="fld"><label>Помощь по хозяйству</label>
             <div className="chips">{["Только я","Помогает партнёр","Делим поровну","Приходит помощница"].map(v=><div key={v} className={`chip ${d.houseHelp===v?"on":""}`} onClick={()=>set("houseHelp",v)}>{v}</div>)}</div>
           </div>
+          {/* Автомобиль */}
+          <div className="fld">
+            <label>Есть автомобиль?</label>
+            <div className="chips">{["Нет","Да"].map(v=><div key={v} className={"chip "+(d.hasCar===v?"on":"")} onClick={()=>set("hasCar",v)}>{v}</div>)}</div>
+          </div>
+          {d.hasCar==="Да"&&<>
+            <div className="fld-row">
+              <div className="fld"><label>Марка и модель</label><input placeholder="Toyota Camry..." value={d.carModel||""} onChange={e=>set("carModel",e.target.value)}/></div>
+              <div className="fld"><label>Год выпуска</label><input type="number" placeholder="2020" value={d.carYear||""} onChange={e=>set("carYear",e.target.value)}/></div>
+            </div>
+            <div className="fld-row">
+              <div className="fld"><label>Пробег сейчас (км)</label><input type="number" placeholder="45000" value={d.carMileage||""} onChange={e=>set("carMileage",e.target.value)}/></div>
+              <div className="fld"><label>Последнее ТО (дата)</label><input type="date" value={d.carLastTO||""} onChange={e=>set("carLastTO",e.target.value)}/></div>
+            </div>
+            <div className="fld"><label>Тип резины сейчас</label>
+              <div className="chips">{["Летняя","Зимняя","Всесезонная"].map(v=><div key={v} className={"chip "+(d.carTireType===v?"on":"")} onClick={()=>set("carTireType",v)}>{v}</div>)}</div>
+            </div>
+            <div className="fld"><label>Когда меняли резину</label>
+              <input type="month" value={d.carTireDate||""} onChange={e=>set("carTireDate",e.target.value)} placeholder="2023-10"/>
+            </div>
+            <div className="fld"><label>Страховка (срок окончания)</label>
+              <input type="date" value={d.carInsurance||""} onChange={e=>set("carInsurance",e.target.value)}/>
+            </div>
+            <div className="fld"><label>Техосмотр (срок окончания)</label>
+              <input type="date" value={d.carTechCheck||""} onChange={e=>set("carTechCheck",e.target.value)}/>
+            </div>
+          </>}
         </>}
 
         {s.id==="pets" && <>
@@ -1752,6 +1781,7 @@ export default function LifeDiary() {
             {active==="work"     && <WorkSection profile={profile} tasks={tasks} setTasks={setTasks} today={today} kb={kb} notify={notify}/>}
             {active==="home"     && <HomeSection profile={profile} tasks={tasks} setTasks={setTasks} today={today} kb={kb} notify={notify}/>}
             {active==="shopping" && <ShoppingSection profile={profile} shopList={shopList} setShopList={setShopList} kb={kb} notify={notify}/>}
+            {active==="car"      && <CarSection profile={profile} setProfile={setProfile} tasks={tasks} setTasks={setTasks} today={today} kb={kb} notify={notify}/>}
             {active==="pets"     && <PetsSection profile={profile} setProfile={setProfile} petLog={petLog} setPetLog={setPetLog} today={today} kb={kb} notify={notify}/>}
             {active==="health"   && <HealthSection profile={profile} tasks={tasks} setTasks={setTasks} setShopList={setShopList} today={today} kb={kb} notify={notify}/>}
             {active==="beauty"   && <BeautySection profile={profile} tasks={tasks} setTasks={setTasks} today={today} kb={kb} notify={notify}/>}
@@ -3572,7 +3602,41 @@ function HomeSection({profile,tasks,setTasks,today,kb,notify}) {
     if(profile.plants&&profile.plants!=="Нет")
       items.push({title:"Полить цветы", freq:profile.plants.includes("день")?"daily":"every:2", priority:"m"});
 
-    return items.map(t=>({...t,id:Date.now()+Math.random(),section:"home",lastDone:"",doneDate:"",notes:""}));
+    // ── Сезонные задачи (определяем по текущему месяцу) ──
+    const month = new Date().getMonth()+1; // 1-12
+    const isMarch   = month===3;
+    const isApril   = month===4;
+    const isMay     = month===5;
+    const isOct     = month===10;
+    const isNov     = month===11;
+
+    // Весна (март-май) — убрать зимнее, достать летнее
+    if(isMarch||isApril){
+      items.push({title:"🌸 Сезон: Убрать зимние вещи в хранение",          freq:"once", priority:"h", notes:"Пальто, пуховики, свитера — стирка и хранение в вакуумных пакетах"});
+      items.push({title:"🌸 Сезон: Достать весенне-летнюю одежду",           freq:"once", priority:"h", notes:"Проверить состояние, постирать после хранения"});
+      items.push({title:"🌸 Сезон: Весенняя генеральная уборка",             freq:"once", priority:"h", notes:"Мытьё окон, чистка карнизов, перестановка мебели"});
+      items.push({title:"🌸 Сезон: Проветрить и выбить зимние одеяла",       freq:"once", priority:"m"});
+      items.push({title:"🌸 Сезон: Разобрать гардероб — ненужное отдать",    freq:"once", priority:"l"});
+    }
+    if(isMay){
+      items.push({title:"☀️ Сезон: Достать летнюю обувь",                    freq:"once", priority:"m", notes:"Почистить и подготовить к сезону"});
+      items.push({title:"☀️ Сезон: Убрать зимнюю обувь",                     freq:"once", priority:"m", notes:"Почистить, смазать, убрать в коробки"});
+      items.push({title:"☀️ Сезон: Подготовить балкон/террасу к лету",       freq:"once", priority:"l"});
+    }
+    // Осень (октябрь-ноябрь) — убрать летнее, достать зимнее
+    if(isOct){
+      items.push({title:"🍂 Сезон: Достать зимние вещи из хранения",         freq:"once", priority:"h", notes:"Пальто, пуховики, тёплые свитера — проветрить и проверить"});
+      items.push({title:"🍂 Сезон: Убрать летнюю одежду на хранение",        freq:"once", priority:"h", notes:"Постирать, высушить, сложить в вакуумные пакеты"});
+      items.push({title:"🍂 Сезон: Подготовить тёплые одеяла и пледы",       freq:"once", priority:"m"});
+      items.push({title:"🍂 Сезон: Проверить отопление и батареи",           freq:"once", priority:"h"});
+    }
+    if(isNov){
+      items.push({title:"❄️ Сезон: Убрать летнюю обувь на хранение",         freq:"once", priority:"m", notes:"Почистить, обработать водоотталкивающим, убрать"});
+      items.push({title:"❄️ Сезон: Достать зимнюю обувь и аксессуары",       freq:"once", priority:"m"});
+      items.push({title:"❄️ Сезон: Проверить тёплые аксессуары (шапки, шарфы)", freq:"once", priority:"l"});
+    }
+
+    return items.map(t=>({...t,id:Date.now()+Math.random(),section:"home",lastDone:"",doneDate:"",notes:t.notes||""}));
   };
   const homeTasks=tasks.filter(t=>t.section==="home");
   const due=homeTasks.filter(t=>isDue(t,today));
@@ -4887,6 +4951,221 @@ function JournalSection({journal,setJournal,today,notify}) {
 // ══════════════════════════════════════════════════════════════
 //  PROFILE
 // ══════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════
+//  CAR SECTION
+// ══════════════════════════════════════════════════════════════
+function CarSection({profile,setProfile,tasks,setTasks,today,kb,notify}) {
+  const [editCar, setEditCar] = useState(false);
+  const [car, setCar] = useState({
+    model:    profile.carModel||"",
+    year:     profile.carYear||"",
+    mileage:  profile.carMileage||"",
+    lastTO:   profile.carLastTO||"",
+    tireType: profile.carTireType||"",
+    tireDate: profile.carTireDate||"",
+    insurance:profile.carInsurance||"",
+    techCheck:profile.carTechCheck||"",
+  });
+
+  if(profile.hasCar!=="Да") return(
+    <div style={{textAlign:"center",padding:"40px 16px"}}>
+      <div style={{fontSize:48,marginBottom:12}}>🚗</div>
+      <div style={{fontSize:16,color:T.text2,marginBottom:8}}>Автомобиль не указан в профиле</div>
+      <div style={{fontSize:13,color:T.text3}}>Зайди в настройки профиля → Дом и укажи данные автомобиля</div>
+    </div>
+  );
+
+  const saveCar = () => {
+    setProfile(p=>({...p,
+      carModel:car.model, carYear:car.year, carMileage:car.mileage,
+      carLastTO:car.lastTO, carTireType:car.tireType, carTireDate:car.tireDate,
+      carInsurance:car.insurance, carTechCheck:car.techCheck,
+    }));
+    setEditCar(false);
+    notify("Данные автомобиля сохранены ✦");
+  };
+
+  // Умные предупреждения
+  const now = new Date();
+  const month = now.getMonth()+1;
+  const warnings = [];
+
+  // ТО — каждые 10 000 км или раз в год
+  if(profile.carLastTO) {
+    const lastTO = new Date(profile.carLastTO);
+    const daysSince = Math.floor((now-lastTO)/86400000);
+    if(daysSince>300) warnings.push({emoji:"🔧",title:"Пора на ТО",desc:"Прошло "+Math.floor(daysSince/30)+" мес. с последнего ТО. Рекомендуется раз в год или каждые 10 000 км.",color:T.danger,urgent:true});
+    else if(daysSince>240) warnings.push({emoji:"🔧",title:"Скоро ТО",desc:"До следующего ТО примерно "+Math.floor((365-daysSince)/30)+" мес.",color:T.warn,urgent:false});
+  }
+
+  // Резина — переобуться весной (апрель) и осенью (октябрь-ноябрь)
+  const isSpring = month>=3&&month<=5;
+  const isAutumn = month>=9&&month<=11;
+  if(profile.carTireType==="Зимняя"&&isSpring)
+    warnings.push({emoji:"🔄",title:"Пора менять на летнюю резину",desc:"Оптимальная температура для смены — стабильно выше +7°C. Апрель — самое время.",color:T.warn,urgent:true});
+  if(profile.carTireType==="Летняя"&&isAutumn)
+    warnings.push({emoji:"🔄",title:"Пора менять на зимнюю резину",desc:"Меняй когда температура стабильно ниже +7°C. Не жди первого снега.",color:T.warn,urgent:true});
+
+  // Страховка
+  if(profile.carInsurance) {
+    const insDate = new Date(profile.carInsurance);
+    const daysLeft = Math.ceil((insDate-now)/86400000);
+    if(daysLeft<30&&daysLeft>=0) warnings.push({emoji:"📋",title:"Страховка истекает через "+daysLeft+" дн.",desc:"Обнови полис заблаговременно, минимум за 3-5 дней до истечения.",color:T.danger,urgent:true});
+    else if(daysLeft<60&&daysLeft>=0) warnings.push({emoji:"📋",title:"Страховка истекает через "+Math.floor(daysLeft/7)+" нед.",desc:"Стоит заранее подобрать предложения и обновить полис.",color:T.warn,urgent:false});
+  }
+
+  // Техосмотр
+  if(profile.carTechCheck) {
+    const techDate = new Date(profile.carTechCheck);
+    const daysLeft = Math.ceil((techDate-now)/86400000);
+    if(daysLeft<30&&daysLeft>=0) warnings.push({emoji:"🔍",title:"Техосмотр через "+daysLeft+" дн.",desc:"Запишись заранее — очереди бывают.",color:T.danger,urgent:true});
+    else if(daysLeft<60&&daysLeft>=0) warnings.push({emoji:"🔍",title:"Техосмотр через "+Math.floor(daysLeft/7)+" нед.",desc:"Подготовь документы и проверь авто заранее.",color:T.warn,urgent:false});
+  }
+
+  // Задачи авто
+  const addCarTask = (title,deadline="",notes="") => {
+    setTasks(p=>[...p,{
+      id:Date.now()+Math.random(), title, section:"work",
+      freq:"once", priority:"h", deadline, notes,
+      preferredTime:"09:00", lastDone:"", doneDate:""
+    }]);
+    notify("Добавлено в задачи ✦");
+  };
+
+  // Плановые задачи для авто
+  const carTasks = [
+    {emoji:"🔧",title:"Замена масла и фильтров",         freq:"every:180", notes:"Каждые 10 000 км или раз в год"},
+    {emoji:"🔄",title:"Проверка тормозных колодок",       freq:"every:180", notes:"Каждые 20 000 км"},
+    {emoji:"💧",title:"Проверка уровня жидкостей",        freq:"every:30",  notes:"Масло, охлаждающая, тормозная, омыватель"},
+    {emoji:"🔋",title:"Проверка аккумулятора",            freq:"every:90",  notes:"Особенно важно перед зимой"},
+    {emoji:"💨",title:"Давление в шинах",                 freq:"every:14",  notes:"Норма обычно 2.2-2.5 бар"},
+    {emoji:"🚿",title:"Мойка автомобиля",                 freq:"every:14",  notes:""},
+    {emoji:"🧹",title:"Уборка салона",                    freq:"every:30",  notes:"Пылесос, протереть поверхности"},
+    {emoji:"🌙",title:"Антикоррозийная обработка",        freq:"every:365", notes:"Желательно перед зимой"},
+  ];
+
+  return(
+    <div>
+      {/* Карточка авто */}
+      <div className="card card-accent" style={{marginBottom:12}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+          <div>
+            <div style={{fontSize:11,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:2,marginBottom:6}}>МОЙ АВТОМОБИЛЬ</div>
+            <div style={{fontFamily:"'Cormorant Infant',serif",fontSize:22,color:T.text0,marginBottom:4}}>
+              {profile.carModel||"—"} {profile.carYear&&"("+profile.carYear+")"}
+            </div>
+            <div style={{fontSize:13,color:T.text3}}>Пробег: {profile.carMileage?profile.carMileage+" км":"не указан"}</div>
+          </div>
+          <button className="btn btn-ghost btn-sm" onClick={()=>setEditCar(e=>!e)}>✏️ Изменить</button>
+        </div>
+        {!editCar&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginTop:12}}>
+          <div style={{padding:"8px 10px",background:"rgba(45,32,16,0.05)",borderRadius:9}}>
+            <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1}}>РЕЗИНА</div>
+            <div style={{fontSize:14,color:T.text0,marginTop:2}}>{profile.carTireType||"—"}</div>
+            {profile.carTireDate&&<div style={{fontSize:11,color:T.text3}}>с {profile.carTireDate}</div>}
+          </div>
+          <div style={{padding:"8px 10px",background:"rgba(45,32,16,0.05)",borderRadius:9}}>
+            <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1}}>ПОСЛЕДНЕЕ ТО</div>
+            <div style={{fontSize:14,color:T.text0,marginTop:2}}>{profile.carLastTO?new Date(profile.carLastTO).toLocaleDateString("ru-RU",{month:"long",year:"numeric"}):"—"}</div>
+          </div>
+          <div style={{padding:"8px 10px",background:"rgba(45,32,16,0.05)",borderRadius:9}}>
+            <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1}}>СТРАХОВКА</div>
+            <div style={{fontSize:13,color:T.text0,marginTop:2}}>{profile.carInsurance?new Date(profile.carInsurance).toLocaleDateString("ru-RU",{day:"numeric",month:"long",year:"numeric"}):"—"}</div>
+          </div>
+          <div style={{padding:"8px 10px",background:"rgba(45,32,16,0.05)",borderRadius:9}}>
+            <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1}}>ТЕХОСМОТР</div>
+            <div style={{fontSize:13,color:T.text0,marginTop:2}}>{profile.carTechCheck?new Date(profile.carTechCheck).toLocaleDateString("ru-RU",{day:"numeric",month:"long",year:"numeric"}):"—"}</div>
+          </div>
+        </div>}
+
+        {editCar&&<div style={{marginTop:12}}>
+          <div className="fld-row">
+            <div className="fld"><label>Марка и модель</label><input value={car.model} onChange={e=>setCar(p=>({...p,model:e.target.value}))}/></div>
+            <div className="fld"><label>Год</label><input type="number" value={car.year} onChange={e=>setCar(p=>({...p,year:e.target.value}))}/></div>
+          </div>
+          <div className="fld-row">
+            <div className="fld"><label>Пробег (км)</label><input type="number" value={car.mileage} onChange={e=>setCar(p=>({...p,mileage:e.target.value}))}/></div>
+            <div className="fld"><label>Последнее ТО</label><input type="date" value={car.lastTO} onChange={e=>setCar(p=>({...p,lastTO:e.target.value}))}/></div>
+          </div>
+          <div className="fld"><label>Тип резины</label>
+            <div className="chips">{["Летняя","Зимняя","Всесезонная"].map(v=><div key={v} className={"chip "+(car.tireType===v?"on":"")} onClick={()=>setCar(p=>({...p,tireType:v}))}>{v}</div>)}</div>
+          </div>
+          <div className="fld-row">
+            <div className="fld"><label>Дата смены резины</label><input type="month" value={car.tireDate} onChange={e=>setCar(p=>({...p,tireDate:e.target.value}))}/></div>
+            <div className="fld"><label>Страховка до</label><input type="date" value={car.insurance} onChange={e=>setCar(p=>({...p,insurance:e.target.value}))}/></div>
+          </div>
+          <div className="fld"><label>Техосмотр до</label><input type="date" value={car.techCheck} onChange={e=>setCar(p=>({...p,techCheck:e.target.value}))}/></div>
+          <div style={{display:"flex",gap:8,marginTop:8}}>
+            <button className="btn btn-ghost" onClick={()=>setEditCar(false)}>Отмена</button>
+            <button className="btn btn-primary" onClick={saveCar}>Сохранить</button>
+          </div>
+        </div>}
+      </div>
+
+      {/* Предупреждения */}
+      {warnings.length>0&&(
+        <div className="card" style={{marginBottom:12,borderLeft:"3px solid "+T.danger}}>
+          <div style={{fontSize:11,color:T.danger,fontFamily:"'JetBrains Mono'",letterSpacing:2,marginBottom:10}}>⚠️ ТРЕБУЕТ ВНИМАНИЯ</div>
+          {warnings.map((w,i)=>(
+            <div key={i} style={{display:"flex",gap:12,padding:"10px 0",borderBottom:"1px solid "+T.bdrS}}>
+              <span style={{fontSize:22,flexShrink:0}}>{w.emoji}</span>
+              <div style={{flex:1}}>
+                <div style={{fontSize:15,color:w.color,fontWeight:600,marginBottom:3}}>{w.title}</div>
+                <div style={{fontSize:13,color:T.text2,lineHeight:1.5}}>{w.desc}</div>
+              </div>
+              <button className="btn btn-ghost btn-sm" style={{flexShrink:0,fontSize:11}}
+                onClick={()=>addCarTask(w.title,"",w.desc)}>+ В задачи</button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Плановое обслуживание */}
+      <div className="card" style={{marginBottom:12}}>
+        <div style={{fontSize:11,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:2,marginBottom:12}}>ПЛАНОВОЕ ОБСЛУЖИВАНИЕ</div>
+        {carTasks.map((t,i)=>(
+          <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderBottom:"1px solid "+T.bdrS}}>
+            <span style={{fontSize:18}}>{t.emoji}</span>
+            <div style={{flex:1}}>
+              <div style={{fontSize:14,color:T.text0}}>{t.title}</div>
+              {t.notes&&<div style={{fontSize:11,color:T.text3}}>{t.notes}</div>}
+            </div>
+            <button className="btn btn-ghost btn-sm" style={{fontSize:11,flexShrink:0}}
+              onClick={()=>addCarTask(t.title,"",t.notes)}>+ В задачи</button>
+          </div>
+        ))}
+      </div>
+
+      {/* Сезонные задачи авто */}
+      <div className="card" style={{marginBottom:12}}>
+        <div style={{fontSize:11,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:2,marginBottom:12}}>СЕЗОННЫЕ ЗАДАЧИ</div>
+        {[
+          {emoji:"🌸",season:"Весна",tasks:["Смена на летнюю резину","Мойка после зимы + антикор снизу","Проверка тормозов после зимы","Замена щёток стеклоочистителя","Сезонная чистка салона"]},
+          {emoji:"☀️",season:"Лето",tasks:["Проверка кондиционера","Давление в шинах (жара увеличивает)","Защитная полироль кузова","Проверка охлаждающей жидкости"]},
+          {emoji:"🍂",season:"Осень",tasks:["Смена на зимнюю резину","Проверка аккумулятора перед холодами","Антикоррозийная обработка","Проверка антифриза","Запас незамерзайки"]},
+          {emoji:"❄️",season:"Зима",tasks:["Проверка давления шин (холод снижает)","Подогрев сидений и зеркал","Скребок и лопата в багажник","Цепи противоскольжения"]},
+        ].map(s=>(
+          <div key={s.season} style={{marginBottom:12}}>
+            <div style={{fontSize:13,color:T.gold,fontWeight:500,marginBottom:6}}>{s.emoji} {s.season}</div>
+            {s.tasks.map((t,i)=>(
+              <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 0",fontSize:13,color:T.text1,borderBottom:"1px solid "+T.bdrS}}>
+                <span>✦ {t}</span>
+                <button className="btn btn-ghost btn-sm" style={{fontSize:10,padding:"2px 7px"}}
+                  onClick={()=>addCarTask(s.season+": "+t)}>+</button>
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+
+      {/* AI советы по авто */}
+      <AiBox kb={kb}
+        prompt={"Дай советы по обслуживанию автомобиля "+profile.carModel+" "+profile.carYear+" г., пробег "+profile.carMileage+" км. Тип резины: "+profile.carTireType+". Последнее ТО: "+profile.carLastTO+". Регион: Казахстан. Текущий месяц: "+new Date().toLocaleString("ru-RU",{month:"long"})+". Дай: 1) что нужно сделать прямо сейчас (неотложно), 2) что запланировать на ближайший месяц, 3) сезонные советы для Казахстана, 4) на что обратить внимание при данном пробеге."}
+        label="AI советы по авто" btnText="Получить советы" placeholder="Дам персональные советы по обслуживанию твоего авто..."/>
+    </div>
+  );
+}
+
 function ProfileSection({profile,setProfile,sections,setSections,notify,kb}) {
   const [view,setView]=useState("me");
   const z=getZodiac(profile.dob);
