@@ -2965,7 +2965,7 @@ function ScheduleSection({profile,tasks,setTasks,today,kb,notify}) {
 
   const getAiSchedule = async()=>{
     setLoading(true);
-    const r = await askClaude(null,
+    const r = await askClaude(kb,
       `Составь детальное расписание на неделю для ${profile.name||"меня"}. `+
       `Работа: ${profile.workStart||"9:00"}–${profile.workEnd||"18:00"} (${profile.workType||"офис"}), `+
       `дорога: ${profile.commuteTime||"нет"}. Подъём: ${profile.wake||"7:00"}, отбой: ${profile.sleep||"23:00"}. `+
