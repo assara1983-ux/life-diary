@@ -1732,7 +1732,7 @@ export default function LifeDiary() {
             {active==="health"   && <HealthSection profile={profile} tasks={tasks} setTasks={setTasks} setShopList={setShopList} today={today} kb={kb} notify={notify}/>}
             {active==="beauty"   && <BeautySection profile={profile} tasks={tasks} setTasks={setTasks} today={today} kb={kb} notify={notify}/>}
             {active==="hobbies"  && <HobbiesSection profile={profile} hobbies={hobbies} setHobbies={setHobbies} kb={kb} notify={notify}/>}
-            {active==="goals"    && <GoalsSection profile={profile} setProfile={setProfile} kb={kb} notify={notify}/>}
+            {active==="goals"    && <GoalsSection profile={profile} setProfile={setProfile} tasks={tasks} setTasks={setTasks} kb={kb} notify={notify}/>}
             {active==="mental"   && <MentalSection profile={profile} kb={kb} notify={notify}/>}
             {active==="travel"   && <TravelSection profile={profile} trips={trips} setTrips={setTrips} kb={kb} notify={notify}/>}
             {active==="journal"  && <JournalSection journal={journal} setJournal={setJournal} today={today} notify={notify}/>}
@@ -4095,7 +4095,7 @@ function HobbiesSection({profile,hobbies,setHobbies,kb,notify}) {
 // ══════════════════════════════════════════════════════════════
 //  GOALS
 // ══════════════════════════════════════════════════════════════
-function GoalsSection({profile,setProfile,kb,notify}) {
+function GoalsSection({profile,setProfile,tasks,setTasks,kb,notify}) {
   const moon = getMoon();
   const [editGoal, setEditGoal] = useState(false);
   const [newGoal, setNewGoal] = useState(profile.mainGoal||"");
@@ -4104,7 +4104,32 @@ function GoalsSection({profile,setProfile,kb,notify}) {
   const [newDeadline, setNewDeadline] = useState(profile.goalDeadline||"");
   const [newMetric, setNewMetric] = useState(profile.goalMetric||"");
   const [activeArea, setActiveArea] = useState(null);
-  const [tab, setTab] = useState("goal"); // goal | wheel | plan
+  const [tab, setTab] = useState("goal");
+  const [addModal, setAddModal] = useState(null); // {title, time, section}
+
+  // Добавить задачу из AI плана в планировщик
+  const addGoalTask = (title, time="", section="tasks") => {
+    const task = {
+      id: Date.now()+Math.random(),
+      title: title.length>100?title.slice(0,97)+"...":title,
+      section, freq:"once", priority:"m",
+      preferredTime: time, deadline:"", notes:"Из плана целей",
+      lastDone:"", doneDate:""
+    };
+    setTasks(p=>[...p, task]);
+    notify("Добавлено в планировщик ✦");
+  };
+
+  // Callback для AiBox — разбирает пункты плана и добавляет задачи
+  const onPlanTaskAdd = (merged) => {
+    // merged уже обновлён через localStorage в AiBox
+    // но мы используем setTasks напрямую
+  };
+
+  // Кастомный обработчик для добавления с временем
+  const handleAddItem = (itemText) => {
+    setAddModal({title: itemText.slice(0,100), time:"", section:"tasks"});
+  };
 
   const goalAreas = profile.goalAreas||[];
   const goalBlocks = profile.goalBlocks||[];
@@ -4180,6 +4205,41 @@ function GoalsSection({profile,setProfile,kb,notify}) {
 
   return(
     <div>
+      {/* Модалка добавления задачи из плана в планировщик */}
+      {addModal&&(
+        <div className="overlay" onClick={()=>setAddModal(null)}>
+          <div className="modal" onClick={e=>e.stopPropagation()}>
+            <span className="modal-x" onClick={()=>setAddModal(null)}>✕</span>
+            <div className="modal-title">Добавить в планировщик</div>
+            <div className="fld">
+              <label>Задача</label>
+              <input value={addModal.title} onChange={e=>setAddModal(p=>({...p,title:e.target.value}))}/>
+            </div>
+            <div className="fld-row">
+              <div className="fld">
+                <label>Время выполнения</label>
+                <input type="time" value={addModal.time||""} onChange={e=>setAddModal(p=>({...p,time:e.target.value}))}/>
+              </div>
+              <div className="fld">
+                <label>Раздел</label>
+                <select value={addModal.section||"tasks"} onChange={e=>setAddModal(p=>({...p,section:e.target.value}))}>
+                  <option value="tasks">Общие задачи</option>
+                  <option value="health">Здоровье</option>
+                  <option value="home">Дом</option>
+                  <option value="hobbies">Хобби</option>
+                </select>
+              </div>
+            </div>
+            <div className="modal-foot">
+              <button className="btn btn-ghost" onClick={()=>setAddModal(null)}>Отмена</button>
+              <button className="btn btn-primary" onClick={()=>{
+                addGoalTask(addModal.title, addModal.time||"", addModal.section||"tasks");
+                setAddModal(null);
+              }}>📅 Добавить в планировщик</button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* ── Вкладки ── */}
       <div className="tabs" style={{marginBottom:14}}>
         {[["goal","🎯 Моя цель"],["wheel","🔄 Колесо"],["plan","📋 План"]].map(([v,l])=>(
@@ -4281,7 +4341,11 @@ function GoalsSection({profile,setProfile,kb,notify}) {
             <div style={{fontSize:11,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:2,marginBottom:10}}>ЧТО ПОМОГАЕТ ДОСТИЧЬ ЦЕЛИ</div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
               {activeRecs.map((r,i)=>(
-                <div key={i} style={{padding:"8px 10px",background:"rgba(45,106,79,0.06)",borderRadius:10,fontSize:13,color:T.text1}}>✦ {r}</div>
+                <div key={i} style={{padding:"8px 10px",background:"rgba(45,106,79,0.06)",borderRadius:10,cursor:"pointer"}}
+                  onClick={()=>setAddModal({title:r,time:"",section:"tasks"})}>
+                  <div style={{fontSize:13,color:T.text1,marginBottom:4}}>✦ {r}</div>
+                  <div style={{fontSize:10,color:T.teal,fontFamily:"'JetBrains Mono'"}}>+ в планировщик</div>
+                </div>
               ))}
             </div>
           </div>
@@ -4314,7 +4378,9 @@ function GoalsSection({profile,setProfile,kb,notify}) {
             ", "+(profile.selfTime||"30")+" мин/день на себя."+
             " Луна: "+moon.n+"("+moon.t+")."+
             " Дай: 1) 3 конкретных шага на эту неделю с точным временем, 2) как преодолеть каждый барьер из списка, 3) аффирмацию под ценность, 4) что сделать СЕГОДНЯ за 15 минут."
-          } label="AI план достижения цели" btnText="Составить план" placeholder="Составлю персональный план под твою цель..."/>
+          } label="AI план достижения цели" btnText="Составить план" placeholder="Составлю персональный план под твою цель..."
+          onTaskAdd={(items)=>{ if(Array.isArray(items)) items.forEach(t=>handleAddItem(typeof t==="string"?t:t.title||"")); }}
+          />
         )}
         {!editGoal&&mainGoal&&(
           <AiBox kb={kb} prompt={
