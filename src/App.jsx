@@ -2582,23 +2582,34 @@ function TodaySection({profile,tasks,setTasks,journal,setJournal,today,moon,kb,n
 
   plannerEvents.push({id:"wake",type:"anchor",emoji:"☀️",title:"Подъём",time:profile.wake||"07:00",timeH:wakeH,timeM:0,done:false,fixed:true});
 
-  // Кормление питомцев
-  (profile.pets||[]).forEach(pet=>{
-    const feeds=parseInt(pet.feedTimes)||2;
-    const labels=feeds<=2?["Утро","Вечер"]:feeds===3?["Утро","День","Вечер"]:["1","2","3","4"];
-    const autoTimes=feeds===1?["08:00"]:feeds===2?["08:00","19:00"]:feeds===3?["08:00","14:00","19:00"]:["07:00","11:00","15:00","19:00"];
-    for(let i=0;i<feeds;i++){
-      const t=(pet.feedSchedule||[])[i]||autoTimes[i]||"08:00";
-      const [h,m]=t.split(":").map(Number);
-      const log=petLog[today]?.[pet.id]||[];
+  // Кормление питомцев — объединить в одну задачу на каждое время кормления
+  if((profile.pets||[]).length > 0) {
+    const allPets = profile.pets||[];
+    const maxFeeds = Math.max(...allPets.map(p=>parseInt(p.feedTimes)||2));
+    const feedLabels = maxFeeds<=2?["Утро","Вечер"]:maxFeeds===3?["Утро","День","Вечер"]:["1","2","3","4"];
+    const autoTimes = maxFeeds===1?["08:00"]:maxFeeds===2?["08:00","19:00"]:maxFeeds===3?["08:00","14:00","19:00"]:["07:00","11:00","15:00","19:00"];
+    for(let feedIdx=0; feedIdx<maxFeeds; feedIdx++) {
+      const petsForFeed = allPets.filter(p=>feedIdx < (parseInt(p.feedTimes)||2));
+      if(petsForFeed.length===0) continue;
+      // Время берём от первого питомца или автоматически
+      const t = (petsForFeed[0].feedSchedule||[])[feedIdx] || autoTimes[feedIdx] || "08:00";
+      const [h,m] = t.split(":").map(Number);
+      const allDone = petsForFeed.every(pet=>(petLog[today]?.[pet.id]||[]).includes(feedIdx));
+      const petNames = petsForFeed.map(p=>p.name).join(", ");
       plannerEvents.push({
-        id:"pet-"+pet.id+"-"+i, type:"pet", emoji:petEmoji(pet.type),
-        title:"Покормить "+pet.name+" ("+labels[i]+")",
-        time:t, timeH:h, timeM:m||0, done:log.includes(i),
-        onDone:()=>{const cur=petLog[today]?.[pet.id]||[];const n=cur.includes(i)?cur.filter(x=>x!==i):[...cur,i];setPetLog(p=>({...p,[today]:{...(p[today]||{}),[pet.id]:n}}))}
+        id:"pet-feed-"+feedIdx, type:"pet", emoji:"🐾",
+        title:"Покормить: "+petNames+" ("+feedLabels[feedIdx]+")",
+        time:t, timeH:h, timeM:m||0, done:allDone,
+        onDone:()=>{
+          petsForFeed.forEach(pet=>{
+            const cur=petLog[today]?.[pet.id]||[];
+            const n=allDone?cur.filter(x=>x!==feedIdx):[...cur,feedIdx];
+            setPetLog(p=>({...p,[today]:{...(p[today]||{}),[pet.id]:n}}));
+          });
+        }
       });
     }
-  });
+  }
 
   // Дорога на работу
   if(isWorkDay && profile.commuteTime && profile.commuteTime!=="Дома") {
@@ -3631,1119 +3642,392 @@ function DlRow({t, today, setTasks, setEditDl, setAddDlModal}) {
 }
 
 function WorkSection({profile,tasks,setTasks,today,kb,notify}) {
-  const [modal,setModal]=useState(null);
   const gp = genderPrompt(profile);
   const [editSchedule,setEditSchedule]=useState(false);
   const [schedStart,setSchedStart]=useState(profile.workStart||"09:00");
   const [schedEnd,setSchedEnd]=useState(profile.workEnd||"18:00");
-  const [dlTab,setDlTab]=useState("upcoming");
-  const [addDlModal,setAddDlModal]=useState(false);
-  const [editDl,setEditDl]=useState(null);
-  const [newDl,setNewDl]=useState({title:"",deadline:"",notes:"",organ:"КГД"});
-  const [expandedGroup,setExpandedGroup]=useState(null);
-  const workTasks=tasks.filter(t=>t.section==="work");
-  const deadlineTasks=workTasks.filter(t=>t.isDeadline);
-  const addDeadlines=()=>{
-    const dl=getProfDeadlines(profile);
-    const exist=new Set(workTasks.filter(t=>t.isDeadline).map(t=>t.title));
-    const newDl=dl.filter(t=>!exist.has(t.title));
-    if(newDl.length===0){notify("Все дедлайны уже добавлены");return;}
-    setTasks(p=>[...p,...newDl]);
-    notify("Добавлено "+newDl.length+" дедлайнов ✦");
-  };
 
-  // Автозагрузка дедлайнов при первом открытии раздела
+  // Хранилище разделов отчётности
+  const [reportGroups, setReportGroups] = useStorage("ld_report_groups", [
+    {id:"kgd",   name:"КГД",       icon:"🏛", color:"#82AADD"},
+    {id:"pay",   name:"Платежи",   icon:"💰", color:"#7BCCA0"},
+    {id:"bns",   name:"БНС",       icon:"📊", color:"#E8A85A"},
+    {id:"pit",   name:"ПИТ",       icon:"📋", color:"#B882E8"},
+    {id:"liz",   name:"Лизинг",    icon:"📄", color:"#E5C87A"},
+    {id:"eaes",  name:"ЕАЭС",      icon:"🌐", color:"#7EDDD5"},
+    {id:"vyb",   name:"Выбросы",   icon:"🌿", color:"#A8A49C"},
+  ]);
+
+  // Хранилище всех отчётов пользователя
+  const [reports, setReports] = useStorage("ld_reports_v2", []);
+
+  const [activeGroup, setActiveGroup] = useState(null); // открытый раздел
+  const [addReportModal, setAddReportModal] = useState(null); // {groupId} или null
+  const [editReport, setEditReport] = useState(null); // редактируемый отчёт
+  const [addGroupModal, setAddGroupModal] = useState(false);
+  const [newGroup, setNewGroup] = useState({name:"",icon:"📝",color:"#A8A49C"});
+  const [dlView, setDlView] = useState("upcoming"); // upcoming | overdue | done | all
+  const [taskModal, setTaskModal] = useState(null);
+
+  // Встроенный календарь КГД — Казахстан 2026
+  const KGD_CALENDAR = [
+    // ФНО 200.00 (ИПН с зарплат)
+    {group:"kgd", name:"ФНО 200.00 — СДАЧА (1 кв.)",     period:"quarter", deadline:"2026-05-15", cat:"КГД"},
+    {group:"kgd", name:"ФНО 200.00 — СДАЧА (2 кв.)",     period:"quarter", deadline:"2026-08-17", cat:"КГД"},
+    {group:"kgd", name:"ФНО 200.00 — СДАЧА (3 кв.)",     period:"quarter", deadline:"2026-11-16", cat:"КГД"},
+    {group:"kgd", name:"ФНО 200.00 — СДАЧА (годовой)",   period:"annual",  deadline:"2027-03-31", cat:"КГД"},
+    // ФНО 300.00 (НДС)
+    {group:"kgd", name:"ФНО 300.00 — СДАЧА (1 кв.)",     period:"quarter", deadline:"2026-05-15", cat:"КГД"},
+    {group:"kgd", name:"ФНО 300.00 — СДАЧА (2 кв.)",     period:"quarter", deadline:"2026-08-17", cat:"КГД"},
+    {group:"kgd", name:"ФНО 300.00 — СДАЧА (3 кв.)",     period:"quarter", deadline:"2026-11-16", cat:"КГД"},
+    // ФНО 910.00 (упрощёнка)
+    {group:"kgd", name:"ФНО 910.00 — СДАЧА (1 п/г)",     period:"semi",    deadline:"2026-08-17", cat:"КГД"},
+    {group:"kgd", name:"ФНО 910.00 — СДАЧА (2 п/г)",     period:"semi",    deadline:"2027-02-17", cat:"КГД"},
+    // ФНО 100.00 (КПН)
+    {group:"kgd", name:"ФНО 100.00 — СДАЧА (годовой)",   period:"annual",  deadline:"2027-03-31", cat:"КГД"},
+    // Платежи ОПВ/ИПН/ОСМС/СО ежемесячно
+    ...["01","02","03","04","05","06","07","08","09","10","11","12"].map(m=>({
+      group:"pay", name:`Уплата ОПВ+ИПН+ОСМС+СО (${m}.2026)`, period:"monthly",
+      deadline:`2026-${m}-25`, cat:"Платежи"
+    })),
+    // НДС ежеквартально
+    {group:"pay", name:"Уплата НДС (1 кв.)",              period:"quarter", deadline:"2026-05-25", cat:"Платежи"},
+    {group:"pay", name:"Уплата НДС (2 кв.)",              period:"quarter", deadline:"2026-08-25", cat:"Платежи"},
+    {group:"pay", name:"Уплата НДС (3 кв.)",              period:"quarter", deadline:"2026-11-25", cat:"Платежи"},
+    // Авансы КПН ежемесячно
+    ...["01","03","04","05","06","07","08","09","10","11","12"].map(m=>({
+      group:"pay", name:`Аванс по КПН (${m}.2026)`, period:"monthly",
+      deadline:`2026-${m}-25`, cat:"Платежи"
+    })),
+    // БНС
+    {group:"bns", name:"Форма 1-Т (1 кв.)",               period:"quarter", deadline:"2026-04-10", cat:"БНС"},
+    {group:"bns", name:"Форма 1-Т (2 кв.)",               period:"quarter", deadline:"2026-07-10", cat:"БНС"},
+    {group:"bns", name:"Форма 1-Т (3 кв.)",               period:"quarter", deadline:"2026-10-10", cat:"БНС"},
+    {group:"bns", name:"Форма 1-Т (4 кв.)",               period:"quarter", deadline:"2027-01-10", cat:"БНС"},
+    {group:"bns", name:"Форма П-1 (ежемесячно)",           period:"monthly", deadline:"2026-05-15", cat:"БНС"},
+    // ЕАЭС
+    {group:"eaes",name:"Заявление о ввозе (ЕАЭС) — ежемес.", period:"monthly", deadline:"2026-05-20", cat:"ЕАЭС"},
+    {group:"eaes",name:"Уплата НДС по ЕАЭС — ежемес.",      period:"monthly", deadline:"2026-05-20", cat:"ЕАЭС"},
+    // Выбросы
+    {group:"vyb", name:"Форма 2-ТП (выбросы) — годовой",   period:"annual",  deadline:"2027-02-01", cat:"Выбросы"},
+  ];
+
+  // Merge system calendar with user reports on first load
   useEffect(()=>{
-    if(profile.profDeadlines && !profile.profDeadlines.includes("Нет") && deadlineTasks.length===0) {
-      const dl = getProfDeadlines(profile);
-      if(dl.length>0) {
-        setTasks(p=>[...p,...dl]);
-        notify("Загружено "+dl.length+" дедлайнов для "+profile.profDeadlines+" ✦");
-      }
+    if(reports.length===0) {
+      const init = KGD_CALENDAR.map(r=>({
+        ...r, id:"sys-"+Math.random().toString(36).slice(2),
+        status:"pending", // pending | ready | done
+        amount:"", notes:"", enabled:true,
+        createdAt: new Date().toISOString()
+      }));
+      setReports(init);
     }
   },[]);
-  const due=workTasks.filter(t=>isDue(t,today)||(t.freq==="once"&&!t.lastDone&&!t.doneDate));
-  const isWorkDay=(profile.workDaysList||[1,2,3,4,5]).includes(new Date().getDay());
+
+  const workTasks = tasks.filter(t=>t.section==="work"&&!t.isDeadline);
+  const isWorkDay = (profile.workDaysList||[1,2,3,4,5]).includes(new Date().getDay());
+
+  // Upcoming: enabled reports with deadline within 7 days
+  const now = new Date(); now.setHours(0,0,0,0);
+  const in7 = new Date(now); in7.setDate(in7.getDate()+7);
+  const in3 = new Date(now); in3.setDate(in3.getDate()+3);
+
+  const enabledReports = reports.filter(r=>r.enabled!==false);
+  const upcoming = enabledReports.filter(r=>{
+    if(r.status==="done") return false;
+    const d = new Date(r.deadline); d.setHours(0,0,0,0);
+    return d >= now && d <= in7;
+  }).sort((a,b)=>a.deadline.localeCompare(b.deadline));
+
+  const overdue = enabledReports.filter(r=>{
+    if(r.status==="done") return false;
+    return r.deadline < today;
+  }).sort((a,b)=>b.deadline.localeCompare(a.deadline));
+
+  const done = enabledReports.filter(r=>r.status==="done")
+    .sort((a,b)=>b.deadline.localeCompare(a.deadline));
+
+  const toggleDone = (id) => setReports(p=>p.map(r=>r.id===id?{...r,status:r.status==="done"?"pending":"done"}:r));
+  const toggleReady = (id) => setReports(p=>p.map(r=>r.id===id?{...r,status:r.status==="ready"?"pending":"ready"}:r));
+  const deleteReport = (id) => setReports(p=>p.filter(r=>r.id!==id));
+
+  const periodLabel = p=>({monthly:"Ежемесячно",quarter:"Ежеквартально",semi:"Раз в полгода",annual:"Ежегодно",once:"Разово"}[p]||p||"—");
+  const daysLeft = dl => { const d=new Date(dl); d.setHours(0,0,0,0); return Math.ceil((d-now)/86400000); };
+
+  // Строка отчёта
+  const ReportRow = ({r, showGroup=false}) => {
+    const days = daysLeft(r.deadline);
+    const isOver = days < 0;
+    const isSoon = days >= 0 && days <= 3;
+    const g = reportGroups.find(g=>g.id===r.group)||{name:r.group,icon:"📋",color:T.text3};
+    return (
+      <div style={{display:"flex",alignItems:"flex-start",gap:8,padding:"8px 0",borderBottom:"1px solid rgba(255,255,255,0.03)"}}>
+        {/* Статусы */}
+        <div style={{display:"flex",flexDirection:"column",gap:3,flexShrink:0,paddingTop:2}}>
+          <div title="Выполнено" className={"chk"+(r.status==="done"?" done":"")} style={{width:18,height:18,fontSize:10}} onClick={()=>toggleDone(r.id)}>{r.status==="done"?"✓":""}</div>
+          {r.status!=="done"&&<div title="Подготовлен" style={{width:18,height:18,borderRadius:4,border:"1px solid "+(r.status==="ready"?"rgba(78,201,190,0.6)":T.bdr),background:r.status==="ready"?"rgba(78,201,190,0.15)":"transparent",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontSize:10,color:r.status==="ready"?T.teal:T.text3}} onClick={()=>toggleReady(r.id)} title="Подготовлен">P</div>}
+        </div>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+            {showGroup&&<span style={{fontSize:10,color:g.color,fontFamily:"'JetBrains Mono'"}}>{g.icon}</span>}
+            <span style={{fontSize:14,color:r.status==="done"?T.text3:T.text0,textDecoration:r.status==="done"?"line-through":"none",lineHeight:1.3}}>{r.name}</span>
+          </div>
+          <div style={{display:"flex",gap:6,marginTop:3,flexWrap:"wrap"}}>
+            <span style={{fontSize:10,color:isOver?T.danger:isSoon?T.warn:T.text3,fontFamily:"'JetBrains Mono'",fontWeight:isOver||isSoon?700:400}}>
+              {isOver?"⚠ Просрочен":days===0?"📍 Сегодня":days===1?"📍 Завтра":"📅 "+new Date(r.deadline).toLocaleDateString("ru-RU",{day:"numeric",month:"short"})}
+            </span>
+            {r.status==="ready"&&<span style={{fontSize:10,color:T.teal,fontFamily:"'JetBrains Mono'"}}>✓ Подготовлен</span>}
+            {r.amount&&<span style={{fontSize:10,color:T.gold,fontFamily:"'JetBrains Mono'"}}>{r.amount}</span>}
+            {r.period&&<span style={{fontSize:10,color:T.text3}}>{periodLabel(r.period)}</span>}
+          </div>
+          {r.notes&&<div style={{fontSize:12,color:T.text3,marginTop:2,fontStyle:"italic"}}>{r.notes}</div>}
+        </div>
+        <div style={{display:"flex",gap:3,flexShrink:0}}>
+          <div className="ico-btn" style={{fontSize:12,padding:"2px 4px"}} onClick={()=>setEditReport({...r})}>✏️</div>
+          <div className="ico-btn danger" style={{fontSize:12,padding:"2px 4px"}} onClick={()=>deleteReport(r.id)}>✕</div>
+        </div>
+      </div>
+    );
+  };
+
   return(
     <div>
+      {/* Шапка */}
       <div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",background:"rgba(45,32,16,0.05)",borderRadius:10,marginBottom:10,flexWrap:"wrap"}}>
         {profile.profession&&<span style={{fontSize:13,color:T.text1,fontWeight:500}}>💼 {profile.profession}</span>}
         {profile.workType&&<span style={{fontSize:12,color:T.text3}}>· {profile.workType}</span>}
-        <span style={{fontSize:12,color:T.gold,marginLeft:"auto"}}>🕐 {editSchedule?(
-          <span style={{display:"inline-flex",gap:4,alignItems:"center"}}>
-            <input type="time" value={schedStart} onChange={e=>setSchedStart(e.target.value)} style={{width:80,fontSize:12,padding:"2px 4px",borderRadius:5,border:"1px solid "+T.bdr,background:"transparent",color:T.text0}}/>
-            <span>–</span>
-            <input type="time" value={schedEnd} onChange={e=>setSchedEnd(e.target.value)} style={{width:80,fontSize:12,padding:"2px 4px",borderRadius:5,border:"1px solid "+T.bdr,background:"transparent",color:T.text0}}/>
-            <button className="btn btn-primary btn-sm" style={{padding:"2px 8px",fontSize:11}} onClick={()=>{profile.workStart=schedStart;profile.workEnd=schedEnd;setEditSchedule(false);notify("График обновлён");}}>✓</button>
-          </span>
-        ):(
-          <span style={{cursor:"pointer"}} onClick={()=>setEditSchedule(true)}>{profile.workStart||"?"}–{profile.workEnd||"?"} ✏️</span>
-        )}</span>
+        <span style={{fontSize:12,color:T.gold,marginLeft:"auto"}}>
+          {editSchedule?(
+            <span style={{display:"inline-flex",gap:4,alignItems:"center"}}>
+              <input type="time" value={schedStart} onChange={e=>setSchedStart(e.target.value)} style={{width:75,fontSize:12,padding:"2px 4px",borderRadius:5,border:"1px solid "+T.bdr,background:"transparent",color:T.text0}}/>
+              <span>–</span>
+              <input type="time" value={schedEnd} onChange={e=>setSchedEnd(e.target.value)} style={{width:75,fontSize:12,padding:"2px 4px",borderRadius:5,border:"1px solid "+T.bdr,background:"transparent",color:T.text0}}/>
+              <button className="btn btn-primary btn-sm" style={{padding:"2px 8px",fontSize:11}} onClick={()=>{profile.workStart=schedStart;profile.workEnd=schedEnd;setEditSchedule(false);notify("График обновлён");}}>✓</button>
+            </span>
+          ):(
+            <span style={{cursor:"pointer"}} onClick={()=>setEditSchedule(true)}>🕐 {profile.workStart||"?"}–{profile.workEnd||"?"} ✏️</span>
+          )}
+        </span>
       </div>
-      {/* Если profDeadlines не выбран — показываем выбор */}
-      {!profile.profDeadlines&&(
-        <div style={{padding:"12px 14px",background:"rgba(45,106,79,0.07)",borderRadius:12,marginBottom:12}}>
-          <div style={{fontSize:13,color:T.text1,marginBottom:10}}>📋 Выбери специализацию для загрузки дедлайнов:</div>
-          <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-            {["Бухгалтер / ИП","HR / Кадры","Юрист","Врач / Мед. работник","Педагог","Госслужащий","Нет отчётности"].map(v=>(
-              <div key={v} className="chip" onClick={()=>{
-                const updated={...profile,profDeadlines:v};
-                setProfile&&setProfile(updated)||Object.assign(profile,{profDeadlines:v});
-                if(!v.includes("Нет")){
-                  const dl=getProfDeadlines({...profile,profDeadlines:v});
-                  setTasks(p=>[...p,...dl.filter(d=>!p.find(x=>x.title===d.title))]);
-                  notify("Загружено "+dl.length+" дедлайнов ✦");
-                }
-              }}>{v}</div>
-            ))}
-          </div>
-        </div>
-      )}
-      {profile.profDeadlines&&!profile.profDeadlines.includes("Нет")&&(
-        <div style={{marginBottom:10,padding:"8px 12px",background:"rgba(45,106,79,0.08)",borderRadius:10,display:"flex",alignItems:"center",justifyContent:"space-between",gap:10}}>
-          <div style={{fontSize:13,color:T.text1}}>{profile.profDeadlines} · Казахстан</div>
-          <button className="btn btn-primary btn-sm" style={{flexShrink:0,fontSize:12}} onClick={addDeadlines}>+ Дедлайны</button>
-        </div>
-      )}
+
       {!isWorkDay&&<div style={{marginBottom:10,padding:"8px 14px",background:"rgba(200,164,90,.08)",borderRadius:9,fontSize:14,color:T.gold,fontStyle:"italic"}}>Сегодня нерабочий день ✦ Отдыхай</div>}
-      {/* ── Менеджер дедлайнов ── */}
-      {profile.profDeadlines&&!profile.profDeadlines.includes("Нет")&&(()=>{
-        const allDl=deadlineTasks.sort((a,b)=>a.deadline?.localeCompare(b.deadline||"")||0);
-        const upcoming=allDl.filter(t=>!t.doneDate&&t.deadline>=today).slice(0,10);
-        const overdue=allDl.filter(t=>!t.doneDate&&t.deadline&&t.deadline<today);
-        const done=allDl.filter(t=>t.doneDate);
 
-        // Google Calendar URL
-        const toGCal=(t)=>{
-          const d=new Date(t.deadline);
-          const pad=n=>String(n).padStart(2,"0");
-          const ymd=d.getFullYear()+""+pad(d.getMonth()+1)+""+pad(d.getDate());
-          const title=encodeURIComponent(t.title+(t.notes?" — "+t.notes:""));
-          return "https://calendar.google.com/calendar/render?action=TEMPLATE&text="+title+"&dates="+ymd+"/"+ymd+"&details="+encodeURIComponent("Дедлайн: "+(t.notes||""))+"&sf=true&output=xml";
-        };
+      {/* ── ОТЧЁТНОСТЬ: Ближайшие ── */}
+      {(upcoming.length>0||overdue.length>0)&&(
+        <div style={{marginBottom:12}}>
+          <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1.5,marginBottom:6}}>БЛИЖАЙШИЕ ОТЧЁТЫ (7 ДНЕЙ)</div>
+          <div className="card" style={{padding:"4px 14px"}}>
+            {upcoming.map(r=><ReportRow key={r.id} r={r} showGroup={true}/>)}
+            {upcoming.length===0&&<div style={{fontSize:14,color:T.text3,fontStyle:"italic",padding:"8px 0"}}>Нет отчётов в ближайшие 7 дней</div>}
+          </div>
+        </div>
+      )}
 
-        // Экспорт всех в .ics
-        const exportICS=()=>{
-          const lines=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//LifeDiary//RU","CALSCALE:GREGORIAN"];
-          upcoming.concat(overdue).forEach(t=>{
-            if(!t.deadline) return;
-            const d=t.deadline.replace(/-/g,"");
-            const uid=t.id+"@lifediary";
-            const summary=t.title.replace(/[^\w\s\-а-яА-ЯёЁ().,]/g,"");
-            const desc=t.notes||"";
-            lines.push("BEGIN:VEVENT","UID:"+uid,"DTSTART;VALUE=DATE:"+d,"DTEND;VALUE=DATE:"+d,
-              "SUMMARY:"+summary,"DESCRIPTION:"+desc,"STATUS:CONFIRMED","END:VEVENT");
-          });
-          lines.push("END:VCALENDAR");
-          const blob=new Blob([lines.join("\r\n")],{type:"text/calendar"});
-          const url=URL.createObjectURL(blob);
-          const a=document.createElement("a");a.href=url;a.download="deadlines.ics";a.click();
-          URL.revokeObjectURL(url);
-          notify("Файл .ics скачан — импортируй в Google Calendar ✦");
-        };
+      {/* Просроченные */}
+      {overdue.length>0&&(
+        <details style={{marginBottom:12}}>
+          <summary style={{fontSize:10,color:T.danger,fontFamily:"'JetBrains Mono'",letterSpacing:1.5,cursor:"pointer",padding:"6px 0"}}>⚠ ПРОСРОЧЕННЫЕ ({overdue.length})</summary>
+          <div className="card" style={{padding:"4px 14px",marginTop:6,border:"1px solid rgba(232,85,109,0.25)"}}>
+            {overdue.map(r=><ReportRow key={r.id} r={r} showGroup={true}/>)}
+          </div>
+        </details>
+      )}
 
-        const organs=["КГД","ЕНПФ","ФСМС","БНС","МЮ","АФН","МФ","МЗ","МОН","АДГС","АПК","МЭПР","КФМ","Другой орган"];
+      {/* Выполненные */}
+      {done.length>0&&(
+        <details style={{marginBottom:12}}>
+          <summary style={{fontSize:10,color:T.success,fontFamily:"'JetBrains Mono'",letterSpacing:1.5,cursor:"pointer",padding:"6px 0"}}>✅ ВЫПОЛНЕННЫЕ ({done.length})</summary>
+          <div className="card" style={{padding:"4px 14px",marginTop:6,opacity:.7}}>
+            {done.slice(0,20).map(r=><ReportRow key={r.id} r={r} showGroup={true}/>)}
+          </div>
+        </details>
+      )}
 
-        return(
-          <div className="card" style={{marginBottom:14,borderLeft:"3px solid "+T.danger}}>
-            <div className="card-hd">
-              <div className="card-title">📋 Отчётность</div>
-              <div style={{display:"flex",gap:6}}>
-                {overdue.length>0&&<span className="badge br">⚠ {overdue.length}</span>}
-                <button className="btn btn-ghost btn-sm" onClick={()=>setAddDlModal(true)}>+ Свой</button>
-                <button className="btn btn-ghost btn-sm" onClick={addDeadlines}>↻ Авто</button>
+      {/* ── Разделы отчётности — вертикально ── */}
+      <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1.5,marginBottom:8,marginTop:4}}>ВСЕ РАЗДЕЛЫ</div>
+      {reportGroups.map(g=>{
+        const groupReports = reports.filter(r=>r.group===g.id&&r.enabled!==false);
+        const pendingCount = groupReports.filter(r=>r.status!=="done").length;
+        const isOpen = activeGroup===g.id;
+        return (
+          <div key={g.id} style={{marginBottom:8}}>
+            <div onClick={()=>setActiveGroup(isOpen?null:g.id)} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 16px",borderRadius:12,cursor:"pointer",background:isOpen?"rgba(200,164,90,0.1)":"rgba(255,255,255,0.02)",border:"1px solid "+(isOpen?g.color+"55":"rgba(255,255,255,0.06)"),transition:"all .15s"}}>
+              <span style={{fontSize:22}}>{g.icon}</span>
+              <div style={{flex:1}}>
+                <div style={{fontSize:16,fontFamily:"'Crimson Pro',serif",color:isOpen?g.color:T.text0}}>{g.name}</div>
+                {pendingCount>0&&<div style={{fontSize:11,color:T.text3}}>Активных: {pendingCount}</div>}
               </div>
+              <button className="btn-mini" style={{padding:"3px 8px",fontSize:11,zIndex:1}} onClick={e=>{e.stopPropagation();setAddReportModal({groupId:g.id});}} title="Добавить отчёт">+</button>
+              <span style={{fontSize:12,color:T.text3}}>{isOpen?"▲":"▼"}</span>
             </div>
-
-            {/* Компактная кнопка уведомлений */}
-            {("Notification" in window) && Notification.permission === "default" && (
-              <div style={{display:"flex",alignItems:"center",gap:8,padding:"6px 10px",background:"rgba(45,106,79,0.08)",borderRadius:8,marginBottom:8}}>
-                <span style={{fontSize:13}}>🔔</span>
-                <span style={{fontSize:12,color:T.text2,flex:1}}>Уведомления о дедлайнах</span>
-                <button className="btn btn-primary btn-sm" style={{padding:"3px 10px",fontSize:12}} onClick={async()=>{
-                  const ok=await requestNotificationPermission();
-                  if(ok){scheduleDeadlineNotifications(tasks.filter(t=>t.isDeadline));notify("Уведомления включены ✦");}
-                }}>Включить</button>
-              </div>
-            )}
-            {/* Вкладки — вертикально */}
-            <div style={{marginBottom:12}}>
-              {[["upcoming","📋","Ближайшие",null],["overdue","⚠️","Просроченные",overdue.length>0?overdue.length:null],["done","✅","Выполненные",null],["calendar","📅","Календарь",null],["gcal","🗓","Google Cal",null]].map(([v,ico,l,cnt])=>(
-                <div key={v} onClick={()=>setDlTab(v)} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",borderRadius:10,cursor:"pointer",marginBottom:4,background:dlTab===v?"rgba(200,164,90,0.12)":"rgba(255,255,255,0.02)",border:"1px solid "+(dlTab===v?"rgba(200,164,90,0.35)":"rgba(255,255,255,0.05)"),transition:"all .15s"}}>
-                  <span style={{fontSize:16}}>{ico}</span>
-                  <span style={{flex:1,fontSize:14,color:v==="overdue"&&cnt?T.danger:(dlTab===v?T.gold:T.text1)}}>{l}</span>
-                  {cnt&&<span style={{fontSize:11,color:T.danger,fontFamily:"'JetBrains Mono'",background:"rgba(139,32,32,0.15)",padding:"1px 6px",borderRadius:8}}>{cnt}</span>}
-                  <span style={{fontSize:12,color:T.text3}}>{dlTab===v?"◀":"▷"}</span>
+            {isOpen&&(
+              <div style={{borderRadius:"0 0 12px 12px",border:"1px solid "+g.color+"33",borderTop:"none",background:"rgba(255,255,255,0.01)"}}>
+                {/* Список отчётов группы */}
+                <div style={{padding:"4px 14px 10px"}}>
+                  {groupReports.length===0&&<div style={{fontSize:13,color:T.text3,fontStyle:"italic",padding:"10px 0"}}>Нет отчётов. Нажми «+» чтобы добавить.</div>}
+                  {groupReports.map(r=><ReportRow key={r.id} r={r}/>)}
                 </div>
-              ))}
-            </div>
-
-            {/* Ближайшие */}
-            {dlTab==="upcoming"&&(
-              upcoming.length===0
-                ? <div className="empty"><span className="empty-ico">✅</span><p>Все дедлайны выполнены!</p></div>
-                : upcoming.map(t=>{
-                    const dl=new Date(t.deadline);
-                    const daysLeft=Math.ceil((dl-new Date())/86400000);
-                    const isClose=daysLeft<=7;
-                    return(
-                      <div key={t.id} style={{display:"flex",alignItems:"flex-start",gap:10,padding:"10px 0",borderBottom:"1px solid "+T.bdrS}}>
-                        <div className={"chk"+(t.doneDate?" done":"")} style={{flexShrink:0,marginTop:2}} onClick={()=>setTasks(p=>p.map(x=>x.id===t.id?{...x,doneDate:x.doneDate?null:today,lastDone:x.doneDate?x.lastDone:today}:x))}>
-                          {t.doneDate?"✓":""}
-                        </div>
-                        <div style={{flex:1,minWidth:0}}>
-                          <div style={{fontSize:15,color:T.text0,lineHeight:1.3}}>{t.title}</div>
-                          {t.notes&&<div style={{fontSize:12,color:T.text3,marginTop:2}}>{t.notes}</div>}
-                          <div style={{display:"flex",gap:6,marginTop:6,flexWrap:"wrap"}}>
-                            <button className="btn-mini" onClick={()=>window.open(toGCal(t),"_blank")}>📅 В Google Cal</button>
-                            <button className="btn-mini" onClick={()=>{setEditDl({...t});setAddDlModal(true);}}>✏️</button>
-                            <button className="btn-mini" style={{color:T.danger}} onClick={()=>setTasks(p=>p.filter(x=>x.id!==t.id))}>✕</button>
+                {/* Быстрые шаблоны из системного календаря */}
+                {(()=>{
+                  const templates = KGD_CALENDAR.filter(t=>t.group===g.id&&!reports.find(r=>r.name===t.name&&r.group===g.id));
+                  if(!templates.length) return null;
+                  return (
+                    <div style={{padding:"8px 14px",borderTop:"1px solid rgba(255,255,255,0.04)"}}>
+                      <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:6}}>ДОБАВИТЬ ИЗ КАЛЕНДАРЯ</div>
+                      <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+                        {templates.slice(0,8).map((t,i)=>(
+                          <div key={i} onClick={()=>setReports(p=>[...p,{...t,id:"sys-"+Date.now()+i,status:"pending",amount:"",notes:"",enabled:true,createdAt:new Date().toISOString()}])} style={{padding:"4px 10px",borderRadius:16,background:g.color+"15",border:"1px solid "+g.color+"33",cursor:"pointer",fontSize:11,color:g.color}}>
+                            + {t.name.replace(/\s*—.*$/,"").trim()}
                           </div>
-                        </div>
-                        <div style={{textAlign:"right",flexShrink:0}}>
-                          <div style={{fontSize:13,color:isClose?T.warn:T.text2,fontFamily:"'JetBrains Mono'",fontWeight:isClose?600:400}}>
-                            {daysLeft===0?"Сегодня!":daysLeft===1?"Завтра":daysLeft+" дн."}
-                          </div>
-                          <div style={{fontSize:11,color:T.text3}}>{dl.toLocaleDateString("ru-RU",{day:"numeric",month:"short"})}</div>
-                        </div>
+                        ))}
                       </div>
-                    );
-                  })
-            )}
-
-            {/* Просроченные */}
-            {dlTab==="overdue"&&(
-              overdue.length===0
-                ? <div className="empty"><span className="empty-ico">✅</span><p>Просроченных нет!</p></div>
-                : overdue.map(t=>{
-                    const dl=new Date(t.deadline);
-                    const daysOver=Math.ceil((new Date()-dl)/86400000);
-                    return(
-                      <div key={t.id} style={{display:"flex",alignItems:"flex-start",gap:10,padding:"10px 0",borderBottom:"1px solid "+T.bdrS,background:"rgba(139,32,32,0.04)",borderRadius:8,paddingLeft:10,marginBottom:4}}>
-                        <div className="chk" style={{flexShrink:0,marginTop:2}} onClick={()=>setTasks(p=>p.map(x=>x.id===t.id?{...x,doneDate:today,lastDone:today}:x))}>{""}
-                        </div>
-                        <div style={{flex:1}}>
-                          <div style={{fontSize:15,color:T.danger,fontWeight:600}}>{t.title}</div>
-                          {t.notes&&<div style={{fontSize:12,color:T.text3,marginTop:2}}>{t.notes}</div>}
-                          <div style={{display:"flex",gap:6,marginTop:6}}>
-                            <button className="btn-mini" onClick={()=>{setEditDl({...t});setAddDlModal(true);}}>✏️ Изменить дату</button>
-                            <button className="btn-mini" onClick={()=>setTasks(p=>p.map(x=>x.id===t.id?{...x,doneDate:today}:x))}>✓ Выполнено</button>
-                          </div>
-                        </div>
-                        <div style={{textAlign:"right",flexShrink:0}}>
-                          <div style={{fontSize:13,color:T.danger,fontFamily:"'JetBrains Mono'",fontWeight:700}}>-{daysOver} дн.</div>
-                          <div style={{fontSize:11,color:T.text3}}>{dl.toLocaleDateString("ru-RU",{day:"numeric",month:"short"})}</div>
-                        </div>
-                      </div>
-                    );
-                  })
-            )}
-
-            {/* Выполненные */}
-            {dlTab==="done"&&(
-              done.length===0
-                ? <div className="empty"><span className="empty-ico">📋</span><p>Выполненных ещё нет</p></div>
-                : done.slice(0,10).map(t=>(
-                    <div key={t.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderBottom:"1px solid "+T.bdrS,opacity:.7}}>
-                      <span style={{color:T.success,fontSize:18}}>✓</span>
-                      <div style={{flex:1}}>
-                        <div style={{fontSize:14,color:T.text2,textDecoration:"line-through"}}>{t.title}</div>
-                        <div style={{fontSize:11,color:T.text3}}>{t.doneDate}</div>
-                      </div>
-                      <button className="btn-mini" style={{color:T.text3}} onClick={()=>setTasks(p=>p.map(x=>x.id===t.id?{...x,doneDate:null}:x))}>↩</button>
                     </div>
-                  ))
-            )}
-
-            {/* Календарь — визуальный вид по месяцам */}
-            {dlTab==="calendar"&&(()=>{
-              const byMonth={};
-              [...upcoming,...overdue].forEach(t=>{
-                if(!t.deadline) return;
-                const key=t.deadline.slice(0,7);
-                if(!byMonth[key]) byMonth[key]=[];
-                byMonth[key].push(t);
-              });
-              const months=Object.keys(byMonth).sort();
-              const MON_RU=["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"];
-              return months.length===0
-                ? <div className="empty"><span className="empty-ico">📅</span><p>Нет дедлайнов</p></div>
-                : months.map(m=>{
-                    const [y,mo]=m.split("-");
-                    const isOverMonth=m<today.slice(0,7);
-                    return(
-                      <div key={m} style={{marginBottom:16}}>
-                        <div style={{fontFamily:"'Cormorant Infant',serif",fontSize:18,color:isOverMonth?T.danger:T.gold,marginBottom:8,borderBottom:"1px solid "+T.bdrS,paddingBottom:4}}>
-                          {MON_RU[parseInt(mo)-1]} {y}
-                          {byMonth[m].length>0&&<span style={{fontSize:12,color:T.text3,marginLeft:8,fontFamily:"'JetBrains Mono'"}}>{byMonth[m].length} дедл.</span>}
-                        </div>
-                        {byMonth[m].map(t=>{
-                          const day=new Date(t.deadline).getDate();
-                          return(
-                            <div key={t.id} style={{display:"flex",gap:12,alignItems:"center",marginBottom:6}}>
-                              <div style={{width:32,height:32,borderRadius:8,background:isOverMonth?"rgba(139,32,32,0.15)":"rgba(45,106,79,0.12)",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'JetBrains Mono'",fontSize:13,color:isOverMonth?T.danger:T.gold,flexShrink:0}}>{day}</div>
-                              <div style={{flex:1,fontSize:14,color:T.text1}}>{t.title.replace(/^[📋🏛🏦📊🔍💰🔒]+\s*/,"")}</div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    );
-                  });
-            })()}
-
-            {/* Google Calendar — инструкция + экспорт */}
-            {dlTab==="gcal"&&(
-              <div>
-                <div style={{padding:"14px 16px",background:"rgba(45,106,79,0.07)",borderRadius:12,marginBottom:14}}>
-                  <div style={{fontFamily:"'Cormorant Infant',serif",fontSize:18,color:T.gold,marginBottom:8}}>Два способа добавить в Google Calendar</div>
-
-                  <div style={{marginBottom:14}}>
-                    <div style={{fontSize:12,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:6}}>СПОСОБ 1 — КАЖДЫЙ ДЕДЛАЙН ОТДЕЛЬНО</div>
-                    <div style={{fontSize:14,color:T.text2,marginBottom:8,lineHeight:1.6}}>Нажми «📅 В Google Cal» рядом с любым дедлайном → откроется предзаполненная форма → нажми «Сохранить».</div>
-                  </div>
-
-                  <div style={{marginBottom:14}}>
-                    <div style={{fontSize:12,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:6}}>СПОСОБ 2 — ВСЕ СРАЗУ (файл .ics)</div>
-                    <div style={{fontSize:14,color:T.text2,marginBottom:10,lineHeight:1.6}}>Скачай файл с дедлайнами и импортируй его в Google Calendar одним действием.</div>
-                    <button className="btn btn-primary" style={{width:"100%"}} onClick={exportICS}>⬇️ Скачать все дедлайны (.ics)</button>
-                  </div>
-
-                  <div style={{borderTop:"1px solid "+T.bdr,paddingTop:14}}>
-                    <div style={{fontSize:12,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:8}}>КАК ИМПОРТИРОВАТЬ .ICS В GOOGLE CALENDAR</div>
-                    {["1. Скачай файл deadlines.ics выше","2. Открой Google Calendar на компьютере (calendar.google.com)","3. Нажми ⚙️ → Настройки → Импорт и экспорт","4. Выбери файл deadlines.ics → нажми «Импорт»","5. Все дедлайны появятся в твоём календаре!"].map((s,i)=>(
-                      <div key={i} style={{display:"flex",gap:8,marginBottom:6,fontSize:14,color:T.text2}}>
-                        <span style={{color:T.gold,fontFamily:"'JetBrains Mono'",flexShrink:0}}>{i+1}.</span>
-                        <span>{s.replace(/^\d+\. /,"")}</span>
-                      </div>
-                    ))}
-                    <div style={{marginTop:10,padding:"8px 12px",background:"rgba(45,32,16,0.05)",borderRadius:8,fontSize:13,color:T.text3,fontStyle:"italic"}}>
-                      💡 На телефоне: скачай .ics → открой файл → выбери «Добавить в календарь»
-                    </div>
-                  </div>
-                </div>
-
-                {/* Кнопки по одному */}
-                <div style={{fontSize:12,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:8}}>ИЛИ ДОБАВИТЬ ПО ОДНОМУ</div>
-                {upcoming.slice(0,5).map(t=>(
-                  <div key={t.id} style={{display:"flex",alignItems:"center",gap:10,marginBottom:8,padding:"8px 12px",background:"rgba(45,106,79,0.06)",borderRadius:10}}>
-                    <div style={{flex:1,fontSize:14,color:T.text1}}>{t.title.replace(/^[📋🏛🏦📊🔍💰🔒]+\s*/,"")}</div>
-                    <div style={{fontSize:11,color:T.text3,fontFamily:"'JetBrains Mono'",flexShrink:0}}>{new Date(t.deadline).toLocaleDateString("ru-RU",{day:"numeric",month:"short"})}</div>
-                    <button className="btn-mini" onClick={()=>window.open(toGCal(t),"_blank")}>📅</button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Модалка добавления/редактирования дедлайна */}
-            {addDlModal&&(
-              <div className="overlay" onClick={()=>{setAddDlModal(false);setEditDl(null);}}>
-                <div className="modal" onClick={e=>e.stopPropagation()}>
-                  <span className="modal-x" onClick={()=>{setAddDlModal(false);setEditDl(null);}}>✕</span>
-                  <div className="modal-title">{editDl?"Редактировать дедлайн":"Добавить дедлайн"}</div>
-                  <div className="fld"><label>Название отчёта</label>
-                    <input placeholder="НДС за 1 квартал..." value={editDl?editDl.title:newDl.title} onChange={e=>editDl?setEditDl(p=>({...p,title:e.target.value})):setNewDl(p=>({...p,title:e.target.value}))}/>
-                  </div>
-                  <div className="fld"><label>Орган контроля</label>
-                    <div className="chips">{organs.map(v=>(
-                      <div key={v} className={"chip "+((editDl?editDl.organ:newDl.organ)===v?"on":"")} onClick={()=>editDl?setEditDl(p=>({...p,organ:v})):setNewDl(p=>({...p,organ:v}))}>{v}</div>
-                    ))}</div>
-                  </div>
-                  <div className="fld"><label>Дата сдачи</label>
-                    <input type="date" value={editDl?editDl.deadline:newDl.deadline} onChange={e=>editDl?setEditDl(p=>({...p,deadline:e.target.value})):setNewDl(p=>({...p,deadline:e.target.value}))}/>
-                  </div>
-                  <div className="fld"><label>Примечание</label>
-                    <input placeholder="За какой период, куда сдавать..." value={editDl?editDl.notes:newDl.notes} onChange={e=>editDl?setEditDl(p=>({...p,notes:e.target.value})):setNewDl(p=>({...p,notes:e.target.value}))}/>
-                  </div>
-                  <div className="modal-foot">
-                    <button className="btn btn-ghost" onClick={()=>{setAddDlModal(false);setEditDl(null);}}>Отмена</button>
-                    <button className="btn btn-primary" onClick={()=>{
-                      if(editDl) {
-                        const prefix={"ФНС":"🏛 ФНС: ","СФР":"🏦 СФР: ","Росстат":"📊 Росстат: ","ФТС":"🏛 ФТС: ","ЦБ":"🔒 ЦБ: ","РПН":"🔍 РПН: ","Роспотребнадзор":"🔍 РПН: "}[editDl.organ]||"📋 ";
-                        const title=editDl.title.match(/^[📋🏛🏦📊🔍💰🔒]/)?editDl.title:prefix+editDl.title;
-                        setTasks(p=>p.map(x=>x.id===editDl.id?{...x,...editDl,title}:x));
-                      } else {
-                        const prefix={"ФНС":"🏛 ФНС: ","СФР":"🏦 СФР: ","Росстат":"📊 Росстат: "}[newDl.organ]||"📋 ";
-                        setTasks(p=>[...p,{...newDl,id:Date.now()+Math.random(),title:prefix+newDl.title,section:"work",freq:"once",priority:"h",lastDone:"",doneDate:"",preferredTime:"09:00",isDeadline:true}]);
-                      }
-                      setAddDlModal(false);setEditDl(null);
-                      setNewDl({title:"",deadline:"",notes:"",organ:"ФНС"});
-                      notify(editDl?"Дедлайн обновлён ✦":"Дедлайн добавлен ✦");
-                    }}>{editDl?"Сохранить":"Добавить"}</button>
-                  </div>
-                </div>
+                  );
+                })()}
               </div>
             )}
           </div>
         );
-      })()}
-      <AiBox kb={kb} prompt={`${gp.address}. Как ${profile.profession||"мне"} организовать этот рабочий день? Вдохновляет: ${profile.workInspire||"—"}. Дай 3 конкретных совета.`} label="Рабочий день" btnText="Совет по дню" placeholder="Помогу сделать рабочий день продуктивнее..."/>
+      })}
 
-      {/* ── Дедлайны — компактный вид ── */}
+      {/* Создать свой раздел */}
+      <button className="btn btn-ghost btn-sm" style={{width:"100%",marginBottom:12,fontSize:12,border:"1px dashed rgba(200,164,90,0.3)"}} onClick={()=>setAddGroupModal(true)}>+ Создать раздел</button>
+
+      {/* ── Задачи по работе ── */}
       {(()=>{
-        const allDl = workTasks.filter(t=>t.isDeadline).sort((a,b)=>a.deadline?.localeCompare(b.deadline||"")||0);
-        if(!allDl.length && !profile.profDeadlines) return null;
-        if(!allDl.length) return(
-          <div style={{padding:"12px 14px",background:"rgba(45,106,79,0.07)",borderRadius:12,marginBottom:10,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-            <div style={{fontSize:13,color:T.text2}}>📋 Дедлайны не загружены</div>
-            <button className="btn btn-primary btn-sm" onClick={addDeadlines}>+ Загрузить</button>
-          </div>
-        );
-        const upcoming = allDl.filter(t=>!t.doneDate&&(!t.deadline||t.deadline>=today));
-        const overdue  = allDl.filter(t=>!t.doneDate&&t.deadline&&t.deadline<today);
-        const done     = allDl.filter(t=>t.doneDate).length;
-
-        // Группировка по органу
-        const byOrgan = {};
-        upcoming.concat(overdue).forEach(t=>{
-          const g = t.title.startsWith("💰")?"💰 Платежи":(t.organ==="БНС"?"📊 БНС":(t.organ==="HR"?"📋 Внутренние":"🏛 КГД"));
-          if(!byOrgan[g]) byOrgan[g]=[];
-          byOrgan[g].push(t);
-        });
-
-        const organs = ["⚠️ Просроченные", ...Object.keys(byOrgan)].filter((k,i)=>i===0?overdue.length>0:true);
-
-        return(
-          <div style={{marginBottom:12}}>
-            {/* Шапка */}
-            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-              <span style={{fontSize:13,fontWeight:600,color:T.text0}}>Отчётность</span>
-              {overdue.length>0&&<span className="badge br">{overdue.length} просрочено</span>}
-              <span className="badge bm">{upcoming.length} предстоит</span>
-              {done>0&&<span className="badge bg">{done} сдано</span>}
-              <div style={{marginLeft:"auto",display:"flex",gap:6}}>
-                <button className="btn btn-ghost btn-sm" style={{fontSize:11,padding:"3px 8px"}} onClick={addDeadlines}>↻ Обновить</button>
-                <button className="btn btn-ghost btn-sm" style={{fontSize:11,padding:"3px 8px"}} onClick={()=>setAddDlModal(true)}>+</button>
-              </div>
-            </div>
-
-            {/* Просроченные */}
-            {overdue.length>0&&(
-              <div style={{marginBottom:6,borderRadius:10,border:"1px solid rgba(139,32,32,0.25)",overflow:"hidden"}}>
-                <div style={{padding:"8px 12px",background:"rgba(139,32,32,0.08)",display:"flex",justifyContent:"space-between",cursor:"pointer"}}
-                  onClick={()=>setExpandedGroup(expandedGroup==="overdue"?null:"overdue")}>
-                  <span style={{fontSize:12,color:T.danger,fontWeight:600}}>⚠️ Просроченные ({overdue.length})</span>
-                  <span style={{fontSize:12,color:T.text3}}>{expandedGroup==="overdue"?"▲":"▼"}</span>
-                </div>
-                {expandedGroup==="overdue"&&overdue.map(t=>(
-                  <DlRow key={t.id} t={t} today={today} setTasks={setTasks} setEditDl={setEditDl} setAddDlModal={setAddDlModal}/>
-                ))}
-              </div>
-            )}
-
-            {/* По органам */}
-            {Object.entries(byOrgan).map(([group, items])=>{
-              // Определить орган из группы для новой задачи
-              const groupOrgan = group.includes("КГД")?"КГД":group.includes("БНС")?"БНС":group.includes("Внутрен")?"HR":"КГД";
-              return (
-                <div key={group} style={{marginBottom:6,borderRadius:10,border:"1px solid "+T.bdrS,overflow:"hidden"}}>
-                  <div style={{padding:"8px 12px",background:"rgba(45,32,16,0.04)",display:"flex",justifyContent:"space-between",cursor:"pointer"}}
-                    onClick={()=>setExpandedGroup(expandedGroup===group?null:group)}>
-                    <div style={{display:"flex",alignItems:"center",gap:8}}>
-                      <span style={{fontSize:12,fontWeight:600,color:T.text0}}>{group}</span>
-                      <span style={{fontSize:11,color:T.text3}}>{items.length} дедл.</span>
-                      {items[0]?.deadline&&(
-                        <span style={{fontSize:11,color:T.gold,fontFamily:"'JetBrains Mono'"}}>
-                          ближ. {new Date(items[0].deadline).toLocaleDateString("ru-RU",{day:"numeric",month:"short"})}
-                        </span>
-                      )}
-                    </div>
-                    <div style={{display:"flex",alignItems:"center",gap:6}}>
-                      <button className="btn-mini" style={{fontSize:10,padding:"2px 6px",zIndex:1}} onClick={e=>{e.stopPropagation();setEditDl(null);setNewDl(p=>({...p,organ:groupOrgan}));setAddDlModal(true);}}>+</button>
-                      <span style={{fontSize:12,color:T.text3}}>{expandedGroup===group?"▲":"▼"}</span>
-                    </div>
-                  </div>
-                  {expandedGroup===group&&<>
-                    {items.map(t=>(
-                      <DlRow key={t.id} t={t} today={today} setTasks={setTasks} setEditDl={setEditDl} setAddDlModal={setAddDlModal}/>
-                    ))}
-                    <div style={{padding:"6px 12px"}}>
-                      <button className="btn btn-ghost btn-sm" style={{width:"100%",fontSize:11,border:"1px dashed rgba(200,164,90,0.25)"}} onClick={()=>{setEditDl(null);setNewDl(p=>({...p,organ:groupOrgan}));setAddDlModal(true);}}>+ Добавить в {group}</button>
-                    </div>
-                  </>}
-                </div>
-              );
-            })}
-          </div>
-        );
-      })()}
-
-      {/* ── Внутренние задачи ── */}
-      {(()=>{
-        const internal = workTasks.filter(t=>!t.isDeadline);
-        return(
+        const internal = workTasks;
+        if(!internal.length&&isWorkDay) return null;
+        return (
           <div className="card" style={{marginBottom:12}}>
             <div className="card-hd">
               <span style={{fontSize:13,fontWeight:600,color:T.teal}}>📋 Задачи</span>
               <div style={{display:"flex",gap:6}}>
-                {internal.some(t=>t.doneDate===today)&&<button className="btn btn-ghost btn-sm" style={{fontSize:11,padding:"3px 8px",color:T.text3}} onClick={()=>{
-                  if(window.confirm("Сбросить отметки выполнения рабочих задач?"))
-                    setTasks(p=>p.map(t=>t.section==="work"&&!t.isDeadline&&t.doneDate===today?{...t,doneDate:null}:t));
-                  notify("Сброшено ✦");
-                }}>↩ Сброс</button>}
-                <button className="btn btn-ghost btn-sm" onClick={()=>setModal({})}>+</button>
+                {internal.some(t=>t.doneDate===today)&&<button className="btn btn-ghost btn-sm" style={{fontSize:11,padding:"3px 8px",color:T.text3}} onClick={()=>{if(window.confirm("Сбросить?"))setTasks(p=>p.map(t=>t.section==="work"&&!t.isDeadline&&t.doneDate===today?{...t,doneDate:null}:t));notify("Сброшено");}}>↩ Сброс</button>}
+                <button className="btn btn-ghost btn-sm" onClick={()=>setTaskModal({})}>+</button>
               </div>
             </div>
-            {internal.length===0&&<div style={{fontSize:13,color:T.text3,fontStyle:"italic",paddingTop:4}}>Нет рабочих задач</div>}
-            {internal.map(t=>(
-              <div key={t.id} style={{display:"flex",alignItems:"center",gap:8,padding:"7px 0",borderBottom:"1px solid "+T.bdrS}}>
-                <div className={"chk"+(t.doneDate===today?" done":"")}
-                  onClick={()=>setTasks(p=>p.map(x=>x.id===t.id?{...x,doneDate:x.doneDate===today?null:today,lastDone:x.doneDate===today?x.lastDone:today}:x))}>
-                  {t.doneDate===today?"✓":""}
+            {internal.map(task=>(
+              <div key={task.id} className="task-row">
+                <div className={"chk"+(task.doneDate===today?" done":"")} onClick={()=>setTasks(p=>p.map(t=>t.id===task.id?{...t,doneDate:t.doneDate===today?null:today,lastDone:t.doneDate===today?t.lastDone:today}:t))}>{task.doneDate===today?"✓":""}</div>
+                <div className="task-body">
+                  <div className={"task-name"+(task.doneDate===today?" done":"")}>{task.title}</div>
+                  <div className="task-meta">{task.preferredTime&&<span className="badge bg">🕐 {task.preferredTime}</span>}{task.deadline&&<span className="badge bw">📅 {new Date(task.deadline).toLocaleDateString("ru-RU",{day:"numeric",month:"short"})}</span>}</div>
+                  {task.notes&&<div className="task-notes">{task.notes}</div>}
                 </div>
-                <span style={{flex:1,fontSize:14,color:t.doneDate===today?T.text3:T.text0,textDecoration:t.doneDate===today?"line-through":"none"}}>{t.title}</span>
-                <div className="ico-btn danger" style={{fontSize:12}} onClick={()=>setTasks(p=>p.filter(x=>x.id!==t.id))}>✕</div>
+                <div className="ico-btn" onClick={()=>setTaskModal(task)}>✏️</div>
+                <div className="ico-btn danger" onClick={()=>setTasks(p=>p.filter(t=>t.id!==task.id))}>✕</div>
               </div>
             ))}
+            {internal.length===0&&<div className="empty"><span className="empty-ico">✦</span><p>Нет задач</p></div>}
           </div>
         );
       })()}
 
-      {profile.careerGoal&&<div className="card" style={{marginBottom:12,padding:"10px 14px"}}>
-        <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:4}}>КАРЬЕРНАЯ ЦЕЛЬ</div>
-        <div style={{fontFamily:"'Cormorant Infant',serif",fontSize:16,color:T.text0}}>{profile.careerGoal}</div>
-        {profile.workInspire&&<div style={{fontSize:12,color:T.text3,marginTop:3,fontStyle:"italic"}}>Вдохновляет: {profile.workInspire}</div>}
-      </div>}
+      <AiBox kb={kb} prompt={"Дай советы по рабочим задачам. "+gp.address+". Профессия: "+(profile.profession||"—")+". Сфера: "+(profile.jobSphere||"—")+". График: "+(profile.workStart||"?")+"–"+(profile.workEnd||"?")+". Что вдохновляет: "+(profile.workInspire||"—")+". Что истощает: "+((profile.workDrain||[]).join(",")||"—")+". Дай 3 совета как сделать рабочий день более продуктивным и 2 совета по балансу."} label="Советы по работе" btnText="Советы" placeholder="Дам советы по продуктивности..." noActions={true}/>
 
-      {/* Модалка дедлайна */}
-      {addDlModal&&(
-        <div className="overlay" onClick={()=>{setAddDlModal(false);setEditDl(null);}}>
-          <div className="modal" onClick={e=>e.stopPropagation()}>
-            <span className="modal-x" onClick={()=>{setAddDlModal(false);setEditDl(null);}}>✕</span>
-            <div className="modal-title">{editDl?"Редактировать":"Добавить дедлайн"}</div>
-            <div className="fld"><label>Название</label>
-              <input value={editDl?editDl.title:newDl.title} onChange={e=>editDl?setEditDl(p=>({...p,title:e.target.value})):setNewDl(p=>({...p,title:e.target.value}))} placeholder="ФНО 200.00 за 1 квартал..."/>
-            </div>
-            <div className="fld"><label>Орган</label>
-              <div className="chips">{["КГД","БНС","ЕНПФ","ФСМС","МЮ","МФ","МЗ","МОН","Другой"].map(v=>(
-                <div key={v} className={"chip "+((editDl?editDl.organ:newDl.organ)===v?"on":"")} onClick={()=>editDl?setEditDl(p=>({...p,organ:v})):setNewDl(p=>({...p,organ:v}))}>{v}</div>
-              ))}</div>
-            </div>
-            <div className="fld"><label>Дата сдачи</label>
-              <input type="date" value={editDl?editDl.deadline:newDl.deadline} onChange={e=>editDl?setEditDl(p=>({...p,deadline:e.target.value})):setNewDl(p=>({...p,deadline:e.target.value}))}/>
-            </div>
-            <div className="fld"><label>Примечание</label>
-              <input value={editDl?editDl.notes:newDl.notes} onChange={e=>editDl?setEditDl(p=>({...p,notes:e.target.value})):setNewDl(p=>({...p,notes:e.target.value}))} placeholder="За какой период..."/>
-            </div>
-            <div className="modal-foot">
-              <button className="btn btn-ghost" onClick={()=>{setAddDlModal(false);setEditDl(null);}}>Отмена</button>
-              <button className="btn btn-primary" onClick={()=>{
-                if(editDl){setTasks(p=>p.map(x=>x.id===editDl.id?{...x,...editDl}:x));}
-                else{setTasks(p=>[...p,{...newDl,id:Date.now()+Math.random(),title:"📋 "+newDl.title,section:"work",freq:"once",priority:"h",lastDone:"",doneDate:"",preferredTime:"09:00",isDeadline:true}]);}
-                setAddDlModal(false);setEditDl(null);notify("Сохранено ✦");
-              }}>{editDl?"Сохранить":"Добавить"}</button>
-            </div>
-          </div>
-        </div>
-      )}
-      {modal!==null&&<TaskModal task={modal?.id?modal:null} defaultSection="work" onSave={t=>{setTasks(p=>modal?.id?p.map(x=>x.id===t.id?t:x):[...p,t]);setModal(null);notify("Сохранено");}} onClose={()=>setModal(null)}/>}
-      {profile.careerGoal&&<div className="card"><div className="card-hd"><div className="card-title">Карьерная цель</div></div><div style={{fontFamily:"'Cormorant Infant',serif",fontSize:18,color:T.text0}}>{profile.careerGoal}</div>{profile.workInspire&&<div style={{marginTop:6,fontSize:14,color:T.text3,fontStyle:"italic"}}>Вдохновляет: {profile.workInspire}</div>}</div>}
-      {modal!==null&&<TaskModal task={modal.id?modal:null} defaultSection="work" onSave={t=>{setTasks(p=>modal.id?p.map(x=>x.id===t.id?t:x):[...p,t]);notify("Добавлено");}} onClose={()=>setModal(null)}/>}
-    </div>
-  );
-}
-
-// ══════════════════════════════════════════════════════════════
-//  HOME
-// ══════════════════════════════════════════════════════════════
-function HomeSection({profile,tasks,setTasks,today,kb,notify}) {
-  const [modal,setModal]=useState(null);
-  const [ht,setHt]=useState({title:"", freq:"daily", priority:"m", preferredTime:"", notes:"", section:"home"});
-  const updHt = (k,v) => setHt(p=>({...p,[k]:v}));
-  const autoHome=()=>{
-    const items=[];
-    const beds   = parseInt(profile.bedrooms)||1;
-    const baths  = parseInt(profile.bathrooms)||1;
-    const rooms  = profile.homeRooms||[];
-    const hasKitchen  = rooms.includes("Кухня")   || true; // кухня есть у всех
-    const hasHall     = rooms.includes("Коридор")  || true;
-    const hasLiving   = rooms.includes("Гостиная");
-    const hasBalcony  = rooms.includes("Балкон");
-    const hasStudy    = rooms.includes("Кабинет");
-    const hasNursery  = rooms.includes("Детская");
-    const hasPantry   = rooms.includes("Кладовка");
-
-    // ── Ежедневно ──
-    items.push({title:"Вытереть пыль",         freq:"daily",    priority:"l"});
-    items.push({title:"Помыть посуду",          freq:"daily",    priority:"m"});
-    items.push({title:"Вынести мусор",          freq:"daily",    priority:"m"});
-    if(hasKitchen) items.push({title:"Протереть плиту и варочную",freq:"daily",priority:"l"});
-    if(hasKitchen) items.push({title:"Протереть кухонные поверхности",freq:"every:2",priority:"l"});
-
-    // ── Спальни ──
-    for(let i=1;i<=beds;i++){
-      const lbl = beds>1 ? ` (спальня ${i})` : "";
-      items.push({title:`Проветрить спальню${lbl}`,  freq:"daily",    priority:"l"});
-      items.push({title:`Смена постельного${lbl}`,   freq:"every:7",  priority:"m"});
-      items.push({title:`Пылесос в спальне${lbl}`,   freq:"every:7",  priority:"m"});
-      items.push({title:`Влажная уборка спальни${lbl}`,freq:"every:14",priority:"l"});
-    }
-
-    // ── Санузлы ──
-    for(let i=1;i<=baths;i++){
-      const lbl = baths>1 ? ` (санузел ${i})` : "";
-      items.push({title:`Сантехника${lbl}`,          freq:"weekly:3", priority:"m"});
-      items.push({title:`Унитаз и раковина${lbl}`,   freq:"weekly:3", priority:"m"});
-      items.push({title:`Зеркала${lbl}`,             freq:"weekly:1", priority:"l"});
-      items.push({title:`Генуборка ванной${lbl}`,    freq:"every:14", priority:"h"});
-    }
-
-    // ── Коридор ──
-    if(hasHall){
-      items.push({title:"Подмести коридор",           freq:"every:2",  priority:"l"});
-      items.push({title:"Влажная уборка коридора",    freq:"weekly:5", priority:"l"});
-    }
-
-    // ── Гостиная ──
-    if(hasLiving){
-      items.push({title:"Пылесос в гостиной",         freq:"weekly:2", priority:"m"});
-      items.push({title:"Влажная уборка гостиной",    freq:"every:14", priority:"l"});
-      items.push({title:"Вытереть пыль с мебели",     freq:"weekly:1", priority:"l"});
-    }
-
-    // ── Балкон ──
-    if(hasBalcony){
-      items.push({title:"Уборка на балконе",          freq:"every:14", priority:"l"});
-    }
-
-    // ── Кабинет ──
-    if(hasStudy){
-      items.push({title:"Порядок в кабинете",         freq:"weekly:5", priority:"l"});
-    }
-
-    // ── Детская ──
-    if(hasNursery){
-      items.push({title:"Уборка детской",             freq:"every:2",  priority:"h"});
-      items.push({title:"Дезинфекция игрушек",        freq:"every:7",  priority:"m"});
-    }
-
-    // ── Кладовка ──
-    if(hasPantry){
-      items.push({title:"Разбор кладовки",            freq:"every:30", priority:"l"});
-    }
-
-    // ── Общее ──
-    items.push({title:"Мытьё окон",                   freq:"every:30", priority:"l"});
-    items.push({title:"Генеральная уборка",            freq:"every:90", priority:"h"});
-    items.push({title:"Чистка холодильника",           freq:"weekly:5", priority:"l"});
-
-    // ── Растения ──
-    if(profile.plants&&profile.plants!=="Нет")
-      items.push({title:"Полить цветы", freq:profile.plants.includes("день")?"daily":"every:2", priority:"m"});
-
-    // ── Сезонные задачи (определяем по текущему месяцу) ──
-    const month = new Date().getMonth()+1; // 1-12
-    const isMarch   = month===3;
-    const isApril   = month===4;
-    const isMay     = month===5;
-    const isOct     = month===10;
-    const isNov     = month===11;
-
-    // Весна (март-май) — убрать зимнее, достать летнее
-    if(isMarch||isApril){
-      items.push({title:"🌸 Сезон: Убрать зимние вещи в хранение",          freq:"once", priority:"h", notes:"Пальто, пуховики, свитера — стирка и хранение в вакуумных пакетах"});
-      items.push({title:"🌸 Сезон: Достать весенне-летнюю одежду",           freq:"once", priority:"h", notes:"Проверить состояние, постирать после хранения"});
-      items.push({title:"🌸 Сезон: Весенняя генеральная уборка",             freq:"once", priority:"h", notes:"Мытьё окон, чистка карнизов, перестановка мебели"});
-      items.push({title:"🌸 Сезон: Проветрить и выбить зимние одеяла",       freq:"once", priority:"m"});
-      items.push({title:"🌸 Сезон: Разобрать гардероб — ненужное отдать",    freq:"once", priority:"l"});
-    }
-    if(isMay){
-      items.push({title:"☀️ Сезон: Достать летнюю обувь",                    freq:"once", priority:"m", notes:"Почистить и подготовить к сезону"});
-      items.push({title:"☀️ Сезон: Убрать зимнюю обувь",                     freq:"once", priority:"m", notes:"Почистить, смазать, убрать в коробки"});
-      items.push({title:"☀️ Сезон: Подготовить балкон/террасу к лету",       freq:"once", priority:"l"});
-    }
-    // Осень (октябрь-ноябрь) — убрать летнее, достать зимнее
-    if(isOct){
-      items.push({title:"🍂 Сезон: Достать зимние вещи из хранения",         freq:"once", priority:"h", notes:"Пальто, пуховики, тёплые свитера — проветрить и проверить"});
-      items.push({title:"🍂 Сезон: Убрать летнюю одежду на хранение",        freq:"once", priority:"h", notes:"Постирать, высушить, сложить в вакуумные пакеты"});
-      items.push({title:"🍂 Сезон: Подготовить тёплые одеяла и пледы",       freq:"once", priority:"m"});
-      items.push({title:"🍂 Сезон: Проверить отопление и батареи",           freq:"once", priority:"h"});
-    }
-    if(isNov){
-      items.push({title:"❄️ Сезон: Убрать летнюю обувь на хранение",         freq:"once", priority:"m", notes:"Почистить, обработать водоотталкивающим, убрать"});
-      items.push({title:"❄️ Сезон: Достать зимнюю обувь и аксессуары",       freq:"once", priority:"m"});
-      items.push({title:"❄️ Сезон: Проверить тёплые аксессуары (шапки, шарфы)", freq:"once", priority:"l"});
-    }
-
-    return items.map(t=>({...t,id:Date.now()+Math.random(),section:"home",lastDone:"",doneDate:"",notes:t.notes||""}));
-  };
-  const homeTasks=tasks.filter(t=>t.section==="home");
-  const due=homeTasks.filter(t=>isDue(t,today));
-  return(
-    <div>
-      <div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",background:"rgba(45,32,16,0.05)",borderRadius:10,marginBottom:10,flexWrap:"wrap"}}>
-        {profile.homeType&&<span style={{fontSize:12,color:T.text2}}>🏠 {profile.homeType}{profile.homeArea?" "+profile.homeArea+"м²":""}</span>}
-        {(profile.livesWith||[]).length>0&&<span style={{fontSize:12,color:T.text3}}>· {(profile.livesWith||[]).join(", ")}</span>}
-        {(profile.cleanDays||[]).length>0&&<span style={{fontSize:12,color:T.gold,marginLeft:"auto"}}>🧹 {profile.cleanDays.join(", ")}</span>}
-      </div>
-      <AiBox kb={kb} prompt={`Советы по домашним делам для ${profile.homeType||"квартиры"} ${profile.homeArea||"?"}м² где живут: ${(profile.livesWith||[]).join(",")||"я один(а)"}. Питомцы: ${(profile.pets||[]).map(p=>p.name).join(",")||"нет"}. Дни уборки по расписанию: ${(profile.cleanDays||[]).join(",")||"—"}. Я работаю до ${profile.workEnd||"18:00"} — дела планируй после этого. Тип личности: ${profile.planningStyle||"—"}. Что важнее всего сделать сегодня с учётом моего расписания?`} label="Быт и дом" btnText="Советы по быту" placeholder="Подскажу как организовать дом легко..."/>
-      {homeTasks.length===0&&(
-        <div className="card" style={{textAlign:"center",padding:"28px 20px"}}>
-          <div style={{fontSize:14,color:T.text3,marginBottom:16,fontStyle:"italic"}}>Добавь домашние дела или создай расписание уборки автоматически</div>
-          <button className="btn btn-primary" onClick={()=>{const ts=autoHome();setTasks(p=>{const exist=new Set(p.filter(x=>x.section==="home").map(x=>x.title.toLowerCase()));const filtered=ts.filter(t=>!exist.has(t.title.toLowerCase()));notify("Добавлено "+filtered.length+" задач"+(filtered.length<ts.length?" (пропущено "+(ts.length-filtered.length)+" дубликатов)":""));return [...p,...filtered];});}}>✦ Создать расписание уборки</button>
-        </div>
-      )}
-      {(()=>{
-        const classifyTask = (f) => {
-          if(!f||f==="once") return "other";
-          if(f==="daily"||f==="workdays") return "daily";
-          const ev=f.match(/^every:(\d+)$/);
-          if(ev){const n=parseInt(ev[1]);if(n<=1)return"daily";if(n<=7)return"week";if(n<=90)return"month";return"other";}
-          if(f.startsWith("weekly:")) return "week";
-          if(f.startsWith("monthly:")) return "month";
-          return "other";
+      {/* ── Модалка добавления отчёта ── */}
+      {addReportModal&&(()=>{
+        const g = reportGroups.find(g=>g.id===addReportModal.groupId)||{name:"",color:T.gold,icon:"📋"};
+        const [form, setForm] = useState({name:"",deadline:"",period:"quarter",amount:"",notes:"",status:"pending"});
+        const save = () => {
+          if(!form.name) return notify("Введи название");
+          setReports(p=>[...p,{...form, id:"u-"+Date.now(), group:addReportModal.groupId, enabled:true, createdAt:new Date().toISOString()}]);
+          setAddReportModal(null);
+          notify("Добавлено");
         };
-        const groups = [
-          {key:"daily", label:"Ежедневно",     emoji:"☀️", color:T.success},
-          {key:"week",  label:"Еженедельно",   emoji:"📅", color:T.teal},
-          {key:"month", label:"Ежемесячно",    emoji:"🗓️", color:T.warn},
-          {key:"other", label:"Разово/Сезонно",emoji:"📋", color:T.text3},
-        ];
-        const byGroup = {};
-        groups.forEach(g=>{byGroup[g.key]=homeTasks.filter(t=>classifyTask(t.freq)===g.key);});
-        const totalTasks = homeTasks.length;
-
-        const HomeTaskRow = ({task}) => {
-          const isDone = task.doneDate===today;
-          const isDueToday = isDue(task,today);
-          return (
-            <div style={{display:"flex",alignItems:"center",gap:8,padding:"7px 0",borderBottom:"1px solid rgba(255,255,255,0.03)"}}>
-              {/* Чекбокс — только если задача наступила */}
-              <div className={"chk"+(isDone?" done":"")} style={{opacity:isDueToday||isDone?1:0.3}} onClick={()=>{
-                if(!isDueToday&&!isDone)return;
-                setTasks(p=>p.map(t=>t.id===task.id?{...t,doneDate:t.doneDate===today?null:today,lastDone:t.doneDate===today?t.lastDone:today}:t));
-              }}>{isDone?"✓":isDueToday?"":""}</div>
-              <div style={{flex:1,minWidth:0}}>
-                <div style={{fontSize:14,color:isDone?T.text3:T.text0,textDecoration:isDone?"line-through":"none",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{task.title}</div>
-                <div style={{display:"flex",gap:6,marginTop:2,flexWrap:"wrap"}}>
-                  <span style={{fontSize:10,color:isDueToday&&!isDone?T.warn:T.text3,fontFamily:"'JetBrains Mono'"}}>{freqLabel(task.freq)}</span>
-                  {task.preferredTime&&<span style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'"}}>🕐{task.preferredTime}</span>}
-                  {isDueToday&&!isDone&&<span style={{fontSize:10,color:T.warn,fontFamily:"'JetBrains Mono'"}}>★ сегодня</span>}
-                  {task.lastDone&&<span style={{fontSize:10,color:T.text3}}>был {task.lastDone}</span>}
-                </div>
-              </div>
-              <div style={{display:"flex",gap:4,flexShrink:0}}>
-                <button className="btn-mini" style={{padding:"3px 7px",fontSize:11}} onClick={()=>{
-                  const h=parseInt((task.preferredTime||"18:00").split(":")[0])||18;
-                  const m=parseInt((task.preferredTime||"18:00").split(":")[1])||0;
-                  const start=new Date();start.setHours(h,m,0,0);
-                  const end=new Date(start.getTime()+3600000);
-                  const f=d=>d.toISOString().replace(/[-:]/g,"").split(".")[0]+"Z";
-                  window.open("https://calendar.google.com/calendar/render?action=TEMPLATE&text="+encodeURIComponent(task.title)+"&dates="+f(start)+"/"+f(end),"_blank");
-                }}>📅</button>
-                <div className="ico-btn" style={{fontSize:13,padding:"2px 5px"}} onClick={()=>setModal(task)}>✏️</div>
-                <div className="ico-btn danger" style={{fontSize:13,padding:"2px 5px"}} onClick={()=>setTasks(p=>p.filter(t=>t.id!==task.id))}>✕</div>
-              </div>
-            </div>
-          );
-        };
-
         return (
-          <>
-            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
-              <div style={{flex:1,fontSize:13,color:T.text2}}>Дела по дому · <span style={{color:T.gold}}>{totalTasks}</span></div>
-              <button className="btn btn-ghost btn-sm" style={{fontSize:11}} onClick={()=>{const ts=autoHome();setTasks(p=>{const exist=new Set(p.filter(x=>x.section==="home").map(x=>x.title.toLowerCase()));const filtered=ts.filter(t=>!exist.has(t.title.toLowerCase()));notify(filtered.length>0?"Добавлено "+filtered.length:"Все задачи уже есть");return [...p,...filtered];});}}>+ Авто</button>
-              <button className="btn btn-primary btn-sm" style={{fontSize:11}} onClick={()=>setModal({})}>+ Своё</button>
-            </div>
-            {groups.map(g=>{
-              const list=byGroup[g.key];
-              if(!list.length) return null;
-              const dueCount=list.filter(t=>isDue(t,today)&&t.doneDate!==today).length;
-              const doneCount=list.filter(t=>t.doneDate===today).length;
-              return (
-                <details key={g.key} open={g.key==="daily"||dueCount>0} style={{marginBottom:8}}>
-                  <summary style={{display:"flex",alignItems:"center",gap:8,padding:"10px 14px",borderRadius:10,cursor:"pointer",background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.05)",listStyle:"none"}}>
-                    <span style={{fontSize:16}}>{g.emoji}</span>
-                    <span style={{flex:1,fontSize:14,fontFamily:"'Crimson Pro',serif",color:T.text0}}>{g.label}</span>
-                    {dueCount>0&&<span style={{fontSize:10,color:T.warn,fontFamily:"'JetBrains Mono'",background:"rgba(122,80,16,0.2)",padding:"1px 6px",borderRadius:6}}>{dueCount} сегодня</span>}
-                    {doneCount>0&&<span style={{fontSize:10,color:T.success,fontFamily:"'JetBrains Mono'",background:"rgba(45,106,79,0.15)",padding:"1px 6px",borderRadius:6}}>{doneCount}✓</span>}
-                    <span style={{fontSize:11,color:T.text3,fontFamily:"'JetBrains Mono'"}}>{list.length}</span>
-                  </summary>
-                  <div style={{padding:"4px 14px 8px",background:"rgba(255,255,255,0.01)",borderRadius:"0 0 10px 10px",border:"1px solid rgba(255,255,255,0.04)",borderTop:"none"}}>
-                    {list.map(task=><HomeTaskRow key={task.id} task={task}/>)}
-                  </div>
-                </details>
-              );
-            })}
-            {totalTasks===0&&<div className="empty"><span className="empty-ico">🏡</span><p>Нет дел. Нажми «+ Авто» для создания расписания</p></div>}
-          </>
-        );
-      })()}
-
-      {/* ── Специализированная модалка домашних дел ── */}
-      {modal!==null&&(()=>{
-        const isEdit = !!modal.id;
-        // При открытии редактирования — данные из task, при новом — из ht
-        const cur = isEdit ? modal : ht;
-        const upd = isEdit
-          ? (k,v) => setModal(p=>({...p,[k]:v}))
-          : updHt;
-
-        // Популярные домашние дела — быстрый выбор
-        const quickTasks = [
-          {emoji:"👕",title:"Постирать бельё",        freq:"every:7"},
-          {emoji:"🧺",title:"Погладить бельё",        freq:"every:7"},
-          {emoji:"🧹",title:"Подмести полы",          freq:"daily"},
-          {emoji:"🫧",title:"Помыть полы с мытьём",   freq:"every:3"},
-          {emoji:"🪣",title:"Протереть столешницы",   freq:"daily"},
-          {emoji:"🛁",title:"Помыть ванну/душ",       freq:"weekly:4"},
-          {emoji:"🚽",title:"Почистить унитаз",       freq:"weekly:3"},
-          {emoji:"🪟",title:"Протереть зеркала",      freq:"weekly:1"},
-          {emoji:"🧊",title:"Разморозить холодильник",freq:"every:90"},
-          {emoji:"🫙",title:"Разобрать шкаф/ящики",  freq:"every:90"},
-          {emoji:"📦",title:"Разобрать кладовку",     freq:"every:30"},
-          {emoji:"🌿",title:"Полить цветы",           freq:"every:2"},
-          {emoji:"🪴",title:"Пересадить растения",    freq:"every:180"},
-          {emoji:"💡",title:"Протереть лампы/плафоны",freq:"every:30"},
-          {emoji:"🧴",title:"Пополнить запасы химии", freq:"every:30"},
-          {emoji:"🗑",title:"Вынести мусор",          freq:"daily"},
-          {emoji:"🛏",title:"Застелить постель",      freq:"daily"},
-          {emoji:"🧦",title:"Разобрать чистое бельё", freq:"every:7"},
-          {emoji:"🪥",title:"Почистить духовку",      freq:"every:30"},
-          {emoji:"☕",title:"Почистить кофемашину",   freq:"every:14"},
-          {emoji:"🐾",title:"Помыть миску питомца",   freq:"every:2"},
-          {emoji:"🚗",title:"Помыть машину",          freq:"every:14"},
-          {emoji:"📺",title:"Протереть технику",      freq:"every:14"},
-          {emoji:"🧹",title:"Пропылесосить диван",    freq:"every:14"},
-        ];
-
-        const freqOptions = [
-          {v:"daily",     l:"Каждый день"},
-          {v:"every:2",   l:"Каждые 2 дня"},
-          {v:"every:3",   l:"Каждые 3 дня"},
-          {v:"weekly:1",  l:"Раз в неделю (пн)"},
-          {v:"weekly:2",  l:"Раз в неделю (вт)"},
-          {v:"weekly:3",  l:"Раз в неделю (ср)"},
-          {v:"weekly:4",  l:"Раз в неделю (чт)"},
-          {v:"weekly:5",  l:"Раз в неделю (пт)"},
-          {v:"weekly:6",  l:"Раз в неделю (сб)"},
-          {v:"weekly:0",  l:"Раз в неделю (вс)"},
-          {v:"every:7",   l:"Раз в 7 дней"},
-          {v:"every:14",  l:"Раз в 2 недели"},
-          {v:"every:30",  l:"Раз в месяц"},
-          {v:"every:90",  l:"Раз в 3 месяца"},
-          {v:"once",      l:"Один раз"},
-        ];
-
-        return(
-          <div className="overlay" onClick={()=>setModal(null)}>
-            <div className="modal" onClick={e=>e.stopPropagation()} style={{maxHeight:"92vh",overflowY:"auto"}}>
-              <button className="btn btn-ghost btn-sm" style={{position:"absolute",top:16,left:16}} onClick={()=>setModal(null)}>← Назад</button>
-              <span className="modal-x" onClick={()=>setModal(null)}>✕</span>
-              <div className="modal-title" style={{marginTop:8}}>{isEdit?"Редактировать дело":"Добавить домашнее дело"}</div>
-
-              {/* Быстрый выбор — только при добавлении нового */}
-              {!isEdit&&(
-                <div style={{marginBottom:18}}>
-                  <div style={{fontSize:11,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1.5,marginBottom:10}}>БЫСТРЫЙ ВЫБОР</div>
-                  <div style={{display:"flex",flexWrap:"wrap",gap:7}}>
-                    {quickTasks.map(q=>(
-                      <div key={q.title}
-                        onClick={()=>{upd("title",q.title);upd("freq",q.freq);}}
-                        style={{display:"flex",alignItems:"center",gap:6,padding:"6px 12px",
-                          borderRadius:20,border:"1px solid "+(cur.title===q.title?T.gold:T.bdr),
-                          background:cur.title===q.title?"rgba(45,106,79,0.12)":"rgba(255,255,255,0.5)",
-                          cursor:"pointer",fontSize:14,color:cur.title===q.title?T.gold:T.text1,
-                          transition:"all .15s"}}>
-                        <span>{q.emoji}</span><span>{q.title}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Название */}
-              <div className="fld">
-                <label>Название дела</label>
-                <input
-                  placeholder="Погладить бельё, помыть окна..."
-                  value={cur.title}
-                  onChange={e=>upd("title",e.target.value)}
-                  autoFocus
-                />
-              </div>
-
-              {/* Периодичность */}
-              <div className="fld">
-                <label>Как часто?</label>
-                <select value={cur.freq||"daily"} onChange={e=>upd("freq",e.target.value)}>
-                  {freqOptions.map(f=><option key={f.v} value={f.v}>{f.l}</option>)}
+          <div className="overlay" onClick={()=>setAddReportModal(null)}>
+            <div className="modal" onClick={e=>e.stopPropagation()}>
+              <span className="modal-x" onClick={()=>setAddReportModal(null)}>✕</span>
+              <div className="modal-title">{g.icon} {g.name} — добавить отчёт</div>
+              <div className="fld"><label>Название отчёта</label><input value={form.name} onChange={e=>setForm(p=>({...p,name:e.target.value}))} placeholder="Например: ФНО 910.00"/></div>
+              <div className="fld"><label>Срок сдачи</label><input type="date" value={form.deadline} onChange={e=>setForm(p=>({...p,deadline:e.target.value}))}/></div>
+              <div className="fld"><label>Периодичность</label>
+                <select value={form.period} onChange={e=>setForm(p=>({...p,period:e.target.value}))} style={{width:"100%",padding:"8px",borderRadius:8,border:"1px solid "+T.bdr,background:T.bg1,color:T.text0,fontSize:14}}>
+                  <option value="monthly">Ежемесячно</option>
+                  <option value="quarter">Ежеквартально</option>
+                  <option value="semi">Раз в полгода</option>
+                  <option value="annual">Ежегодно</option>
+                  <option value="once">Разово</option>
                 </select>
               </div>
-
-              {/* Время */}
-              <div className="fld-row">
-                <div className="fld">
-                  <label>Удобное время</label>
-                  <input type="time" value={cur.preferredTime||""} onChange={e=>upd("preferredTime",e.target.value)}/>
-                </div>
-                <div className="fld">
-                  <label>Приоритет</label>
-                  <select value={cur.priority||"m"} onChange={e=>upd("priority",e.target.value)}>
-                    <option value="l">Низкий — когда придётся</option>
-                    <option value="m">Средний — в этот день</option>
-                    <option value="h">Высокий — обязательно</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Заметка */}
-              <div className="fld">
-                <label>Заметка (необязательно)</label>
-                <input placeholder="Тёмное бельё отдельно / использовать средство X..." value={cur.notes||""} onChange={e=>upd("notes",e.target.value)}/>
-              </div>
-
+              {addReportModal.groupId==="pay"&&<div className="fld"><label>Сумма платежа</label><input value={form.amount} onChange={e=>setForm(p=>({...p,amount:e.target.value}))} placeholder="0 ₸"/></div>}
+              <div className="fld"><label>Заметки</label><input value={form.notes} onChange={e=>setForm(p=>({...p,notes:e.target.value}))} placeholder="Статья НК, особенности..."/></div>
               <div className="modal-foot">
-                <button className="btn btn-ghost" onClick={()=>setModal(null)}>Отмена</button>
-                <button className="btn btn-primary" onClick={()=>{
-                  if(!cur.title.trim()){notify("Введи название");return;}
-                  const task={...cur,id:modal.id||Date.now()+Math.random(),section:"home",lastDone:"",doneDate:cur.doneDate||""};
-                  setTasks(p=>modal.id?p.map(x=>x.id===task.id?task:x):[...p,task]);
-                  setModal(null);
-                  if(!isEdit) setHt({title:"",freq:"daily",priority:"m",preferredTime:"",notes:"",section:"home"});
-                  notify(isEdit?"Дело обновлено ✦":"Дело добавлено ✦");
-                }}>{isEdit?"Сохранить":"Добавить"}</button>
+                <button className="btn btn-ghost" onClick={()=>setAddReportModal(null)}>Отмена</button>
+                <button className="btn btn-primary" onClick={save}>Добавить</button>
               </div>
             </div>
           </div>
         );
       })()}
-    </div>
-  );
-}
 
-// ══════════════════════════════════════════════════════════════
-//  SHOPPING
-// ══════════════════════════════════════════════════════════════
-function ShoppingSection({profile,shopList,setShopList,kb,notify}) {
-  const [newItem,setNewItem]=useState(""); const [newCat,setNewCat]=useState("Продукты");
-  const cats=["Продукты","Бытовая химия","Красота и уход","Для питомцев","Одежда","Аптека","Другое"];
-  
-  // Очистка старых записей с [Категория] в названии — выполняется один раз при загрузке
-  useEffect(()=>{
-    const needsCleanup = shopList.some(item => /\[[^\]]+\]/.test(item.name));
-    if(!needsCleanup) return;
-    const validCats = cats;
-    const cleaned = [];
-    const seen = new Set();
-    shopList.forEach(item => {
-      const m = item.name.match(/\[([^\]]+)\]/);
-      let cat = item.cat || "Продукты";
-      if(m && validCats.includes(m[1])) cat = m[1];
-      let name = item.name.replace(/\[[^\]]+\]/g, "").replace(/^[:\s—-]+/, "").trim();
-      if(!name || name.length < 2) return;
-      const key = name.toLowerCase();
-      if(seen.has(key)) return;
-      seen.add(key);
-      cleaned.push({...item, name, cat});
-    });
-    setShopList(cleaned);
-  }, []);
-  
-  const add=()=>{if(!newItem.trim())return;setShopList(p=>[...p,{id:Date.now(),name:newItem,cat:newCat,done:false}]);setNewItem("");notify("Добавлено");};
-  const byCat=cats.reduce((a,c)=>({...a,[c]:shopList.filter(x=>x.cat===c)}),{});
-  const doneN=shopList.filter(x=>x.done).length;
-  return(
-    <div>
-      <div style={{display:"flex",flexWrap:"wrap",gap:8,padding:"8px 12px",background:"rgba(45,32,16,0.05)",borderRadius:10,marginBottom:10,alignItems:"center"}}>
-        {profile.shopFreq&&<span style={{fontSize:12,color:T.text2}}>🛒 {profile.shopFreq}</span>}
-        {profile.shopDay&&<span style={{fontSize:12,color:T.gold}}>· 📅 {profile.shopDay}</span>}
-        {profile.familySize&&profile.familySize!=="1"&&<span style={{fontSize:12,color:T.text3,marginLeft:"auto"}}>👨‍👩‍👧 {profile.familySize} чел.</span>}
-      </div>
-      {/* Напоминание о дне закупки */}
-      {(()=>{
-        const days={"Пн":1,"Вт":2,"Ср":3,"Чт":4,"Пт":5,"Сб":6,"Вс":0};
-        const todayDay=new Date().getDay();
-        const shopDayNum=days[profile.shopDay];
-        const isShopDay=shopDayNum!==undefined&&todayDay===shopDayNum;
-        const daysLeft=shopDayNum!==undefined?((shopDayNum-todayDay+7)%7||7):null;
-        if(!profile.shopDay) return null;
-        return(
-          <div style={{padding:"10px 14px",borderRadius:12,marginBottom:12,
-            background:isShopDay?"rgba(45,106,79,0.15)":"rgba(45,32,16,0.05)",
-            border:"1px solid "+(isShopDay?T.success:T.bdrS),
-            display:"flex",alignItems:"center",gap:10}}>
-            <span style={{fontSize:20}}>{isShopDay?"🛒":"📅"}</span>
-            <div>
-              <div style={{fontSize:14,color:isShopDay?T.success:T.text1,fontWeight:isShopDay?600:400}}>
-                {isShopDay?"Сегодня день закупки! "+profile.shopDay:"День закупки: "+profile.shopDay}
-              </div>
-              <div style={{fontSize:12,color:T.text3}}>
-                {isShopDay?"Список уже готов — прокрути вниз":"Через "+daysLeft+" "+(daysLeft===1?"день":daysLeft<5?"дня":"дней")}
-              </div>
-            </div>
-            {isShopDay&&<span style={{marginLeft:"auto",fontSize:20}}>✦</span>}
-          </div>
-        );
-      })()}
-
-      {/* Умный список с учётом цели, семьи и питомцев */}
-      {(()=>{
-        const familySize=parseInt(profile.familySize||"1");
-        const hasWeightGoal=(profile.mainGoal||"").toLowerCase().includes("похуде")||(profile.mainGoal||"").toLowerCase().includes("вес")||(profile.healthGoal||"").toLowerCase().includes("похуде");
-        const hasChildren=(profile.livesWith||[]).includes("Дети");
-        const hasParents=(profile.livesWith||[]).includes("Родители");
-        const familyNeeds=profile.familyNeeds||"";
-        const pets=(profile.pets||[]);
-
-        const shopPrompt=
-          "Составь подробный список покупок на неделю для "+familySize+" "+(familySize===1?"человека":"человек")+".\n"+
-          "СОСТАВ СЕМЬИ: "+(profile.livesWith||["один(а)"]).join(", ")+
-          (hasChildren?". Дети: "+profile.childrenAges:"")+
-          (familyNeeds?". Особые потребности: "+familyNeeds:"")+".\n"+
-          "ТИП ПИТАНИЯ: "+(profile.nutrition||"обычное")+".\n"+
-          (hasWeightGoal?"ЦЕЛЬ: похудение — акцент на белок, овощи, ограничить простые углеводы и сладкое. Калорийность умеренная.\n":"")+
-          "ТКМ-профиль учитывай при выборе продуктов.\n"+
-          "Всегда есть дома: "+((profile.staples||[]).join(", ")||"—")+".\n"+
-          (pets.length?"Питомцы: "+pets.map(p=>p.name+"("+p.type+"): "+(p.food||"стандартный корм")).join(", ")+".\n":"")+
-          "День закупки: "+(profile.shopDay||"—")+".\n\n"+
-          "ВАЖНО: укажи количество с учётом "+familySize+" "+(familySize===1?"человека":"человек")+". "+
-          "Каждый товар начинай с метки [Продукты], [Бытовая химия], [Красота и уход], [Для питомцев] или [Аптека]. "+
-          "Дай заголовки разделов через ## и нумерованный список.";
-
-        return(
-          <AiBox kb={kb} prompt={shopPrompt}
-            label="Список покупок на неделю"
-            btnText={`Составить список на ${familySize > 1 ? familySize+" чел." : "меня"}`}
-            placeholder="Составлю список с учётом всей семьи и целей..."
-            actionType="shopping" onShopAdd={setShopList}/>
-        );
-      })()}
-      <div className="card">
-        <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
-          <input style={{flex:"1 1 180px",padding:"10px 14px",background:"rgba(255,255,255,.03)",border:"1px solid "+T.bdr,borderRadius:10,color:T.text0,fontFamily:"'Crimson Pro',serif",fontSize:16,outline:"none"}} placeholder="Добавить товар..." value={newItem} onChange={e=>setNewItem(e.target.value)} onKeyDown={e=>e.key==="Enter"&&add()}/>
-          <select style={{padding:"10px",background:T.bg2,border:"1px solid "+T.bdr,borderRadius:10,color:T.text1,fontSize:14,outline:"none"}} value={newCat} onChange={e=>setNewCat(e.target.value)}>{cats.map(c=><option key={c}>{c}</option>)}</select>
-          <button className="btn btn-primary btn-sm" onClick={add}>+</button>
-        </div>
-        <div style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap"}}>
-          <button className="btn btn-ghost btn-sm" onClick={()=>{
-            const validCats = cats;
-            const cleaned = [];
-            const seen = new Set();
-            shopList.forEach(item => {
-              const m = item.name.match(/\[([^\]]+)\]/);
-              let cat = item.cat || "Продукты";
-              if(m && validCats.includes(m[1])) cat = m[1];
-              let name = item.name.replace(/\[[^\]]+\]/g, "").replace(/^[:\s—-]+/, "").trim();
-              if(!name || name.length < 2) return;
-              const key = name.toLowerCase();
-              if(seen.has(key)) return;
-              seen.add(key);
-              cleaned.push({...item, name, cat});
-            });
-            const removedCount = shopList.length - cleaned.length;
-            setShopList(cleaned);
-            notify(removedCount>0 ? "Очищено: убрано "+removedCount+" дубликатов и меток" : "Список уже чист");
-          }}>🧹 Очистить дубли и метки</button>
-          {shopList.length>0 && <button className="btn btn-ghost btn-sm" onClick={()=>{
-            if(confirm("Удалить все товары из списка покупок?")) { setShopList([]); notify("Список очищен"); }
-          }}>🗑 Сбросить список</button>}
-        </div>
-        {shopList.length===0&&<div className="empty"><span className="empty-ico">🛒</span><p>Список пуст. Нажми "Составить список" чтобы AI составил персональный список покупок.</p></div>}
-        {cats.filter(c=>byCat[c].length>0).map(cat=>{
-          const catEmoji = {"Продукты":"🥦","Бытовая химия":"🧼","Красота и уход":"✨","Для питомцев":"🐾","Одежда":"👕","Аптека":"💊","Другое":"📦"}[cat] || "📦";
-          const catColor = {"Продукты":"#7BCCA0","Бытовая химия":"#82AADD","Красота и уход":"#E8A8C8","Для питомцев":"#E8A85A","Одежда":"#B882E8","Аптека":T.danger,"Другое":"#A8A49C"}[cat] || "#A8A49C";
-          const itemsLeft = byCat[cat].filter(x=>!x.done).length;
-          const itemsDone = byCat[cat].filter(x=>x.done).length;
-          return (
-            <div key={cat} style={{marginBottom:14,background:"rgba(255,255,255,0.02)",border:"1px solid "+catColor+"33",borderRadius:14,overflow:"hidden"}}>
-              <div style={{display:"flex",alignItems:"center",gap:10,padding:"12px 16px",background:"linear-gradient(135deg, "+catColor+"22, "+catColor+"08)",borderBottom:"1px solid "+catColor+"22"}}>
-                <span style={{fontSize:22}}>{catEmoji}</span>
-                <span style={{flex:1,fontFamily:"'Cormorant Infant',serif",fontSize:18,color:catColor,fontWeight:600}}>{cat}</span>
-                <span style={{fontFamily:"'JetBrains Mono'",fontSize:11,color:T.text2,letterSpacing:1}}>{itemsLeft}{itemsDone>0?` / ${itemsDone}✓`:""}</span>
-              </div>
-              <div style={{padding:"4px 12px"}}>
-                {byCat[cat].map(item=>(
-                  <div key={item.id} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 4px",borderBottom:`1px solid rgba(255,255,255,.03)`}}>
-                    <div className={`chk${item.done?" done":""}`} style={{borderColor:item.done?catColor:T.bdr,background:item.done?catColor:"transparent"}} onClick={()=>setShopList(p=>p.map(x=>x.id===item.id?{...x,done:!x.done}:x))}>{item.done?"✓":""}</div>
-                    <span style={{flex:1,fontSize:15,textDecoration:item.done?"line-through":"none",color:item.done?T.text3:T.text0,fontFamily:"'Crimson Pro',serif"}}>{item.name}</span>
-                    <div className="ico-btn danger" onClick={()=>setShopList(p=>p.filter(x=>x.id!==item.id))}>✕</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          );
-        })}
-        {doneN>0&&<button className="btn btn-ghost btn-sm" onClick={()=>setShopList(p=>p.filter(x=>!x.done))}>Очистить купленное ({doneN})</button>}
-      </div>
-    </div>
-  );
-}
-
-// ══════════════════════════════════════════════════════════════
-//  PETS
-// ══════════════════════════════════════════════════════════════
-function PetsSection({profile,setProfile,petLog,setPetLog,today,kb,notify}) {
-  const pets=profile.pets||[];
-  const petEmoji=t=>({Кошка:"🐱",Собака:"🐶",Попугай:"🦜",Кролик:"🐰",Хомяк:"🐹",Черепаха:"🐢",Рыбки:"🐠"}[t]||"🐾");
-  const getAge=dob=>{if(!dob)return null;const d=Date.now()-new Date(dob);const y=Math.floor(d/(365.25*86400000));const m=Math.floor((d%(365.25*86400000))/(30.44*86400000));return y>0?`${y} лет`:`${m} мес.`;};
-  const daysUntil=dateStr=>{if(!dateStr)return null;const t=new Date(dateStr);t.setFullYear(t.getFullYear()+1);return Math.round((t-new Date())/86400000);};
-  const markFeed=(petId,idx)=>{const c=petLog[today]?.[petId]||[];const n=c.includes(idx)?c.filter(x=>x!==idx):[...c,idx];setPetLog(p=>({...p,[today]:{...(p[today]||{}),[petId]:n}}));};
-  return(
-    <div>
-      <AiBox kb={kb} prompt={`Советы по уходу за питомцами: ${pets.map(p=>`${p.name}(${p.type},${p.breed||"—"},особенности:${p.notes||"нет"})`).join(";")||"нет питомцев"}. Что важно для здоровья, на что обращать внимание?`} label="Уход за питомцами" btnText="Советы по уходу" placeholder="Дам советы по уходу за твоими питомцами..."/>
-      {pets.length===0&&<div className="empty"><span className="empty-ico">🐾</span><p>Питомцев нет. Добавь в профиле!</p></div>}
-      {pets.length>0&&(()=>{
-        // Объединённый блок кормления
-        const feedTimes = ["Утро","День","Вечер","Ночь"];
-        // Найти все уникальные времена кормления среди питомцев
-        const maxFeeds = Math.max(...pets.map(p=>parseInt(p.feedTimes)||2));
-        const feedLabels = maxFeeds===1?["День"]:maxFeeds===2?["Утро","Вечер"]:maxFeeds===3?["Утро","День","Вечер"]:["1","2","3","4"];
+      {/* Модалка редактирования отчёта */}
+      {editReport&&(()=>{
+        const g = reportGroups.find(g=>g.id===editReport.group)||{name:"",color:T.gold,icon:"📋"};
+        const save = () => {
+          setReports(p=>p.map(r=>r.id===editReport.id?editReport:r));
+          setEditReport(null);
+          notify("Сохранено");
+        };
         return (
-          <>
-            {/* Объединённый трекер кормления */}
-            <div style={{padding:"10px 14px",background:"rgba(232,168,90,0.08)",borderRadius:12,border:"1px solid rgba(232,168,90,0.15)",marginBottom:10}}>
-              <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1.5,marginBottom:8}}>КОРМЛЕНИЕ</div>
-              <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                {feedLabels.map((label,feedIdx)=>{
-                  // Все питомцы которых нужно кормить в это время
-                  const petsFeed = pets.filter(p=>feedIdx < (parseInt(p.feedTimes)||2));
-                  const allFed = petsFeed.every(p=>(petLog[today]?.[p.id]||[]).includes(feedIdx));
-                  const anyFed = petsFeed.some(p=>(petLog[today]?.[p.id]||[]).includes(feedIdx));
-                  return (
-                    <button key={feedIdx}
-                      onClick={()=>{
-                        petsFeed.forEach(p=>markFeed(p.id,feedIdx));
-                      }}
-                      style={{padding:"8px 14px",borderRadius:10,border:"1px solid "+(allFed?"rgba(45,106,79,0.5)":anyFed?"rgba(200,164,90,0.4)":"rgba(255,255,255,0.1)"),background:allFed?"rgba(45,106,79,0.2)":anyFed?"rgba(200,164,90,0.1)":"rgba(255,255,255,0.03)",color:allFed?T.success:anyFed?T.gold:T.text2,fontSize:14,cursor:"pointer",transition:"all .15s"}}>
-                      {allFed?"✓ ":""}{label}
-                      <div style={{fontSize:10,color:T.text3,marginTop:2}}>{petsFeed.map(p=>(petLog[today]?.[p.id]||[]).includes(feedIdx)?"✓":"○").join(" ")}</div>
-                    </button>
-                  );
-                })}
+          <div className="overlay" onClick={()=>setEditReport(null)}>
+            <div className="modal" onClick={e=>e.stopPropagation()}>
+              <span className="modal-x" onClick={()=>setEditReport(null)}>✕</span>
+              <div className="modal-title">{g.icon} Редактировать отчёт</div>
+              <div className="fld"><label>Название</label><input value={editReport.name} onChange={e=>setEditReport(p=>({...p,name:e.target.value}))}/></div>
+              <div className="fld"><label>Срок сдачи</label><input type="date" value={editReport.deadline} onChange={e=>setEditReport(p=>({...p,deadline:e.target.value}))}/></div>
+              <div className="fld"><label>Периодичность</label>
+                <select value={editReport.period||"quarter"} onChange={e=>setEditReport(p=>({...p,period:e.target.value}))} style={{width:"100%",padding:"8px",borderRadius:8,border:"1px solid "+T.bdr,background:T.bg1,color:T.text0,fontSize:14}}>
+                  <option value="monthly">Ежемесячно</option>
+                  <option value="quarter">Ежеквартально</option>
+                  <option value="semi">Раз в полгода</option>
+                  <option value="annual">Ежегодно</option>
+                  <option value="once">Разово</option>
+                </select>
               </div>
-              <div style={{display:"flex",gap:6,marginTop:8,flexWrap:"wrap"}}>
-                {pets.map(p=><span key={p.id} style={{fontSize:12,color:T.text3}}>{petEmoji(p.type)} {p.name}: {(petLog[today]?.[p.id]||[]).length}/{parseInt(p.feedTimes)||2}</span>)}
+              <div className="fld"><label>Сумма (для платежей)</label><input value={editReport.amount||""} onChange={e=>setEditReport(p=>({...p,amount:e.target.value}))} placeholder="0 ₸"/></div>
+              <div className="fld"><label>Заметки</label><input value={editReport.notes||""} onChange={e=>setEditReport(p=>({...p,notes:e.target.value}))}/></div>
+              <div className="modal-foot">
+                <button className="btn btn-ghost" onClick={()=>setEditReport(null)}>Отмена</button>
+                <button className="btn btn-primary" onClick={save}>Сохранить</button>
               </div>
             </div>
-
-            {/* Карточки питомцев */}
-            {pets.map(pet=>{
-              const vacDays=daysUntil(pet.vacDate);
-              const parDays=daysUntil(pet.parasiteDate);
-              return(
-                <div key={pet.id} className="pet-card" style={{marginBottom:8}}>
-                  <div style={{display:"flex",gap:10,alignItems:"center"}}>
-                    <div className="pet-ava" style={{width:36,height:36,fontSize:22}}>{petEmoji(pet.type)}</div>
-                    <div style={{flex:1}}>
-                      <div style={{fontSize:16,color:T.text0,fontFamily:"'Cormorant Infant',serif"}}>{pet.name} <span style={{fontSize:12,color:T.text3}}>· {pet.type}{pet.breed?" "+pet.breed:""}</span></div>
-                      {pet.food&&<div style={{fontSize:12,color:T.text3}}>🍽 {pet.food}</div>}
-                    </div>
-                    <div style={{display:"flex",gap:6,flexWrap:"wrap",justifyContent:"flex-end"}}>
-                      {vacDays!==null&&<span className={"badge "+(vacDays<0?"br":vacDays<30?"bw":"bgr")} style={{fontSize:10}}>💉 {vacDays<0?"!":vacDays===0?"сег.":"через "+vacDays+"д."}</span>}
-                      {parDays!==null&&<span className={"badge "+(parDays<0?"br":parDays<14?"bw":"bm")} style={{fontSize:10}}>🪲 {parDays<0?"!":"через "+parDays+"д."}</span>}
-                    </div>
-                  </div>
-                  {pet.notes&&<div style={{fontSize:12,color:T.warn,marginTop:4}}>⚠ {pet.notes}</div>}
-                  {vacDays!==null&&vacDays<30&&<div style={{marginTop:6}}><button className="btn btn-ghost btn-xs" onClick={()=>openGCal("Вакцинация "+pet.name,new Date(Date.now()+vacDays*86400000).toISOString(),pet.name+"("+pet.type+")")}>📅 В Calendar</button></div>}
-                </div>
-              );
-            })}
-          </>
+          </div>
         );
       })()}
+
+      {/* Модалка создания раздела */}
+      {addGroupModal&&(
+        <div className="overlay" onClick={()=>setAddGroupModal(false)}>
+          <div className="modal" onClick={e=>e.stopPropagation()}>
+            <span className="modal-x" onClick={()=>setAddGroupModal(false)}>✕</span>
+            <div className="modal-title">Новый раздел отчётности</div>
+            <div className="fld"><label>Название</label><input value={newGroup.name} onChange={e=>setNewGroup(p=>({...p,name:e.target.value}))} placeholder="Например: Лизинг"/></div>
+            <div className="fld-row">
+              <div className="fld"><label>Иконка</label><input value={newGroup.icon} onChange={e=>setNewGroup(p=>({...p,icon:e.target.value}))} maxLength={2} placeholder="📄"/></div>
+              <div className="fld"><label>Цвет</label><input type="color" value={newGroup.color} onChange={e=>setNewGroup(p=>({...p,color:e.target.value}))}/></div>
+            </div>
+            <div className="modal-foot">
+              <button className="btn btn-ghost" onClick={()=>setAddGroupModal(false)}>Отмена</button>
+              <button className="btn btn-primary" onClick={()=>{
+                if(!newGroup.name) return notify("Введи название");
+                setReportGroups(p=>[...p,{...newGroup,id:"g-"+Date.now()}]);
+                setAddGroupModal(false);
+                setNewGroup({name:"",icon:"📝",color:"#A8A49C"});
+                notify("Раздел создан");
+              }}>Создать</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {taskModal!==null&&<TaskModal task={taskModal.id?taskModal:null} defaultSection="work" onSave={t=>{setTasks(p=>taskModal.id?p.map(x=>x.id===t.id?t:x):[...p,t]);notify(taskModal.id?"Обновлено":"Добавлено");}} onClose={()=>setTaskModal(null)}/>}
     </div>
   );
 }
+
 
 // ══════════════════════════════════════════════════════════════
 //  HEALTH
@@ -5455,7 +4739,7 @@ function MentalSection({profile,kb,notify}) {
           const isOpen = openPractice === "item:"+catKey+":"+idx;
           return (
             <div key={item.id||idx} style={{marginBottom:6,borderRadius:12,overflow:"hidden",border:"1px solid rgba(255,255,255,0.06)",background:item.color||"rgba(255,255,255,0.02)"}}>
-              <div style={{display:"flex",alignItems:"center",gap:10,padding:"12px 14px",cursor:"pointer"}} onClick={()=>setOpenPractice(isOpen?null:catKey+":"+idx)}>
+              <div style={{display:"flex",alignItems:"center",gap:10,padding:"12px 14px",cursor:"pointer"}} onClick={()=>setOpenPractice(isOpen?null:"item:"+catKey+":"+idx)}>
                 <span style={{fontSize:20,flexShrink:0}}>{item.icon}</span>
                 <div style={{flex:1}}>
                   <div style={{fontSize:15,color:T.text0,fontFamily:"'Crimson Pro',serif"}}>{item.name}</div>
@@ -5577,8 +4861,6 @@ function MentalSection({profile,kb,notify}) {
           </div>
         ))}
 
-        );
-      })()}
 
       {/* ── Модалка добавления своей практики ── */}
       {addingCustom&&(
