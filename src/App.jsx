@@ -1,6 +1,91 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 
-// ── PWA: регистрация Service Worker для офлайн-режима ──────────
+// ── PWA: регистрация Service Worker + Push уведомления ──────────
+const VAPID_PUBLIC_KEY = "BK2eeceu6qsPh_9sJMmGxI_5FO1s-ZzHC2nL0cW3qzjZNk-3bTPU5rq2r4wdfxJZ2vWM-Si3day25Kjx9-3RdK8";
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g,'+').replace(/_/g,'/');
+  const raw = window.atob(base64);
+  return new Uint8Array([...raw].map(c=>c.charCodeAt(0)));
+}
+
+async function subscribeToPush(reg) {
+  try {
+    const sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+    });
+    // Сохраняем подписку на сервере
+    await fetch('/api/save-subscription', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({subscription: sub.toJSON(), userId: 'user'})
+    }).catch(()=>{});
+    localStorage.setItem('push_subscribed', '1');
+    return sub;
+  } catch(e) {
+    console.log('Push subscribe error:', e);
+    return null;
+  }
+}
+
+async function requestPushPermission() {
+  if(!('Notification' in window) || !('serviceWorker' in navigator)) return;
+  if(Notification.permission === 'granted') return;
+  if(Notification.permission === 'denied') return;
+  // Небольшая задержка — не спрашиваем сразу при загрузке
+  setTimeout(async () => {
+    const permission = await Notification.requestPermission();
+    if(permission === 'granted') {
+      const reg = await navigator.serviceWorker.ready;
+      await subscribeToPush(reg);
+    }
+  }, 3000);
+}
+
+// Проверяем дедлайны и показываем локальные уведомления
+async function checkDeadlinesAndNotify() {
+  if(Notification.permission !== 'granted') return;
+  try {
+    const reports = JSON.parse(localStorage.getItem('ld_reports_v2')||'[]');
+    const today = new Date(); today.setHours(0,0,0,0);
+    const todayStr = today.toISOString().split('T')[0];
+
+    const notified = JSON.parse(localStorage.getItem('push_notified_'+todayStr)||'{}');
+
+    for(const r of reports) {
+      if(r.status==='done' || !r.deadline) continue;
+      const dl = new Date(r.deadline); dl.setHours(0,0,0,0);
+      const days = Math.ceil((dl - today)/86400000);
+
+      if([0,1,3].includes(days)) {
+        const key = r.id + '_' + days;
+        if(notified[key]) continue; // уже уведомляли сегодня
+
+        const label = days===0?'СЕГОДНЯ!':days===1?'завтра':'через 3 дня';
+        const emoji = days===0?'🚨':days===1?'⚠️':'📅';
+
+        if('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+          const reg = await navigator.serviceWorker.ready;
+          reg.showNotification(emoji+' Life Diary — Дедлайн '+label, {
+            body: r.name + ' — срок '+new Date(r.deadline).toLocaleDateString('ru-RU',{day:'numeric',month:'short'}),
+            icon: '/icon-192.png',
+            tag: 'dl-'+r.id+'-'+days,
+            data: {url:'/?section=work'}
+          });
+        } else {
+          new Notification(emoji+' Life Diary — '+r.name, {
+            body: 'Срок: '+label
+          });
+        }
+        notified[key] = 1;
+      }
+    }
+    localStorage.setItem('push_notified_'+todayStr, JSON.stringify(notified));
+  } catch(e) { console.log('notify check error:', e); }
+}
+
 if("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("/sw.js")
@@ -2537,6 +2622,11 @@ function TodaySection({profile,setProfile,tasks,setTasks,journal,setJournal,toda
   };
 
   const dueTasks = tasks.filter(t => isTrulyDue(t) && t.section !== "work" && !t.isDeadline);
+
+  // Рабочие дедлайны на сегодня — группируем в планировщик
+  const todayDeadlines = tasks.filter(t=>t.isDeadline && t.deadline===today && t.doneDate!==today);
+  const todayReports  = todayDeadlines.filter(t=>t.group!=="pay"&&!t.isPayment);
+  const todayPayments = todayDeadlines.filter(t=>t.group==="pay"||t.isPayment);
   const doneCnt = tasks.filter(t=>t.doneDate===today).length;
   const petEmoji = t=>({Кошка:"🐱",Собака:"🐶",Попугай:"🦜",Кролик:"🐰",Хомяк:"🐹",Черепаха:"🐢",Рыбки:"🐠"}[t]||"🐾");
 
@@ -2734,6 +2824,33 @@ function TodaySection({profile,setProfile,tasks,setTasks,journal,setJournal,toda
 
   // Отбой
   plannerEvents.push({id:"sleep",type:"anchor",emoji:"🌙",title:"Отбой",time:profile.sleep||"23:00",timeH:sleepH,timeM:0,done:false,fixed:true});
+
+  // Дедлайны сегодня → в планировщик
+  if(todayReports.length===1){
+    const r=todayReports[0];
+    const pref=r.preferredTime||"10:00";
+    const[h,m]=pref.split(":").map(Number);
+    plannerEvents.push({id:"dl-rep-"+r.id,type:"deadline",emoji:"📋",title:r.name,
+      time:pref,timeH:h,timeM:m,done:r.status==="done",taskId:r.id,
+      onDone:()=>setTasks(p=>p.map(t=>t.id===r.id?{...t,status:t.status==="done"?"pending":"done"}:t))});
+  } else if(todayReports.length>1){
+    const names=todayReports.map(r=>r.name.replace(/ФНО |— .*/g,"").trim()).join(", ");
+    plannerEvents.push({id:"dl-rep-grp",type:"deadline",emoji:"📋",
+      title:"Сдать отчёты: "+names,time:"10:00",timeH:10,timeM:0,done:false});
+  }
+  if(todayPayments.length===1){
+    const r=todayPayments[0];
+    const pref=r.preferredTime||"10:00";
+    const[h,m]=pref.split(":").map(Number);
+    plannerEvents.push({id:"dl-pay-"+r.id,type:"deadline",emoji:"💰",title:r.name,
+      time:pref,timeH:h,timeM:m,done:r.status==="done",taskId:r.id,
+      onDone:()=>setTasks(p=>p.map(t=>t.id===r.id?{...t,status:t.status==="done"?"pending":"done"}:t))});
+  } else if(todayPayments.length>1){
+    const names=todayPayments.map(r=>r.name.replace(/Уплата |Аванс по /g,"").trim()).join(", ");
+    plannerEvents.push({id:"dl-pay-grp",type:"deadline",emoji:"💰",
+      title:"Оплатить налоги: "+names,time:"10:00",timeH:10,timeM:0,done:false});
+  }
+
   plannerEvents.sort((a,b)=>a.timeH*60+a.timeM-(b.timeH*60+b.timeM));
 
   // noTimeTasks убраны из планировщика — задачи без времени не показываем в Сегодня
@@ -3504,13 +3621,34 @@ function ScheduleSection({profile,tasks,setTasks,today,kb,notify}) {
     return anchors.sort((a,b)=>a.time.localeCompare(b.time));
   };
 
-  // Задачи дня
+  // Задачи дня — включаем рабочие дедлайны (отчёты/платежи) на конкретную дату
   const getDayTasks = (d) => {
     const dStr = d.toISOString().split("T")[0];
-    return tasks.filter(t=>
+    const regular = tasks.filter(t=>
       t.section!=="work" && !t.isDeadline &&
-      (isDue(t,dStr) || (t.doneDate===dStr))
+      (isDue(t,dStr) || t.doneDate===dStr)
     );
+    // Рабочие дедлайны с дедлайном = этот день
+    const deadlines = tasks.filter(t=>
+      t.isDeadline && t.deadline===dStr && t.doneDate!==dStr
+    );
+    // Группируем дедлайны: отчёты и платежи
+    const reports = deadlines.filter(t=>!t.isPayment);
+    const payments = deadlines.filter(t=>t.isPayment);
+    const grouped = [];
+    if(reports.length===1) grouped.push({...reports[0], preferredTime:reports[0].preferredTime||"10:00"});
+    else if(reports.length>1) grouped.push({
+      id:"grp-rep-"+dStr, title:"Сдать отчёты: "+reports.map(t=>t.title.replace(/ФНО |— .*/g,"").trim()).join(", "),
+      preferredTime:"10:00", section:"work", isDeadline:true, isGroup:true, groupIds:reports.map(t=>t.id),
+      deadline:dStr, doneDate: reports.every(t=>t.doneDate===dStr)?dStr:null
+    });
+    if(payments.length===1) grouped.push({...payments[0], preferredTime:payments[0].preferredTime||"10:00"});
+    else if(payments.length>1) grouped.push({
+      id:"grp-pay-"+dStr, title:"Оплатить налоги: "+payments.map(t=>t.title.replace(/Уплата |Аванс по |— .*/g,"").trim()).join(", "),
+      preferredTime:"10:00", section:"work", isDeadline:true, isGroup:true, groupIds:payments.map(t=>t.id),
+      deadline:dStr, doneDate: payments.every(t=>t.doneDate===dStr)?dStr:null
+    });
+    return [...regular, ...grouped];
   };
 
   const typeColor = {anchor:T.text3, work:T.info, commute:T.teal, health:T.success, weekend:T.gold, task:T.text1};
@@ -3636,6 +3774,21 @@ function ScheduleSection({profile,tasks,setTasks,today,kb,notify}) {
                       textDecoration:ev.task?.doneDate===dStr?"line-through":"none",flex:1}}>
                       {ev.label}
                     </span>
+                    {/* Редактирование времени и названия */}
+                    {ev.task&&!ev.task.isGroup&&(
+                      <div style={{display:"flex",gap:3,flexShrink:0}}>
+                        <div className="ico-btn" style={{fontSize:11,color:T.gold,padding:"1px 4px"}} title="Изменить время"
+                          onClick={e=>{e.stopPropagation();
+                            const t=window.prompt("Новое время (ЧЧ:ММ):",ev.task.preferredTime||ev.time);
+                            if(t&&/^\d{1,2}:\d{2}$/.test(t)) setTasks(p=>p.map(x=>x.id===ev.task.id?{...x,preferredTime:t}:x));
+                          }}>🕐</div>
+                        <div className="ico-btn" style={{fontSize:11,color:T.teal,padding:"1px 4px"}} title="Изменить название"
+                          onClick={e=>{e.stopPropagation();
+                            const t=window.prompt("Новое название:",ev.task.title);
+                            if(t&&t.trim()) setTasks(p=>p.map(x=>x.id===ev.task.id?{...x,title:t.trim()}:x));
+                          }}>✏️</div>
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -3644,6 +3797,19 @@ function ScheduleSection({profile,tasks,setTasks,today,kb,notify}) {
                   📌 Без времени: {noTimeTasks.map(t=>t.title).join(", ")}
                 </div>
               )}
+              {/* Добавить событие вручную */}
+              <div style={{marginTop:10}}>
+                <button className="btn btn-ghost btn-sm" style={{width:"100%",fontSize:11,border:"1px dashed rgba(200,164,90,0.3)"}}
+                  onClick={e=>{e.stopPropagation();
+                    const title=window.prompt("Название события:");
+                    if(!title) return;
+                    const time=window.prompt("Время (ЧЧ:ММ):","10:00");
+                    if(!time||!/^\d{1,2}:\d{2}$/.test(time)) return;
+                    setTasks(p=>[...p,{id:Date.now()+Math.random(),title,section:"tasks",freq:"once",
+                      preferredTime:time,deadline:selectedDay,lastDone:"",doneDate:"",notes:""}]);
+                    notify("Добавлено в расписание");
+                  }}>+ Добавить событие</button>
+              </div>
             </div>
           );
         })()}
@@ -3850,6 +4016,7 @@ function WorkSection({profile,tasks,setTasks,today,kb,notify}) {
   // Состояние формы добавления нового отчёта (поднято на уровень компонента — нельзя useState в IIFE)
   const [newReport, setNewReport] = useState({name:"",deadline:"",period:"quarter",amount:"",notes:""});
   const [dlView, setDlView] = useState("upcoming"); // upcoming | overdue | done | all
+  const [weekOpen, setWeekOpen] = useState(true); // раздел "на этой неделе"
   const [taskModal, setTaskModal] = useState(null);
 
   // ── КГД: полный список форм для ТОО и ИП, Казахстан 2026 ──
@@ -4171,6 +4338,62 @@ function WorkSection({profile,tasks,setTasks,today,kb,notify}) {
       </div>
 
       {!isWorkDay&&<div style={{marginBottom:10,padding:"8px 14px",background:"rgba(200,164,90,.08)",borderRadius:9,fontSize:14,color:T.gold,fontStyle:"italic"}}>Сегодня нерабочий день ✦ Отдыхай</div>}
+
+      {/* ── НА ЭТОЙ НЕДЕЛЕ ── */}
+      {(()=>{
+        const todayD = new Date(); todayD.setHours(0,0,0,0);
+        const weekStart = new Date(todayD);
+        const dow = todayD.getDay()===0?6:todayD.getDay()-1;
+        weekStart.setDate(todayD.getDate()-dow);
+        const weekEnd = new Date(weekStart); weekEnd.setDate(weekStart.getDate()+6);
+        const weekStr = d=>d.toISOString().split("T")[0];
+
+        const weekReports = enabledReports.filter(r=>{
+          if(r.status==="done") return false;
+          const d = new Date(r.deadline); d.setHours(0,0,0,0);
+          return d>=weekStart && d<=weekEnd;
+        }).sort((a,b)=>a.deadline.localeCompare(b.deadline));
+
+        const reportItems = weekReports.filter(r=>r.group!=="pay");
+        const payItems    = weekReports.filter(r=>r.group==="pay");
+
+        return (
+          <div style={{marginBottom:12}}>
+            <div onClick={()=>setWeekOpen(o=>!o)} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",borderRadius:12,cursor:"pointer",background:weekReports.length>0?"rgba(232,120,120,0.08)":"rgba(255,255,255,0.02)",border:"1px solid "+(weekReports.length>0?"rgba(232,120,120,0.3)":"rgba(255,255,255,0.06)")}}>
+              <span style={{fontSize:18}}>📅</span>
+              <span style={{flex:1,fontSize:15,fontFamily:"'Crimson Pro',serif",color:weekReports.length>0?T.danger:T.text2}}>
+                На этой неделе
+              </span>
+              {weekReports.length>0&&<span style={{fontSize:11,color:T.danger,fontFamily:"'JetBrains Mono'",background:"rgba(232,120,120,0.15)",padding:"1px 8px",borderRadius:8}}>{weekReports.length}</span>}
+              <span style={{fontSize:12,color:T.text3}}>{weekOpen?"▲":"▼"}</span>
+            </div>
+            {weekOpen&&(
+              <div style={{marginTop:6,padding:"8px 14px",background:"rgba(255,255,255,0.01)",borderRadius:"0 0 12px 12px",border:"1px solid rgba(255,255,255,0.05)",borderTop:"none"}}>
+                {weekReports.length===0&&<div style={{fontSize:14,color:T.text3,fontStyle:"italic",padding:"8px 0"}}>На этой неделе дедлайнов нет ✦</div>}
+                {weekReports.map(r=>{
+                  const days=Math.ceil((new Date(r.deadline).setHours(0,0,0,0)-todayD)/86400000);
+                  const g=reportGroups.find(x=>x.id===r.group)||{icon:"📋",color:T.text3};
+                  return (
+                    <div key={r.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderBottom:"1px solid rgba(255,255,255,0.04)"}}>
+                      <span style={{fontSize:16}}>{g.icon}</span>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontSize:14,color:r.status==="done"?T.text3:T.text0,textDecoration:r.status==="done"?"line-through":"none",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{r.name}</div>
+                        <div style={{display:"flex",gap:6,marginTop:2}}>
+                          <span style={{fontSize:10,color:days===0?T.danger:days===1?"#E8A85A":T.text3,fontFamily:"'JetBrains Mono'"}}>
+                            {days===0?"📍 Сегодня":days===1?"⚠ Завтра":"📅 "+new Date(r.deadline).toLocaleDateString("ru-RU",{day:"numeric",month:"short"})}
+                          </span>
+                          {r.status==="ready"&&<span style={{fontSize:10,color:T.teal}}>✓ Подготовлен</span>}
+                        </div>
+                      </div>
+                      <div className={"chk"+(r.status==="done"?" done":"")} style={{width:20,height:20,fontSize:11,flexShrink:0}} onClick={()=>toggleDone(r.id)}>{r.status==="done"?"✓":""}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* ── ОТЧЁТНОСТЬ: Ближайшие ── */}
       {(upcoming.length>0||overdue.length>0)&&(
