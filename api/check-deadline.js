@@ -103,12 +103,25 @@ const DEADLINE_REFERENCE = {
            source:"kgd.gov.kz", sourceUrl:"https://kgd.gov.kz/ru/services/taxpayer_calendar" },
 
   // Уплата ОПВ+ИПН+ОСМС+СО (ежемесячно, до 25-го)
+  // Платежи — ключи соответствуют реальным названиям в приложении
   "опв": { monthly:true, deadline_day:"25",
            note:"Закон об ОПВ, ст.24 — до 25-го числа следующего месяца",
            source:"kgd.gov.kz", sourceUrl:"https://kgd.gov.kz/ru/services/taxpayer_calendar" },
-  "уплата опв": { monthly:true, deadline_day:"25", note:"ст.24 Закона об ОПВ", source:"kgd.gov.kz" },
+  "уплата опв": { monthly:true, deadline_day:"25",
+                  note:"ОПВ+ИПН+ОСМС+СО — до 25-го числа следующего месяца",
+                  source:"kgd.gov.kz", sourceUrl:"https://kgd.gov.kz/ru/services/taxpayer_calendar" },
+  "осмс": { monthly:true, deadline_day:"25",
+             note:"ОСМС — до 25-го числа следующего месяца",
+             source:"kgd.gov.kz" },
   "уплата ндс": { q1:"05-25", q2:"08-25", q3:"11-25",
-                  note:"ст.424 НК РК", source:"kgd.gov.kz" },
+                  note:"НДС — до 25-го числа 2-го месяца после квартала",
+                  source:"kgd.gov.kz" },
+  "аванс по кпн": { monthly:true, deadline_day:"25",
+                    note:"Авансы КПН — до 25-го числа следующего месяца",
+                    source:"kgd.gov.kz" },
+  "аванс кпн": { monthly:true, deadline_day:"25",
+                 note:"Авансы КПН — до 25-го числа",
+                 source:"kgd.gov.kz" },
 
   // ═══════════════════════════════════════════════════════════════════
   // БНС — Приказ №209 от 12.12.2024 (ред. №191 от 29.08.2025, с 01.01.2026)
@@ -386,7 +399,18 @@ function calcDeadline(ref, period, year, month, currentDay) {
 // Поиск в справочнике по названию формы
 function lookupReference(name) {
   const nameLower = name.toLowerCase();
+  
+  // Сначала точное совпадение (ключ = название)
   for (const [key, ref] of Object.entries(DEADLINE_REFERENCE)) {
+    if (nameLower === key.toLowerCase()) return { key, ref };
+  }
+  
+  // Затем частичное — ключ содержится в названии
+  // Сортируем по длине ключа (длиннее = точнее)
+  const sorted = Object.entries(DEADLINE_REFERENCE)
+    .sort((a, b) => b[0].length - a[0].length);
+  
+  for (const [key, ref] of sorted) {
     if (nameLower.includes(key.toLowerCase())) {
       return { key, ref };
     }
