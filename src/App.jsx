@@ -2487,8 +2487,16 @@ function TodaySection({profile,tasks,setTasks,journal,setJournal,today,moon,kb,n
   const [plannerOpen, setPlannerOpen] = useState(true);
   const [moodOpen, setMoodOpen] = useState(false);
   const [commuteOpen, setCommuteOpen] = useState(false);
-  const [commuteRec, setCommuteRec] = useState("");
   const [commuteLoading, setCommuteLoading] = useState(false);
+  // Раздельные рекомендации: на работу и домой — кэш на ДЕНЬ
+  const commuteKey = "commute_rec_"+today;
+  const [commuteRecs, setCommuteRecs] = useState(()=>{
+    try { return JSON.parse(localStorage.getItem(commuteKey)||"null") || {to:"",from:""}; } catch { return {to:"",from:""}; }
+  });
+  // Настройки времени в пути (if not in profile)
+  const [commuteSettings, setCommuteSettings] = useStorage("ld_commute_settings", {
+    toWorkMin: "", fromWorkMin: "", toWorkTime: "", fromWorkTime: ""
+  });
   const [askOpen, setAskOpen] = useState(false);
   const [askQuestion, setAskQuestion] = useState("");
   const [askAnswer, setAskAnswer] = useState("");
@@ -2561,11 +2569,23 @@ function TodaySection({profile,tasks,setTasks,journal,setJournal,today,moon,kb,n
     setAiPlan(r); setPlanLoading(false);
   };
 
-  const getCommuteRec = async()=>{
+  const getCommuteRec = async(direction)=>{
+    // direction = "to" (на работу) или "from" (домой)
     setCommuteLoading(true);
+    const mins = direction==="to"
+      ? (commuteSettings.toWorkMin || parseInt((profile.commuteTime||"30").match(/\d+/)||[30])[0])
+      : (commuteSettings.fromWorkMin || parseInt((profile.commuteTime||"30").match(/\d+/)||[30])[0]);
+    const dir = direction==="to" ? "еду НА РАБОТУ — впереди рабочий день" : "еду ДОМОЙ — рабочий день позади";
+    const way = profile.commuteWay||"транспорте";
     const r = await askClaude(kb,
-      `Еду — ${profile.commuteTime} на ${profile.commuteWay||"транспорте"}. Стихия дня — ${dayInfo.element}. Дай одну рекомендацию: что послушать, о чём подумать или короткую практику. 2-3 предложения.`, 300);
-    setCommuteRec(r); setCommuteLoading(false);
+      "Я "+dir+". Транспорт: "+way+". Время в пути: "+mins+" мин. "+
+      "Стихия дня: "+dayInfo.element+". Луна: "+moon.n+". "+
+      "Дай 2-3 конкретные рекомендации: что послушать (подкаст/музыка), о чём подумать или короткую практику прямо в транспорте. "+
+      (direction==="to"?"Настрой на продуктивный день.":"Помоги переключиться и расслабиться."), 400);
+    const updated = {...commuteRecs, [direction]: r};
+    setCommuteRecs(updated);
+    try { localStorage.setItem(commuteKey, JSON.stringify(updated)); } catch{}
+    setCommuteLoading(false);
   };
 
   // ── Планировщик: формируем события ────────────────────────
@@ -2612,12 +2632,18 @@ function TodaySection({profile,tasks,setTasks,journal,setJournal,today,moon,kb,n
   }
 
   // Дорога на работу
-  if(isWorkDay && profile.commuteTime && profile.commuteTime!=="Дома") {
-    const mins=parseInt((profile.commuteTime.match(/\d+/)||["30"])[0]);
-    const commuteH=workStartH-Math.ceil(mins/60);
-    plannerEvents.push({id:"commute",type:"commute",emoji:"🚌",
-      title:"В дороге → ("+profile.commuteTime+")",
-      time:commuteH+":00",timeH:commuteH,timeM:0,done:false,fixed:true});
+  if(isWorkDay && (profile.commuteTime && profile.commuteTime!=="Дома")) {
+    const minsTo = parseInt((profile.commuteTime.match(/\d+/)||["30"])[0]);
+    const toH = workStartH - Math.ceil(minsTo/60);
+    const toM = 0;
+    plannerEvents.push({id:"commute-to", type:"commute", emoji:"🚌",
+      title:"В дороге → работа ("+minsTo+" мин)",
+      time:(toH<10?"0":"")+toH+":00", timeH:toH, timeM:toM, done:false, fixed:true});
+    // Дорога домой — после окончания рабочего дня
+    const minsFrom = parseInt((profile.commuteTime.match(/\d+/)||["30"])[0]);
+    plannerEvents.push({id:"commute-from", type:"commute", emoji:"🏠",
+      title:"Дорога домой ("+minsFrom+" мин)",
+      time:profile.workEnd||"18:00", timeH:workEndH, timeM:0, done:false, fixed:true});
   }
 
   // Практики и спорт
@@ -2665,7 +2691,7 @@ function TodaySection({profile,tasks,setTasks,journal,setJournal,today,moon,kb,n
   plannerEvents.push({id:"sleep",type:"anchor",emoji:"🌙",title:"Отбой",time:profile.sleep||"23:00",timeH:sleepH,timeM:0,done:false,fixed:true});
   plannerEvents.sort((a,b)=>a.timeH*60+a.timeM-(b.timeH*60+b.timeM));
 
-  const noTimeTasks = dueTasks.filter(t=>!t.preferredTime);
+  // noTimeTasks убраны из планировщика — задачи без времени не показываем в Сегодня
   const sectionColor={home:T.gold,health:T.success,beauty:"#B882E8",pets:T.teal,hobbies:"#E8556D"};
 
   return (
@@ -2894,31 +2920,6 @@ function TodaySection({profile,tasks,setTasks,journal,setJournal,today,moon,kb,n
                 </div>
               );
             })}
-            {noTimeTasks.length>0&&(
-              <div style={{marginTop:8,padding:"8px 10px",background:"rgba(45,32,16,0.04)",borderRadius:9}}>
-                <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:6}}>
-                  БЕЗ ВРЕМЕНИ — {noTimeTasks.length} дел
-                </div>
-                {noTimeTasks.map(t=>(
-                  <div key={t.id} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",borderBottom:"1px solid "+T.bdrS}}>
-                    <div onClick={()=>setTasks(p=>p.map(x=>x.id===t.id?{...x,doneDate:x.doneDate===today?null:today,lastDone:x.doneDate===today?x.lastDone:today}:x))}
-                      style={{width:18,height:18,borderRadius:4,border:"1.5px solid "+(t.doneDate===today?T.success:T.bdr),
-                        background:t.doneDate===today?"rgba(45,106,79,0.2)":"transparent",
-                        display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontSize:11,color:T.success}}>
-                      {t.doneDate===today?"✓":""}
-                    </div>
-                    <span style={{flex:1,fontSize:14,color:t.doneDate===today?T.text3:T.text1,
-                      textDecoration:t.doneDate===today?"line-through":"none"}}>{t.title}</span>
-                    <input type="time" value={t.preferredTime||""}
-                      onChange={e=>setTasks(p=>p.map(x=>x.id===t.id?{...x,preferredTime:e.target.value}:x))}
-                      style={{width:52,fontSize:11,fontFamily:"'JetBrains Mono'",color:T.gold,
-                        background:"transparent",border:"none",outline:"none"}}/>
-                    <div className="ico-btn danger" style={{fontSize:12}}
-                      onClick={()=>setTasks(p=>p.filter(x=>x.id!==t.id))}>✕</div>
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
         )}
       </div>
@@ -2992,24 +2993,75 @@ function TodaySection({profile,tasks,setTasks,journal,setJournal,today,moon,kb,n
       </div>
 
       {/* ═══ В дороге (компактно) ════════════════════════════════ */}
-      {profile.commuteTime&&profile.commuteTime!=="Дома"&&(
+      {(profile.commuteTime&&profile.commuteTime!=="Дома"||commuteSettings.toWorkMin)&&isWorkDay&&(
         <div className="card" style={{marginBottom:12,borderLeft:"3px solid "+T.teal}}>
           <div className="card-hd" style={{cursor:"pointer"}} onClick={()=>setCommuteOpen(o=>!o)}>
             <div style={{display:"flex",alignItems:"center",gap:8}}>
-              <span>🚌</span>
+              <span style={{fontSize:18}}>🚌</span>
               <span style={{fontSize:14,fontWeight:500}}>В дороге</span>
-              <span style={{fontSize:11,color:T.text3}}>{profile.commuteTime}</span>
+              {(profile.commuteTime&&profile.commuteTime!=="Дома")&&
+                <span style={{fontSize:11,color:T.text3}}>{profile.commuteTime}</span>}
             </div>
             <span style={{color:T.text3,fontSize:14}}>{commuteOpen?"▲":"▼"}</span>
           </div>
           {commuteOpen&&(
             <div style={{marginTop:10}}>
-              {!commuteRec&&!commuteLoading&&<button className="btn btn-primary btn-sm" onClick={getCommuteRec}>✦ Рекомендация на дорогу</button>}
-              {commuteLoading&&<div style={{fontSize:13,color:T.text3,fontStyle:"italic"}}>Подбираю...</div>}
-              {commuteRec&&<>
-                <div style={{fontSize:14,color:T.text1,lineHeight:1.6,fontStyle:"italic"}}>{commuteRec}</div>
-                <button className="btn btn-ghost btn-sm" style={{marginTop:8}} onClick={()=>{setCommuteRec("");getCommuteRec();}}>↻</button>
-              </>}
+              {/* Форма настройки времени в пути */}
+              <div style={{padding:"10px 12px",background:"rgba(255,255,255,0.02)",borderRadius:10,marginBottom:12}}>
+                <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1.5,marginBottom:8}}>ВРЕМЯ В ДОРОГЕ</div>
+                <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+                  <div style={{flex:1,minWidth:120}}>
+                    <div style={{fontSize:11,color:T.text3,marginBottom:4}}>На работу (мин)</div>
+                    <input type="number" min="5" max="180" value={commuteSettings.toWorkMin}
+                      onChange={e=>setCommuteSettings(p=>({...p,toWorkMin:e.target.value}))}
+                      placeholder={parseInt((profile.commuteTime||"30").match(/\d+/)||[30])[0]+""}
+                      style={{width:"100%",padding:"6px 10px",borderRadius:8,border:"1px solid "+T.bdr,background:"rgba(255,255,255,0.03)",color:T.text0,fontSize:14,outline:"none"}}/>
+                    <div style={{fontSize:10,color:T.text3,marginTop:4}}>Выезд: {commuteSettings.toWorkTime||profile.workStart||"—"}</div>
+                  </div>
+                  <div style={{flex:1,minWidth:120}}>
+                    <div style={{fontSize:11,color:T.text3,marginBottom:4}}>Домой (мин)</div>
+                    <input type="number" min="5" max="180" value={commuteSettings.fromWorkMin}
+                      onChange={e=>setCommuteSettings(p=>({...p,fromWorkMin:e.target.value}))}
+                      placeholder={parseInt((profile.commuteTime||"30").match(/\d+/)||[30])[0]+""}
+                      style={{width:"100%",padding:"6px 10px",borderRadius:8,border:"1px solid "+T.bdr,background:"rgba(255,255,255,0.03)",color:T.text0,fontSize:14,outline:"none"}}/>
+                    <div style={{fontSize:10,color:T.text3,marginTop:4}}>Выезд: {profile.workEnd||"—"}</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Две кнопки: на работу и домой */}
+              <div style={{display:"flex",gap:8,marginBottom:10}}>
+                <button className="btn btn-ghost btn-sm" style={{flex:1,fontSize:12}} onClick={()=>getCommuteRec("to")} disabled={commuteLoading}>
+                  {commuteLoading?"⏳...":"🏢 На работу"}
+                </button>
+                <button className="btn btn-ghost btn-sm" style={{flex:1,fontSize:12}} onClick={()=>getCommuteRec("from")} disabled={commuteLoading}>
+                  {commuteLoading?"⏳...":"🏠 Домой"}
+                </button>
+              </div>
+
+              {/* Рекомендация «На работу» */}
+              {commuteRecs.to&&(
+                <div style={{marginBottom:10,padding:"10px 12px",background:"rgba(29,78,107,0.08)",borderRadius:10,borderLeft:"2px solid "+T.teal}}>
+                  <div style={{fontSize:10,color:T.teal,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:6}}>🏢 НА РАБОТУ</div>
+                  <div style={{fontSize:14,color:T.text1,lineHeight:1.6,fontStyle:"italic"}}>{commuteRecs.to}</div>
+                  <button className="btn btn-ghost btn-sm" style={{marginTop:6,fontSize:10}} onClick={()=>{setCommuteRecs(p=>({...p,to:""}));getCommuteRec("to");}}>↻</button>
+                </div>
+              )}
+
+              {/* Рекомендация «Домой» */}
+              {commuteRecs.from&&(
+                <div style={{padding:"10px 12px",background:"rgba(45,106,79,0.08)",borderRadius:10,borderLeft:"2px solid "+T.success}}>
+                  <div style={{fontSize:10,color:T.success,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:6}}>🏠 ДОМОЙ</div>
+                  <div style={{fontSize:14,color:T.text1,lineHeight:1.6,fontStyle:"italic"}}>{commuteRecs.from}</div>
+                  <button className="btn btn-ghost btn-sm" style={{marginTop:6,fontSize:10}} onClick={()=>{setCommuteRecs(p=>({...p,from:""}));getCommuteRec("from");}}>↻</button>
+                </div>
+              )}
+
+              {!commuteRecs.to&&!commuteRecs.from&&!commuteLoading&&(
+                <div style={{fontSize:13,color:T.text3,fontStyle:"italic",textAlign:"center",padding:"8px 0"}}>
+                  Нажми кнопку для персональной рекомендации на дорогу
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -3123,143 +3175,120 @@ function TodaySection({profile,tasks,setTasks,journal,setJournal,today,moon,kb,n
 // ══════════════════════════════════════════════════════════════
 function TasksSection({profile,tasks,setTasks,today,kb,notify}) {
   const [modal,setModal]=useState(null);
-  const [filter,setFilter]=useState("all");
   const [search,setSearch]=useState("");
 
-  // Цветные иконки разделов — вместо текстового бейджа
   const SEC_META = {
-    work:    {emoji:"💼", color:"#82AADD"},
-    home:    {emoji:"🏠", color:"#7BCCA0"},
-    health:  {emoji:"💚", color:"#7BCCA0"},
-    beauty:  {emoji:"✨", color:"#E8A8C8"},
-    pets:    {emoji:"🐾", color:"#E8A85A"},
-    shopping:{emoji:"🛒", color:"#E5C87A"},
-    hobbies: {emoji:"🎨", color:"#B882E8"},
-    tasks:   {emoji:"📋", color:"#A8A49C"},
+    work:    {emoji:"💼", color:"#82AADD", name:"Работа"},
+    home:    {emoji:"🏠", color:"#7BCCA0", name:"Дом"},
+    health:  {emoji:"💚", color:"#7BCCA0", name:"Здоровье"},
+    beauty:  {emoji:"✨", color:"#E8A8C8", name:"Красота"},
+    pets:    {emoji:"🐾", color:"#E8A85A", name:"Питомцы"},
+    shopping:{emoji:"🛒", color:"#E5C87A", name:"Покупки"},
+    hobbies: {emoji:"🎨", color:"#B882E8", name:"Хобби"},
+    tasks:   {emoji:"📋", color:"#A8A49C", name:"Общее"},
   };
 
-  const secs=[["all","Все"],["work","💼"],["home","🏠"],["health","💚"],["beauty","✨"],["pets","🐾"],["shopping","🛒"],["hobbies","🎨"]];
-  const filtered=tasks.filter(t=>{
-    if(filter!=="all"&&t.section!==filter)return false;
-    if(search&&!t.title.toLowerCase().includes(search.toLowerCase()))return false;
-    return true;
-  });
-  const isTrulyDue = (t) => {
-    if(!t.freq) return false;
+  // Только задачи на СЕГОДНЯ — ежедневные + те что наступили
+  // Исключаем рабочие отчёты (isDeadline) и рабочие задачи (работают в своём разделе)
+  const isTodayTask = (t) => {
+    if(t.isDeadline) return false;          // отчёты — в разделе Работа
+    if(t.section==="work") return false;    // рабочие задачи — в разделе Работа
     if(t.freq==="once") return !t.lastDone && !t.doneDate;
     if(t.freq==="daily" || t.freq==="workdays") return isDue(t,today);
-    if(t.freq.startsWith("weekly:") || t.freq.startsWith("monthly:")) return isDue(t,today);
+    if(t.freq.startsWith("weekly:")||t.freq.startsWith("monthly:")) return isDue(t,today);
     if(t.freq.startsWith("every:")) {
-      const n = parseInt(t.freq.split(":")[1]);
-      if(n > 1 && !t.lastDone) return false;
+      const n=parseInt(t.freq.split(":")[1]);
+      if(n>7&&!t.lastDone) return false;  // долгие задачи не в "сегодня" если ни разу не делали
       return isDue(t,today);
     }
     return false;
   };
-  const due=filtered.filter(isTrulyDue);
-  const done=filtered.filter(t=>t.doneDate===today);
+
+  // Только задачи с временем или ручные (без привязки к секции — section=tasks)
+  const todayTasks = tasks.filter(t=>isTodayTask(t)&&(t.preferredTime||t.freq==="once"||t.section==="tasks"||!t.section));
+  const doneTasks  = todayTasks.filter(t=>t.doneDate===today);
+  const dueTasks   = todayTasks.filter(t=>t.doneDate!==today);
+
+  const searchMatch = (t) => !search || t.title.toLowerCase().includes(search.toLowerCase());
+
+  // Группировка по разделам
+  const sections = Object.keys(SEC_META).filter(s=>s!=="work");
+  const bySection = {};
+  sections.forEach(s=>{bySection[s]=dueTasks.filter(t=>(t.section||"tasks")===s&&searchMatch(t));});
+  const hasAny = sections.some(s=>bySection[s].length>0);
 
   const toggleDone=id=>{setTasks(p=>p.map(t=>t.id===id?{...t,doneDate:t.doneDate===today?null:today,lastDone:t.doneDate===today?t.lastDone:today}:t));};
 
-  // Компактная строка задачи
-  const TaskRow = ({task, dim=false}) => {
-    const sm = SEC_META[task.section]||SEC_META.tasks;
+  const TaskRow = ({task}) => {
+    const sm = SEC_META[task.section||"tasks"]||SEC_META.tasks;
     const isDone = task.doneDate===today;
     return (
-      <div style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderBottom:"1px solid rgba(255,255,255,0.03)",opacity:dim?0.5:1}}>
-        {/* Приоритет — тонкая точка */}
+      <div style={{display:"flex",alignItems:"center",gap:8,padding:"7px 0",borderBottom:"1px solid rgba(255,255,255,0.03)"}}>
         <div style={{width:4,height:4,borderRadius:"50%",flexShrink:0,background:{h:"#E87878",m:"#E5C87A",l:"#7BCCA0"}[task.priority||"m"]||T.text3}}/>
-        {/* Чекбокс */}
-        <div className={"chk"+(isDone?" done":"")} style={{width:20,height:20,flexShrink:0,fontSize:12}} onClick={()=>!dim&&toggleDone(task.id)}>{isDone?"✓":""}</div>
-        {/* Иконка раздела */}
-        {filter==="all"&&<span style={{fontSize:14,flexShrink:0}} title={task.section}>{sm.emoji}</span>}
-        {/* Название */}
+        <div className={"chk"+(isDone?" done":"")} style={{width:20,height:20,flexShrink:0,fontSize:12}} onClick={()=>toggleDone(task.id)}>{isDone?"✓":""}</div>
         <div style={{flex:1,minWidth:0}}>
-          <div style={{fontSize:14,color:isDone?T.text3:T.text0,textDecoration:isDone?"line-through":"none",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{task.title}</div>
-          {/* Мета — только если есть что-то важное */}
-          {(task.preferredTime||task.deadline||(!isDone&&task.freq&&task.freq!=="once"&&task.freq!=="daily"))&&(
-            <div style={{display:"flex",gap:4,marginTop:1,flexWrap:"wrap"}}>
-              {task.preferredTime&&<span style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'"}}>🕐{task.preferredTime}</span>}
-              {task.deadline&&<span style={{fontSize:10,color:T.gold,fontFamily:"'JetBrains Mono'"}}>📅{new Date(task.deadline).toLocaleDateString("ru-RU",{day:"numeric",month:"short"})}</span>}
-              {task.freq&&task.freq!=="once"&&task.freq!=="daily"&&<span style={{fontSize:10,color:T.text3}}>{freqLabel(task.freq)}</span>}
-            </div>
-          )}
+          <div style={{fontSize:14,color:isDone?T.text3:T.text0,textDecoration:isDone?"line-through":"none",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{task.title}</div>
+          {task.preferredTime&&<span style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'"}}>🕐{task.preferredTime}</span>}
         </div>
-        {/* Действия */}
-        {!dim&&<div style={{display:"flex",gap:4,flexShrink:0}}>
-          <div className="ico-btn" style={{fontSize:13,padding:"2px 4px"}} onClick={()=>setModal(task)}>✏️</div>
-          <div className="ico-btn danger" style={{fontSize:13,padding:"2px 4px"}} onClick={()=>{setTasks(p=>p.filter(t=>t.id!==task.id));notify("Удалено");}}>✕</div>
-        </div>}
+        <div className="ico-btn" style={{fontSize:12,padding:"2px 4px"}} onClick={()=>setModal(task)}>✏️</div>
+        <div className="ico-btn danger" style={{fontSize:12,padding:"2px 4px"}} onClick={()=>{setTasks(p=>p.filter(t=>t.id!==task.id));notify("Удалено");}}>✕</div>
       </div>
     );
   };
 
   return(
     <div>
-      <AiBox kb={kb} prompt={"Мои задачи: "+tasks.map(t=>t.title).join(", ")+". Помоги расставить приоритеты — что важнее всего сделать сегодня и почему, учитывая мой хронотип "+(profile.chronotype||"—")+" и то что меня стрессит: "+((profile.stressors||[]).join(", ")||"—")+"."} label="Как расставить приоритеты" btnText="Расставить приоритеты" placeholder="Помогу понять что сделать в первую очередь..."/>
-
       {/* Поиск + добавить */}
       <div style={{display:"flex",gap:8,marginBottom:10}}>
-        <input style={{flex:1,padding:"8px 12px",background:"rgba(255,255,255,.03)",border:"1px solid "+T.bdr,borderRadius:10,color:T.text0,fontFamily:"'Crimson Pro',serif",fontSize:15,outline:"none"}} placeholder="Поиск..." value={search} onChange={e=>setSearch(e.target.value)}/>
-        <button className="btn btn-primary btn-sm" onClick={()=>setModal({})}>+</button>
-      </div>
-
-      {/* Фильтр разделов — иконки компактно */}
-      <div style={{display:"flex",gap:5,marginBottom:12,flexWrap:"wrap"}}>
-        {secs.map(([v,l])=>(
-          <div key={v} onClick={()=>setFilter(v)} style={{padding:"5px 10px",borderRadius:20,fontSize:13,cursor:"pointer",background:filter===v?"rgba(200,164,90,0.2)":"rgba(255,255,255,0.04)",border:"1px solid "+(filter===v?"rgba(200,164,90,0.5)":"transparent"),color:filter===v?T.gold:T.text2,fontFamily:v==="all"?"'JetBrains Mono'":"inherit",transition:"all .15s"}}>
-            {l}
-          </div>
-        ))}
+        <input style={{flex:1,padding:"8px 12px",background:"rgba(255,255,255,.03)",border:"1px solid "+T.bdr,borderRadius:10,color:T.text0,fontFamily:"'Crimson Pro',serif",fontSize:15,outline:"none"}} placeholder="Поиск по задачам..." value={search} onChange={e=>setSearch(e.target.value)}/>
+        <button className="btn btn-primary btn-sm" onClick={()=>setModal({})}>+ Задача</button>
       </div>
 
       {/* Счётчики */}
       <div style={{display:"flex",gap:8,marginBottom:12}}>
         <div style={{flex:1,padding:"6px 10px",borderRadius:10,background:"rgba(200,164,90,0.08)",textAlign:"center"}}>
-          <div style={{fontSize:20,fontWeight:700,color:T.gold,fontFamily:"'JetBrains Mono'"}}>{due.length}</div>
+          <div style={{fontSize:20,fontWeight:700,color:T.gold,fontFamily:"'JetBrains Mono'"}}>{dueTasks.length}</div>
           <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1}}>СЕГОДНЯ</div>
         </div>
         <div style={{flex:1,padding:"6px 10px",borderRadius:10,background:"rgba(123,204,160,0.08)",textAlign:"center"}}>
-          <div style={{fontSize:20,fontWeight:700,color:"#7BCCA0",fontFamily:"'JetBrains Mono'"}}>{done.length}</div>
+          <div style={{fontSize:20,fontWeight:700,color:"#7BCCA0",fontFamily:"'JetBrains Mono'"}}>{doneTasks.length}</div>
           <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1}}>ГОТОВО</div>
-        </div>
-        <div style={{flex:1,padding:"6px 10px",borderRadius:10,background:"rgba(130,170,221,0.08)",textAlign:"center"}}>
-          <div style={{fontSize:20,fontWeight:700,color:"#82AADD",fontFamily:"'JetBrains Mono'"}}>{tasks.filter(t=>t.freq&&t.freq!=="once").length}</div>
-          <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1}}>РЕГУЛЯРНЫХ</div>
         </div>
       </div>
 
-      {/* На сегодня */}
-      {due.length>0&&(
-        <div style={{marginBottom:12}}>
-          <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:2,marginBottom:6}}>НА СЕГОДНЯ</div>
-          <div className="card" style={{padding:"4px 14px"}}>
-            {due.map(task=><TaskRow key={task.id} task={task}/>)}
+      {/* Задачи по разделам */}
+      {!hasAny&&!search&&<div className="empty"><span className="empty-ico">✦</span><p>Дел на сегодня нет. Добавь задачу вручную.</p></div>}
+      {sections.map(sec=>{
+        const list = bySection[sec];
+        if(!list.length) return null;
+        const sm = SEC_META[sec];
+        return (
+          <div key={sec} style={{marginBottom:10}}>
+            <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
+              <span style={{fontSize:14}}>{sm.emoji}</span>
+              <span style={{fontSize:10,color:sm.color,fontFamily:"'JetBrains Mono'",letterSpacing:1.5,fontWeight:700}}>{sm.name.toUpperCase()}</span>
+              <span style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'"}}>{list.length}</span>
+            </div>
+            <div className="card" style={{padding:"2px 14px",borderLeft:"2px solid "+sm.color+"55"}}>
+              {list.map(task=><TaskRow key={task.id} task={task}/>)}
+            </div>
           </div>
-        </div>
+        );
+      })}
+
+      {/* Выполнено */}
+      {doneTasks.length>0&&(
+        <details style={{marginTop:8}}>
+          <summary style={{fontSize:10,color:T.success,fontFamily:"'JetBrains Mono'",letterSpacing:2,cursor:"pointer",padding:"4px 0"}}>
+            ✅ ВЫПОЛНЕНО СЕГОДНЯ ({doneTasks.length})
+          </summary>
+          <div className="card" style={{padding:"2px 14px",marginTop:6,opacity:.6}}>
+            {doneTasks.filter(searchMatch).map(task=><TaskRow key={task.id} task={task}/>)}
+          </div>
+        </details>
       )}
 
-      {/* Выполнено сегодня */}
-      {done.length>0&&(
-        <div style={{marginBottom:12}}>
-          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
-            <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:2}}>ВЫПОЛНЕНО</div>
-            <button style={{fontSize:10,color:T.text3,background:"none",border:"none",cursor:"pointer",padding:0,fontFamily:"'JetBrains Mono'"}} onClick={()=>{
-              if(window.confirm("Сбросить все отметки выполнения сегодня?"))
-                setTasks(p=>p.map(t=>done.find(d=>d.id===t.id)?{...t,doneDate:null}:t));
-              notify("Сброшено");
-            }}>↩ сброс</button>
-          </div>
-          <div className="card" style={{padding:"4px 14px"}}>
-            {done.map(task=><TaskRow key={task.id} task={task} dim={true}/>)}
-          </div>
-        </div>
-      )}
-
-
-
-      {filtered.length===0&&<div className="empty"><span className="empty-ico">✦</span><p>Задач нет. Добавь первую!</p></div>}
-      {modal!==null&&<TaskModal task={modal.id?modal:null} defaultSection={filter!=="all"?filter:"tasks"} onSave={t=>{setTasks(p=>modal.id?p.map(x=>x.id===t.id?t:x):[...p,t]);notify(modal.id?"Обновлено":"Добавлено");}} onClose={()=>setModal(null)}/>}
+      {modal!==null&&<TaskModal task={modal.id?modal:null} defaultSection="tasks" onSave={t=>{setTasks(p=>modal.id?p.map(x=>x.id===t.id?t:x):[...p,t]);notify(modal.id?"Обновлено":"Добавлено");}} onClose={()=>setModal(null)}/>}
     </div>
   );
 }
