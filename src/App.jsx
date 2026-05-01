@@ -4576,7 +4576,28 @@ function WorkSection({profile,tasks,setTasks,today,kb,notify}) {
         );
       })()}
 
-      <AiBox kb={kb} prompt={"Дай советы по рабочим задачам. "+gp.address+". Профессия: "+(profile.profession||"—")+". Сфера: "+(profile.jobSphere||"—")+". График: "+(profile.workStart||"?")+"–"+(profile.workEnd||"?")+". Что вдохновляет: "+(profile.workInspire||"—")+". Что истощает: "+((profile.workDrain||[]).join(",")||"—")+". Дай 3 совета как сделать рабочий день более продуктивным и 2 совета по балансу."} label="Советы по работе" btnText="Советы" placeholder="Дам советы по продуктивности..." noActions={true}/>
+      <AiBox kb={kb} prompt={
+        "СИСТЕМНОЕ ТРЕБОВАНИЕ: отвечай ТОЛЬКО на русском языке. Никаких других языков.\n\n"+
+        "Ты — профессиональный бизнес-консультант. Дай конкретные рекомендации на основе реального профиля пользователя.\n\n"+
+        "ПРОФИЛЬ:\n"+
+        "- Профессия: "+(profile.profession||"—")+"\n"+
+        "- Должность/сфера: "+(profile.jobSphere||"—")+"\n"+
+        "- Режим работы: "+(profile.workType||"—")+"\n"+
+        "- График: "+(profile.workStart||"09:00")+"–"+(profile.workEnd||"18:00")+"\n"+
+        "- Что вдохновляет в работе: "+(profile.workInspire||"—")+"\n"+
+        "- Что истощает: "+((profile.workDrain||[]).join(", ")||"—")+"\n"+
+        "- Стрессоры: "+((profile.stressors||[]).join(", ")||"—")+"\n"+
+        "- Хронотип: "+(profile.chronotype||"—")+"\n"+
+        "- Стиль планирования: "+(profile.planningStyle||"—")+"\n\n"+
+        "ЗАДАЧА: дай 5 конкретных рекомендаций для повышения эффективности рабочего дня.\n\n"+
+        "ПРАВИЛА:\n"+
+        "— Каждый совет строго под этот профиль — профессию, режим, хронотип\n"+
+        "— Если советуешь инструмент или метод — называй его точно (например: метод GTD, Pomodoro 25/5, матрица Эйзенхауэра)\n"+
+        "— Если ссылаешься на исследование или источник — указывай его\n"+
+        "— Никаких общих фраз типа «будь продуктивнее» или «расставляй приоритеты»\n"+
+        "— Учитывай что истощает — не советуй то, что усугубит проблему\n\n"+
+        "ФОРМАТ: нумерованный список 1-5. Каждый пункт: [Метод/инструмент] Конкретное действие. Почему подходит именно тебе: 1 предложение."
+      } label="Советы по работе" btnText="Получить рекомендации" placeholder="Анализирую профиль и даю конкретные рекомендации..." noActions={true}/>
 
       {/* ── Модалка добавления отчёта ── */}
       {addReportModal&&(()=>{
@@ -4763,7 +4784,22 @@ function HealthSection({profile,tasks,setTasks,setShopList,today,kb,notify}) {
         <div style={{fontSize:13,color:T.text3}}>Цель: {profile.healthGoal||"—"} · Питание: {profile.nutrition||"—"}</div>
         <div style={{marginTop:10,padding:"8px 13px",background:"rgba(78,201,190,.07)",borderRadius:9,fontSize:13,color:T.teal}}>🌙 {moon.n} — {moon.t}</div>
       </div>
-      <AiBox kb={kb} prompt={`${gp.address}. Дай персональные советы по здоровью на сегодня. Луна: ${moon.n}(${moon.t}). Мои проблемные зоны: ${(profile.healthFocus||[]).join(",")||"—"}. Хронические болезни: ${profile.chronic||"нет"}. Цель: ${profile.healthGoal||"—"}. Питание: ${profile.nutrition||"обычное"}. Практики: ${(profile.practices||[]).join(",")||"—"}. Свободен(а) после: ${profile.workEnd||"18:00"}. ${gp.address}. Дай: 1) что полезно при этой фазе луны для моих зон здоровья, 2) конкретный рецепт под моё питание на сегодня, 3) комплекс практик 15-20 мин строго после ${profile.workEnd||"18:00"}.`} label="Здоровье на сегодня" btnText="Советы по здоровью" placeholder="Дам персональные советы по здоровью..."/>
+      <AiBox kb={kb} prompt={
+        "СИСТЕМНОЕ ТРЕБОВАНИЕ: отвечай ТОЛЬКО на русском языке. Никаких общих фраз.\n\n"+
+        "ПРОФИЛЬ:\n"+
+        "- Проблемные зоны здоровья: "+((profile.healthFocus||[]).join(", ")||"—")+"\n"+
+        "- Хронические болезни: "+(profile.chronic||"нет")+"\n"+
+        "- Цель по здоровью: "+(profile.healthGoal||"—")+"\n"+
+        "- Питание: "+(profile.nutrition||"обычное")+"\n"+
+        "- Практики: "+((profile.practices||[]).join(", ")||"—")+"\n"+
+        "- Свободное время: с "+(profile.workEnd||"18:00")+" до "+(profile.sleep||"23:00")+"\n"+
+        "- Луна: "+moon.n+"("+moon.t+")\n\n"+
+        "Дай 3 конкретные рекомендации на сегодня:\n"+
+        "1. [Питание] Конкретный рецепт или блюдо под мой тип питания — название, состав, почему полезно для моих зон здоровья\n"+
+        "2. [Практика] Конкретная техника 15-20 мин после "+(profile.workEnd||"18:00")+" — название, точные инструкции, длительность каждого шага\n"+
+        "3. [Профилактика] Одно конкретное действие под мои хронические/проблемные зоны — с названием метода и обоснованием\n\n"+
+        "Для каждого пункта указывай источник если ссылаешься на исследование или методику."
+      } label="Здоровье на сегодня" btnText="Советы по здоровью" placeholder="Анализирую профиль и даю конкретные советы по здоровью..."/>
       <div className="card">
         <div className="card-hd">
           <div className="card-title">Здоровые привычки</div>
@@ -4931,7 +4967,21 @@ function HomeSection({profile,tasks,setTasks,today,kb,notify}) {
         {(profile.livesWith||[]).length>0&&<span style={{fontSize:12,color:T.text3}}>· {(profile.livesWith||[]).join(", ")}</span>}
         {(profile.cleanDays||[]).length>0&&<span style={{fontSize:12,color:T.gold,marginLeft:"auto"}}>🧹 {profile.cleanDays.join(", ")}</span>}
       </div>
-      <AiBox kb={kb} prompt={`Советы по домашним делам для ${profile.homeType||"квартиры"} ${profile.homeArea||"?"}м² где живут: ${(profile.livesWith||[]).join(",")||"я один(а)"}. Питомцы: ${(profile.pets||[]).map(p=>p.name).join(",")||"нет"}. Дни уборки по расписанию: ${(profile.cleanDays||[]).join(",")||"—"}. Я работаю до ${profile.workEnd||"18:00"} — дела планируй после этого. Тип личности: ${profile.planningStyle||"—"}. Что важнее всего сделать сегодня с учётом моего расписания?`} label="Быт и дом" btnText="Советы по быту" placeholder="Подскажу как организовать дом легко..."/>
+      <AiBox kb={kb} prompt={
+        "СИСТЕМНОЕ ТРЕБОВАНИЕ: отвечай ТОЛЬКО на русском языке. Никаких общих фраз.\n\n"+
+        "ПРОФИЛЬ:\n"+
+        "- Тип жилья: "+(profile.homeType||"квартира")+", "+(profile.homeArea||"?")+"м²\n"+
+        "- Живут: "+((profile.livesWith||[]).join(", ")||"я один(а)")+"\n"+
+        "- Питомцы: "+((profile.pets||[]).map(p=>p.name).join(", ")||"нет")+"\n"+
+        "- Дни уборки: "+((profile.cleanDays||[]).join(", ")||"—")+"\n"+
+        "- Свободное время: с "+(profile.workEnd||"18:00")+" до "+(profile.sleep||"23:00")+"\n"+
+        "- Стиль планирования: "+(profile.planningStyle||"—")+"\n\n"+
+        "Дай 3 конкретные рекомендации по организации быта:\n"+
+        "1. [Приоритет сегодня] Самое важное дело на сегодня с учётом расписания — конкретно что, когда, сколько времени\n"+
+        "2. [Оптимизация] Конкретный метод или инструмент для этого жилья и состава семьи — название метода, как применить\n"+
+        "3. [Система] Один конкретный шаг к поддержанию порядка — подходящий именно для "+(profile.planningStyle||"этого")+" стиля планирования\n\n"+
+        "Учитывай что свободное время только после "+(profile.workEnd||"18:00")+"."
+      } label="Быт и дом" btnText="Советы по быту" placeholder="Анализирую профиль и даю конкретные советы по организации быта..."/>
       {homeTasks.length===0&&(
         <div className="card" style={{textAlign:"center",padding:"28px 20px"}}>
           <div style={{fontSize:14,color:T.text3,marginBottom:16,fontStyle:"italic"}}>Добавь домашние дела или создай расписание уборки автоматически</div>
@@ -5311,7 +5361,19 @@ function PetsSection({profile,setProfile,petLog,setPetLog,today,kb,notify}) {
   const markFeed=(petId,idx)=>{const c=petLog[today]?.[petId]||[];const n=c.includes(idx)?c.filter(x=>x!==idx):[...c,idx];setPetLog(p=>({...p,[today]:{...(p[today]||{}),[petId]:n}}));};
   return(
     <div>
-      <AiBox kb={kb} prompt={`Советы по уходу за питомцами: ${pets.map(p=>`${p.name}(${p.type},${p.breed||"—"},особенности:${p.notes||"нет"})`).join(";")||"нет питомцев"}. Что важно для здоровья, на что обращать внимание?`} label="Уход за питомцами" btnText="Советы по уходу" placeholder="Дам советы по уходу за твоими питомцами..."/>
+      <AiBox kb={kb} prompt={
+        "СИСТЕМНОЕ ТРЕБОВАНИЕ: отвечай ТОЛЬКО на русском языке.\n\n"+
+        "ПИТОМЦЫ:\n"+
+        pets.map(p=>"- "+p.name+": "+p.type+(p.breed?", порода "+p.breed:"")+
+          (p.age?", возраст "+p.age+" лет":"")+
+          (p.weight?", вес "+p.weight+" кг":"")+
+          (p.notes?", особенности: "+p.notes:"")).join("\n")+
+        "\n\nДай по каждому питомцу 2-3 конкретные рекомендации:\n"+
+        "- По здоровью: конкретные признаки на которые обращать внимание для этого вида/породы/возраста\n"+
+        "- По питанию: конкретный тип корма/рацион подходящий для возраста и веса\n"+
+        "- По активности: конкретная норма активности для этого вида и возраста\n\n"+
+        "Если ссылаешься на ветеринарные рекомендации — указывай источник (организация, стандарт)."
+      } label="Уход за питомцами" btnText="Советы по уходу" placeholder="Анализирую профили питомцев и даю конкретные советы..."/>
       {pets.length===0&&<div className="empty"><span className="empty-ico">🐾</span><p>Питомцев нет. Добавь в профиле!</p></div>}
       {pets.map(pet=>{
         const feeds=parseInt(pet.feedTimes)||2;
@@ -5577,7 +5639,23 @@ function HobbiesSection({profile,hobbies,setHobbies,kb,notify}) {
   const logSession=id=>{setHobbies(p=>p.map(h=>h.id===id?{...h,sessions:[...(h.sessions||[]),toDay()]}:h));notify("Сессия отмечена!");};
   return(
     <div>
-      <AiBox kb={kb} prompt={`Советы по хобби для ${profile.name||"меня"}. Мои хобби: ${(profile.hobbies||[]).join(",")||"—"}. Текущий проект: ${profile.hobbyProject||"—"}. Работаю до ${profile.workEnd||"18:00"}, значит свободное время с ${profile.workEnd||"18:00"} до ${profile.sleep||"23:00"}. Тип планирования: ${profile.planningStyle||"—"}. Восстанавливаюсь через: ${(profile.recovery||[]).join(",")||"—"}. Как встроить хобби в мой реальный распорядок? Дай конкретный пошаговый план развития моего проекта.`} label="Хобби и увлечения" btnText="Советы по хобби" placeholder="Помогу найти время для хобби..."/>
+      <AiBox kb={kb} prompt={
+        "СИСТЕМНОЕ ТРЕБОВАНИЕ: отвечай ТОЛЬКО на русском языке. Никаких общих фраз.\n\n"+
+        "ПРОФИЛЬ:\n"+
+        "- Хобби: "+((profile.hobbies||[]).join(", ")||"—")+"\n"+
+        "- Текущий проект: "+(profile.hobbyProject||"—")+"\n"+
+        "- Свободное время: с "+(profile.workEnd||"18:00")+" до "+(profile.sleep||"23:00")+" — итого "+
+          (()=>{const [wh,wm]=(profile.workEnd||"18:00").split(":").map(Number);
+                const [sh,sm]=(profile.sleep||"23:00").split(":").map(Number);
+                return Math.round((sh*60+sm-wh*60-wm)/60*10)/10})()+" часов в будни\n"+
+        "- Стиль планирования: "+(profile.planningStyle||"—")+"\n"+
+        "- Восстановление через: "+((profile.recovery||[]).join(", ")||"—")+"\n\n"+
+        "Дай конкретный план:\n"+
+        "1. [Расписание] Конкретные временные слоты для хобби в рамках "+(profile.workEnd||"18:00")+"–"+(profile.sleep||"23:00")+" — сколько раз в неделю, по сколько минут\n"+
+        "2. [Следующий шаг] Конкретное действие по проекту «"+(profile.hobbyProject||"хобби")+"» — что именно сделать на ближайшей сессии\n"+
+        "3. [Ресурсы] Конкретный инструмент, курс или материал для развития — название + где найти\n\n"+
+        "Учитывай хронотип: "+(profile.chronotype||"—")+" — предлагай слоты когда энергия оптимальна."
+      } label="Хобби и увлечения" btnText="Советы по хобби" placeholder="Анализирую профиль и составляю конкретный план для хобби..."/>
       {hobbies.length===0&&<div className="empty"><span className="empty-ico">🎨</span><p>Добавь свои хобби</p><button className="btn btn-primary btn-sm" style={{marginTop:12}} onClick={()=>setModal(true)}>+ Добавить хобби</button></div>}
       {hobbies.map(h=>{
         const wk=(h.sessions||[]).filter(s=>(new Date()-new Date(s))/86400000<=7).length;
@@ -6313,7 +6391,22 @@ function TravelSection({profile,trips,setTrips,kb,notify}) {
   const getCheckin=async(trip)=>{setChecking(p=>({...p,[trip.id]:true}));const r=await askClaude(buildKB(profile),`Мягко спроси о прогрессе в подготовке к ${trip.destination}. Стадия: ${trip.stage}. Бюджет: ${trip.budget||"?"}₽. Отложено: ${trip.saved||"0"}₽. Дата: ${trip.targetDate||"—"}. Дай 2-3 следующих шага. Говори тепло без давления.`,500);setCheckin(p=>({...p,[trip.id]:r}));setChecking(p=>({...p,[trip.id]:false}));};
   return(
     <div>
-      <AiBox kb={kb} prompt={`Поездки: ${trips.map(t=>`${t.destination}(${t.stage})`).join(";")||"нет"}. Как реализовать мечту о путешествии без стресса? Как правильно копить и планировать?`} label="Путешествия" btnText="Советы по путешествиям" placeholder="Помогу превратить мечту о поездке в реальность..."/>
+      <AiBox kb={kb} prompt={
+        "СИСТЕМНОЕ ТРЕБОВАНИЕ: отвечай ТОЛЬКО на русском языке.\n\n"+
+        "ПОЕЗДКИ:\n"+
+        (trips.length>0
+          ? trips.map(t=>"- "+t.destination+": стадия "+t.stage+
+              (t.budget?", бюджет "+t.budget+" ₸":"")+(t.saved?", отложено "+t.saved+" ₸":"")+
+              (t.targetDate?", дата "+t.targetDate:"")).join("\n")
+          : "Поездок пока нет")+
+        "\n\nПРОФИЛЬ: доход/финансы — "+(profile.income||"—")+", работа до "+(profile.workEnd||"18:00")+
+        ", отпуск "+(profile.vacationDays||"?")+" дней в год\n\n"+
+        "Дай конкретный план:\n"+
+        "1. [Накопления] Конкретная сумма в месяц для откладывания под каждую поездку — с расчётом\n"+
+        "2. [Следующий шаг] Одно конкретное действие для продвижения по каждой поездке прямо сейчас\n"+
+        "3. [Логистика] Конкретные рекомендации по оптимальному времени поездки и билетам из Казахстана\n\n"+
+        "Никаких общих советов про «планируй заранее» — только цифры и конкретные шаги."
+      } label="Путешествия" btnText="Советы по путешествиям" placeholder="Анализирую поездки и составляю конкретный план..."/>
       {trips.length===0&&<div className="empty"><span className="empty-ico">✈️</span><p>Поездок нет. Добавь мечту!</p><button className="btn btn-primary btn-sm" style={{marginTop:12}} onClick={()=>setModal(true)}>+ Добавить поездку</button></div>}
       {trips.map(trip=>{
         const progress=pct(trip.stage||"💭 Мечта");
@@ -6666,7 +6759,22 @@ function CarSection({profile,setProfile,tasks,setTasks,today,kb,notify}) {
       </div>
 
       <AiBox kb={kb}
-        prompt={"Советы по обслуживанию авто "+profile.carModel+" "+profile.carYear+" г., пробег "+profile.carMileage+" км. Резина: "+profile.carTireType+". Последнее ТО: "+profile.carLastTO+". Казахстан, "+new Date().toLocaleString("ru-RU",{month:"long"})+". Что нужно сделать сейчас и на ближайший месяц?"}
+        prompt={
+          "СИСТЕМНОЕ ТРЕБОВАНИЕ: отвечай ТОЛЬКО на русском языке.\n\n"+
+          "АВТОМОБИЛЬ:\n"+
+          "- Марка/модель: "+(profile.carModel||"—")+"\n"+
+          "- Год выпуска: "+(profile.carYear||"—")+"\n"+
+          "- Пробег: "+(profile.carMileage||"—")+" км\n"+
+          "- Тип резины сейчас: "+(profile.carTireType||"—")+"\n"+
+          "- Последнее ТО: "+(profile.carLastTO||"—")+"\n"+
+          "- Дата смены резины: "+(profile.carTireDate||"—")+"\n"+
+          "- Страна: Казахстан, "+new Date().toLocaleString("ru-RU",{month:"long"})+" "+new Date().getFullYear()+"\n\n"+
+          "Дай конкретный план обслуживания:\n"+
+          "1. [Сейчас] Что нужно сделать прямо сейчас — конкретно, с указанием регламента для этой марки и пробега\n"+
+          "2. [Этот месяц] Что сделать в ближайший месяц — конкретные работы по регламенту\n"+
+          "3. [Сезон] Сезонные работы для Казахстана в текущем месяце — с указанием норм/стандартов\n\n"+
+          "Для каждого пункта указывай: рекомендуемый пробег/интервал по регламенту для этой модели."
+        }
         label="AI советы по авто" btnText="Получить советы" placeholder="Дам советы по обслуживанию..."/>
     </div>
   );
