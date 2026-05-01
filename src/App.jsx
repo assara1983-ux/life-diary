@@ -3816,6 +3816,13 @@ function WorkSection({profile,tasks,setTasks,today,kb,notify}) {
   const [editSchedule,setEditSchedule]=useState(false);
   const [schedStart,setSchedStart]=useState(profile.workStart||"09:00");
   const [schedEnd,setSchedEnd]=useState(profile.workEnd||"18:00");
+  // Синхронизация с профилем если изменился снаружи
+  useEffect(()=>{
+    if(!editSchedule){
+      setSchedStart(profile.workStart||"09:00");
+      setSchedEnd(profile.workEnd||"18:00");
+    }
+  },[profile.workStart,profile.workEnd,editSchedule]);
 
   // Хранилище разделов отчётности
   const [reportGroups, setReportGroups] = useStorage("ld_report_groups", [
@@ -3838,79 +3845,218 @@ function WorkSection({profile,tasks,setTasks,today,kb,notify}) {
   const [dlView, setDlView] = useState("upcoming"); // upcoming | overdue | done | all
   const [taskModal, setTaskModal] = useState(null);
 
-  // Список форм КГД для выбора пользователем
+  // ── КГД: полный список форм для ТОО и ИП, Казахстан 2026 ──
   const KGD_FORMS = [
-    {id:"910h1", name:"ФНО 910.00 — 1 полугодие",  period:"semi",    deadline_month:"08", deadline_day:"17"},
-    {id:"910h2", name:"ФНО 910.00 — 2 полугодие",  period:"semi",    deadline_month:"02", deadline_day:"17", next_year:true},
-    {id:"200q1", name:"ФНО 200.00 — 1 квартал",    period:"quarter", deadline_month:"05", deadline_day:"15"},
-    {id:"200q2", name:"ФНО 200.00 — 2 квартал",    period:"quarter", deadline_month:"08", deadline_day:"17"},
-    {id:"200q3", name:"ФНО 200.00 — 3 квартал",    period:"quarter", deadline_month:"11", deadline_day:"16"},
-    {id:"200a",  name:"ФНО 200.00 — годовой",       period:"annual",  deadline_month:"03", deadline_day:"31", next_year:true},
-    {id:"300q1", name:"ФНО 300.00 (НДС) — 1 кв.",  period:"quarter", deadline_month:"05", deadline_day:"15"},
-    {id:"300q2", name:"ФНО 300.00 (НДС) — 2 кв.",  period:"quarter", deadline_month:"08", deadline_day:"17"},
-    {id:"300q3", name:"ФНО 300.00 (НДС) — 3 кв.",  period:"quarter", deadline_month:"11", deadline_day:"16"},
-    {id:"100a",  name:"ФНО 100.00 (КПН) — годовой",period:"annual",  deadline_month:"03", deadline_day:"31", next_year:true},
-    {id:"700a",  name:"ФНО 700.00 (имущество)",     period:"annual",  deadline_month:"03", deadline_day:"31", next_year:true},
-    {id:"870q",  name:"ФНО 870.00 (трансф. цен)",   period:"annual",  deadline_month:"05", deadline_day:"31"},
-    {id:"opv",   name:"Уплата ОПВ+ИПН+ОСМС+СО",   period:"monthly", deadline_day:"25"},
-    {id:"nds",   name:"Уплата НДС",                 period:"quarter", deadline_day:"25"},
-    {id:"kpn",   name:"Аванс по КПН",               period:"monthly", deadline_day:"25"},
-    {id:"mus",   name:"Аванс налог на имущество",   period:"quarter", deadline_month_list:["03","06","09","11"], deadline_day:"25"},
+    // Упрощённая декларация
+    {id:"910h1",  name:"ФНО 910.00 — 1 полугодие (упрощёнка)",      period:"semi",    deadline_month:"08", deadline_day:"17", note:"Малый бизнес, упр. режим"},
+    {id:"910h2",  name:"ФНО 910.00 — 2 полугодие (упрощёнка)",      period:"semi",    deadline_month:"02", deadline_day:"17", next_year:true},
+    {id:"912q1",  name:"ФНО 912.00 — 1 кв. (розничный налог)",      period:"quarter", deadline_month:"05", deadline_day:"15"},
+    {id:"912q2",  name:"ФНО 912.00 — 2 кв. (розничный налог)",      period:"quarter", deadline_month:"08", deadline_day:"17"},
+    {id:"912q3",  name:"ФНО 912.00 — 3 кв. (розничный налог)",      period:"quarter", deadline_month:"11", deadline_day:"16"},
+    // ИПН у источника выплаты
+    {id:"200q1",  name:"ФНО 200.00 — 1 квартал (ИПН/СН)",           period:"quarter", deadline_month:"05", deadline_day:"15", note:"ИПН, соц.налог, ОПВ, ОСМС"},
+    {id:"200q2",  name:"ФНО 200.00 — 2 квартал (ИПН/СН)",           period:"quarter", deadline_month:"08", deadline_day:"17"},
+    {id:"200q3",  name:"ФНО 200.00 — 3 квартал (ИПН/СН)",           period:"quarter", deadline_month:"11", deadline_day:"16"},
+    {id:"200a",   name:"ФНО 200.00 — годовой (ИПН/СН)",             period:"annual",  deadline_month:"03", deadline_day:"31", next_year:true},
+    // ИПН для ИП на ОУР
+    {id:"220a",   name:"ФНО 220.00 — годовой (ИПН для ИП на ОУР)",  period:"annual",  deadline_month:"03", deadline_day:"31", next_year:true},
+    {id:"240a",   name:"ФНО 240.00 — годовой (ИПН прочие доходы)",  period:"annual",  deadline_month:"03", deadline_day:"31", next_year:true},
+    // НДС
+    {id:"300q1",  name:"ФНО 300.00 — 1 кв. (НДС)",                  period:"quarter", deadline_month:"05", deadline_day:"15"},
+    {id:"300q2",  name:"ФНО 300.00 — 2 кв. (НДС)",                  period:"quarter", deadline_month:"08", deadline_day:"17"},
+    {id:"300q3",  name:"ФНО 300.00 — 3 кв. (НДС)",                  period:"quarter", deadline_month:"11", deadline_day:"16"},
+    {id:"328m",   name:"ФНО 328.00 — ежемес. (НДС при импорте ЕАЭС)",period:"monthly", deadline_day:"20", note:"При ввозе из ЕАЭС"},
+    {id:"400q",   name:"ФНО 400.00 — (зачёт НДС при экспорте)",     period:"quarter", deadline_month:"05", deadline_day:"15"},
+    // КПН
+    {id:"100a",   name:"ФНО 100.00 — годовой (КПН)",                 period:"annual",  deadline_month:"03", deadline_day:"31", next_year:true},
+    {id:"101_01m",name:"ФНО 101.01 — ежемес. (авансы КПН)",          period:"monthly", deadline_day:"25"},
+    {id:"101_02a",name:"ФНО 101.02 — (окончат. расчёт авансов КПН)", period:"annual",  deadline_month:"03", deadline_day:"31", next_year:true},
+    {id:"101_04", name:"ФНО 101.04 — (КПН с нерезидентов)",          period:"quarter", deadline_month:"05", deadline_day:"15"},
+    // Имущество, земля, транспорт
+    {id:"700a",   name:"ФНО 700.00 — годовой (имущество+земля+транспорт)", period:"annual", deadline_month:"03", deadline_day:"31", next_year:true},
+    {id:"701_01", name:"ФНО 701.01 — текущие платежи (земельный)",   period:"quarter", deadline_day:"25"},
+    {id:"851_00", name:"ФНО 851.00 — текущие платежи (транспорт)",   period:"quarter", deadline_day:"25"},
+    // Роялти и трансфертное ценообразование
+    {id:"590a",   name:"ФНО 590.00 — (роялти и тех. услуги нерезид.)",period:"annual", deadline_month:"03", deadline_day:"31", next_year:true},
+    {id:"870a",   name:"ФНО 870.00 — (трансфертное ценообразование)", period:"annual", deadline_month:"05", deadline_day:"31"},
+    // Платежи (ОПВ, ОСМС, ИПН, НДС)
+    {id:"opv_m",  name:"Уплата ОПВ + ИПН + ОСМС + СО — ежемес.",    period:"monthly", deadline_day:"25"},
+    {id:"nds_q",  name:"Уплата НДС — ежеквартально",                  period:"quarter", deadline_day:"25"},
+    {id:"imushestvo_q", name:"Аванс налог на имущество — ежекварт.",  period:"quarter", deadline_day:"25"},
   ];
+
+  // ── БНС: полный список форм 2026 (официальный сайт stat.gov.kz) ──
   const BNS_FORMS = [
-    {id:"1t",    name:"Форма 1-Т (труд и зарплата)",period:"quarter", deadline_day:"10"},
-    {id:"p1",    name:"Форма П-1 (продукция)",      period:"monthly", deadline_day:"15"},
-    {id:"p2",    name:"Форма П-2 (инвестиции)",     period:"quarter", deadline_day:"25"},
-    {id:"p3",    name:"Форма П-3 (финансы)",         period:"quarter", deadline_day:"25"},
-    {id:"1pf",   name:"Форма 1-ПФ (финансы пред.)", period:"annual",  deadline_month:"03", deadline_day:"25"},
+    // Ежедневные
+    {id:"c101",     name:"Ц-101 — Тетрадь регистрации цен (потреб. товары)",   period:"daily",   deadline_day:"1"},
+    // Месячные
+    {id:"3svyaz",   name:"3-связь — Почтовая и курьерская деятельность",        period:"monthly", deadline_day:"15"},
+    {id:"1invest",  name:"1-инвест — Инвестиции в основной капитал",            period:"monthly", deadline_day:"15", note:"Производство, строительство"},
+    {id:"1is_m",    name:"1-ИС (мес.) — Ввод объектов индив. застройщиками",    period:"monthly", deadline_day:"10"},
+    {id:"1ks_m",    name:"1-КС — Выполненные строительные работы (услуги)",     period:"monthly", deadline_day:"10", note:"Строительство"},
+    {id:"1p_m",     name:"1-П (мес.) — Производство и отгрузка продукции",      period:"monthly", deadline_day:"15", note:"Производство"},
+    {id:"1tar_gruz",name:"1-тариф (грузы) — Тарифы на перевозку грузов",        period:"monthly", deadline_day:"10"},
+    {id:"1tar_post",name:"1-тариф (почта, курьер) — Тарифы почт. услуг",        period:"monthly", deadline_day:"10"},
+    {id:"1tar_svz", name:"1-тариф (связь) — Тарифы на услуги связи",            period:"monthly", deadline_day:"10"},
+    {id:"1transp",  name:"1-транспорт — Работа транспорта",                      period:"monthly", deadline_day:"15"},
+    {id:"1ts",      name:"1-ТС — Взаимная торговля с ЕАЭС",                     period:"monthly", deadline_day:"20"},
+    {id:"1c_exp",   name:"1-Ц (экспорт, импорт) — Цены экспорта/импорта",      period:"monthly", deadline_day:"15"},
+    {id:"1c_opt",   name:"1-Ц(опт) — Цены оптовых продаж",                      period:"monthly", deadline_day:"15"},
+    {id:"1cp",      name:"1-ЦП — Цены производителей пром. продукции",          period:"monthly", deadline_day:"15", note:"Производство"},
+    {id:"1crzh",    name:"1-ЦРЖ — Тетрадь регистрации цен на жильё",           period:"monthly", deadline_day:"5"},
+    {id:"1csm",     name:"1-ЦСМ — Цены на строит. материалы",                   period:"monthly", deadline_day:"15", note:"Строительство"},
+    {id:"1csh",     name:"1-ЦСХ — Цены производителей с/х продукции",           period:"monthly", deadline_day:"10"},
+    {id:"2ks_m",    name:"2-КС (мес.) — Ввод в эксплуатацию объектов",          period:"monthly", deadline_day:"10", note:"Строительство"},
+    {id:"2torg",    name:"2-торговля — Реализация товаров и услуг",              period:"monthly", deadline_day:"15"},
+    // Квартальные
+    {id:"1pf_q",    name:"1-ПФ (кварт.) — Финансово-хозяйственная деятельность",period:"quarter", deadline_day:"25"},
+    {id:"2mp_q",    name:"2-МП (кварт.) — Деятельность малого предприятия",     period:"quarter", deadline_day:"20"},
+    {id:"1c_usl",   name:"1-Ц (услуги) — Цены производителей на услуги",        period:"quarter", deadline_day:"15"},
+    {id:"2usl_q",   name:"2-услуги (кварт.) — Объём оказанных услуг",           period:"quarter", deadline_day:"20"},
+    {id:"2turizm",  name:"2-туризм — Деятельность мест размещения",             period:"quarter", deadline_day:"20"},
+    {id:"1usl_q",   name:"1-услуги — Услуги образования, здравоохр., соцзащиты",period:"quarter", deadline_day:"20"},
+    {id:"1t_q",     name:"1-Т (кварт.) — Отчёт по труду",                       period:"quarter", deadline_day:"15"},
+    {id:"1p_q",     name:"1-П (кварт.) — Производство продукции (товаров, услуг)",period:"quarter",deadline_day:"20", note:"Производство"},
+    {id:"1ks_mal",  name:"1-КС (малые) — Строит. работы малых предприятий",     period:"quarter", deadline_day:"20", note:"Строительство"},
+    {id:"1kfh",     name:"1-КФХ инвест — Инвестиции КФХ",                       period:"quarter", deadline_day:"20"},
+    // Годовые
+    {id:"01ip",     name:"01-ИП(пром) — Производство пром. продукции ИП",       period:"annual",  deadline_month:"03", deadline_day:"25"},
+    {id:"f11",      name:"11 — Состояние основных фондов",                        period:"annual",  deadline_month:"02", deadline_day:"15"},
+    {id:"2ks_y",    name:"2-КС (год) — Ввод в эксплуатацию объектов",           period:"annual",  deadline_month:"02", deadline_day:"15", note:"Строительство"},
+    {id:"1is_y",    name:"1-ИС (год) — Ввод объектов индив. застройщиками",     period:"annual",  deadline_month:"02", deadline_day:"15"},
+    {id:"7tpz",     name:"7-ТПЗ — Травматизм и профзаболевания",                period:"annual",  deadline_month:"01", deadline_day:"25"},
+    {id:"ecom",     name:"Э-коммерция — Электронная коммерция",                  period:"annual",  deadline_month:"04", deadline_day:"15"},
+    {id:"4os",      name:"4-ОС — Затраты на охрану окружающей среды",           period:"annual",  deadline_month:"02", deadline_day:"15"},
+    {id:"3inform",  name:"3-информ — Использование ИКТ на предприятиях",         period:"annual",  deadline_month:"04", deadline_day:"15"},
+    {id:"2usl_y",   name:"2-услуги (год) — Объём оказанных услуг",              period:"annual",  deadline_month:"03", deadline_day:"31"},
+    {id:"2usl_it",  name:"2-услуги(IT) — IT-услуги",                            period:"annual",  deadline_month:"03", deadline_day:"31"},
+    {id:"2transp",  name:"2-транспорт — Работа транспорта по видам",             period:"annual",  deadline_month:"02", deadline_day:"25"},
+    {id:"2tp_voz",  name:"2-ТП(воздух) — Охрана атмосферного воздуха",          period:"annual",  deadline_month:"02", deadline_day:"01"},
+    {id:"2svyaz",   name:"2-связь — Услуги связи",                               period:"annual",  deadline_month:"03", deadline_day:"25"},
+    {id:"2othody",  name:"2-отходы — Переработка и захоронение отходов",         period:"annual",  deadline_month:"02", deadline_day:"15"},
+    {id:"2mp_y",    name:"2-МП (год) — Деятельность малого предприятия",         period:"annual",  deadline_month:"04", deadline_day:"10"},
+    {id:"1electr",  name:"1-ЭЛЕКТРОЭНЕРГИЯ — Выработка и продажа электроэнергии",period:"annual", deadline_month:"02", deadline_day:"10"},
+    {id:"1ugol",    name:"1-УГОЛЬ — Деятельность угольных предприятий",          period:"annual",  deadline_month:"02", deadline_day:"10"},
+    {id:"1t_usl",   name:"1-Т (Условия труда) — Работники во вредных условиях", period:"annual",  deadline_month:"01", deadline_day:"25"},
+    {id:"1t_y",     name:"1-Т (год) — Отчёт по труду",                           period:"annual",  deadline_month:"02", deadline_day:"15"},
+    {id:"1pf_y",    name:"1-ПФ (год) — Финансово-хозяйственная деятельность",   period:"annual",  deadline_month:"04", deadline_day:"15"},
+    {id:"1svyaz",   name:"1-связь — Услуги почтовой деятельности",               period:"annual",  deadline_month:"03", deadline_day:"25"},
+    {id:"1p_y",     name:"1-П (год) — Производство, отгрузка, баланс мощностей",period:"annual",  deadline_month:"04", deadline_day:"15", note:"Производство"},
+    {id:"1othody",  name:"1-отходы — Сбор и вывоз коммунальных отходов",         period:"annual",  deadline_month:"02", deadline_day:"10"},
+    {id:"1neft",    name:"1-НЕФТЬ — Нефтедобыча и нефтепереработка",             period:"annual",  deadline_month:"03", deadline_day:"25"},
+    {id:"1nauka",   name:"1-наука — НИОКР (научные исследования)",               period:"annual",  deadline_month:"04", deadline_day:"15"},
+    {id:"1lizing",  name:"1-лизинг — Лизинговая деятельность",                   period:"annual",  deadline_month:"03", deadline_day:"31"},
+    {id:"12torg",   name:"12-торговля — Торговые рынки",                          period:"annual",  deadline_month:"02", deadline_day:"15"},
+    {id:"6tp",      name:"6-ТП — Работа тепловых электростанций и котельных",    period:"annual",  deadline_month:"02", deadline_day:"10"},
+    {id:"2tr_vd",   name:"2-ТР(ВД) — Услуги вспомог. транспортной деятельности",period:"annual",  deadline_month:"03", deadline_day:"25"},
+    {id:"bm",       name:"БМ — Баланс производственных мощностей",               period:"annual",  deadline_month:"04", deadline_day:"10", note:"Производство"},
+    {id:"1kpe",     name:"1-КПЭ — Ключевые показатели эффективности",            period:"annual",  deadline_month:"03", deadline_day:"30"},
+    {id:"1sr",      name:"1-СР — Виды экономической деятельности",               period:"annual",  deadline_month:"04", deadline_day:"15"},
+    {id:"1np",      name:"1-НП — Опрос новых предприятий",                        period:"once",    deadline_day:""},
+    // Конъюнктурные обследования (квартальные)
+    {id:"kp001",    name:"КП-001 — Анкета промышленных предприятий",             period:"quarter", deadline_day:"10", note:"Производство"},
+    {id:"ks002",    name:"КС-002 — Анкета строительных организаций",             period:"quarter", deadline_day:"10", note:"Строительство"},
+    {id:"kt001",    name:"КТ-001 — Анкета торговых предприятий",                 period:"quarter", deadline_day:"10"},
+    {id:"ksvz1",    name:"КСВ-1 — Анкета предприятий связи",                     period:"quarter", deadline_day:"10"},
   ];
+
   const EAES_FORMS = [
-    {id:"eaes1", name:"Заявление о ввозе товаров",  period:"monthly", deadline_day:"20"},
-    {id:"eaes2", name:"Уплата НДС при ввозе (ЕАЭС)",period:"monthly", deadline_day:"20"},
-    {id:"eaes3", name:"Статистика ЕАЭС",            period:"monthly", deadline_day:"10"},
+    {id:"eaes1", name:"ФНО 328.00 — НДС при импорте из ЕАЭС",      period:"monthly", deadline_day:"20"},
+    {id:"eaes2", name:"Заявление о ввозе товаров и уплате налогов", period:"monthly", deadline_day:"20"},
+    {id:"eaes3", name:"1-ТС — Статистика взаимной торговли ЕАЭС",  period:"monthly", deadline_day:"20"},
   ];
   const [showFormPicker, setShowFormPicker] = useState(null); // groupId
   const [selectedForms, setSelectedForms] = useState({});
   
-  // Встроенный календарь КГД — Казахстан 2026
+  // Встроенный календарь КГД+БНС — Казахстан 2026 (полный)
   const KGD_CALENDAR = [
-    // ФНО 200.00 (ИПН с зарплат)
-    {group:"kgd", name:"ФНО 200.00 — СДАЧА (1 кв.)",     period:"quarter", deadline:"2026-05-15", cat:"КГД"},
-    {group:"kgd", name:"ФНО 200.00 — СДАЧА (2 кв.)",     period:"quarter", deadline:"2026-08-17", cat:"КГД"},
-    {group:"kgd", name:"ФНО 200.00 — СДАЧА (3 кв.)",     period:"quarter", deadline:"2026-11-16", cat:"КГД"},
-    {group:"kgd", name:"ФНО 200.00 — СДАЧА (годовой)",   period:"annual",  deadline:"2027-03-31", cat:"КГД"},
+    // ─── КГД: ФНО 910.00 (упрощёнка)
+    {group:"kgd", name:"ФНО 910.00 — 1 полугодие",        period:"semi",    deadline:"2026-08-17", cat:"КГД"},
+    {group:"kgd", name:"ФНО 910.00 — 2 полугодие",        period:"semi",    deadline:"2027-02-17", cat:"КГД"},
+    // ФНО 200.00 (ИПН/СН)
+    {group:"kgd", name:"ФНО 200.00 — 1 квартал",          period:"quarter", deadline:"2026-05-15", cat:"КГД"},
+    {group:"kgd", name:"ФНО 200.00 — 2 квартал",          period:"quarter", deadline:"2026-08-17", cat:"КГД"},
+    {group:"kgd", name:"ФНО 200.00 — 3 квартал",          period:"quarter", deadline:"2026-11-16", cat:"КГД"},
+    {group:"kgd", name:"ФНО 200.00 — годовой",            period:"annual",  deadline:"2027-03-31", cat:"КГД"},
     // ФНО 300.00 (НДС)
-    {group:"kgd", name:"ФНО 300.00 — СДАЧА (1 кв.)",     period:"quarter", deadline:"2026-05-15", cat:"КГД"},
-    {group:"kgd", name:"ФНО 300.00 — СДАЧА (2 кв.)",     period:"quarter", deadline:"2026-08-17", cat:"КГД"},
-    {group:"kgd", name:"ФНО 300.00 — СДАЧА (3 кв.)",     period:"quarter", deadline:"2026-11-16", cat:"КГД"},
-    // ФНО 910.00 (упрощёнка)
-    {group:"kgd", name:"ФНО 910.00 — СДАЧА (1 п/г)",     period:"semi",    deadline:"2026-08-17", cat:"КГД"},
-    {group:"kgd", name:"ФНО 910.00 — СДАЧА (2 п/г)",     period:"semi",    deadline:"2027-02-17", cat:"КГД"},
+    {group:"kgd", name:"ФНО 300.00 — 1 квартал (НДС)",    period:"quarter", deadline:"2026-05-15", cat:"КГД"},
+    {group:"kgd", name:"ФНО 300.00 — 2 квартал (НДС)",    period:"quarter", deadline:"2026-08-17", cat:"КГД"},
+    {group:"kgd", name:"ФНО 300.00 — 3 квартал (НДС)",    period:"quarter", deadline:"2026-11-16", cat:"КГД"},
     // ФНО 100.00 (КПН)
-    {group:"kgd", name:"ФНО 100.00 — СДАЧА (годовой)",   period:"annual",  deadline:"2027-03-31", cat:"КГД"},
-    // Платежи ОПВ/ИПН/ОСМС/СО ежемесячно
-    ...["01","02","03","04","05","06","07","08","09","10","11","12"].map(m=>({
-      group:"pay", name:`Уплата ОПВ+ИПН+ОСМС+СО (${m}.2026)`, period:"monthly",
-      deadline:`2026-${m}-25`, cat:"Платежи"
+    {group:"kgd", name:"ФНО 100.00 — годовой (КПН)",      period:"annual",  deadline:"2027-03-31", cat:"КГД"},
+    {group:"kgd", name:"ФНО 101.02 — окончат. расчёт КПН",period:"annual",  deadline:"2027-03-31", cat:"КГД"},
+    // ФНО 220, 240
+    {group:"kgd", name:"ФНО 220.00 — годовой (ИПН ИП)",   period:"annual",  deadline:"2027-03-31", cat:"КГД"},
+    {group:"kgd", name:"ФНО 240.00 — годовой (ИПН проч.)",period:"annual",  deadline:"2027-03-31", cat:"КГД"},
+    // ФНО 700.00 (имущество/земля/транспорт)
+    {group:"kgd", name:"ФНО 700.00 — годовой (имущ+земля+тр.)",period:"annual",deadline:"2027-03-31",cat:"КГД"},
+    // ФНО 328.00 (НДС при импорте ЕАЭС — ежемесячно)
+    ...["05","06","07","08","09","10","11","12"].map(m=>({
+      group:"eaes", name:"ФНО 328.00 — НДС при импорте ЕАЭС ("+m+".2026)", period:"monthly",
+      deadline:"2026-"+m+"-20", cat:"ЕАЭС"
+    })),
+    // ─── Платежи ОПВ/ИПН/ОСМС/СО ежемесячно
+    ...["05","06","07","08","09","10","11","12"].map(m=>({
+      group:"pay", name:"Уплата ОПВ+ИПН+ОСМС+СО ("+m+".2026)", period:"monthly",
+      deadline:"2026-"+m+"-25", cat:"Платежи"
     })),
     // НДС ежеквартально
-    {group:"pay", name:"Уплата НДС (1 кв.)",              period:"quarter", deadline:"2026-05-25", cat:"Платежи"},
-    {group:"pay", name:"Уплата НДС (2 кв.)",              period:"quarter", deadline:"2026-08-25", cat:"Платежи"},
-    {group:"pay", name:"Уплата НДС (3 кв.)",              period:"quarter", deadline:"2026-11-25", cat:"Платежи"},
+    {group:"pay", name:"Уплата НДС — 1 кв.",               period:"quarter", deadline:"2026-05-25", cat:"Платежи"},
+    {group:"pay", name:"Уплата НДС — 2 кв.",               period:"quarter", deadline:"2026-08-25", cat:"Платежи"},
+    {group:"pay", name:"Уплата НДС — 3 кв.",               period:"quarter", deadline:"2026-11-25", cat:"Платежи"},
     // Авансы КПН ежемесячно
-    ...["01","03","04","05","06","07","08","09","10","11","12"].map(m=>({
-      group:"pay", name:`Аванс по КПН (${m}.2026)`, period:"monthly",
-      deadline:`2026-${m}-25`, cat:"Платежи"
+    ...["05","06","07","08","09","10","11","12"].map(m=>({
+      group:"pay", name:"Аванс по КПН ("+m+".2026)", period:"monthly",
+      deadline:"2026-"+m+"-25", cat:"Платежи"
     })),
-    // БНС
-    {group:"bns", name:"Форма 1-Т (1 кв.)",               period:"quarter", deadline:"2026-04-10", cat:"БНС"},
-    {group:"bns", name:"Форма 1-Т (2 кв.)",               period:"quarter", deadline:"2026-07-10", cat:"БНС"},
-    {group:"bns", name:"Форма 1-Т (3 кв.)",               period:"quarter", deadline:"2026-10-10", cat:"БНС"},
-    {group:"bns", name:"Форма 1-Т (4 кв.)",               period:"quarter", deadline:"2027-01-10", cat:"БНС"},
-    {group:"bns", name:"Форма П-1 (ежемесячно)",           period:"monthly", deadline:"2026-05-15", cat:"БНС"},
+    // ─── БНС: месячные
+    {group:"bns", name:"1-инвест — Инвестиции в осн. капитал (мес.)", period:"monthly", deadline:"2026-06-15", cat:"БНС"},
+    {group:"bns", name:"1-КС — Строит. работы (мес.)",     period:"monthly", deadline:"2026-06-10", cat:"БНС"},
+    {group:"bns", name:"1-П — Производство и отгрузка (мес.)",period:"monthly",deadline:"2026-06-15",cat:"БНС"},
+    {group:"bns", name:"1-ЦП — Цены произв. пром. продукции",period:"monthly",deadline:"2026-06-15", cat:"БНС"},
+    {group:"bns", name:"1-ЦСМ — Цены на строит. материалы",  period:"monthly",deadline:"2026-06-15", cat:"БНС"},
+    {group:"bns", name:"2-КС — Ввод объектов (мес.)",         period:"monthly",deadline:"2026-06-10", cat:"БНС"},
+    {group:"bns", name:"2-торговля — Реализация товаров",      period:"monthly",deadline:"2026-06-15", cat:"БНС"},
+    {group:"bns", name:"1-ТС — Торговля с ЕАЭС",              period:"monthly",deadline:"2026-06-20", cat:"БНС"},
+    {group:"bns", name:"1-транспорт — Работа транспорта",      period:"monthly",deadline:"2026-06-15", cat:"БНС"},
+    // БНС: квартальные
+    {group:"bns", name:"1-Т — Отчёт по труду (1 кв.)",        period:"quarter", deadline:"2026-04-15", cat:"БНС"},
+    {group:"bns", name:"1-Т — Отчёт по труду (2 кв.)",        period:"quarter", deadline:"2026-07-15", cat:"БНС"},
+    {group:"bns", name:"1-Т — Отчёт по труду (3 кв.)",        period:"quarter", deadline:"2026-10-15", cat:"БНС"},
+    {group:"bns", name:"1-ПФ — Фин.-хоз. деятельность (1 кв.)",period:"quarter",deadline:"2026-04-25",cat:"БНС"},
+    {group:"bns", name:"1-ПФ — Фин.-хоз. деятельность (2 кв.)",period:"quarter",deadline:"2026-07-25",cat:"БНС"},
+    {group:"bns", name:"1-ПФ — Фин.-хоз. деятельность (3 кв.)",period:"quarter",deadline:"2026-10-25",cat:"БНС"},
+    {group:"bns", name:"2-МП — Малое предприятие (1 кв.)",    period:"quarter", deadline:"2026-04-20", cat:"БНС"},
+    {group:"bns", name:"2-МП — Малое предприятие (2 кв.)",    period:"quarter", deadline:"2026-07-20", cat:"БНС"},
+    {group:"bns", name:"2-МП — Малое предприятие (3 кв.)",    period:"quarter", deadline:"2026-10-20", cat:"БНС"},
+    {group:"bns", name:"1-П — Производство (кварт., 1 кв.)",  period:"quarter", deadline:"2026-04-20", cat:"БНС"},
+    {group:"bns", name:"1-П — Производство (кварт., 2 кв.)",  period:"quarter", deadline:"2026-07-20", cat:"БНС"},
+    {group:"bns", name:"1-П — Производство (кварт., 3 кв.)",  period:"quarter", deadline:"2026-10-20", cat:"БНС"},
+    {group:"bns", name:"1-КС (малые) — Строит. работы (1 кв.)",period:"quarter",deadline:"2026-04-20", cat:"БНС"},
+    {group:"bns", name:"1-КС (малые) — Строит. работы (2 кв.)",period:"quarter",deadline:"2026-07-20", cat:"БНС"},
+    {group:"bns", name:"1-КС (малые) — Строит. работы (3 кв.)",period:"quarter",deadline:"2026-10-20", cat:"БНС"},
+    {group:"bns", name:"КП-001 — Анкета пром. предприятий (1 кв.)",period:"quarter",deadline:"2026-04-10",cat:"БНС"},
+    {group:"bns", name:"КС-002 — Анкета строит. организаций (1 кв.)",period:"quarter",deadline:"2026-04-10",cat:"БНС"},
+    // БНС: годовые
+    {group:"bns", name:"1-Т — годовой (труд)",               period:"annual",  deadline:"2027-02-15", cat:"БНС"},
+    {group:"bns", name:"1-ПФ — годовой (фин.-хоз.)",         period:"annual",  deadline:"2027-04-15", cat:"БНС"},
+    {group:"bns", name:"2-МП — годовой (малое предпр.)",     period:"annual",  deadline:"2027-04-10", cat:"БНС"},
+    {group:"bns", name:"1-П — годовой (производство)",        period:"annual",  deadline:"2027-04-15", cat:"БНС"},
+    {group:"bns", name:"2-КС — годовой (строительство)",      period:"annual",  deadline:"2027-02-15", cat:"БНС"},
+    {group:"bns", name:"11 — Состояние основных фондов",      period:"annual",  deadline:"2027-02-15", cat:"БНС"},
+    {group:"bns", name:"7-ТПЗ — Травматизм",                  period:"annual",  deadline:"2027-01-25", cat:"БНС"},
+    {group:"bns", name:"4-ОС — Охрана окружающей среды",      period:"annual",  deadline:"2027-02-15", cat:"БНС"},
+    {group:"bns", name:"2-услуги — годовой",                  period:"annual",  deadline:"2027-03-31", cat:"БНС"},
+    {group:"bns", name:"2-услуги(IT) — IT-услуги",            period:"annual",  deadline:"2027-03-31", cat:"БНС"},
+    {group:"bns", name:"1-лизинг — Лизинговая деятельность",  period:"annual",  deadline:"2027-03-31", cat:"БНС"},
+    {group:"bns", name:"3-информ — Использование ИКТ",        period:"annual",  deadline:"2027-04-15", cat:"БНС"},
+    {group:"bns", name:"БМ — Баланс производств. мощностей",  period:"annual",  deadline:"2027-04-10", cat:"БНС"},
+    {group:"bns", name:"1-КПЭ — Ключевые показатели эфф.",    period:"annual",  deadline:"2027-03-30", cat:"БНС"},
+    {group:"bns", name:"1-наука — НИОКР",                     period:"annual",  deadline:"2027-04-15", cat:"БНС"},
+    {group:"bns", name:"Э-коммерция — Электронная коммерция", period:"annual",  deadline:"2027-04-15", cat:"БНС"},
     // ЕАЭС
-    {group:"eaes",name:"Заявление о ввозе (ЕАЭС) — ежемес.", period:"monthly", deadline:"2026-05-20", cat:"ЕАЭС"},
-    {group:"eaes",name:"Уплата НДС по ЕАЭС — ежемес.",      period:"monthly", deadline:"2026-05-20", cat:"ЕАЭС"},
+    {group:"eaes",name:"Заявление о ввозе товаров (ЕАЭС)",    period:"monthly", deadline:"2026-06-20", cat:"ЕАЭС"},
+    {group:"eaes",name:"1-ТС — Взаимная торговля ЕАЭС",       period:"monthly", deadline:"2026-06-20", cat:"ЕАЭС"},
   ];
 
   // Merge system calendar with user reports on first load
@@ -3926,7 +4072,12 @@ function WorkSection({profile,tasks,setTasks,today,kb,notify}) {
     }
   },[]);
 
-  const workTasks = tasks.filter(t=>t.section==="work"&&!t.isDeadline);
+  // Рабочие задачи — только ручной ввод, без авто-мусора
+  const AUTO_GARBAGE = ["смена резины","смена на летнюю","смена на зимнюю","мойка после зимы","антикор","замена масла"];
+  const workTasks = tasks.filter(t=>
+    t.section==="work" && !t.isDeadline &&
+    !AUTO_GARBAGE.some(g=>t.title.toLowerCase().includes(g))
+  );
   const isWorkDay = (profile.workDaysList||[1,2,3,4,5]).includes(new Date().getDay());
 
   // Upcoming: enabled reports with deadline within 7 days
@@ -4004,7 +4155,7 @@ function WorkSection({profile,tasks,setTasks,today,kb,notify}) {
               <input type="time" value={schedStart} onChange={e=>setSchedStart(e.target.value)} style={{width:75,fontSize:12,padding:"2px 4px",borderRadius:5,border:"1px solid "+T.bdr,background:"transparent",color:T.text0}}/>
               <span>–</span>
               <input type="time" value={schedEnd} onChange={e=>setSchedEnd(e.target.value)} style={{width:75,fontSize:12,padding:"2px 4px",borderRadius:5,border:"1px solid "+T.bdr,background:"transparent",color:T.text0}}/>
-              <button className="btn btn-primary btn-sm" style={{padding:"2px 8px",fontSize:11}} onClick={()=>{profile.workStart=schedStart;profile.workEnd=schedEnd;setEditSchedule(false);notify("График обновлён");}}>✓</button>
+              <button className="btn btn-primary btn-sm" style={{padding:"2px 8px",fontSize:11}} onClick={()=>{if(setProfile){setProfile(p=>({...p,workStart:schedStart,workEnd:schedEnd}));}else{try{const pr=JSON.parse(localStorage.getItem("ld_profile")||"{}");pr.workStart=schedStart;pr.workEnd=schedEnd;localStorage.setItem("ld_profile",JSON.stringify(pr));}catch{}}setEditSchedule(false);notify("График сохранён ✦");}}>✓</button>
             </span>
           ):(
             <span style={{cursor:"pointer"}} onClick={()=>setEditSchedule(true)}>🕐 {profile.workStart||"?"}–{profile.workEnd||"?"} ✏️</span>
