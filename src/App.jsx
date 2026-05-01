@@ -4015,6 +4015,9 @@ function WorkSection({profile,tasks,setTasks,today,kb,notify}) {
   const [newGroup, setNewGroup] = useState({name:"",icon:"📝",color:"#A8A49C"});
   // Состояние формы добавления нового отчёта (поднято на уровень компонента — нельзя useState в IIFE)
   const [newReport, setNewReport] = useState({name:"",deadline:"",period:"quarter",amount:"",notes:""});
+  // Состояние проверки сроков
+  const [checkingId, setCheckingId] = useState(null); // id отчёта который проверяем
+  const [checkResults, setCheckResults] = useStorage("ld_deadline_checks", {}); // {reportId: {deadline, checkedAt, info}}
   const [dlView, setDlView] = useState("upcoming"); // upcoming | overdue | done | all
   const [weekOpen, setWeekOpen] = useState(true); // раздел "на этой неделе"
   const [taskModal, setTaskModal] = useState(null);
@@ -4279,6 +4282,52 @@ function WorkSection({profile,tasks,setTasks,today,kb,notify}) {
   const deleteReport = (id) => setReports(p=>p.filter(r=>r.id!==id));
 
   const periodLabel = p=>({monthly:"Ежемесячно",quarter:"Ежеквартально",semi:"Раз в полгода",annual:"Ежегодно",once:"Разово"}[p]||p||"—");
+
+  // ─── Проверка срока через AI ───
+  const checkDeadline = async (r) => {
+    setCheckingId(r.id);
+    const year = new Date().getFullYear();
+    const periodStr = periodLabel(r.period);
+    const prompt =
+      "ЗАДАЧА: найди точный срок сдачи отчёта в Казахстане в "+year+" году.\n"+
+      "ОТЧЁТ: "+r.name+"\n"+
+      "ПЕРИОДИЧНОСТЬ: "+periodStr+"\n"+
+      "Источники: НК РК, сайт КГД (kgd.gov.kz), БНС (stat.gov.kz), официальный календарь налогоплательщика "+year+".\n\n"+
+      "Ответь СТРОГО в формате JSON и больше ничего:\n"+
+      '{\n'+
+      '  "deadline": "ГГГГ-ММ-ДД",\n'+
+      '  "info": "Краткое пояснение — статья НК или приказ БНС",\n'+
+      '  "source": "Название источника"\n'+
+      '}\n\n'+
+      "Если отчёт ежемесячный — укажи ближайший срок (следующий месяц).\n"+
+      "Если квартальный — ближайший квартал.\n"+
+      "Не добавляй никакого текста кроме JSON.";
+
+    try {
+      const raw = await askClaude("", prompt, 300);
+      // Очищаем от markdown если есть
+      const cleaned = raw.replace(/```json|```/g,"").trim();
+      const data = JSON.parse(cleaned);
+
+      if(data.deadline && /^\d{4}-\d{2}-\d{2}$/.test(data.deadline)) {
+        // Автоматически обновляем deadline в отчёте
+        setReports(p=>p.map(rep=>rep.id===r.id?{...rep, deadline:data.deadline}:rep));
+        // Сохраняем результат проверки
+        setCheckResults(p=>({...p,[r.id]:{
+          deadline: data.deadline,
+          info: data.info||"",
+          source: data.source||"",
+          checkedAt: new Date().toISOString()
+        }}));
+        notify("Срок обновлён: "+new Date(data.deadline).toLocaleDateString("ru-RU",{day:"numeric",month:"long",year:"numeric"}));
+      } else {
+        notify("Не удалось определить срок — проверь вручную");
+      }
+    } catch(e) {
+      notify("Ошибка проверки — попробуй ещё раз");
+    }
+    setCheckingId(null);
+  };
   const daysLeft = dl => { const d=new Date(dl); d.setHours(0,0,0,0); return Math.ceil((d-now)/86400000); };
 
   // Строка отчёта
@@ -4287,31 +4336,53 @@ function WorkSection({profile,tasks,setTasks,today,kb,notify}) {
     const isOver = days < 0;
     const isSoon = days >= 0 && days <= 3;
     const g = reportGroups.find(g=>g.id===r.group)||{name:r.group,icon:"📋",color:T.text3};
+    const isChecking = checkingId === r.id;
+    const checked = checkResults[r.id];
     return (
-      <div style={{display:"flex",alignItems:"flex-start",gap:8,padding:"8px 0",borderBottom:"1px solid rgba(255,255,255,0.03)"}}>
-        {/* Статусы */}
-        <div style={{display:"flex",flexDirection:"column",gap:3,flexShrink:0,paddingTop:2}}>
-          <div title="Выполнено" className={"chk"+(r.status==="done"?" done":"")} style={{width:18,height:18,fontSize:10}} onClick={()=>toggleDone(r.id)}>{r.status==="done"?"✓":""}</div>
-          {r.status!=="done"&&<div title="Подготовлен" style={{width:18,height:18,borderRadius:4,border:"1px solid "+(r.status==="ready"?"rgba(78,201,190,0.6)":T.bdr),background:r.status==="ready"?"rgba(78,201,190,0.15)":"transparent",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontSize:10,color:r.status==="ready"?T.teal:T.text3}} onClick={()=>toggleReady(r.id)} title="Подготовлен">P</div>}
-        </div>
-        <div style={{flex:1,minWidth:0}}>
-          <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
-            {showGroup&&<span style={{fontSize:10,color:g.color,fontFamily:"'JetBrains Mono'"}}>{g.icon}</span>}
-            <span style={{fontSize:14,color:r.status==="done"?T.text3:T.text0,textDecoration:r.status==="done"?"line-through":"none",lineHeight:1.3}}>{r.name}</span>
+      <div style={{padding:"8px 0",borderBottom:"1px solid rgba(255,255,255,0.03)"}}>
+        <div style={{display:"flex",alignItems:"flex-start",gap:8}}>
+          {/* Статусы */}
+          <div style={{display:"flex",flexDirection:"column",gap:3,flexShrink:0,paddingTop:2}}>
+            <div title="Выполнено" className={"chk"+(r.status==="done"?" done":"")} style={{width:18,height:18,fontSize:10}} onClick={()=>toggleDone(r.id)}>{r.status==="done"?"✓":""}</div>
+            {r.status!=="done"&&<div title="Подготовлен" style={{width:18,height:18,borderRadius:4,border:"1px solid "+(r.status==="ready"?"rgba(78,201,190,0.6)":T.bdr),background:r.status==="ready"?"rgba(78,201,190,0.15)":"transparent",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontSize:10,color:r.status==="ready"?T.teal:T.text3}} onClick={()=>toggleReady(r.id)} title="Подготовлен">P</div>}
           </div>
-          <div style={{display:"flex",gap:6,marginTop:3,flexWrap:"wrap"}}>
-            <span style={{fontSize:10,color:isOver?T.danger:isSoon?T.warn:T.text3,fontFamily:"'JetBrains Mono'",fontWeight:isOver||isSoon?700:400}}>
-              {isOver?"⚠ Просрочен":days===0?"📍 Сегодня":days===1?"📍 Завтра":"📅 "+new Date(r.deadline).toLocaleDateString("ru-RU",{day:"numeric",month:"short"})}
-            </span>
-            {r.status==="ready"&&<span style={{fontSize:10,color:T.teal,fontFamily:"'JetBrains Mono'"}}>✓ Подготовлен</span>}
-            {r.amount&&<span style={{fontSize:10,color:T.gold,fontFamily:"'JetBrains Mono'"}}>{r.amount}</span>}
-            {r.period&&<span style={{fontSize:10,color:T.text3}}>{periodLabel(r.period)}</span>}
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+              {showGroup&&<span style={{fontSize:10,color:g.color,fontFamily:"'JetBrains Mono'"}}>{g.icon}</span>}
+              <span style={{fontSize:14,color:r.status==="done"?T.text3:T.text0,textDecoration:r.status==="done"?"line-through":"none",lineHeight:1.3}}>{r.name}</span>
+            </div>
+            <div style={{display:"flex",gap:6,marginTop:3,flexWrap:"wrap",alignItems:"center"}}>
+              <span style={{fontSize:10,color:isOver?T.danger:isSoon?T.warn:T.text3,fontFamily:"'JetBrains Mono'",fontWeight:isOver||isSoon?700:400}}>
+                {isOver?"⚠ Просрочен":days===0?"📍 Сегодня":days===1?"📍 Завтра":"📅 "+new Date(r.deadline).toLocaleDateString("ru-RU",{day:"numeric",month:"short"})}
+              </span>
+              {r.status==="ready"&&<span style={{fontSize:10,color:T.teal,fontFamily:"'JetBrains Mono'"}}>✓ Подготовлен</span>}
+              {r.amount&&<span style={{fontSize:10,color:T.gold,fontFamily:"'JetBrains Mono'"}}>{r.amount}</span>}
+              {r.period&&<span style={{fontSize:10,color:T.text3}}>{periodLabel(r.period)}</span>}
+              {/* Кнопка проверки срока */}
+              <button onClick={()=>checkDeadline(r)} disabled={isChecking}
+                style={{fontSize:9,padding:"1px 6px",borderRadius:8,border:"1px solid rgba(130,170,221,0.4)",background:"rgba(130,170,221,0.08)",color:isChecking?"#888":"#82AADD",cursor:isChecking?"wait":"pointer",fontFamily:"'JetBrains Mono'",flexShrink:0}}>
+                {isChecking?"⏳...":"🔍 Проверить срок"}
+              </button>
+            </div>
+            {r.notes&&<div style={{fontSize:12,color:T.text3,marginTop:2,fontStyle:"italic"}}>{r.notes}</div>}
+            {/* Результат проверки */}
+            {checked&&(
+              <div style={{marginTop:4,padding:"5px 8px",background:"rgba(130,170,221,0.06)",borderRadius:6,borderLeft:"2px solid rgba(130,170,221,0.4)"}}>
+                <div style={{fontSize:11,color:"#82AADD",fontFamily:"'JetBrains Mono'"}}>
+                  ✓ Проверено: {new Date(checked.deadline).toLocaleDateString("ru-RU",{day:"numeric",month:"long",year:"numeric"})}
+                </div>
+                {checked.info&&<div style={{fontSize:10,color:T.text3,marginTop:2}}>{checked.info}</div>}
+                {checked.source&&<div style={{fontSize:9,color:T.text3,marginTop:1,fontStyle:"italic"}}>{checked.source}</div>}
+                <div style={{fontSize:9,color:T.text3,marginTop:1}}>
+                  Обновлено: {new Date(checked.checkedAt).toLocaleDateString("ru-RU",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}
+                </div>
+              </div>
+            )}
           </div>
-          {r.notes&&<div style={{fontSize:12,color:T.text3,marginTop:2,fontStyle:"italic"}}>{r.notes}</div>}
-        </div>
-        <div style={{display:"flex",gap:3,flexShrink:0}}>
-          <div className="ico-btn" style={{fontSize:12,padding:"2px 4px"}} onClick={()=>setEditReport({...r})}>✏️</div>
-          <div className="ico-btn danger" style={{fontSize:12,padding:"2px 4px"}} onClick={()=>deleteReport(r.id)}>✕</div>
+          <div style={{display:"flex",gap:3,flexShrink:0}}>
+            <div className="ico-btn" style={{fontSize:12,padding:"2px 4px"}} onClick={()=>setEditReport({...r})}>✏️</div>
+            <div className="ico-btn danger" style={{fontSize:12,padding:"2px 4px"}} onClick={()=>deleteReport(r.id)}>✕</div>
+          </div>
         </div>
       </div>
     );
