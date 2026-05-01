@@ -4283,45 +4283,36 @@ function WorkSection({profile,tasks,setTasks,today,kb,notify}) {
 
   const periodLabel = p=>({monthly:"Ежемесячно",quarter:"Ежеквартально",semi:"Раз в полгода",annual:"Ежегодно",once:"Разово"}[p]||p||"—");
 
-  // ─── Проверка срока через AI ───
+  // ─── Проверка срока через официальные сайты ───
   const checkDeadline = async (r) => {
     setCheckingId(r.id);
-    const year = new Date().getFullYear();
-    const periodStr = periodLabel(r.period);
-    const prompt =
-      "ЗАДАЧА: найди точный срок сдачи отчёта в Казахстане в "+year+" году.\n"+
-      "ОТЧЁТ: "+r.name+"\n"+
-      "ПЕРИОДИЧНОСТЬ: "+periodStr+"\n"+
-      "Источники: НК РК, сайт КГД (kgd.gov.kz), БНС (stat.gov.kz), официальный календарь налогоплательщика "+year+".\n\n"+
-      "Ответь СТРОГО в формате JSON и больше ничего:\n"+
-      '{\n'+
-      '  "deadline": "ГГГГ-ММ-ДД",\n'+
-      '  "info": "Краткое пояснение — статья НК или приказ БНС",\n'+
-      '  "source": "Название источника"\n'+
-      '}\n\n'+
-      "Если отчёт ежемесячный — укажи ближайший срок (следующий месяц).\n"+
-      "Если квартальный — ближайший квартал.\n"+
-      "Не добавляй никакого текста кроме JSON.";
-
     try {
-      const raw = await askClaude("", prompt, 300);
-      // Очищаем от markdown если есть
-      const cleaned = raw.replace(/```json|```/g,"").trim();
-      const data = JSON.parse(cleaned);
+      const resp = await fetch("/api/check-deadline", {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({
+          name: r.name,
+          group: r.group,
+          period: r.period,
+          currentDeadline: r.deadline
+        })
+      });
+      const data = await resp.json();
 
       if(data.deadline && /^\d{4}-\d{2}-\d{2}$/.test(data.deadline)) {
-        // Автоматически обновляем deadline в отчёте
+        // Автоматически обновляем deadline
         setReports(p=>p.map(rep=>rep.id===r.id?{...rep, deadline:data.deadline}:rep));
-        // Сохраняем результат проверки
+        // Сохраняем результат с источником
         setCheckResults(p=>({...p,[r.id]:{
           deadline: data.deadline,
           info: data.info||"",
           source: data.source||"",
+          sourceUrl: data.sourceUrl||"",
           checkedAt: new Date().toISOString()
         }}));
         notify("Срок обновлён: "+new Date(data.deadline).toLocaleDateString("ru-RU",{day:"numeric",month:"long",year:"numeric"}));
       } else {
-        notify("Не удалось определить срок — проверь вручную");
+        notify(data.error||"Не удалось определить срок");
       }
     } catch(e) {
       notify("Ошибка проверки — попробуй ещё раз");
@@ -4371,8 +4362,14 @@ function WorkSection({profile,tasks,setTasks,today,kb,notify}) {
                 <div style={{fontSize:11,color:"#82AADD",fontFamily:"'JetBrains Mono'"}}>
                   ✓ Проверено: {new Date(checked.deadline).toLocaleDateString("ru-RU",{day:"numeric",month:"long",year:"numeric"})}
                 </div>
-                {checked.info&&<div style={{fontSize:10,color:T.text3,marginTop:2}}>{checked.info}</div>}
-                {checked.source&&<div style={{fontSize:9,color:T.text3,marginTop:1,fontStyle:"italic"}}>{checked.source}</div>}
+                {checked.info&&<div style={{fontSize:10,color:T.text2,marginTop:2}}>{checked.info}</div>}
+                {checked.sourceUrl
+                  ? <a href={checked.sourceUrl} target="_blank" rel="noopener noreferrer"
+                      style={{fontSize:9,color:"#82AADD",marginTop:1,display:"block",textDecoration:"underline"}}>
+                      {checked.source||checked.sourceUrl}
+                    </a>
+                  : checked.source&&<div style={{fontSize:9,color:T.text3,marginTop:1,fontStyle:"italic"}}>{checked.source}</div>
+                }
                 <div style={{fontSize:9,color:T.text3,marginTop:1}}>
                   Обновлено: {new Date(checked.checkedAt).toLocaleDateString("ru-RU",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}
                 </div>
