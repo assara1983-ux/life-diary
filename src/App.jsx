@@ -2570,18 +2570,57 @@ function TodaySection({profile,tasks,setTasks,journal,setJournal,today,moon,kb,n
   };
 
   const getCommuteRec = async(direction)=>{
-    // direction = "to" (на работу) или "from" (домой)
     setCommuteLoading(true);
     const mins = direction==="to"
       ? (commuteSettings.toWorkMin || parseInt((profile.commuteTime||"30").match(/\d+/)||[30])[0])
       : (commuteSettings.fromWorkMin || parseInt((profile.commuteTime||"30").match(/\d+/)||[30])[0]);
-    const dir = direction==="to" ? "еду НА РАБОТУ — впереди рабочий день" : "еду ДОМОЙ — рабочий день позади";
-    const way = profile.commuteWay||"транспорте";
-    const r = await askClaude(kb,
-      "Я "+dir+". Транспорт: "+way+". Время в пути: "+mins+" мин. "+
-      "Стихия дня: "+dayInfo.element+". Луна: "+moon.n+". "+
-      "Дай 2-3 конкретные рекомендации: что послушать (подкаст/музыка), о чём подумать или короткую практику прямо в транспорте. "+
-      (direction==="to"?"Настрой на продуктивный день.":"Помоги переключиться и расслабиться."), 400);
+    const way = profile.commuteWay||"транспорт";
+    const profession = profile.profession||"работа";
+    const stressors = (profile.stressors||[]).join(", ")||"—";
+    const recovery = (profile.recovery||[]).join(", ")||"—";
+    const interests = (profile.hobbies||[]).join(", ")||"—";
+    const goals = profile.mainGoal||"—";
+    const chronotype = profile.chronotype||"—";
+    
+    const baseInfo = "Профиль пользователя: "+(profile.name||"")+", профессия "+profession+
+      ", хронотип "+chronotype+
+      ", стрессоры: "+stressors+
+      ", восстанавливается через: "+recovery+
+      ", интересы/хобби: "+interests+
+      ", главная цель: "+goals+
+      ". Время в пути: "+mins+" мин на "+way+
+      ". Стихия дня: "+dayInfo.element+". Луна: "+moon.n+".";
+    
+    const prompt = direction==="to" 
+      ? baseInfo+
+        " Дай ЧЁТКИЙ список из 5 КОНКРЕТНЫХ вариантов для дороги НА РАБОТУ ("+mins+" минут). "+
+        "Каждый пункт должен быть КОНКРЕТНЫМ — название подкаста, исполнителя, темы для размышления или конкретной практики. "+
+        "БЕЗ общих фраз вроде «послушай музыку» или «подумай о приятном». ТОЛЬКО точные рекомендации.\n\n"+
+        "ВАЖНО: учитывай профиль — профессию "+profession+", хронотип "+chronotype+", стрессоры "+stressors+
+        ". Цель — настрой на продуктивный день.\n\n"+
+        "Формат ответа — нумерованный список. Каждый пункт начинается с типа в квадратных скобках:\n"+
+        "1. [Подкаст] Название — где послушать. Что даст: ...\n"+
+        "2. [Музыка] Конкретный исполнитель/трек/плейлист. Что даст: ...\n"+
+        "3. [Аудиокнига] Конкретная книга и автор. Что даст: ...\n"+
+        "4. [Практика] Точная техника с описанием в 1-2 предложениях.\n"+
+        "5. [Размышление] Конкретный вопрос для рефлексии. Зачем сегодня.\n\n"+
+        "5 пунктов разных типов. Учитывай продолжительность поездки — "+mins+" минут."
+      : baseInfo+
+        " Дай ЧЁТКИЙ список из 5 КОНКРЕТНЫХ вариантов для дороги ДОМОЙ ("+mins+" минут). "+
+        "Каждый пункт должен быть КОНКРЕТНЫМ — название подкаста, исполнителя, темы для размышления или конкретной практики. "+
+        "БЕЗ общих фраз. ТОЛЬКО точные рекомендации.\n\n"+
+        "ВАЖНО: учитывай профиль — профессию "+profession+", способы восстановления: "+recovery+
+        ", интересы: "+interests+
+        ". Цель — переключиться с работы на отдых, восстановиться.\n\n"+
+        "Формат ответа — нумерованный список. Каждый пункт начинается с типа в квадратных скобках:\n"+
+        "1. [Подкаст] Название — где послушать. Что даст: ...\n"+
+        "2. [Музыка] Конкретный исполнитель/трек/плейлист для расслабления. Что даст: ...\n"+
+        "3. [Аудиокнига] Конкретная книга для отвлечения. Что даст: ...\n"+
+        "4. [Практика] Точная техника расслабления (дыхание, осознанность) с описанием.\n"+
+        "5. [Размышление] Конкретный вопрос для саморефлексии или благодарности.\n\n"+
+        "5 пунктов разных типов. Время в пути — "+mins+" минут.";
+    
+    const r = await askClaude(kb, prompt, 800);
     const updated = {...commuteRecs, [direction]: r};
     setCommuteRecs(updated);
     try { localStorage.setItem(commuteKey, JSON.stringify(updated)); } catch{}
@@ -2631,19 +2670,33 @@ function TodaySection({profile,tasks,setTasks,journal,setJournal,today,moon,kb,n
     }
   }
 
-  // Дорога на работу
-  if(isWorkDay && (profile.commuteTime && profile.commuteTime!=="Дома")) {
-    const minsTo = parseInt((profile.commuteTime.match(/\d+/)||["30"])[0]);
-    const toH = workStartH - Math.ceil(minsTo/60);
-    const toM = 0;
+  // Дорога на работу — используем commuteSettings (из формы) или profile.commuteTime
+  if(isWorkDay && (commuteSettings.toWorkMin || (profile.commuteTime && profile.commuteTime!=="Дома"))) {
+    const minsTo = parseInt(commuteSettings.toWorkMin) || parseInt((profile.commuteTime||"30").match(/\d+/)||["30"])[0];
+    let toH, toM;
+    if(commuteSettings.toWorkTime) {
+      // Точное время выезда задано пользователем
+      [toH, toM] = commuteSettings.toWorkTime.split(":").map(Number);
+    } else {
+      // Иначе расчёт от начала рабочего дня
+      const totalMin = workStartH*60 - minsTo;
+      toH = Math.floor(totalMin/60); toM = totalMin%60;
+    }
     plannerEvents.push({id:"commute-to", type:"commute", emoji:"🚌",
-      title:"В дороге → работа ("+minsTo+" мин)",
-      time:(toH<10?"0":"")+toH+":00", timeH:toH, timeM:toM, done:false, fixed:true});
-    // Дорога домой — после окончания рабочего дня
-    const minsFrom = parseInt((profile.commuteTime.match(/\d+/)||["30"])[0]);
+      title:"В дорогу → работа ("+minsTo+" мин)",
+      time:(toH<10?"0":"")+toH+":"+(toM<10?"0":"")+toM, timeH:toH, timeM:toM, done:false, fixed:true});
+    // Дорога домой
+    const minsFrom = parseInt(commuteSettings.fromWorkMin) || parseInt((profile.commuteTime||"30").match(/\d+/)||["30"])[0];
+    let fromH, fromM;
+    if(commuteSettings.fromWorkTime) {
+      [fromH, fromM] = commuteSettings.fromWorkTime.split(":").map(Number);
+    } else {
+      // По умолчанию — сразу после рабочего дня
+      fromH = workEndH; fromM = 0;
+    }
     plannerEvents.push({id:"commute-from", type:"commute", emoji:"🏠",
       title:"Дорога домой ("+minsFrom+" мин)",
-      time:profile.workEnd||"18:00", timeH:workEndH, timeM:0, done:false, fixed:true});
+      time:(fromH<10?"0":"")+fromH+":"+(fromM<10?"0":"")+fromM, timeH:fromH, timeM:fromM, done:false, fixed:true});
   }
 
   // Практики и спорт
@@ -2900,23 +2953,43 @@ function TodaySection({profile,tasks,setTasks,journal,setJournal,today,moon,kb,n
                       <span style={{fontSize:10,color:sectionColor[ev.section]||T.text3,fontFamily:"'JetBrains Mono'"}}>{ev.section}</span>
                     )}
                   </div>
-                  {!ev.fixed&&ev.taskId&&(
-                    <div style={{display:"flex",gap:3,flexShrink:0}}>
-                      <div className="ico-btn" style={{color:T.teal,opacity:.6,fontSize:12}}
-                        onClick={()=>setModal(tasks.find(t=>t.id===ev.taskId)||{})}>✏️</div>
-                      <div className="ico-btn danger" style={{fontSize:12}}
-                        onClick={()=>{setTasks(p=>p.map(t=>t.id===ev.taskId?{...t,doneDate:today}:t));notify("Перенесено ✦");}}>↻</div>
-                    </div>
-                  )}
-                  {!ev.fixed&&!ev.taskId&&(
-                    <div className="ico-btn" style={{color:T.text3,opacity:.5,fontSize:11}} onClick={()=>{
-                      const newTime = window.prompt("Изменить время (ЧЧ:ММ):", ev.time);
-                      if(newTime&&/^\d{1,2}:\d{2}$/.test(newTime)){
-                        // Update preferredTime for pet/health/practice events
-                        notify("Время изменено — обновится после перезагрузки");
-                      }
-                    }}>🕐</div>
-                  )}
+                  <div style={{display:"flex",gap:3,flexShrink:0}}>
+                    {/* Редактирование времени — для ВСЕХ событий */}
+                    <div className="ico-btn" style={{color:T.gold,opacity:.7,fontSize:12}}
+                      title="Изменить время"
+                      onClick={()=>{
+                        const newTime = window.prompt("Новое время (ЧЧ:ММ):", ev.time);
+                        if(!newTime || !/^\d{1,2}:\d{2}$/.test(newTime)) return;
+                        const [nh, nm] = newTime.split(":").map(Number);
+                        if(nh<0||nh>23||nm<0||nm>59) { notify("Неверное время"); return; }
+                        const padded = (nh<10?"0":"")+nh+":"+(nm<10?"0":"")+nm;
+                        // 1. Если у события есть taskId — обновляем preferredTime задачи
+                        if(ev.taskId){
+                          setTasks(p=>p.map(t=>t.id===ev.taskId?{...t, preferredTime: padded}:t));
+                          notify("Время задачи обновлено");
+                        }
+                        // 2. Якорные события (подъём/отбой) — обновляем профиль
+                        else if(ev.id==="wake"){ if(window.confirm("Изменить время подъёма в профиле?")){ profile.wake = padded; localStorage.setItem("ld_profile", JSON.stringify(profile)); notify("Подъём изменён — перезайди"); } }
+                        else if(ev.id==="sleep"){ if(window.confirm("Изменить время отбоя в профиле?")){ profile.sleep = padded; localStorage.setItem("ld_profile", JSON.stringify(profile)); notify("Отбой изменён — перезайди"); } }
+                        // 3. Дорога — обновляем commuteSettings
+                        else if(ev.id==="commute-to"){ setCommuteSettings(p=>({...p, toWorkTime: padded})); notify("Время выезда обновлено"); }
+                        else if(ev.id==="commute-from"){ setCommuteSettings(p=>({...p, fromWorkTime: padded})); notify("Время выезда обновлено"); }
+                        // 4. Кормёжка — нужно изменить feedSchedule питомца
+                        else if(ev.id&&ev.id.startsWith("pet-feed-")){ notify("Время кормления меняется в разделе Питомцы"); }
+                        // 5. Остальные (практики, спорт, шопинг) — пока не обновляются
+                        else { notify("Время будет применено при следующем открытии"); }
+                      }}>🕐</div>
+                    {!ev.fixed&&ev.taskId&&(
+                      <>
+                        <div className="ico-btn" style={{color:T.teal,opacity:.6,fontSize:12}}
+                          title="Редактировать задачу"
+                          onClick={()=>setModal(tasks.find(t=>t.id===ev.taskId)||{})}>✏️</div>
+                        <div className="ico-btn danger" style={{fontSize:12}}
+                          title="Перенести"
+                          onClick={()=>{setTasks(p=>p.map(t=>t.id===ev.taskId?{...t,doneDate:today}:t));notify("Перенесено ✦");}}>↻</div>
+                      </>
+                    )}
+                  </div>
                 </div>
               );
             })}
@@ -3008,24 +3081,54 @@ function TodaySection({profile,tasks,setTasks,journal,setJournal,today,moon,kb,n
             <div style={{marginTop:10}}>
               {/* Форма настройки времени в пути */}
               <div style={{padding:"10px 12px",background:"rgba(255,255,255,0.02)",borderRadius:10,marginBottom:12}}>
-                <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1.5,marginBottom:8}}>ВРЕМЯ В ДОРОГЕ</div>
-                <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
-                  <div style={{flex:1,minWidth:120}}>
-                    <div style={{fontSize:11,color:T.text3,marginBottom:4}}>На работу (мин)</div>
-                    <input type="number" min="5" max="180" value={commuteSettings.toWorkMin}
-                      onChange={e=>setCommuteSettings(p=>({...p,toWorkMin:e.target.value}))}
-                      placeholder={parseInt((profile.commuteTime||"30").match(/\d+/)||[30])[0]+""}
-                      style={{width:"100%",padding:"6px 10px",borderRadius:8,border:"1px solid "+T.bdr,background:"rgba(255,255,255,0.03)",color:T.text0,fontSize:14,outline:"none"}}/>
-                    <div style={{fontSize:10,color:T.text3,marginTop:4}}>Выезд: {commuteSettings.toWorkTime||profile.workStart||"—"}</div>
+                <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1.5,marginBottom:8}}>НАСТРОЙКА ДОРОГИ</div>
+                
+                {/* На работу */}
+                <div style={{padding:"8px 10px",background:"rgba(29,78,107,0.06)",borderRadius:8,marginBottom:8}}>
+                  <div style={{fontSize:11,color:T.teal,fontFamily:"'JetBrains Mono'",marginBottom:6}}>🏢 НА РАБОТУ</div>
+                  <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+                    <div style={{flex:1,minWidth:90}}>
+                      <div style={{fontSize:10,color:T.text3,marginBottom:3}}>Время выезда</div>
+                      <input type="time"
+                        value={commuteSettings.toWorkTime||""}
+                        onChange={e=>setCommuteSettings(p=>({...p,toWorkTime:e.target.value}))}
+                        style={{width:"100%",padding:"6px 8px",borderRadius:6,border:"1px solid "+T.bdr,background:"rgba(255,255,255,0.04)",color:T.text0,fontSize:13,outline:"none",fontFamily:"'JetBrains Mono'"}}/>
+                    </div>
+                    <div style={{flex:1,minWidth:90}}>
+                      <div style={{fontSize:10,color:T.text3,marginBottom:3}}>В пути (мин)</div>
+                      <input type="number" min="5" max="180"
+                        value={commuteSettings.toWorkMin||""}
+                        onChange={e=>setCommuteSettings(p=>({...p,toWorkMin:e.target.value}))}
+                        placeholder="30"
+                        style={{width:"100%",padding:"6px 8px",borderRadius:6,border:"1px solid "+T.bdr,background:"rgba(255,255,255,0.04)",color:T.text0,fontSize:13,outline:"none",fontFamily:"'JetBrains Mono'"}}/>
+                    </div>
                   </div>
-                  <div style={{flex:1,minWidth:120}}>
-                    <div style={{fontSize:11,color:T.text3,marginBottom:4}}>Домой (мин)</div>
-                    <input type="number" min="5" max="180" value={commuteSettings.fromWorkMin}
-                      onChange={e=>setCommuteSettings(p=>({...p,fromWorkMin:e.target.value}))}
-                      placeholder={parseInt((profile.commuteTime||"30").match(/\d+/)||[30])[0]+""}
-                      style={{width:"100%",padding:"6px 10px",borderRadius:8,border:"1px solid "+T.bdr,background:"rgba(255,255,255,0.03)",color:T.text0,fontSize:14,outline:"none"}}/>
-                    <div style={{fontSize:10,color:T.text3,marginTop:4}}>Выезд: {profile.workEnd||"—"}</div>
+                </div>
+
+                {/* Домой */}
+                <div style={{padding:"8px 10px",background:"rgba(45,106,79,0.06)",borderRadius:8}}>
+                  <div style={{fontSize:11,color:T.success,fontFamily:"'JetBrains Mono'",marginBottom:6}}>🏠 ДОМОЙ</div>
+                  <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+                    <div style={{flex:1,minWidth:90}}>
+                      <div style={{fontSize:10,color:T.text3,marginBottom:3}}>Время выезда</div>
+                      <input type="time"
+                        value={commuteSettings.fromWorkTime||""}
+                        onChange={e=>setCommuteSettings(p=>({...p,fromWorkTime:e.target.value}))}
+                        style={{width:"100%",padding:"6px 8px",borderRadius:6,border:"1px solid "+T.bdr,background:"rgba(255,255,255,0.04)",color:T.text0,fontSize:13,outline:"none",fontFamily:"'JetBrains Mono'"}}/>
+                    </div>
+                    <div style={{flex:1,minWidth:90}}>
+                      <div style={{fontSize:10,color:T.text3,marginBottom:3}}>В пути (мин)</div>
+                      <input type="number" min="5" max="180"
+                        value={commuteSettings.fromWorkMin||""}
+                        onChange={e=>setCommuteSettings(p=>({...p,fromWorkMin:e.target.value}))}
+                        placeholder="30"
+                        style={{width:"100%",padding:"6px 8px",borderRadius:6,border:"1px solid "+T.bdr,background:"rgba(255,255,255,0.04)",color:T.text0,fontSize:13,outline:"none",fontFamily:"'JetBrains Mono'"}}/>
+                    </div>
                   </div>
+                </div>
+
+                <div style={{fontSize:10,color:T.text3,marginTop:8,fontStyle:"italic",textAlign:"center"}}>
+                  Сохраняется автоматически. Дорога появится в Расписании дня.
                 </div>
               </div>
 
@@ -3039,23 +3142,56 @@ function TodaySection({profile,tasks,setTasks,journal,setJournal,today,moon,kb,n
                 </button>
               </div>
 
-              {/* Рекомендация «На работу» */}
-              {commuteRecs.to&&(
-                <div style={{marginBottom:10,padding:"10px 12px",background:"rgba(29,78,107,0.08)",borderRadius:10,borderLeft:"2px solid "+T.teal}}>
-                  <div style={{fontSize:10,color:T.teal,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:6}}>🏢 НА РАБОТУ</div>
-                  <div style={{fontSize:14,color:T.text1,lineHeight:1.6,fontStyle:"italic"}}>{commuteRecs.to}</div>
-                  <button className="btn btn-ghost btn-sm" style={{marginTop:6,fontSize:10}} onClick={()=>{setCommuteRecs(p=>({...p,to:""}));getCommuteRec("to");}}>↻</button>
-                </div>
-              )}
-
-              {/* Рекомендация «Домой» */}
-              {commuteRecs.from&&(
-                <div style={{padding:"10px 12px",background:"rgba(45,106,79,0.08)",borderRadius:10,borderLeft:"2px solid "+T.success}}>
-                  <div style={{fontSize:10,color:T.success,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:6}}>🏠 ДОМОЙ</div>
-                  <div style={{fontSize:14,color:T.text1,lineHeight:1.6,fontStyle:"italic"}}>{commuteRecs.from}</div>
-                  <button className="btn btn-ghost btn-sm" style={{marginTop:6,fontSize:10}} onClick={()=>{setCommuteRecs(p=>({...p,from:""}));getCommuteRec("from");}}>↻</button>
-                </div>
-              )}
+              {/* Рекомендации с парсером */}
+              {(commuteRecs.to||commuteRecs.from)&&(()=>{
+                const renderRec = (text, label, color, dirKey) => {
+                  if(!text) return null;
+                  const blocks = parseAiResponse(text);
+                  return (
+                    <div style={{marginBottom:10,padding:"10px 12px",background:color+"15",borderRadius:10,borderLeft:"2px solid "+color}}>
+                      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+                        <span style={{fontSize:10,color,fontFamily:"\'JetBrains Mono\'",letterSpacing:1}}>{label}</span>
+                        <button className="btn btn-ghost btn-sm" style={{marginLeft:"auto",fontSize:10,padding:"2px 8px"}} onClick={()=>{setCommuteRecs(p=>({...p,[dirKey]:""}));getCommuteRec(dirKey);}}>↻</button>
+                      </div>
+                      <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                        {blocks.map((b,i)=>{
+                          if(b.type==="header") return null;
+                          if(b.type==="list") return b.items.map((item,j)=>{
+                            const isObj = typeof item==="object";
+                            const fullText = isObj ? (item.title?item.title+": ":"")+item.body : item;
+                            // Извлечь тип в [скобках]
+                            const typeMatch = fullText.match(/^\[([^\]]+)\]\s*(.*)/);
+                            const itemType = typeMatch ? typeMatch[1] : "";
+                            const itemBody = typeMatch ? typeMatch[2] : fullText;
+                            const typeIcons = {
+                              "Подкаст":"🎙️","Музыка":"🎵","Аудиокнига":"📚",
+                              "Практика":"🧘","Размышление":"💭","Видео":"🎬"
+                            };
+                            const typeColors = {
+                              "Подкаст":"#82AADD","Музыка":"#E8A8C8","Аудиокнига":"#E5C87A",
+                              "Практика":"#7BCCA0","Размышление":"#B882E8","Видео":"#E8A85A"
+                            };
+                            return (
+                              <div key={j} style={{display:"flex",gap:8,padding:"8px 10px",background:"rgba(255,255,255,0.02)",borderRadius:8}}>
+                                <span style={{fontSize:18,flexShrink:0}}>{typeIcons[itemType]||"✦"}</span>
+                                <div style={{flex:1,minWidth:0}}>
+                                  {itemType&&<span style={{fontSize:9,color:typeColors[itemType]||T.text3,fontFamily:"\'JetBrains Mono\'",letterSpacing:1,padding:"1px 5px",background:(typeColors[itemType]||T.text3)+"22",borderRadius:4}}>{itemType.toUpperCase()}</span>}
+                                  <div style={{fontSize:13,color:T.text1,lineHeight:1.5,marginTop:itemType?3:0}}>{itemBody}</div>
+                                </div>
+                              </div>
+                            );
+                          });
+                          return <div key={i} style={{fontSize:13,color:T.text2,lineHeight:1.5}}>{b.content}</div>;
+                        })}
+                      </div>
+                    </div>
+                  );
+                };
+                return <>
+                  {renderRec(commuteRecs.to, "🏢 НА РАБОТУ", T.teal, "to")}
+                  {renderRec(commuteRecs.from, "🏠 ДОМОЙ", T.success, "from")}
+                </>;
+              })()}
 
               {!commuteRecs.to&&!commuteRecs.from&&!commuteLoading&&(
                 <div style={{fontSize:13,color:T.text3,fontStyle:"italic",textAlign:"center",padding:"8px 0"}}>
