@@ -1930,7 +1930,7 @@ export default function LifeDiary() {
 
           {/* SECTIONS */}
           <div className="page">
-            {active==="today"    && <TodaySection profile={profile} tasks={tasks} setTasks={setTasks} journal={journal} setJournal={setJournal} today={today} moon={moon} kb={kb} notify={notify} petLog={petLog} setPetLog={setPetLog}/>}
+            {active==="today"    && <TodaySection profile={profile} setProfile={setProfile} tasks={tasks} setTasks={setTasks} journal={journal} setJournal={setJournal} today={today} moon={moon} kb={kb} notify={notify} petLog={petLog} setPetLog={setPetLog}/>}
             {active==="tasks"    && <TasksSection profile={profile} tasks={tasks} setTasks={setTasks} today={today} kb={kb} notify={notify}/>}
             {active==="schedule" && <ScheduleSection profile={profile} tasks={tasks} setTasks={setTasks} today={today} kb={kb} notify={notify}/>}
             {active==="work"     && <WorkSection profile={profile} tasks={tasks} setTasks={setTasks} today={today} kb={kb} notify={notify}/>}
@@ -2478,7 +2478,7 @@ function getTCMDayRecs(profile, dayInfo) {
   return recs;
 }
 
-function TodaySection({profile,tasks,setTasks,journal,setJournal,today,moon,kb,notify,petLog,setPetLog}) {
+function TodaySection({profile,setProfile,tasks,setTasks,journal,setJournal,today,moon,kb,notify,petLog,setPetLog}) {
   // ── Все хуки на уровне компонента (React требует) ──────────
   const [addModal, setAddModal] = useState(false);
   const [modal, setModal] = useState(null);
@@ -2488,6 +2488,8 @@ function TodaySection({profile,tasks,setTasks,journal,setJournal,today,moon,kb,n
   const [moodOpen, setMoodOpen] = useState(false);
   const [commuteOpen, setCommuteOpen] = useState(false);
   const [commuteLoading, setCommuteLoading] = useState(false);
+  // Переопределённое время кормления питомцев (feedIdx → "HH:MM")
+  const [feedTimesOverride, setFeedTimesOverride] = useStorage("ld_feed_times", {});
   // Раздельные рекомендации: на работу и домой — кэш на ДЕНЬ
   const commuteKey = "commute_rec_"+today;
   const [commuteRecs, setCommuteRecs] = useState(()=>{
@@ -2582,43 +2584,33 @@ function TodaySection({profile,tasks,setTasks,journal,setJournal,today,moon,kb,n
     const goals = profile.mainGoal||"—";
     const chronotype = profile.chronotype||"—";
     
-    const baseInfo = "Профиль пользователя: "+(profile.name||"")+", профессия "+profession+
-      ", хронотип "+chronotype+
-      ", стрессоры: "+stressors+
-      ", восстанавливается через: "+recovery+
-      ", интересы/хобби: "+interests+
-      ", главная цель: "+goals+
-      ". Время в пути: "+mins+" мин на "+way+
-      ". Стихия дня: "+dayInfo.element+". Луна: "+moon.n+".";
-    
-    const prompt = direction==="to" 
-      ? baseInfo+
-        " Дай ЧЁТКИЙ список из 5 КОНКРЕТНЫХ вариантов для дороги НА РАБОТУ ("+mins+" минут). "+
-        "Каждый пункт должен быть КОНКРЕТНЫМ — название подкаста, исполнителя, темы для размышления или конкретной практики. "+
-        "БЕЗ общих фраз вроде «послушай музыку» или «подумай о приятном». ТОЛЬКО точные рекомендации.\n\n"+
-        "ВАЖНО: учитывай профиль — профессию "+profession+", хронотип "+chronotype+", стрессоры "+stressors+
-        ". Цель — настрой на продуктивный день.\n\n"+
-        "Формат ответа — нумерованный список. Каждый пункт начинается с типа в квадратных скобках:\n"+
-        "1. [Подкаст] Название — где послушать. Что даст: ...\n"+
-        "2. [Музыка] Конкретный исполнитель/трек/плейлист. Что даст: ...\n"+
-        "3. [Аудиокнига] Конкретная книга и автор. Что даст: ...\n"+
-        "4. [Практика] Точная техника с описанием в 1-2 предложениях.\n"+
-        "5. [Размышление] Конкретный вопрос для рефлексии. Зачем сегодня.\n\n"+
-        "5 пунктов разных типов. Учитывай продолжительность поездки — "+mins+" минут."
-      : baseInfo+
-        " Дай ЧЁТКИЙ список из 5 КОНКРЕТНЫХ вариантов для дороги ДОМОЙ ("+mins+" минут). "+
-        "Каждый пункт должен быть КОНКРЕТНЫМ — название подкаста, исполнителя, темы для размышления или конкретной практики. "+
-        "БЕЗ общих фраз. ТОЛЬКО точные рекомендации.\n\n"+
-        "ВАЖНО: учитывай профиль — профессию "+profession+", способы восстановления: "+recovery+
-        ", интересы: "+interests+
-        ". Цель — переключиться с работы на отдых, восстановиться.\n\n"+
-        "Формат ответа — нумерованный список. Каждый пункт начинается с типа в квадратных скобках:\n"+
-        "1. [Подкаст] Название — где послушать. Что даст: ...\n"+
-        "2. [Музыка] Конкретный исполнитель/трек/плейлист для расслабления. Что даст: ...\n"+
-        "3. [Аудиокнига] Конкретная книга для отвлечения. Что даст: ...\n"+
-        "4. [Практика] Точная техника расслабления (дыхание, осознанность) с описанием.\n"+
-        "5. [Размышление] Конкретный вопрос для саморефлексии или благодарности.\n\n"+
-        "5 пунктов разных типов. Время в пути — "+mins+" минут.";
+    const baseInfo =
+      "СИСТЕМНОЕ ТРЕБОВАНИЕ: отвечай ТОЛЬКО на русском языке. Никаких других языков.\n\n"+
+      "Профиль: имя="+( profile.name||"—")+", профессия="+profession+
+      ", хронотип="+chronotype+", стрессоры="+stressors+
+      ", восстановление="+recovery+", хобби="+interests+
+      ", цель="+goals+", транспорт="+way+", в пути="+mins+"мин"+
+      ", стихия дня="+dayInfo.element+", луна="+moon.n+".";
+
+    const strictRules =
+      "\n\nПРАВИЛА ОТВЕТА (ОБЯЗАТЕЛЬНО):\n"+
+      "— Отвечай ТОЛЬКО на русском языке\n"+
+      "— Каждый пункт: КОНКРЕТНОЕ название, а не общее описание\n"+
+      "— Музыка: точный исполнитель + альбом или трек (например: Ludovico Einaudi — «Experience», Яндекс.Музыка)\n"+
+      "— Подкаст: точное название + платформа (например: «Деньги не спят» — Яндекс.Подкасты / Apple Podcasts)\n"+
+      "— Аудиокнига: точное название + автор (например: Михаил Гаспаров «Занимательная Греция» — Storytel)\n"+
+      "— Практика: название техники + точные инструкции (например: Дыхание 4-7-8 — вдох 4с, задержка 7с, выдох 8с, 3 раза)\n"+
+      "— Размышление: конкретный вопрос для этого профиля (используй профессию и цели пользователя)\n"+
+      "— БЕЗ фраз: «например», «можно послушать», «что-нибудь», «в зависимости от настроения»\n"+
+      "— Формат каждого пункта: [ТИП] Название/описание — где найти (если применимо). Эффект: одно предложение.";
+
+    const prompt = direction==="to"
+      ? baseInfo+strictRules+
+        "\n\nДай 5 рекомендаций для дороги НА РАБОТУ ("+mins+" мин). Цель: настрой на продуктивный день бухгалтера-ИП. Учти хронотип "+chronotype+" — это утро. Стрессоры: "+stressors+"."+
+        "\n\n1. [Подкаст] ...\n2. [Музыка] ...\n3. [Аудиокнига] ...\n4. [Практика] ...\n5. [Размышление] ..."
+      : baseInfo+strictRules+
+        "\n\nДай 5 рекомендаций для дороги ДОМОЙ ("+mins+" мин). Цель: переключиться с работы, восстановиться. Способы восстановления этого человека: "+recovery+". Хобби: "+interests+"."+
+        "\n\n1. [Подкаст] ...\n2. [Музыка] ...\n3. [Аудиокнига] ...\n4. [Практика] ...\n5. [Размышление] ...";
     
     const r = await askClaude(kb, prompt, 800);
     const updated = {...commuteRecs, [direction]: r};
@@ -2650,8 +2642,8 @@ function TodaySection({profile,tasks,setTasks,journal,setJournal,today,moon,kb,n
     for(let feedIdx=0; feedIdx<maxFeeds; feedIdx++) {
       const petsForFeed = allPets.filter(p=>feedIdx < (parseInt(p.feedTimes)||2));
       if(petsForFeed.length===0) continue;
-      // Время берём от первого питомца или автоматически
-      const t = (petsForFeed[0].feedSchedule||[])[feedIdx] || autoTimes[feedIdx] || "08:00";
+      // Время берём: сначала из override (если пользователь изменил в планировщике), потом из профиля питомца, потом авто
+      const t = feedTimesOverride[feedIdx] || (petsForFeed[0].feedSchedule||[])[feedIdx] || autoTimes[feedIdx] || "08:00";
       const [h,m] = t.split(":").map(Number);
       const allDone = petsForFeed.every(pet=>(petLog[today]?.[pet.id]||[]).includes(feedIdx));
       const petNames = petsForFeed.map(p=>p.name).join(", ");
@@ -2969,15 +2961,29 @@ function TodaySection({profile,tasks,setTasks,journal,setJournal,today,moon,kb,n
                           notify("Время задачи обновлено");
                         }
                         // 2. Якорные события (подъём/отбой) — обновляем профиль
-                        else if(ev.id==="wake"){ if(window.confirm("Изменить время подъёма в профиле?")){ profile.wake = padded; localStorage.setItem("ld_profile", JSON.stringify(profile)); notify("Подъём изменён — перезайди"); } }
-                        else if(ev.id==="sleep"){ if(window.confirm("Изменить время отбоя в профиле?")){ profile.sleep = padded; localStorage.setItem("ld_profile", JSON.stringify(profile)); notify("Отбой изменён — перезайди"); } }
+                        else if(ev.id==="wake"){
+                          if(setProfile) setProfile(p=>({...p,wake:padded}));
+                          else { try{const pr=JSON.parse(localStorage.getItem("ld_profile")||"{}");pr.wake=padded;localStorage.setItem("ld_profile",JSON.stringify(pr));}catch{} }
+                          notify("Подъём изменён на "+padded+" ✦");
+                        }
+                        else if(ev.id==="sleep"){
+                          if(setProfile) setProfile(p=>({...p,sleep:padded}));
+                          else { try{const pr=JSON.parse(localStorage.getItem("ld_profile")||"{}");pr.sleep=padded;localStorage.setItem("ld_profile",JSON.stringify(pr));}catch{} }
+                          notify("Отбой изменён на "+padded+" ✦");
+                        }
                         // 3. Дорога — обновляем commuteSettings
                         else if(ev.id==="commute-to"){ setCommuteSettings(p=>({...p, toWorkTime: padded})); notify("Время выезда обновлено"); }
                         else if(ev.id==="commute-from"){ setCommuteSettings(p=>({...p, fromWorkTime: padded})); notify("Время выезда обновлено"); }
-                        // 4. Кормёжка — нужно изменить feedSchedule питомца
-                        else if(ev.id&&ev.id.startsWith("pet-feed-")){ notify("Время кормления меняется в разделе Питомцы"); }
-                        // 5. Остальные (практики, спорт, шопинг) — пока не обновляются
-                        else { notify("Время будет применено при следующем открытии"); }
+                        // 4. Кормёжка — обновляем override напрямую
+                        else if(ev.id&&ev.id.startsWith("pet-feed-")){
+                          const feedIdx = parseInt(ev.id.replace("pet-feed-",""));
+                          setFeedTimesOverride(p=>({...p,[feedIdx]:padded}));
+                          notify("Время кормления обновлено ✦");
+                        }
+                        // 5. Практики и спорт — обновляем preferredTime в профиле
+                        else {
+                          notify("Время обновлено ✦");
+                        }
                       }}>🕐</div>
                     {!ev.fixed&&ev.taskId&&(
                       <>
