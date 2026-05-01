@@ -3833,6 +3833,11 @@ function WorkSection({profile,tasks,setTasks,today,kb,notify}) {
     {id:"liz",   name:"Лизинг",    icon:"📄", color:"#E5C87A"},
     {id:"eaes",  name:"ЕАЭС",      icon:"🌐", color:"#7EDDD5"},
   ]);
+  // Миграция: убрать "Выбросы" из сохранённых данных пользователя
+  useEffect(()=>{
+    setReportGroups(p=>p.filter(g=>g.id!=="vyb"&&g.name!=="Выбросы"));
+    setReports(p=>p.filter(r=>r.group!=="vyb"&&r.cat!=="Выбросы"));
+  },[]);
 
   // Хранилище всех отчётов пользователя
   const [reports, setReports] = useStorage("ld_reports_v2", []);
@@ -3842,6 +3847,8 @@ function WorkSection({profile,tasks,setTasks,today,kb,notify}) {
   const [editReport, setEditReport] = useState(null); // редактируемый отчёт
   const [addGroupModal, setAddGroupModal] = useState(false);
   const [newGroup, setNewGroup] = useState({name:"",icon:"📝",color:"#A8A49C"});
+  // Состояние формы добавления нового отчёта (поднято на уровень компонента — нельзя useState в IIFE)
+  const [newReport, setNewReport] = useState({name:"",deadline:"",period:"quarter",amount:"",notes:""});
   const [dlView, setDlView] = useState("upcoming"); // upcoming | overdue | done | all
   const [taskModal, setTaskModal] = useState(null);
 
@@ -4158,7 +4165,7 @@ function WorkSection({profile,tasks,setTasks,today,kb,notify}) {
               <button className="btn btn-primary btn-sm" style={{padding:"2px 8px",fontSize:11}} onClick={()=>{if(setProfile){setProfile(p=>({...p,workStart:schedStart,workEnd:schedEnd}));}else{try{const pr=JSON.parse(localStorage.getItem("ld_profile")||"{}");pr.workStart=schedStart;pr.workEnd=schedEnd;localStorage.setItem("ld_profile",JSON.stringify(pr));}catch{}}setEditSchedule(false);notify("График сохранён ✦");}}>✓</button>
             </span>
           ):(
-            <span style={{cursor:"pointer"}} onClick={()=>setEditSchedule(true)}>🕐 {profile.workStart||"?"}–{profile.workEnd||"?"} ✏️</span>
+            <span style={{cursor:"pointer"}} onClick={()=>{setSchedStart(profile.workStart||"09:00");setSchedEnd(profile.workEnd||"18:00");setEditSchedule(true);}}>🕐 {profile.workStart||"09:00"}–{profile.workEnd||"18:00"} ✏️</span>
           )}
         </span>
       </div>
@@ -4283,22 +4290,15 @@ function WorkSection({profile,tasks,setTasks,today,kb,notify}) {
       {/* ── Модалка добавления отчёта ── */}
       {addReportModal&&(()=>{
         const g = reportGroups.find(g=>g.id===addReportModal.groupId)||{name:"",color:T.gold,icon:"📋"};
-        const [form, setForm] = useState({name:"",deadline:"",period:"quarter",amount:"",notes:"",status:"pending"});
-        const save = () => {
-          if(!form.name) return notify("Введи название");
-          setReports(p=>[...p,{...form, id:"u-"+Date.now(), group:addReportModal.groupId, enabled:true, createdAt:new Date().toISOString()}]);
-          setAddReportModal(null);
-          notify("Добавлено");
-        };
         return (
-          <div className="overlay" onClick={()=>setAddReportModal(null)}>
+          <div className="overlay" onClick={()=>{setAddReportModal(null);setNewReport({name:"",deadline:"",period:"quarter",amount:"",notes:""});}}>
             <div className="modal" onClick={e=>e.stopPropagation()}>
-              <span className="modal-x" onClick={()=>setAddReportModal(null)}>✕</span>
+              <span className="modal-x" onClick={()=>{setAddReportModal(null);setNewReport({name:"",deadline:"",period:"quarter",amount:"",notes:""});}}>✕</span>
               <div className="modal-title">{g.icon} {g.name} — добавить отчёт</div>
-              <div className="fld"><label>Название отчёта</label><input value={form.name} onChange={e=>setForm(p=>({...p,name:e.target.value}))} placeholder="Например: ФНО 910.00"/></div>
-              <div className="fld"><label>Срок сдачи</label><input type="date" value={form.deadline} onChange={e=>setForm(p=>({...p,deadline:e.target.value}))}/></div>
+              <div className="fld"><label>Название отчёта</label><input value={newReport.name} onChange={e=>setNewReport(p=>({...p,name:e.target.value}))} placeholder="Например: ФНО 910.00"/></div>
+              <div className="fld"><label>Срок сдачи</label><input type="date" value={newReport.deadline} onChange={e=>setNewReport(p=>({...p,deadline:e.target.value}))}/></div>
               <div className="fld"><label>Периодичность</label>
-                <select value={form.period} onChange={e=>setForm(p=>({...p,period:e.target.value}))} style={{width:"100%",padding:"8px",borderRadius:8,border:"1px solid "+T.bdr,background:T.bg1,color:T.text0,fontSize:14}}>
+                <select value={newReport.period} onChange={e=>setNewReport(p=>({...p,period:e.target.value}))} style={{width:"100%",padding:"8px",borderRadius:8,border:"1px solid "+T.bdr,background:T.bg1,color:T.text0,fontSize:14}}>
                   <option value="monthly">Ежемесячно</option>
                   <option value="quarter">Ежеквартально</option>
                   <option value="semi">Раз в полгода</option>
@@ -4306,11 +4306,17 @@ function WorkSection({profile,tasks,setTasks,today,kb,notify}) {
                   <option value="once">Разово</option>
                 </select>
               </div>
-              {addReportModal.groupId==="pay"&&<div className="fld"><label>Сумма платежа</label><input value={form.amount} onChange={e=>setForm(p=>({...p,amount:e.target.value}))} placeholder="0 ₸"/></div>}
-              <div className="fld"><label>Заметки</label><input value={form.notes} onChange={e=>setForm(p=>({...p,notes:e.target.value}))} placeholder="Статья НК, особенности..."/></div>
+              {addReportModal.groupId==="pay"&&<div className="fld"><label>Сумма платежа</label><input value={newReport.amount} onChange={e=>setNewReport(p=>({...p,amount:e.target.value}))} placeholder="0 ₸"/></div>}
+              <div className="fld"><label>Заметки</label><input value={newReport.notes} onChange={e=>setNewReport(p=>({...p,notes:e.target.value}))} placeholder="Статья НК, особенности..."/></div>
               <div className="modal-foot">
-                <button className="btn btn-ghost" onClick={()=>setAddReportModal(null)}>Отмена</button>
-                <button className="btn btn-primary" onClick={save}>Добавить</button>
+                <button className="btn btn-ghost" onClick={()=>{setAddReportModal(null);setNewReport({name:"",deadline:"",period:"quarter",amount:"",notes:""});}}>Отмена</button>
+                <button className="btn btn-primary" onClick={()=>{
+                  if(!newReport.name){notify("Введи название");return;}
+                  setReports(p=>[...p,{...newReport,id:"u-"+Date.now(),group:addReportModal.groupId,enabled:true,status:"pending",createdAt:new Date().toISOString()}]);
+                  setAddReportModal(null);
+                  setNewReport({name:"",deadline:"",period:"quarter",amount:"",notes:""});
+                  notify("Добавлено ✦");
+                }}>Добавить</button>
               </div>
             </div>
           </div>
