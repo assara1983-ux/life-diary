@@ -116,16 +116,22 @@ const DEADLINE_REFERENCE = {
 };
 
 // Функция вычисления ближайшего дедлайна
-function calcDeadline(ref, period, year, month) {
+function calcDeadline(ref, period, year, month, currentDay) {
   const pad = n => String(n).padStart(2,'0');
+  const today = currentDay || new Date().getDate();
 
   if (ref.monthly && ref.deadline_day) {
-    const day = parseInt(ref.deadline_day);
-    // Срок за ТЕКУЩИЙ месяц = до N-го числа СЛЕДУЮЩЕГО месяца
-    let dlMonth = month + 1;
-    let dlYear = year;
-    if (dlMonth > 12) { dlMonth = 1; dlYear++; }
-    return `${dlYear}-${pad(dlMonth)}-${pad(day)}`;
+    const deadlineDay = parseInt(ref.deadline_day);
+    // Если дедлайн этого месяца ещё не прошёл (сегодня <= дня дедлайна) — срок в этом месяце
+    // Если уже прошёл — следующий месяц
+    if (today <= deadlineDay) {
+      return `${year}-${pad(month)}-${pad(deadlineDay)}`;
+    } else {
+      let dlMonth = month + 1;
+      let dlYear = year;
+      if (dlMonth > 12) { dlMonth = 1; dlYear++; }
+      return `${dlYear}-${pad(dlMonth)}-${pad(deadlineDay)}`;
+    }
   }
 
   if (ref.semi_1 || ref.semi) {
@@ -186,6 +192,7 @@ export default async function handler(req, res) {
 
   const year = new Date().getFullYear();
   const month = new Date().getMonth() + 1;
+  const day = new Date().getDate();
 
   const sourceUrlMap = {
     kgd: 'https://kgd.gov.kz/ru/services/taxpayer_calendar',
@@ -198,7 +205,7 @@ export default async function handler(req, res) {
   const found = lookupReference(name);
   if (found) {
     const { key, ref } = found;
-    const deadline = calcDeadline(ref, period, year, month);
+    const deadline = calcDeadline(ref, period, year, month, day);
     if (deadline) {
       return res.status(200).json({
         deadline,
