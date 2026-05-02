@@ -1947,6 +1947,15 @@ function Onboarding({ onDone }) {
 export default function LifeDiary() {
   const [profile, setProfile] = useStorage("ld_pf_v3", null);
   const [sections, setSections] = useStorage("ld_sec_v3", DEF_SECTIONS);
+  // Миграция: переименовать "Красота" → "Уход" в сохранённых данных
+  useEffect(()=>{
+    setSections(p=>{
+      if(!p) return p;
+      const updated = p.map(s=>s.id==="beauty"&&s.name==="Красота"?{...s,name:"Уход"}:s);
+      const changed = updated.some((s,i)=>s.name!==p[i]?.name);
+      return changed?updated:p;
+    });
+  },[]);
   const [tasks, setTasks] = useStorage("ld_tasks_v3", []);
   const [journal, setJournal] = useStorage("ld_journal_v3", {});
   const [shopList, setShopList] = useStorage("ld_shop_v3", []);
@@ -4085,6 +4094,10 @@ function WorkSection({profile,tasks,setTasks,today,kb,notify}) {
   const [checkResults, setCheckResults] = useStorage("ld_deadline_checks", {}); // {reportId: {deadline, checkedAt, info}}
   const [dlView, setDlView] = useState("upcoming"); // upcoming | overdue | done | all
   const [weekOpen, setWeekOpen] = useState(true); // раздел "на этой неделе"
+  const [upcomingOpen, setUpcomingOpen] = useState(true); // БЛИЖАЙШИЕ ОТЧЁТЫ
+  const [groupsOpen, setGroupsOpen] = useState(true); // разделы отчётности
+  const [tasksOpen, setTasksOpen] = useState(true); // задачи
+  const [adviceOpen, setAdviceOpen] = useState(true); // советы по работе
   const [taskModal, setTaskModal] = useState(null);
   // Вкладки WorkSection
   const [workTab, setWorkTab] = useState("reports"); // reports | tools
@@ -4898,8 +4911,12 @@ function WorkSection({profile,tasks,setTasks,today,kb,notify}) {
       )}
 
       {/* ── Разделы отчётности — вертикально ── */}
-      <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1.5,marginBottom:8,marginTop:4}}>ВСЕ РАЗДЕЛЫ</div>
-      {reportGroups.map(g=>{
+      <div onClick={()=>setGroupsOpen(o=>!o)} style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",marginBottom:groupsOpen?8:4,marginTop:4}}>
+        <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1.5,flex:1}}>ВСЕ РАЗДЕЛЫ</div>
+        <span style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'"}}>{reportGroups.length}</span>
+        <span style={{fontSize:11,color:T.text3}}>{groupsOpen?"▲":"▼"}</span>
+      </div>
+      {groupsOpen&&reportGroups.map(g=>{
         const groupReports = reports.filter(r=>r.group===g.id&&r.enabled!==false);
         const pendingCount = groupReports.filter(r=>r.status!=="done").length;
         const isOpen = activeGroup===g.id;
@@ -4945,62 +4962,105 @@ function WorkSection({profile,tasks,setTasks,today,kb,notify}) {
           </div>
         );
       })}
+      {/* Создать раздел (только если раскрыто) */}
+      {groupsOpen&&<button className="btn btn-ghost btn-sm" style={{width:"100%",marginBottom:12,fontSize:12,border:"1px dashed rgba(200,164,90,0.3)"}} onClick={()=>setAddGroupModal(true)}>+ Создать раздел</button>}
 
-      {/* Создать свой раздел */}
-      <button className="btn btn-ghost btn-sm" style={{width:"100%",marginBottom:12,fontSize:12,border:"1px dashed rgba(200,164,90,0.3)"}} onClick={()=>setAddGroupModal(true)}>+ Создать раздел</button>
-
-      {/* ── Задачи по работе ── */}
-      {(()=>{
-        const internal = workTasks;
-        if(!internal.length&&isWorkDay) return null;
-        return (
-          <div className="card" style={{marginBottom:12}}>
-            <div className="card-hd">
-              <span style={{fontSize:13,fontWeight:600,color:T.teal}}>📋 Задачи</span>
-              <div style={{display:"flex",gap:6}}>
-                {internal.some(t=>t.doneDate===today)&&<button className="btn btn-ghost btn-sm" style={{fontSize:11,padding:"3px 8px",color:T.text3}} onClick={()=>{if(window.confirm("Сбросить?"))setTasks(p=>p.map(t=>t.section==="work"&&!t.isDeadline&&t.doneDate===today?{...t,doneDate:null}:t));notify("Сброшено");}}>↩ Сброс</button>}
-                <button className="btn btn-ghost btn-sm" onClick={()=>setTaskModal({})}>+</button>
-              </div>
+      {/* ── Задачи по работе — сворачиваемые ── */}
+      {(workTasks.length>0||true)&&(
+        <div style={{marginBottom:12}}>
+          {/* Заголовок */}
+          <div onClick={()=>setTasksOpen(o=>!o)} style={{display:"flex",alignItems:"center",gap:8,padding:"10px 14px",borderRadius:tasksOpen?"12px 12px 0 0":"12px",cursor:"pointer",background:"rgba(78,201,190,0.06)",border:"1px solid rgba(78,201,190,0.15)",transition:"all .15s"}}>
+            <span style={{fontSize:16}}>📋</span>
+            <span style={{flex:1,fontSize:14,fontFamily:"'Crimson Pro',serif",color:T.teal,fontWeight:500}}>Задачи</span>
+            {workTasks.length>0&&(
+              <span style={{fontSize:10,color:T.teal,fontFamily:"'JetBrains Mono'",background:"rgba(78,201,190,0.1)",padding:"1px 7px",borderRadius:10}}>
+                {workTasks.filter(t=>t.doneDate===today).length}/{workTasks.length}
+              </span>
+            )}
+            <div style={{display:"flex",gap:4}} onClick={e=>e.stopPropagation()}>
+              {workTasks.some(t=>t.doneDate===today)&&(
+                <button className="btn btn-ghost btn-sm" style={{fontSize:10,padding:"2px 6px",color:T.text3}}
+                  onClick={()=>{if(window.confirm("Сбросить выполненные?"))setTasks(p=>p.map(t=>t.section==="work"&&!t.isDeadline&&t.doneDate===today?{...t,doneDate:null}:t));notify("Сброшено");}}>↩</button>
+              )}
+              <button className="btn btn-ghost btn-sm" style={{fontSize:12,padding:"2px 8px",color:T.teal}}
+                onClick={()=>setTaskModal({})}>+</button>
             </div>
-            {internal.map(task=>(
-              <div key={task.id} className="task-row">
-                <div className={"chk"+(task.doneDate===today?" done":"")} onClick={()=>setTasks(p=>p.map(t=>t.id===task.id?{...t,doneDate:t.doneDate===today?null:today,lastDone:t.doneDate===today?t.lastDone:today}:t))}>{task.doneDate===today?"✓":""}</div>
-                <div className="task-body">
-                  <div className={"task-name"+(task.doneDate===today?" done":"")}>{task.title}</div>
-                  <div className="task-meta">{task.preferredTime&&<span className="badge bg">🕐 {task.preferredTime}</span>}{task.deadline&&<span className="badge bw">📅 {new Date(task.deadline).toLocaleDateString("ru-RU",{day:"numeric",month:"short"})}</span>}</div>
-                  {task.notes&&<div className="task-notes">{task.notes}</div>}
-                </div>
-                <div className="ico-btn" onClick={()=>setTaskModal(task)}>✏️</div>
-                <div className="ico-btn danger" onClick={()=>setTasks(p=>p.filter(t=>t.id!==task.id))}>✕</div>
-              </div>
-            ))}
-            {internal.length===0&&<div className="empty"><span className="empty-ico">✦</span><p>Нет задач</p></div>}
+            <span style={{fontSize:11,color:T.text3,marginLeft:4}}>{tasksOpen?"▲":"▼"}</span>
           </div>
-        );
-      })()}
+          {/* Список задач — компактный */}
+          {tasksOpen&&(
+            <div style={{background:"rgba(255,255,255,0.01)",border:"1px solid rgba(78,201,190,0.1)",borderTop:"none",borderRadius:"0 0 12px 12px",padding:"4px 0"}}>
+              {workTasks.length===0&&(
+                <div style={{padding:"12px 14px",fontSize:13,color:T.text3,fontStyle:"italic",textAlign:"center"}}>
+                  Нет задач — нажми + чтобы добавить
+                </div>
+              )}
+              {workTasks.map(task=>{
+                const done = task.doneDate===today;
+                const hasExtra = task.deadline||task.notes;
+                return (
+                  <div key={task.id} style={{display:"flex",alignItems:"center",gap:8,padding:"7px 14px",borderBottom:"1px solid rgba(255,255,255,0.03)"}}>
+                    <div className={"chk"+(done?" done":"")} style={{width:18,height:18,fontSize:11,flexShrink:0}}
+                      onClick={()=>setTasks(p=>p.map(t=>t.id===task.id?{...t,doneDate:done?null:today,lastDone:done?t.lastDone:today}:t))}>
+                      {done?"✓":""}
+                    </div>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontSize:13,color:done?T.text3:T.text0,textDecoration:done?"line-through":"none",lineHeight:1.4}}>
+                        {task.title}
+                      </div>
+                      {/* Мета — только если есть */}
+                      {(task.preferredTime||hasExtra)&&(
+                        <div style={{display:"flex",gap:6,marginTop:1,flexWrap:"wrap"}}>
+                          {task.preferredTime&&<span style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'"}}>🕐{task.preferredTime}</span>}
+                          {task.deadline&&<span style={{fontSize:10,color:T.gold,fontFamily:"'JetBrains Mono'"}}>📅{new Date(task.deadline).toLocaleDateString("ru-RU",{day:"numeric",month:"short"})}</span>}
+                          {task.notes&&<span style={{fontSize:10,color:T.text3,fontStyle:"italic"}}>{task.notes}</span>}
+                        </div>
+                      )}
+                    </div>
+                    <div className="ico-btn" style={{fontSize:11,padding:"2px 4px",flexShrink:0}} onClick={()=>setTaskModal(task)}>✏️</div>
+                    <div className="ico-btn danger" style={{fontSize:11,padding:"2px 4px",flexShrink:0}} onClick={()=>setTasks(p=>p.filter(t=>t.id!==task.id))}>✕</div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
-      <AiBox kb={kb} prompt={
-        "СИСТЕМНОЕ ТРЕБОВАНИЕ: отвечай ТОЛЬКО на русском языке. Никаких других языков.\n\n"+
-        "Ты — профессиональный бизнес-консультант. Дай конкретные рекомендации на основе реального профиля пользователя.\n\n"+
-        "ПРОФИЛЬ:\n"+
-        "- Профессия: "+(profile.profession||"—")+"\n"+
-        "- Должность/сфера: "+(profile.jobSphere||"—")+"\n"+
-        "- Режим работы: "+(profile.workType||"—")+"\n"+
-        "- График: "+(profile.workStart||"09:00")+"–"+(profile.workEnd||"18:00")+"\n"+
-        "- Что вдохновляет в работе: "+(profile.workInspire||"—")+"\n"+
-        "- Что истощает: "+((profile.workDrain||[]).join(", ")||"—")+"\n"+
-        "- Стрессоры: "+((profile.stressors||[]).join(", ")||"—")+"\n"+
-        "- Хронотип: "+(profile.chronotype||"—")+"\n"+
-        "- Стиль планирования: "+(profile.planningStyle||"—")+"\n\n"+
-        "ЗАДАЧА: дай 5 конкретных рекомендаций для повышения эффективности рабочего дня.\n\n"+
-        "ПРАВИЛА:\n"+
-        "— Каждый совет строго под этот профиль — профессию, режим, хронотип\n"+
-        "— Если советуешь инструмент или метод — называй его точно (например: метод GTD, Pomodoro 25/5, матрица Эйзенхауэра)\n"+
-        "— Если ссылаешься на исследование или источник — указывай его\n"+
-        "— Никаких общих фраз типа «будь продуктивнее» или «расставляй приоритеты»\n"+
-        "— Учитывай что истощает — не советуй то, что усугубит проблему\n\n"+
-        "ФОРМАТ: нумерованный список 1-5. Каждый пункт: [Метод/инструмент] Конкретное действие. Почему подходит именно тебе: 1 предложение."
-      } label="Советы по работе" btnText="Получить рекомендации" placeholder="Анализирую профиль и даю конкретные рекомендации..." onCreateTool={createTool}/>
+      {/* ── Советы по работе — сворачиваемые ── */}
+      <div style={{marginBottom:12}}>
+        <div onClick={()=>setAdviceOpen(o=>!o)} style={{display:"flex",alignItems:"center",gap:8,padding:"10px 14px",borderRadius:adviceOpen?"12px 12px 0 0":"12px",cursor:"pointer",background:"rgba(200,164,90,0.06)",border:"1px solid rgba(200,164,90,0.15)",transition:"all .15s"}}>
+          <span style={{fontSize:16}}>💡</span>
+          <span style={{flex:1,fontSize:14,fontFamily:"'Crimson Pro',serif",color:T.gold,fontWeight:500}}>Советы по работе</span>
+          <span style={{fontSize:11,color:T.text3}}>{adviceOpen?"▲":"▼"}</span>
+        </div>
+        {adviceOpen&&(
+          <div style={{border:"1px solid rgba(200,164,90,0.12)",borderTop:"none",borderRadius:"0 0 12px 12px",overflow:"hidden"}}>
+            <AiBox kb={kb} prompt={
+              "СИСТЕМНОЕ ТРЕБОВАНИЕ: отвечай ТОЛЬКО на русском языке. Никаких других языков.\n\n"+
+              "Ты — профессиональный бизнес-консультант. Дай конкретные рекомендации на основе реального профиля пользователя.\n\n"+
+              "ПРОФИЛЬ:\n"+
+              "- Профессия: "+(profile.profession||"—")+"\n"+
+              "- Должность/сфера: "+(profile.jobSphere||"—")+"\n"+
+              "- Режим работы: "+(profile.workType||"—")+"\n"+
+              "- График: "+(profile.workStart||"09:00")+"–"+(profile.workEnd||"18:00")+"\n"+
+              "- Что вдохновляет в работе: "+(profile.workInspire||"—")+"\n"+
+              "- Что истощает: "+((profile.workDrain||[]).join(", ")||"—")+"\n"+
+              "- Стрессоры: "+((profile.stressors||[]).join(", ")||"—")+"\n"+
+              "- Хронотип: "+(profile.chronotype||"—")+"\n"+
+              "- Стиль планирования: "+(profile.planningStyle||"—")+"\n\n"+
+              "ЗАДАЧА: дай 5 конкретных рекомендаций для повышения эффективности рабочего дня.\n\n"+
+              "ПРАВИЛА:\n"+
+              "— Каждый совет строго под этот профиль — профессию, режим, хронотип\n"+
+              "— Если советуешь инструмент или метод — называй его точно (например: метод GTD, Pomodoro 25/5, матрица Эйзенхауэра)\n"+
+              "— Если ссылаешься на исследование или источник — указывай его\n"+
+              "— Никаких общих фраз типа «будь продуктивнее» или «расставляй приоритеты»\n"+
+              "— Учитывай что истощает — не советуй то, что усугубит проблему\n\n"+
+              "ФОРМАТ: нумерованный список 1-5. Каждый пункт: [Метод/инструмент] Конкретное действие. Почему подходит именно тебе: 1 предложение."
+            } label="Советы по работе" btnText="Получить рекомендации" placeholder="Анализирую профиль и даю конкретные рекомендации..." onCreateTool={createTool}/>
+          </div>
+        )}
+      </div>
 
       </div>}{/* конец isAccountant */}
       </div>}{/* конец workTab===reports */}
