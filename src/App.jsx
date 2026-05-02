@@ -3258,9 +3258,7 @@ function TodaySection({profile,setProfile,tasks,setTasks,journal,setJournal,toda
                         {ev.beautyGroup.length>0&&<button className="btn btn-ghost btn-sm" style={{fontSize:10,padding:"1px 7px",color:T.danger}}
                           onClick={()=>{
                             const names = tasks.filter(t=>ev.beautyGroup.includes(t.id)).map(t=>t.title);
-                            const choice = window.prompt("Удалить процедуру. Введи номер:
-"+names.map((n,i)=>(i+1)+". "+n).join("
-"));
+                            const choice = window.prompt("Удалить процедуру. Введи номер:\n"+names.map((n,i)=>(i+1)+". "+n).join("\n"));
                             const idx = parseInt(choice)-1;
                             if(idx>=0&&idx<names.length){
                               const id = ev.beautyGroup[idx];
