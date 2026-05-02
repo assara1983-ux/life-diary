@@ -2190,7 +2190,7 @@ function parseAiResponse(text) {
   return blocks;
 }
 
-function AiBox({ kb, prompt, label="ИИ-СОВЕТНИК", btnText="Получить совет", placeholder="Нажми — получи персональный совет...", actionType=null, onShopAdd=null, onTaskAdd=null, noActions=false, maxTokens=1200 }) {
+function AiBox({ kb, prompt, label="ИИ-СОВЕТНИК", btnText="Получить совет", placeholder="Нажми — получи персональный совет...", actionType=null, onShopAdd=null, onTaskAdd=null, noActions=false, maxTokens=1200, onCreateTool=null }) {
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
   // Кэш — сохраняем результат в localStorage по ключу из label
@@ -2457,7 +2457,7 @@ function AiBox({ kb, prompt, label="ИИ-СОВЕТНИК", btnText="Получ�
                 </div>
               )}
             </div>
-            <div className="modal-foot" style={{flexShrink:0,gap:8}}>
+            <div className="modal-foot" style={{flexShrink:0,gap:8,flexWrap:"wrap"}}>
               <button className="btn btn-ghost" onClick={()=>{setDetailItem(null);setDetailText("");}}>Закрыть</button>
               {detailText&&<button className="btn btn-ghost btn-sm" onClick={()=>{
                 try{
@@ -2467,6 +2467,10 @@ function AiBox({ kb, prompt, label="ИИ-СОВЕТНИК", btnText="Получ�
                   alert("Сохранено в заметки");
                 }catch{}
               }}>💾 Сохранить</button>}
+              {detailText&&onCreateTool&&<button className="btn btn-primary btn-sm" onClick={()=>{
+                setDetailItem(null);setDetailText("");
+                onCreateTool(detailItem);
+              }}>✦ Создать помощник</button>}
             </div>
           </div>
         </div>
@@ -4072,6 +4076,14 @@ function WorkSection({profile,tasks,setTasks,today,kb,notify}) {
   const [dlView, setDlView] = useState("upcoming"); // upcoming | overdue | done | all
   const [weekOpen, setWeekOpen] = useState(true); // раздел "на этой неделе"
   const [taskModal, setTaskModal] = useState(null);
+  // Вкладки WorkSection
+  const [workTab, setWorkTab] = useState("reports"); // reports | tools
+  // Инструменты — сохраняются в localStorage
+  const [workTools, setWorkTools] = useStorage("ld_work_tools", []);
+  // Создание инструмента
+  const [creatingTool, setCreatingTool] = useState(null); // {recommendation, type, structure}
+  const [toolLoading, setToolLoading] = useState(false);
+  const [activeTool, setActiveTool] = useState(null); // открытый инструмент
 
   // ── КГД: полный список форм для ТОО и ИП, Казахстан 2026 ──
   const KGD_FORMS = [
@@ -4334,6 +4346,61 @@ function WorkSection({profile,tasks,setTasks,today,kb,notify}) {
 
   const periodLabel = p=>({monthly:"Ежемесячно",quarter:"Ежеквартально",semi:"Раз в полгода",annual:"Ежегодно",once:"Разово"}[p]||p||"—");
 
+  // ─── Создание интерактивного инструмента из рекомендации ───
+  const createTool = async (recommendation) => {
+    setToolLoading(true);
+    try {
+      const prompt =
+        "СИСТЕМНОЕ ТРЕБОВАНИЕ: отвечай ТОЛЬКО на русском языке. Отвечай ТОЛЬКО валидным JSON без markdown.\n\n"+
+        "Пользователь хочет создать интерактивный инструмент на основе рекомендации:\n"+
+        "\""+recommendation+"\"\n\n"+
+        "Профиль пользователя: профессия="+( profile.profession||"—")+", сфера="+(profile.jobSphere||"—")+".\n\n"+
+        "Определи тип инструмента и создай его структуру. Типы:\n"+
+        "- checklist: пошаговый чеклист (шаги которые можно отмечать)\n"+
+        "- tracker: трекер с прогрессом (метрики, цели, значения)\n"+
+        "- board: доска задач (колонки: Надо сделать / В работе / Готово)\n"+
+        "- timer: таймер с сессиями (например Pomodoro)\n"+
+        "- planner: планировщик (временные блоки на день/неделю)\n\n"+
+        "Ответь строго в формате JSON:\n"+
+        "{\n"+
+        "  \"type\": \"checklist\" | \"tracker\" | \"board\" | \"timer\" | \"planner\",\n"+
+        "  \"title\": \"Название инструмента\",\n"+
+        "  \"description\": \"Краткое описание — зачем этот инструмент\",\n"+
+        "  \"data\": { /* структура зависит от типа */ }\n"+
+        "}\n\n"+
+        "Для checklist — data: { items: [{id,text,done:false}] }\n"+
+        "Для tracker — data: { metrics: [{id,name,target,current:0,unit}] }\n"+
+        "Для board — data: { columns: [{id,name,cards:[{id,text}]}] }\n"+
+        "Для timer — data: { workMin:25, breakMin:5, sessions:0, goal:4 }\n"+
+        "Для planner — data: { slots: [{time,activity,duration}] }\n\n"+
+        "Наполни инструмент реальным содержимым под этот метод и профиль пользователя. Не пустой шаблон.";
+
+      const raw = await askClaude(kb, prompt, 1500);
+      const cleaned = raw.replace(/```json|```/g,"").trim();
+      const toolData = JSON.parse(cleaned);
+
+      const newTool = {
+        id: "tool-"+Date.now(),
+        recommendation,
+        type: toolData.type,
+        title: toolData.title,
+        description: toolData.description,
+        data: toolData.data,
+        createdAt: new Date().toISOString(),
+        state: {} // пользовательское состояние (отметки, прогресс)
+      };
+
+      setWorkTools(p=>[newTool, ...p]);
+      setWorkTab("tools");
+      setActiveTool(newTool.id);
+      notify("Инструмент создан: "+newTool.title);
+    } catch(e) {
+      notify("Ошибка создания инструмента — попробуй ещё раз");
+      console.error(e);
+    }
+    setToolLoading(false);
+  };
+
   // ─── Проверка срока через официальные сайты ───
   const checkDeadline = async (r) => {
     setCheckingId(r.id);
@@ -4457,6 +4524,207 @@ function WorkSection({profile,tasks,setTasks,today,kb,notify}) {
       </div>
 
       {!isWorkDay&&<div style={{marginBottom:10,padding:"8px 14px",background:"rgba(200,164,90,.08)",borderRadius:9,fontSize:14,color:T.gold,fontStyle:"italic"}}>Сегодня нерабочий день ✦ Отдыхай</div>}
+
+      {/* ── Вкладки ── */}
+      <div style={{display:"flex",gap:6,marginBottom:14}}>
+        {[
+          {id:"reports", label:"📋 Отчётность"},
+          {id:"tools",   label:"🛠 Инструменты"+(workTools.length>0?" ("+workTools.length+")":"")},
+        ].map(tab=>(
+          <button key={tab.id} onClick={()=>setWorkTab(tab.id)}
+            style={{flex:1,padding:"8px 10px",borderRadius:10,border:"1px solid "+(workTab===tab.id?T.gold+"88":"rgba(255,255,255,0.08)"),background:workTab===tab.id?"rgba(200,164,90,0.12)":"rgba(255,255,255,0.02)",color:workTab===tab.id?T.gold:T.text2,fontSize:13,cursor:"pointer",fontFamily:"'Crimson Pro',serif",transition:"all .15s"}}>
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* ── ВКЛАДКА: ИНСТРУМЕНТЫ ── */}
+      {workTab==="tools"&&(
+        <div>
+          {toolLoading&&(
+            <div style={{textAlign:"center",padding:30,color:T.text3}}>
+              <div style={{fontSize:28,marginBottom:8}}>⚙️</div>
+              <div style={{fontSize:13,fontStyle:"italic"}}>AI создаёт инструмент под твой профиль...</div>
+            </div>
+          )}
+          {!toolLoading&&workTools.length===0&&(
+            <div className="empty">
+              <span className="empty-ico">🛠</span>
+              <p>Инструментов пока нет.</p>
+              <p style={{fontSize:13,color:T.text3}}>Получи советы по работе → нажми «Подробнее» → «✦ Создать помощник»</p>
+            </div>
+          )}
+          {!toolLoading&&workTools.map(tool=>(
+            <div key={tool.id} style={{marginBottom:10}}>
+              <div onClick={()=>setActiveTool(activeTool===tool.id?null:tool.id)}
+                style={{display:"flex",alignItems:"center",gap:10,padding:"12px 16px",borderRadius:12,cursor:"pointer",background:activeTool===tool.id?"rgba(200,164,90,0.1)":"rgba(255,255,255,0.02)",border:"1px solid "+(activeTool===tool.id?T.gold+"55":"rgba(255,255,255,0.06)"),transition:"all .15s"}}>
+                <span style={{fontSize:22}}>{{checklist:"✅",tracker:"📈",board:"📌",timer:"⏱",planner:"🗓"}[tool.type]||"🛠"}</span>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:14,color:T.text0,fontWeight:500}}>{tool.title}</div>
+                  <div style={{fontSize:11,color:T.text3,marginTop:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{tool.description}</div>
+                </div>
+                <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                  <span style={{fontSize:9,color:T.text3,fontFamily:"'JetBrains Mono'",background:"rgba(255,255,255,0.05)",padding:"1px 6px",borderRadius:6}}>{tool.type}</span>
+                  <button className="ico-btn danger" style={{fontSize:11}} onClick={e=>{e.stopPropagation();if(window.confirm("Удалить «"+tool.title+"»?")){setWorkTools(p=>p.filter(t=>t.id!==tool.id));if(activeTool===tool.id)setActiveTool(null);}}}>✕</button>
+                  <span style={{fontSize:12,color:T.text3}}>{activeTool===tool.id?"▲":"▼"}</span>
+                </div>
+              </div>
+              {activeTool===tool.id&&(
+                <div style={{padding:"14px 16px",background:"rgba(255,255,255,0.01)",borderRadius:"0 0 12px 12px",border:"1px solid rgba(255,255,255,0.05)",borderTop:"none"}}>
+                  {/* Исходная рекомендация */}
+                  <div style={{fontSize:11,color:T.text3,fontStyle:"italic",marginBottom:12,padding:"6px 10px",background:"rgba(200,164,90,0.06)",borderRadius:8,borderLeft:"2px solid "+T.gold+"55"}}>
+                    💡 {tool.recommendation}
+                  </div>
+                  {/* Рендер по типу */}
+                  {tool.type==="checklist"&&(
+                    <div>
+                      <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1.5,marginBottom:8}}>ЧЕКЛИСТ</div>
+                      {(tool.data?.items||[]).map((item,i)=>{
+                        const isDone = (tool.state?.checked||{})[item.id];
+                        return (
+                          <div key={item.id||i} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderBottom:"1px solid rgba(255,255,255,0.04)"}}>
+                            <div className={"chk"+(isDone?" done":"")} style={{width:20,height:20,fontSize:12,flexShrink:0}}
+                              onClick={()=>setWorkTools(p=>p.map(t=>t.id===tool.id?{...t,state:{...t.state,checked:{...(t.state?.checked||{}), [item.id||i]:!isDone}}}:t))}>
+                              {isDone?"✓":""}
+                            </div>
+                            <span style={{fontSize:14,color:isDone?T.text3:T.text0,textDecoration:isDone?"line-through":"none"}}>{item.text}</span>
+                          </div>
+                        );
+                      })}
+                      {/* Прогресс */}
+                      {(()=>{
+                        const total=(tool.data?.items||[]).length;
+                        const done=Object.values(tool.state?.checked||{}).filter(Boolean).length;
+                        const pct=total?Math.round(done/total*100):0;
+                        return <div style={{marginTop:10}}>
+                          <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:T.text3,marginBottom:4}}>
+                            <span>Прогресс</span><span style={{fontFamily:"'JetBrains Mono'"}}>{done}/{total}</span>
+                          </div>
+                          <div style={{height:4,borderRadius:2,background:"rgba(255,255,255,0.06)"}}>
+                            <div style={{height:"100%",width:pct+"%",borderRadius:2,background:pct===100?T.success:T.gold,transition:"width .3s"}}/>
+                          </div>
+                        </div>;
+                      })()}
+                    </div>
+                  )}
+                  {tool.type==="tracker"&&(
+                    <div>
+                      <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1.5,marginBottom:8}}>ТРЕКЕР МЕТРИК</div>
+                      {(tool.data?.metrics||[]).map((m,i)=>{
+                        const current = (tool.state?.values||{})[m.id||i] ?? m.current ?? 0;
+                        const pct = m.target ? Math.min(100,Math.round(current/m.target*100)) : 0;
+                        return (
+                          <div key={m.id||i} style={{marginBottom:14}}>
+                            <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+                              <span style={{fontSize:13,color:T.text1}}>{m.name}</span>
+                              <span style={{fontSize:12,color:T.gold,fontFamily:"'JetBrains Mono'"}}>{current}/{m.target} {m.unit||""}</span>
+                            </div>
+                            <div style={{height:6,borderRadius:3,background:"rgba(255,255,255,0.06)",marginBottom:6}}>
+                              <div style={{height:"100%",width:pct+"%",borderRadius:3,background:pct>=100?T.success:T.teal,transition:"width .3s"}}/>
+                            </div>
+                            <div style={{display:"flex",gap:8}}>
+                              <button className="btn btn-ghost btn-sm" style={{fontSize:11}} onClick={()=>setWorkTools(p=>p.map(t=>t.id===tool.id?{...t,state:{...t.state,values:{...(t.state?.values||{}),[m.id||i]:Math.max(0,current-1)}}}:t))}>−</button>
+                              <button className="btn btn-ghost btn-sm" style={{fontSize:11}} onClick={()=>setWorkTools(p=>p.map(t=>t.id===tool.id?{...t,state:{...t.state,values:{...(t.state?.values||{}),[m.id||i]:current+1}}}:t))}>+</button>
+                              <button className="btn btn-ghost btn-sm" style={{fontSize:11}} onClick={()=>{const v=window.prompt("Введи значение:",current);if(v!==null&&!isNaN(v))setWorkTools(p=>p.map(t=>t.id===tool.id?{...t,state:{...t.state,values:{...(t.state?.values||{}),[m.id||i]:parseFloat(v)}}}:t));}}>✏️</button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                  {tool.type==="board"&&(
+                    <div style={{display:"flex",gap:8,overflowX:"auto",paddingBottom:4}}>
+                      {(tool.data?.columns||[]).map((col,ci)=>(
+                        <div key={col.id||ci} style={{minWidth:140,flex:1,background:"rgba(255,255,255,0.02)",borderRadius:10,padding:"10px 10px"}}>
+                          <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:8,textTransform:"uppercase"}}>{col.name}</div>
+                          {((tool.state?.cards||{})[col.id||ci]||col.cards||[]).map((card,cj)=>(
+                            <div key={card.id||cj} style={{padding:"8px 10px",background:"rgba(255,255,255,0.04)",borderRadius:8,marginBottom:6,fontSize:13,color:T.text1}}>
+                              {card.text}
+                            </div>
+                          ))}
+                          <button className="btn btn-ghost btn-sm" style={{width:"100%",fontSize:11,marginTop:4}} onClick={()=>{
+                            const text=window.prompt("Текст карточки:");
+                            if(text)setWorkTools(p=>p.map(t=>t.id===tool.id?{...t,state:{...t.state,cards:{...(t.state?.cards||{}),[col.id||ci]:[...((t.state?.cards||{})[col.id||ci]||col.cards||[]),{id:"c-"+Date.now(),text}]}}}:t));
+                          }}>+ Добавить</button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {tool.type==="timer"&&(()=>{
+                    const d=tool.data||{workMin:25,breakMin:5,sessions:0,goal:4};
+                    const sessions=(tool.state?.sessions||0);
+                    const isRunning=(tool.state?.running||false);
+                    const timeLeft=(tool.state?.timeLeft??d.workMin*60);
+                    const isBreak=(tool.state?.isBreak||false);
+                    const mm=String(Math.floor(timeLeft/60)).padStart(2,"0");
+                    const ss=String(timeLeft%60).padStart(2,"0");
+                    return (
+                      <div style={{textAlign:"center",padding:"10px 0"}}>
+                        <div style={{fontSize:10,color:isBreak?T.success:T.gold,fontFamily:"'JetBrains Mono'",letterSpacing:2,marginBottom:8}}>
+                          {isBreak?"☕ ПЕРЕРЫВ":"🎯 ФОКУС"}
+                        </div>
+                        <div style={{fontSize:56,fontFamily:"'JetBrains Mono'",color:T.text0,fontWeight:700,letterSpacing:4,marginBottom:12}}>
+                          {mm}:{ss}
+                        </div>
+                        <div style={{fontSize:12,color:T.text3,marginBottom:16}}>
+                          Сессий: {sessions}/{d.goal||4}
+                        </div>
+                        <div style={{display:"flex",gap:8,justifyContent:"center"}}>
+                          <button className="btn btn-primary btn-sm" onClick={()=>{
+                            if(isRunning){
+                              setWorkTools(p=>p.map(t=>t.id===tool.id?{...t,state:{...t.state,running:false}}:t));
+                            } else {
+                              setWorkTools(p=>p.map(t=>t.id===tool.id?{...t,state:{...t.state,running:true}}:t));
+                              const tick=setInterval(()=>{
+                                setWorkTools(prev=>{
+                                  const cur=prev.find(t=>t.id===tool.id);
+                                  if(!cur||!cur.state?.running){clearInterval(tick);return prev;}
+                                  const left=(cur.state.timeLeft??d.workMin*60)-1;
+                                  if(left<=0){
+                                    clearInterval(tick);
+                                    const nowBreak=!cur.state.isBreak;
+                                    const newSessions=cur.state.isBreak?cur.state.sessions:(cur.state.sessions||0)+1;
+                                    if(Notification.permission==="granted") new Notification(nowBreak?"☕ Перерыв!":"🎯 Фокус!", {body:nowBreak?"Хорошая работа! Отдохни.":"Вперёд!"});
+                                    return prev.map(t=>t.id===tool.id?{...t,state:{...t.state,running:false,isBreak:nowBreak,sessions:newSessions,timeLeft:nowBreak?d.breakMin*60:d.workMin*60}}:t);
+                                  }
+                                  return prev.map(t=>t.id===tool.id?{...t,state:{...t.state,timeLeft:left}}:t);
+                                });
+                              },1000);
+                            }
+                          }}>{isRunning?"⏸ Пауза":"▶ Старт"}</button>
+                          <button className="btn btn-ghost btn-sm" onClick={()=>setWorkTools(p=>p.map(t=>t.id===tool.id?{...t,state:{...t.state,running:false,timeLeft:d.workMin*60,isBreak:false}}:t))}>↺ Сброс</button>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                  {tool.type==="planner"&&(
+                    <div>
+                      <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1.5,marginBottom:8}}>ПЛАН ДНЯ</div>
+                      {(tool.data?.slots||[]).map((slot,i)=>{
+                        const done=(tool.state?.slotDone||{})[i];
+                        return (
+                          <div key={i} style={{display:"flex",gap:10,padding:"8px 0",borderBottom:"1px solid rgba(255,255,255,0.04)",opacity:done?0.5:1}}>
+                            <span style={{fontSize:12,color:T.gold,fontFamily:"'JetBrains Mono'",flexShrink:0,minWidth:45}}>{slot.time}</span>
+                            <span style={{flex:1,fontSize:13,color:T.text1,textDecoration:done?"line-through":"none"}}>{slot.activity}</span>
+                            <span style={{fontSize:11,color:T.text3,flexShrink:0}}>{slot.duration}</span>
+                            <div className={"chk"+(done?" done":"")} style={{width:18,height:18,fontSize:10,flexShrink:0}}
+                              onClick={()=>setWorkTools(p=>p.map(t=>t.id===tool.id?{...t,state:{...t.state,slotDone:{...(t.state?.slotDone||{}),[i]:!done}}}:t))}>
+                              {done?"✓":""}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── ВКЛАДКА: ОТЧЁТНОСТЬ ── */}
+      {workTab==="reports"&&<div>
 
       {/* ── НА ЭТОЙ НЕДЕЛЕ ── */}
       {(()=>{
@@ -4648,8 +4916,11 @@ function WorkSection({profile,tasks,setTasks,today,kb,notify}) {
         "— Никаких общих фраз типа «будь продуктивнее» или «расставляй приоритеты»\n"+
         "— Учитывай что истощает — не советуй то, что усугубит проблему\n\n"+
         "ФОРМАТ: нумерованный список 1-5. Каждый пункт: [Метод/инструмент] Конкретное действие. Почему подходит именно тебе: 1 предложение."
-      } label="Советы по работе" btnText="Получить рекомендации" placeholder="Анализирую профиль и даю конкретные рекомендации..."/>
+      } label="Советы по работе" btnText="Получить рекомендации" placeholder="Анализирую профиль и даю конкретные рекомендации..." onCreateTool={createTool}/>
 
+      </div>}{/* конец workTab===reports */}
+
+      {/* ── Модалки (вне вкладок) ── */}
       {/* ── Модалка добавления отчёта ── */}
       {addReportModal&&(()=>{
         const g = reportGroups.find(g=>g.id===addReportModal.groupId)||{name:"",color:T.gold,icon:"📋"};
