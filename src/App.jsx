@@ -3615,7 +3615,7 @@ function TasksSection({profile,tasks,setTasks,today,kb,notify}) {
         <div style={{width:4,height:4,borderRadius:"50%",flexShrink:0,background:{h:"#E87878",m:"#E5C87A",l:"#7BCCA0"}[task.priority||"m"]||T.text3}}/>
         <div className={"chk"+(isDone?" done":"")} style={{width:20,height:20,flexShrink:0,fontSize:12}} onClick={()=>toggleDone(task.id)}>{isDone?"✓":""}</div>
         <div style={{flex:1,minWidth:0}}>
-          <div style={{fontSize:14,color:isDone?T.text3:T.text0,textDecoration:isDone?"line-through":"none",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{task.title}</div>
+          <div style={{fontSize:14,color:isDone?T.text3:T.text0,textDecoration:isDone?"line-through":"none",lineHeight:1.4,wordBreak:"break-word"}}>{task.title}</div>
           {task.preferredTime&&<span style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'"}}>🕐{task.preferredTime}</span>}
         </div>
         <div className="ico-btn" style={{fontSize:12,padding:"2px 4px"}} onClick={()=>setModal(task)}>✏️</div>
@@ -4546,7 +4546,7 @@ function WorkSection({profile,tasks,setTasks,today,kb,notify}) {
           <div style={{flex:1,minWidth:0}}>
             <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
               {showGroup&&<span style={{fontSize:10,color:g.color,fontFamily:"'JetBrains Mono'"}}>{g.icon}</span>}
-              <span style={{fontSize:14,color:r.status==="done"?T.text3:T.text0,textDecoration:r.status==="done"?"line-through":"none",lineHeight:1.3}}>{r.name}</span>
+              <span style={{fontSize:14,color:r.status==="done"?T.text3:T.text0,textDecoration:r.status==="done"?"line-through":"none",lineHeight:1.4,wordBreak:"break-word"}}>{r.name}</span>
             </div>
             <div style={{display:"flex",gap:6,marginTop:3,flexWrap:"wrap",alignItems:"center"}}>
               <span style={{fontSize:10,color:isOver?T.danger:isSoon?T.warn:T.text3,fontFamily:"'JetBrains Mono'",fontWeight:isOver||isSoon?700:400}}>
@@ -4648,8 +4648,8 @@ function WorkSection({profile,tasks,setTasks,today,kb,notify}) {
                 style={{display:"flex",alignItems:"center",gap:10,padding:"12px 16px",borderRadius:12,cursor:"pointer",background:activeTool===tool.id?"rgba(200,164,90,0.1)":"rgba(255,255,255,0.02)",border:"1px solid "+(activeTool===tool.id?T.gold+"55":"rgba(255,255,255,0.06)"),transition:"all .15s"}}>
                 <span style={{fontSize:22}}>{{checklist:"✅",tracker:"📈",board:"📌",timer:"⏱",planner:"🗓"}[tool.type]||"🛠"}</span>
                 <div style={{flex:1,minWidth:0}}>
-                  <div style={{fontSize:14,color:T.text0,fontWeight:500}}>{tool.title}</div>
-                  <div style={{fontSize:11,color:T.text3,marginTop:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{tool.description}</div>
+                  <div style={{fontSize:14,color:T.text0,fontWeight:500,wordBreak:"break-word"}}>{tool.title}</div>
+                  <div style={{fontSize:11,color:T.text3,marginTop:2,lineHeight:1.4,wordBreak:"break-word"}}>{tool.description}</div>
                 </div>
                 <div style={{display:"flex",gap:6,alignItems:"center"}}>
                   <span style={{fontSize:9,color:T.text3,fontFamily:"'JetBrains Mono'",background:"rgba(255,255,255,0.05)",padding:"1px 6px",borderRadius:6}}>{tool.type}</span>
@@ -4926,7 +4926,7 @@ function WorkSection({profile,tasks,setTasks,today,kb,notify}) {
                     <div key={r.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderBottom:"1px solid rgba(255,255,255,0.04)"}}>
                       <span style={{fontSize:16}}>{g.icon}</span>
                       <div style={{flex:1,minWidth:0}}>
-                        <div style={{fontSize:14,color:r.status==="done"?T.text3:T.text0,textDecoration:r.status==="done"?"line-through":"none",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{r.name}</div>
+                        <div style={{fontSize:14,color:r.status==="done"?T.text3:T.text0,textDecoration:r.status==="done"?"line-through":"none",lineHeight:1.4,wordBreak:"break-word"}}>{r.name}</div>
                         <div style={{display:"flex",gap:6,marginTop:2}}>
                           <span style={{fontSize:10,color:days===0?T.danger:days===1?"#E8A85A":T.text3,fontFamily:"'JetBrains Mono'"}}>
                             {days===0?"📍 Сегодня":days===1?"⚠ Завтра":"📅 "+new Date(r.deadline).toLocaleDateString("ru-RU",{day:"numeric",month:"short"})}
