@@ -4580,17 +4580,31 @@ function WorkSection({profile,tasks,setTasks,today,kb,notify}) {
                     <div>
                       <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1.5,marginBottom:8}}>ЧЕКЛИСТ</div>
                       {(tool.data?.items||[]).map((item,i)=>{
-                        const isDone = (tool.state?.checked||{})[item.id];
+                        const isDone=(tool.state?.checked||{})[item.id||i];
                         return (
-                          <div key={item.id||i} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderBottom:"1px solid rgba(255,255,255,0.04)"}}>
+                          <div key={item.id||i} style={{display:"flex",alignItems:"center",gap:8,padding:"7px 0",borderBottom:"1px solid rgba(255,255,255,0.04)"}}>
                             <div className={"chk"+(isDone?" done":"")} style={{width:20,height:20,fontSize:12,flexShrink:0}}
-                              onClick={()=>setWorkTools(p=>p.map(t=>t.id===tool.id?{...t,state:{...t.state,checked:{...(t.state?.checked||{}), [item.id||i]:!isDone}}}:t))}>
+                              onClick={()=>setWorkTools(p=>p.map(t=>t.id===tool.id?{...t,state:{...t.state,checked:{...(t.state?.checked||{}),[item.id||i]:!isDone}}}:t))}>
                               {isDone?"✓":""}
                             </div>
-                            <span style={{fontSize:14,color:isDone?T.text3:T.text0,textDecoration:isDone?"line-through":"none"}}>{item.text}</span>
+                            <span style={{flex:1,fontSize:14,color:isDone?T.text3:T.text0,textDecoration:isDone?"line-through":"none"}}>{item.text}</span>
+                            {/* Редактировать */}
+                            <div className="ico-btn" style={{fontSize:11,color:T.teal,padding:"1px 4px",flexShrink:0}} onClick={()=>{
+                              const v=window.prompt("Изменить шаг:",item.text);
+                              if(v&&v.trim()) setWorkTools(p=>p.map(t=>t.id===tool.id?{...t,data:{...t.data,items:t.data.items.map((it,j)=>j===i?{...it,text:v.trim()}:it)}}:t));
+                            }}>✏️</div>
+                            {/* Удалить */}
+                            <div className="ico-btn danger" style={{fontSize:11,padding:"1px 4px",flexShrink:0}} onClick={()=>{
+                              if(window.confirm("Удалить шаг?")) setWorkTools(p=>p.map(t=>t.id===tool.id?{...t,data:{...t.data,items:t.data.items.filter((_,j)=>j!==i)}}:t));
+                            }}>✕</div>
                           </div>
                         );
                       })}
+                      {/* Добавить шаг */}
+                      <button className="btn btn-ghost btn-sm" style={{width:"100%",marginTop:8,fontSize:11,border:"1px dashed rgba(200,164,90,0.3)"}} onClick={()=>{
+                        const v=window.prompt("Новый шаг:");
+                        if(v&&v.trim()) setWorkTools(p=>p.map(t=>t.id===tool.id?{...t,data:{...t.data,items:[...(t.data.items||[]),{id:"i-"+Date.now(),text:v.trim(),done:false}]}}:t));
+                      }}>+ Добавить шаг</button>
                       {/* Прогресс */}
                       {(()=>{
                         const total=(tool.data?.items||[]).length;
@@ -4611,43 +4625,79 @@ function WorkSection({profile,tasks,setTasks,today,kb,notify}) {
                     <div>
                       <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1.5,marginBottom:8}}>ТРЕКЕР МЕТРИК</div>
                       {(tool.data?.metrics||[]).map((m,i)=>{
-                        const current = (tool.state?.values||{})[m.id||i] ?? m.current ?? 0;
-                        const pct = m.target ? Math.min(100,Math.round(current/m.target*100)) : 0;
+                        const current=(tool.state?.values||{})[m.id||i]??m.current??0;
+                        const pct=m.target?Math.min(100,Math.round(current/m.target*100)):0;
                         return (
-                          <div key={m.id||i} style={{marginBottom:14}}>
-                            <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
-                              <span style={{fontSize:13,color:T.text1}}>{m.name}</span>
-                              <span style={{fontSize:12,color:T.gold,fontFamily:"'JetBrains Mono'"}}>{current}/{m.target} {m.unit||""}</span>
+                          <div key={m.id||i} style={{marginBottom:14,padding:"10px 12px",background:"rgba(255,255,255,0.02)",borderRadius:10}}>
+                            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                              <span style={{fontSize:13,color:T.text1,fontWeight:500}}>{m.name}</span>
+                              <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                                <span style={{fontSize:12,color:T.gold,fontFamily:"'JetBrains Mono'"}}>{current}/{m.target} {m.unit||""}</span>
+                                {/* Редактировать метрику */}
+                                <div className="ico-btn" style={{fontSize:11,color:T.teal,padding:"1px 4px"}} onClick={()=>{
+                                  const name=window.prompt("Название метрики:",m.name);
+                                  if(!name) return;
+                                  const target=window.prompt("Цель:",m.target);
+                                  const unit=window.prompt("Единица измерения:",m.unit||"");
+                                  setWorkTools(p=>p.map(t=>t.id===tool.id?{...t,data:{...t.data,metrics:t.data.metrics.map((x,j)=>j===i?{...x,name:name.trim(),target:parseFloat(target)||x.target,unit:unit||x.unit}:x)}}:t));
+                                }}>✏️</div>
+                                {/* Удалить метрику */}
+                                <div className="ico-btn danger" style={{fontSize:11,padding:"1px 4px"}} onClick={()=>{
+                                  if(window.confirm("Удалить метрику «"+m.name+"»?")) setWorkTools(p=>p.map(t=>t.id===tool.id?{...t,data:{...t.data,metrics:t.data.metrics.filter((_,j)=>j!==i)}}:t));
+                                }}>✕</div>
+                              </div>
                             </div>
-                            <div style={{height:6,borderRadius:3,background:"rgba(255,255,255,0.06)",marginBottom:6}}>
+                            <div style={{height:6,borderRadius:3,background:"rgba(255,255,255,0.06)",marginBottom:8}}>
                               <div style={{height:"100%",width:pct+"%",borderRadius:3,background:pct>=100?T.success:T.teal,transition:"width .3s"}}/>
                             </div>
                             <div style={{display:"flex",gap:8}}>
                               <button className="btn btn-ghost btn-sm" style={{fontSize:11}} onClick={()=>setWorkTools(p=>p.map(t=>t.id===tool.id?{...t,state:{...t.state,values:{...(t.state?.values||{}),[m.id||i]:Math.max(0,current-1)}}}:t))}>−</button>
                               <button className="btn btn-ghost btn-sm" style={{fontSize:11}} onClick={()=>setWorkTools(p=>p.map(t=>t.id===tool.id?{...t,state:{...t.state,values:{...(t.state?.values||{}),[m.id||i]:current+1}}}:t))}>+</button>
-                              <button className="btn btn-ghost btn-sm" style={{fontSize:11}} onClick={()=>{const v=window.prompt("Введи значение:",current);if(v!==null&&!isNaN(v))setWorkTools(p=>p.map(t=>t.id===tool.id?{...t,state:{...t.state,values:{...(t.state?.values||{}),[m.id||i]:parseFloat(v)}}}:t));}}>✏️</button>
+                              <button className="btn btn-ghost btn-sm" style={{fontSize:11}} onClick={()=>{const v=window.prompt("Введи значение:",current);if(v!==null&&!isNaN(v))setWorkTools(p=>p.map(t=>t.id===tool.id?{...t,state:{...t.state,values:{...(t.state?.values||{}),[m.id||i]:parseFloat(v)}}}:t));}}>= Задать</button>
                             </div>
                           </div>
                         );
                       })}
+                      {/* Добавить метрику */}
+                      <button className="btn btn-ghost btn-sm" style={{width:"100%",marginTop:4,fontSize:11,border:"1px dashed rgba(200,164,90,0.3)"}} onClick={()=>{
+                        const name=window.prompt("Название метрики:");
+                        if(!name) return;
+                        const target=window.prompt("Цель (число):");
+                        const unit=window.prompt("Единица измерения (шт, мин, ₸ и т.д.):");
+                        if(name.trim()) setWorkTools(p=>p.map(t=>t.id===tool.id?{...t,data:{...t.data,metrics:[...(t.data.metrics||[]),{id:"m-"+Date.now(),name:name.trim(),target:parseFloat(target)||10,current:0,unit:unit||""}]}}:t));
+                      }}>+ Добавить метрику</button>
                     </div>
                   )}
                   {tool.type==="board"&&(
                     <div style={{display:"flex",gap:8,overflowX:"auto",paddingBottom:4}}>
-                      {(tool.data?.columns||[]).map((col,ci)=>(
-                        <div key={col.id||ci} style={{minWidth:140,flex:1,background:"rgba(255,255,255,0.02)",borderRadius:10,padding:"10px 10px"}}>
-                          <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:8,textTransform:"uppercase"}}>{col.name}</div>
-                          {((tool.state?.cards||{})[col.id||ci]||col.cards||[]).map((card,cj)=>(
-                            <div key={card.id||cj} style={{padding:"8px 10px",background:"rgba(255,255,255,0.04)",borderRadius:8,marginBottom:6,fontSize:13,color:T.text1}}>
-                              {card.text}
-                            </div>
-                          ))}
-                          <button className="btn btn-ghost btn-sm" style={{width:"100%",fontSize:11,marginTop:4}} onClick={()=>{
-                            const text=window.prompt("Текст карточки:");
-                            if(text)setWorkTools(p=>p.map(t=>t.id===tool.id?{...t,state:{...t.state,cards:{...(t.state?.cards||{}),[col.id||ci]:[...((t.state?.cards||{})[col.id||ci]||col.cards||[]),{id:"c-"+Date.now(),text}]}}}:t));
-                          }}>+ Добавить</button>
-                        </div>
-                      ))}
+                      {(tool.data?.columns||[]).map((col,ci)=>{
+                        const colCards=(tool.state?.cards||{})[col.id||ci]||col.cards||[];
+                        return (
+                          <div key={col.id||ci} style={{minWidth:150,flex:1,background:"rgba(255,255,255,0.02)",borderRadius:10,padding:"10px 10px"}}>
+                            <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:8,textTransform:"uppercase"}}>{col.name}</div>
+                            {colCards.map((card,cj)=>(
+                              <div key={card.id||cj} style={{padding:"8px 10px",background:"rgba(255,255,255,0.04)",borderRadius:8,marginBottom:6,fontSize:13,color:T.text1}}>
+                                <div style={{display:"flex",alignItems:"flex-start",gap:6}}>
+                                  <span style={{flex:1}}>{card.text}</span>
+                                  <div style={{display:"flex",gap:3,flexShrink:0}}>
+                                    <div className="ico-btn" style={{fontSize:10,color:T.teal,padding:"1px 3px"}} onClick={()=>{
+                                      const v=window.prompt("Изменить карточку:",card.text);
+                                      if(v&&v.trim()) setWorkTools(p=>p.map(t=>t.id===tool.id?{...t,state:{...t.state,cards:{...(t.state?.cards||{}),[col.id||ci]:colCards.map((c,k)=>k===cj?{...c,text:v.trim()}:c)}}}:t));
+                                    }}>✏️</div>
+                                    <div className="ico-btn danger" style={{fontSize:10,padding:"1px 3px"}} onClick={()=>{
+                                      setWorkTools(p=>p.map(t=>t.id===tool.id?{...t,state:{...t.state,cards:{...(t.state?.cards||{}),[col.id||ci]:colCards.filter((_,k)=>k!==cj)}}}:t));
+                                    }}>✕</div>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                            <button className="btn btn-ghost btn-sm" style={{width:"100%",fontSize:11,marginTop:4,border:"1px dashed rgba(200,164,90,0.3)"}} onClick={()=>{
+                              const text=window.prompt("Текст карточки:");
+                              if(text&&text.trim()) setWorkTools(p=>p.map(t=>t.id===tool.id?{...t,state:{...t.state,cards:{...(t.state?.cards||{}),[col.id||ci]:[...colCards,{id:"c-"+Date.now(),text:text.trim()}]}}}:t));
+                            }}>+ Добавить</button>
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                   {tool.type==="timer"&&(()=>{
@@ -4703,17 +4753,39 @@ function WorkSection({profile,tasks,setTasks,today,kb,notify}) {
                       {(tool.data?.slots||[]).map((slot,i)=>{
                         const done=(tool.state?.slotDone||{})[i];
                         return (
-                          <div key={i} style={{display:"flex",gap:10,padding:"8px 0",borderBottom:"1px solid rgba(255,255,255,0.04)",opacity:done?0.5:1}}>
-                            <span style={{fontSize:12,color:T.gold,fontFamily:"'JetBrains Mono'",flexShrink:0,minWidth:45}}>{slot.time}</span>
-                            <span style={{flex:1,fontSize:13,color:T.text1,textDecoration:done?"line-through":"none"}}>{slot.activity}</span>
-                            <span style={{fontSize:11,color:T.text3,flexShrink:0}}>{slot.duration}</span>
+                          <div key={i} style={{display:"flex",gap:8,padding:"8px 0",borderBottom:"1px solid rgba(255,255,255,0.04)",alignItems:"center",opacity:done?0.5:1}}>
                             <div className={"chk"+(done?" done":"")} style={{width:18,height:18,fontSize:10,flexShrink:0}}
                               onClick={()=>setWorkTools(p=>p.map(t=>t.id===tool.id?{...t,state:{...t.state,slotDone:{...(t.state?.slotDone||{}),[i]:!done}}}:t))}>
                               {done?"✓":""}
                             </div>
+                            <span style={{fontSize:12,color:T.gold,fontFamily:"'JetBrains Mono'",flexShrink:0,minWidth:45}}>{slot.time}</span>
+                            <span style={{flex:1,fontSize:13,color:T.text1,textDecoration:done?"line-through":"none"}}>{slot.activity}</span>
+                            <span style={{fontSize:11,color:T.text3,flexShrink:0}}>{slot.duration}</span>
+                            {/* Редактировать слот */}
+                            <div className="ico-btn" style={{fontSize:11,color:T.teal,padding:"1px 4px",flexShrink:0}} onClick={()=>{
+                              const time=window.prompt("Время (ЧЧ:ММ):",slot.time);
+                              if(!time) return;
+                              const activity=window.prompt("Активность:",slot.activity);
+                              if(!activity) return;
+                              const duration=window.prompt("Длительность:",slot.duration||"");
+                              setWorkTools(p=>p.map(t=>t.id===tool.id?{...t,data:{...t.data,slots:t.data.slots.map((s,j)=>j===i?{...s,time:time.trim(),activity:activity.trim(),duration:duration||s.duration}:s)}}:t));
+                            }}>✏️</div>
+                            {/* Удалить слот */}
+                            <div className="ico-btn danger" style={{fontSize:11,padding:"1px 4px",flexShrink:0}} onClick={()=>{
+                              setWorkTools(p=>p.map(t=>t.id===tool.id?{...t,data:{...t.data,slots:t.data.slots.filter((_,j)=>j!==i)}}:t));
+                            }}>✕</div>
                           </div>
                         );
                       })}
+                      {/* Добавить слот */}
+                      <button className="btn btn-ghost btn-sm" style={{width:"100%",marginTop:8,fontSize:11,border:"1px dashed rgba(200,164,90,0.3)"}} onClick={()=>{
+                        const time=window.prompt("Время (ЧЧ:ММ):");
+                        if(!time) return;
+                        const activity=window.prompt("Активность:");
+                        if(!activity) return;
+                        const duration=window.prompt("Длительность (например: 30 мин):");
+                        setWorkTools(p=>p.map(t=>t.id===tool.id?{...t,data:{...t.data,slots:[...(t.data.slots||[]),{time:time.trim(),activity:activity.trim(),duration:duration||""}].sort((a,b)=>a.time.localeCompare(b.time))}}:t));
+                      }}>+ Добавить блок</button>
                     </div>
                   )}
                 </div>
