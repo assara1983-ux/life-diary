@@ -2202,6 +2202,9 @@ function parseAiResponse(text) {
 function AiBox({ kb, prompt, label="ИИ-СОВЕТНИК", btnText="Получить совет", placeholder="Нажми — получи персональный совет...", actionType=null, onShopAdd=null, onTaskAdd=null, noActions=false, maxTokens=1200, onCreateTool=null }) {
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
+  const [boxOpen, setBoxOpen] = useState(true);     // весь блок свёрнут/развёрнут
+  const [openItems, setOpenItems] = useState({});   // {listIndex_itemIndex: bool}
+  const toggleItem = (key) => setOpenItems(p=>({...p,[key]:!p[key]}));
   // Кэш — сохраняем результат в localStorage по ключу из label
   const cacheKey = "ld_aibox_cache_"+label.replace(/\s+/g,"_");
   useEffect(()=>{
@@ -2370,33 +2373,75 @@ function AiBox({ kb, prompt, label="ИИ-СОВЕТНИК", btnText="Получ�
     setDetailLoading(false);
   };
 
+  // Извлекаем заголовок пункта — первое предложение или заголовок
+  const getItemTitle = (item) => {
+    const isObj = typeof item === "object";
+    const full = isObj ? ((item.title||"")+" "+(item.body||"")).trim() : (item||"");
+    // Убираем маркеры типа [Подкаст], 1. и т.д.
+    const clean = full.replace(/^\d+[\.\)]\s*/,"").replace(/^\[([^\]]+)\]\s*/,"$1: ").trim();
+    // Берём первые ~60 символов до точки/тире
+    const match = clean.match(/^(.{10,60}?)(?:[.!?]|(?:\s—\s)|\s[-–]\s|$)/);
+    return match ? match[1].trim() : clean.slice(0,60)+(clean.length>60?"…":"");
+  };
+
   return (
     <div className="ai-box">
-      <div className="ai-hd"><div className="ai-pulse"/><div className="ai-lbl">{label}</div></div>
-      {!text && <div className="ai-dim">{placeholder}</div>}
-      {text && <div className="ai-content">
+      {/* Заголовок блока — кликабельный */}
+      <div className="ai-hd" style={{cursor:"pointer"}} onClick={()=>setBoxOpen(o=>!o)}>
+        <div className="ai-pulse"/>
+        <div className="ai-lbl" style={{flex:1}}>{label}</div>
+        {text&&<span style={{fontSize:11,color:"rgba(200,164,90,0.6)",marginRight:4}}>{boxOpen?"▲":"▼"}</span>}
+      </div>
+      {/* Пустое состояние — показываем всегда */}
+      {!text&&!loading&&<div className="ai-dim">{placeholder}</div>}
+      {/* Контент — только если boxOpen */}
+      {text&&boxOpen&&<div className="ai-content">
         {blocks.map((b, i) => {
-          if(b.type === "header") return <div key={i} className="ai-header"><span className="ai-header-mark">◆</span>{b.content}</div>;
-          if(b.type === "list") return <div key={i} className="ai-list">
-            {b.items.map((item, j) => {
-              const isObj = typeof item === "object";
-              const title = isObj ? item.title : "";
-              const body = isObj ? item.body : item;
-              const itemKey = j;
-              const showActionBtns = actionType !== "shopping";
-              return <div key={j} className="ai-list-item">
-                <span className="ai-list-num">{j+1}</span>
-                <div className="ai-list-body">
-                  {title && <div className="ai-list-title">{title}</div>}
-                  {body && <div className="ai-list-text">{body}</div>}
-                  {showActionBtns && !noActions && <div className="ai-item-actions">
-                    <button className="btn-mini" onClick={()=>startScheduling(item)} title="Запланировать">⏰ Запланировать</button>
-                    <button className="btn-mini" onClick={()=>askForDetails(item)} title="Подробнее">📖 Подробнее</button>
-                  </div>}
-                </div>
-              </div>;
-            })}
-          </div>;
+          if(b.type === "header") return (
+            <div key={i} className="ai-header">
+              <span className="ai-header-mark">◆</span>{b.content}
+            </div>
+          );
+          if(b.type === "list") return (
+            <div key={i} className="ai-list">
+              {b.items.map((item, j) => {
+                const isObj = typeof item === "object";
+                const title = isObj ? item.title : "";
+                const body = isObj ? item.body : item;
+                const showActionBtns = actionType !== "shopping";
+                const itemKey = i+"_"+j;
+                const isItemOpen = openItems[itemKey] !== false; // по умолчанию открыт
+                const shortTitle = getItemTitle(item);
+                return (
+                  <div key={j} className="ai-list-item" style={{flexDirection:"column",alignItems:"stretch",padding:0,marginBottom:4}}>
+                    {/* Заголовок пункта — кликабельный */}
+                    <div onClick={()=>toggleItem(itemKey)}
+                      style={{display:"flex",alignItems:"center",gap:8,padding:"8px 10px",cursor:"pointer",borderRadius:isItemOpen?"8px 8px 0 0":"8px",background:isItemOpen?"rgba(200,164,90,0.08)":"rgba(255,255,255,0.03)",border:"1px solid "+(isItemOpen?"rgba(200,164,90,0.2)":"rgba(255,255,255,0.06)"),transition:"all .15s"}}>
+                      <span className="ai-list-num" style={{flexShrink:0,width:22,height:22,display:"flex",alignItems:"center",justifyContent:"center"}}>{j+1}</span>
+                      <span style={{flex:1,fontSize:13,color:T.text0,lineHeight:1.4}}>{shortTitle}</span>
+                      <span style={{fontSize:10,color:T.text3,flexShrink:0}}>{isItemOpen?"▲":"▼"}</span>
+                    </div>
+                    {/* Детали пункта */}
+                    {isItemOpen&&(
+                      <div style={{padding:"10px 12px",background:"rgba(255,255,255,0.02)",border:"1px solid rgba(200,164,90,0.15)",borderTop:"none",borderRadius:"0 0 8px 8px"}}>
+                        <div className="ai-list-body" style={{margin:0}}>
+                          {title&&<div className="ai-list-title" style={{marginBottom:4}}>{title}</div>}
+                          {body&&<div className="ai-list-text">{body}</div>}
+                          {showActionBtns&&!noActions&&(
+                            <div className="ai-item-actions" style={{marginTop:8}}>
+                              <button className="btn-mini" onClick={(e)=>{e.stopPropagation();startScheduling(item);}}>⏰ Запланировать</button>
+                              <button className="btn-mini" onClick={(e)=>{e.stopPropagation();askForDetails(item);}}>📖 Подробнее</button>
+                              {onCreateTool&&<button className="btn-mini" style={{color:"#B882E8"}} onClick={(e)=>{e.stopPropagation();const txt=typeof item==="string"?item:((item.title?item.title+": ":"")+item.body);onCreateTool(txt);}}>✦ Помощник</button>}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          );
           return <div key={i} className="ai-paragraph">{b.content}</div>;
         })}
       </div>}
