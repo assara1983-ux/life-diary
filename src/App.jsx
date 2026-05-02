@@ -2381,11 +2381,11 @@ function AiBox({ kb, prompt, label="ИИ-СОВЕТНИК", btnText="Получ�
     const full = isObj ? ((item.title||"")+" "+(item.body||"")).trim() : (item||"");
 
     // 1. Имена собственные с числами: Pomodoro 25/5, GTD 2.0 и т.д.
-    const namedNum = full.match(/([A-Z][a-zA-Z]+(?:\s+\d+[/]\d+)?)/);
+    const namedNum = full.match(/([A-Z][a-zA-Z]{2,})/);
     if(namedNum && namedNum[1].length >= 3) return namedNum[1].trim();
 
     // 2. Текст в кавычках — название метода
-    const quoted = full.match(/[«""]([^»""]{3,40})[»""]/);
+    const quoted = full.match(/[\u00ab\u00bb\u201c\u201d"']{1}([^\u00ab\u00bb\u201c\u201d"']{3,40})[\u00ab\u00bb\u201c\u201d"']{1}/);
     if(quoted) return quoted[1].trim();
 
     // 3. [Тип] в начале — берём тип и первые слова
@@ -2939,17 +2939,69 @@ function TodaySection({profile,setProfile,tasks,setTasks,journal,setJournal,toda
       title:"Свободное время / отдых",time:"12:00",timeH:12,timeM:0,done:false,fixed:true});
   }
 
-  // Задачи с временем
-  dueTasks.filter(t=>t.preferredTime).forEach(t=>{
+  // Задачи с временем — beauty группируем отдельно
+  const beautyDue = dueTasks.filter(t=>t.preferredTime&&t.section==="beauty");
+  const otherDue  = dueTasks.filter(t=>t.preferredTime&&t.section!=="beauty");
+
+  otherDue.forEach(t=>{
     const [h,m]=(t.preferredTime||"12:00").split(":").map(Number);
     plannerEvents.push({
       id:"task-"+t.id, type:"task",
-      emoji:t.section==="home"?"🏠":t.section==="health"?"💚":t.section==="beauty"?"✨":t.section==="hobbies"?"🎨":"📌",
+      emoji:t.section==="home"?"🏠":t.section==="health"?"💚":t.section==="hobbies"?"🎨":"📌",
       title:t.title, time:t.preferredTime, timeH:h, timeM:m||0,
       done:t.doneDate===today, taskId:t.id,
       onDone:()=>setTasks(p=>p.map(x=>x.id===t.id?{...x,doneDate:x.doneDate===today?null:today,lastDone:x.doneDate===today?x.lastDone:today}:x))
     });
   });
+
+  // Beauty: группируем по времени (±30 мин = одна группа)
+  if(beautyDue.length>0){
+    // Сортируем по времени
+    const sorted = [...beautyDue].sort((a,b)=>{
+      const [ah,am]=a.preferredTime.split(":").map(Number);
+      const [bh,bm]=b.preferredTime.split(":").map(Number);
+      return ah*60+am-(bh*60+bm);
+    });
+    // Группировка: разница <= 30 мин = одна группа
+    const groups = [];
+    sorted.forEach(t=>{
+      const [h,m]=t.preferredTime.split(":").map(Number);
+      const tMin = h*60+m;
+      const lastGroup = groups[groups.length-1];
+      const lastMin = lastGroup ? (()=>{ const [lh,lm]=lastGroup[0].preferredTime.split(":").map(Number); return lh*60+lm; })() : -999;
+      if(lastGroup && tMin-lastMin <= 30) lastGroup.push(t);
+      else groups.push([t]);
+    });
+
+    groups.forEach((grp, gi)=>{
+      const [h,m]=grp[0].preferredTime.split(":").map(Number);
+      // Одна нечастая процедура — показываем её название
+      const isRareSingle = grp.length===1 && (() => {
+        const freq = grp[0].freq||"";
+        const n = parseInt((freq.match(/every:(\d+)/)||[0,0])[1]);
+        return n>=14;
+      })();
+      const totalDur = grp.reduce((s,t)=>s+(t.beautyDuration||15),0);
+      const allDone = grp.every(t=>t.doneDate===today);
+      const names = grp.map(t=>t.title).join(", ");
+      const title = isRareSingle
+        ? grp[0].title
+        : (grp.length===1 ? grp[0].title : "Уход ("+totalDur+" мин)");
+
+      plannerEvents.push({
+        id:"beauty-grp-"+gi,
+        type:"beauty",
+        emoji:"✨",
+        title,
+        beautyTooltip: grp.length>1 ? names : "",
+        beautyGroup: grp.map(t=>t.id),
+        time:grp[0].preferredTime,
+        timeH:h, timeM:m||0,
+        done:allDone,
+        taskId: grp.length===1 ? grp[0].id : null,
+      });
+    });
+  }
 
   // Отбой
   plannerEvents.push({id:"sleep",type:"anchor",emoji:"🌙",title:"Отбой",time:profile.sleep||"23:00",timeH:sleepH,timeM:0,done:false,fixed:true});
@@ -3181,13 +3233,44 @@ function TodaySection({profile,setProfile,tasks,setTasks,journal,setJournal,toda
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{display:"flex",alignItems:"center",gap:5,flexWrap:"wrap"}}>
                       <span style={{fontSize:14}}>{ev.emoji}</span>
-                      <span style={{fontSize:14,color:ev.done?T.text3:ev.type==="anchor"?T.text0:T.text1,
+                      <span style={{fontSize:14,color:ev.done?T.text3:ev.type==="anchor"?T.text0:ev.type==="beauty"?"#E8A8C8":T.text1,
                         textDecoration:ev.done?"line-through":"none",fontWeight:ev.type==="anchor"?600:400,
                         lineHeight:1.3,flex:1}}>{ev.title}</span>
                       {isNow&&<span style={{fontSize:9,color:T.gold,fontFamily:"'JetBrains Mono'",
                         background:"rgba(45,106,79,0.15)",padding:"1px 5px",borderRadius:3,flexShrink:0}}>СЕЙЧАС</span>}
                     </div>
-                    {ev.type&&ev.type!=="anchor"&&ev.type!=="commute"&&sectionColor[ev.section]&&(
+                    {/* Тултип для beauty-группы */}
+                    {ev.type==="beauty"&&ev.beautyTooltip&&(
+                      <div style={{fontSize:10,color:"#E8A8C8",fontFamily:"'JetBrains Mono'",marginTop:2,opacity:.8}}>{ev.beautyTooltip}</div>
+                    )}
+                    {/* Кнопки управления beauty-группой */}
+                    {ev.type==="beauty"&&ev.beautyGroup&&(
+                      <div style={{display:"flex",gap:5,marginTop:4}}>
+                        <button className="btn btn-ghost btn-sm" style={{fontSize:10,padding:"1px 7px",color:"#E8A8C8"}}
+                          onClick={()=>{
+                            const name=window.prompt("Добавить процедуру (название):");
+                            if(!name) return;
+                            const time=window.prompt("Время (ЧЧ:ММ):",ev.time);
+                            if(!time) return;
+                            setTasks(p=>[...p,{id:Date.now()+Math.random(),title:name,section:"beauty",freq:"daily",preferredTime:time,beautyDuration:15,lastDone:"",doneDate:"",notes:""}]);
+                            notify("Добавлено");
+                          }}>+ Добавить</button>
+                        {ev.beautyGroup.length>0&&<button className="btn btn-ghost btn-sm" style={{fontSize:10,padding:"1px 7px",color:T.danger}}
+                          onClick={()=>{
+                            const names = tasks.filter(t=>ev.beautyGroup.includes(t.id)).map(t=>t.title);
+                            const choice = window.prompt("Удалить процедуру. Введи номер:
+"+names.map((n,i)=>(i+1)+". "+n).join("
+"));
+                            const idx = parseInt(choice)-1;
+                            if(idx>=0&&idx<names.length){
+                              const id = ev.beautyGroup[idx];
+                              setTasks(p=>p.filter(t=>t.id!==id));
+                              notify("Удалено");
+                            }
+                          }}>− Удалить</button>}
+                      </div>
+                    )}
+                    {ev.type&&ev.type!=="anchor"&&ev.type!=="commute"&&ev.type!=="beauty"&&sectionColor[ev.section]&&(
                       <span style={{fontSize:10,color:sectionColor[ev.section]||T.text3,fontFamily:"'JetBrains Mono'"}}>{ev.section}</span>
                     )}
                   </div>
@@ -3226,8 +3309,16 @@ function TodaySection({profile,setProfile,tasks,setTasks,journal,setJournal,toda
                           setFeedTimesOverride(p=>({...p,[feedIdx]:padded}));
                           notify("Время кормления обновлено ✦");
                         }
-                        // 5. Практики и спорт — обновляем preferredTime в профиле
+                        // 5. Beauty-группа — обновляем время всех задач группы
+                        else if(ev.type==="beauty"&&ev.beautyGroup){
+                          ev.beautyGroup.forEach(id=>{
+                            setTasks(p=>p.map(t=>t.id===id?{...t,preferredTime:padded}:t));
+                          });
+                          notify("Время ухода обновлено ✦");
+                        }
+                        // 6. Прочие
                         else {
+                          if(ev.taskId) setTasks(p=>p.map(t=>t.id===ev.taskId?{...t,preferredTime:padded}:t));
                           notify("Время обновлено ✦");
                         }
                       }}>🕐</div>
@@ -3754,9 +3845,41 @@ function ScheduleSection({profile,tasks,setTasks,today,kb,notify}) {
   const getDayTasks = (d) => {
     const dStr = d.toISOString().split("T")[0];
     const regular = tasks.filter(t=>
-      t.section!=="work" && !t.isDeadline &&
+      t.section!=="work" && !t.isDeadline && t.section!=="beauty" &&
       (isDue(t,dStr) || t.doneDate===dStr)
     );
+    // Beauty задачи — группируем
+    const beautyDay = tasks.filter(t=>t.section==="beauty"&&!t.isDeadline&&isDue(t,dStr));
+    if(beautyDay.length>0){
+      const sorted = [...beautyDay].sort((a,b)=>{
+        const [ah,am]=(a.preferredTime||"20:00").split(":").map(Number);
+        const [bh,bm]=(b.preferredTime||"20:00").split(":").map(Number);
+        return ah*60+am-(bh*60+bm);
+      });
+      // Группируем по близости времени (±30 мин)
+      const groups=[];
+      sorted.forEach(t=>{
+        const [h,m]=(t.preferredTime||"20:00").split(":").map(Number);
+        const tMin=h*60+m;
+        const last=groups[groups.length-1];
+        const lastMin=last?(()=>{const [lh,lm]=(last[0].preferredTime||"20:00").split(":").map(Number);return lh*60+lm;})():-999;
+        if(last&&tMin-lastMin<=30) last.push(t);
+        else groups.push([t]);
+      });
+      groups.forEach((grp,gi)=>{
+        const isRareSingle=grp.length===1&&(()=>{const n=parseInt((grp[0].freq||"").match(/every:(\d+)/)?.[1]||0);return n>=14;})();
+        const totalDur=grp.reduce((s,t)=>s+(t.beautyDuration||15),0);
+        const title=isRareSingle?grp[0].title:(grp.length===1?grp[0].title:"Уход ("+(totalDur)+" мин)");
+        regular.push({
+          id:"beauty-sch-grp-"+gi, title, section:"beauty",
+          preferredTime:grp[0].preferredTime||"20:00",
+          beautyTooltip:grp.length>1?grp.map(t=>t.title).join(", "):"",
+          beautyGroup:grp.map(t=>t.id),
+          doneDate: grp.every(t=>t.doneDate===dStr)?dStr:null,
+          isBeautyGroup:true
+        });
+      });
+    }
     // Рабочие дедлайны с дедлайном = этот день
     const deadlines = tasks.filter(t=>
       t.isDeadline && t.deadline===dStr && t.doneDate!==dStr
@@ -3780,7 +3903,7 @@ function ScheduleSection({profile,tasks,setTasks,today,kb,notify}) {
     return [...regular, ...grouped];
   };
 
-  const typeColor = {anchor:T.text3, work:T.info, commute:T.teal, health:T.success, weekend:T.gold, task:T.text1};
+  const typeColor = {anchor:T.text3, work:T.info, commute:T.teal, health:T.success, weekend:T.gold, task:T.text1, beauty:"#E8A8C8"};
 
   return(
     <div>
@@ -4114,7 +4237,7 @@ function WorkSection({profile,tasks,setTasks,today,kb,notify}) {
     const wtype  = (profile.workType||"").toLowerCase();
     return prof.match(/бухгалтер|ип|индивидуальн|предприним/)||
            sphere.match(/бухгалтер|финансов|учёт|учет|налог/)||
-           wtype.match(/ип|самозанят/)||
+           wtype.match(/\bип\b|самозанят/)||
            profile.isIP===true;
   })();
   const gp = genderPrompt(profile);
@@ -6182,110 +6305,235 @@ function PetsSection({profile,setProfile,petLog,setPetLog,today,kb,notify}) {
   );
 }
 
+// ── ProcForm — вынесен на верхний уровень (правило хуков React) ──
+function ProcForm({item, procSettings, setProcSettings, confirmProc, DAY_RECS, isRare, notify, onClose}) {
+  const existing = procSettings[item.id]||{};
+  const defTime = existing.time || item.time || "20:00";
+  const defDur = existing.duration || item.dur || 15;
+  const rec = DAY_RECS[item.id]||"";
+  const needDate = isRare(item.freq);
+  const isDaily = item.freq==="daily";
+
+  const [formTime, setFormTime] = useState(defTime);
+  const [formDur, setFormDur] = useState(String(defDur));
+  const [formDay, setFormDay] = useState(existing.day||"");
+  const [formDate, setFormDate] = useState(existing.date||"");
+  const [durConfirmed, setDurConfirmed] = useState(!!existing.confirmed);
+
+  const DAYS_LIST = ["Пн","Вт","Ср","Чт","Пт","Сб","Вс"];
+
+  const save = () => {
+    setProcSettings(p=>({...p,[item.id]:{
+      time: formTime,
+      duration: parseInt(formDur)||item.dur,
+      day: formDay,
+      date: formDate,
+      confirmed: true
+    }}));
+    confirmProc({...item, time: formTime});
+  };
+
+  return (
+    <div style={{margin:"8px 0 4px 0",padding:"12px 14px",background:"rgba(200,164,90,0.06)",borderRadius:12,border:"1px solid rgba(200,164,90,0.2)"}}>
+      <div style={{fontSize:11,color:T.gold,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:10}}>
+        {item.icon} НАСТРОЙКА: {item.name.toUpperCase()}
+      </div>
+      {/* Время начала */}
+      <div style={{marginBottom:10}}>
+        <div style={{fontSize:11,color:T.text3,marginBottom:4}}>Время начала</div>
+        <input type="time" value={formTime} onChange={e=>setFormTime(e.target.value)}
+          style={{padding:"6px 10px",borderRadius:8,border:"1px solid "+T.bdr,background:"rgba(255,255,255,0.04)",color:T.text0,fontSize:14,outline:"none"}}/>
+      </div>
+      {/* Длительность */}
+      <div style={{marginBottom:10}}>
+        <div style={{fontSize:11,color:T.text3,marginBottom:4}}>Длительность (мин)</div>
+        <div style={{display:"flex",gap:8,alignItems:"center"}}>
+          <input type="number" min="1" max="240" value={formDur}
+            onChange={e=>{setFormDur(e.target.value);setDurConfirmed(false);}}
+            style={{width:70,padding:"6px 10px",borderRadius:8,border:"1px solid "+T.bdr,background:"rgba(255,255,255,0.04)",color:T.text0,fontSize:14,outline:"none"}}/>
+          {!durConfirmed&&(
+            <div style={{display:"flex",gap:6}}>
+              <button className="btn btn-primary btn-sm" style={{fontSize:11}} onClick={()=>setDurConfirmed(true)}>Да</button>
+              <button className="btn btn-ghost btn-sm" style={{fontSize:11}} onClick={()=>{setFormDur(String(item.dur||15));setDurConfirmed(false);}}>Изменить</button>
+            </div>
+          )}
+          {durConfirmed&&<span style={{fontSize:11,color:T.success}}>✓</span>}
+        </div>
+        <div style={{fontSize:10,color:T.text3,marginTop:3,fontStyle:"italic"}}>Рекомендуется: {item.dur||15} мин</div>
+      </div>
+      {/* День недели */}
+      {!isDaily&&!needDate&&(
+        <div style={{marginBottom:10}}>
+          <div style={{fontSize:11,color:T.text3,marginBottom:4}}>
+            День недели {rec&&<span style={{color:T.gold}}>· рекомендуется: {rec}</span>}
+          </div>
+          <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
+            {DAYS_LIST.map(d=>(
+              <button key={d} onClick={()=>setFormDay(d)}
+                style={{padding:"4px 10px",borderRadius:16,fontSize:12,cursor:"pointer",
+                  border:"1px solid "+(formDay===d?T.gold+"88":"rgba(255,255,255,0.1)"),
+                  background:formDay===d?"rgba(200,164,90,0.2)":"transparent",
+                  color:formDay===d?T.gold:T.text2}}>
+                {d}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      {/* Дата для нечастых */}
+      {needDate&&(
+        <div style={{marginBottom:10}}>
+          <div style={{fontSize:11,color:T.text3,marginBottom:4}}>
+            Дата {rec&&<span style={{color:T.gold}}>· рекомендуется: {rec}</span>}
+          </div>
+          <input type="date" value={formDate} onChange={e=>setFormDate(e.target.value)}
+            style={{padding:"6px 10px",borderRadius:8,border:"1px solid "+T.bdr,background:"rgba(255,255,255,0.04)",color:T.text0,fontSize:14,outline:"none"}}/>
+        </div>
+      )}
+      {/* Кнопки */}
+      <div style={{display:"flex",gap:8,marginTop:4}}>
+        <button className="btn btn-primary" style={{flex:1}} onClick={save}>✓ Добавить в расписание</button>
+        <button className="btn btn-ghost btn-sm" onClick={onClose}>✕</button>
+      </div>
+    </div>
+  );
+}
+
 function BeautySection({profile,tasks,setTasks,today,kb,notify}) {
   const [modal,setModal]=useState(null);
   const [selectedTopics, setSelectedTopics] = useStorage("ld_beauty_topics", []);
-  const [schedule, setSchedule] = useStorage("ld_beauty_schedule", null);
-  const [loadingSchedule, setLoadingSchedule] = useState(false);
+  // Настройки каждой процедуры: {id: {time, duration, day, date, confirmed}}
+  const [procSettings, setProcSettings] = useStorage("ld_beauty_procs", {});
+  // Активная инлайн-форма
+  const [activeForm, setActiveForm] = useState(null);
   const moon = getMoon();
   const isMale = profile.gender === "Мужской";
   const beautyTasks = tasks.filter(t=>t.section==="beauty");
   const due = beautyTasks.filter(t=>isDue(t,today));
 
-  // Темы ухода по категориям
+  // ── Справочник длительностей (мин) ──────────────────────────
+  const DURATIONS = {
+    face_morning:10, face_evening:15, face_mask:20, face_scrub:10,
+    eye_care:3, body_cream:5, body_scrub:15, depo:30, tan:10,
+    hair_wash:20, hair_mask:40, hair_oil:10, haircut:60, coloring:120,
+    nails:60, ped:60, nail_care:5, brows:20, lash:90,
+    massage:15, lymph:30, bath:30,
+    beard_care:10, hair_wash_m:20, nails_m:10, body_scrub_m:15, hand_cream:3,
+  };
+
+  // ── Рекомендации по дням ─────────────────────────────────────
+  const DAY_RECS = {
+    face_scrub:"убывающая луна, пн/ср/пт",
+    face_mask:"растущая луна, вт/чт",
+    hair_mask:"растущая луна, вс",
+    haircut:"растущая луна",
+    depo:"убывающая луна",
+    nails:"растущая луна, сб/вс",
+    bath:"растущая луна, пт/сб",
+    body_scrub:"убывающая луна",
+    lymph:"вт/чт",
+    massage:"пн/чт",
+    hair_oil:"вс",
+    brows:"любой день, раз в 2 нед.",
+  };
+
+  // ── Нужны ли поля утро/вечер ────────────────────────────────
+  const needsTimeOfDay = (item) => item.freq === "daily" && item.time;
+  // Нечастая = не ежедневная и не чаще раз в неделю
+  const isRare = (freq) => {
+    if(!freq) return false;
+    const n = parseInt((freq.match(/every:(\d+)/)||[0,0])[1]);
+    return n >= 14;
+  };
+
   const TOPICS = isMale ? [
-    {cat:"Лицо",    items:[
-      {id:"face_morning", name:"Умывание утром",      freq:"daily",   time:"07:00", icon:"💧"},
-      {id:"face_evening", name:"Умывание вечером",    freq:"daily",   time:"21:00", icon:"🌙"},
-      {id:"face_scrub",   name:"Скраб для лица",      freq:"every:7", time:"19:00", icon:"🫧"},
-      {id:"face_mask",    name:"Маска для лица",       freq:"every:7", time:"20:00", icon:"🎭"},
+    {cat:"Лицо", items:[
+      {id:"face_morning", name:"Умывание утром",    freq:"daily",    time:"07:00", icon:"💧", dur:10},
+      {id:"face_evening", name:"Умывание вечером",  freq:"daily",    time:"21:00", icon:"🌙", dur:10},
+      {id:"face_scrub",   name:"Скраб для лица",    freq:"every:7",  time:"19:00", icon:"🫧", dur:10},
+      {id:"face_mask",    name:"Маска для лица",     freq:"every:7",  time:"20:00", icon:"🎭", dur:20},
     ]},
-    {cat:"Тело",    items:[
-      {id:"body_cream",   name:"Крем для тела",        freq:"daily",   time:"20:00", icon:"🧴"},
-      {id:"body_scrub",   name:"Скраб для тела",       freq:"every:7", time:"20:00", icon:"🫧"},
+    {cat:"Тело", items:[
+      {id:"body_cream",   name:"Крем для тела",      freq:"daily",    time:"20:00", icon:"🧴", dur:5},
+      {id:"body_scrub",   name:"Скраб для тела",     freq:"every:7",  time:"20:00", icon:"🫧", dur:15},
     ]},
     {cat:"Борода и волосы", items:[
-      {id:"beard_care",   name:"Уход за бородой",      freq:"every:2", time:"08:00", icon:"🧔"},
-      {id:"hair_wash",    name:"Мытьё волос",           freq:"every:2", time:"20:00", icon:"🚿"},
-      {id:"haircut",      name:"Стрижка / барбер",      freq:"every:30",time:"",     icon:"✂️"},
+      {id:"beard_care",   name:"Уход за бородой",    freq:"every:2",  time:"08:00", icon:"🧔", dur:10},
+      {id:"hair_wash",    name:"Мытьё волос",         freq:"every:2",  time:"20:00", icon:"🚿", dur:20},
+      {id:"haircut",      name:"Стрижка / барбер",    freq:"every:30", time:"",     icon:"✂️", dur:60},
     ]},
     {cat:"Руки и ногти", items:[
-      {id:"hand_cream",   name:"Крем для рук",          freq:"daily",   time:"21:00", icon:"🤲"},
-      {id:"nails_m",      name:"Стрижка ногтей",        freq:"every:10",time:"",     icon:"💅"},
+      {id:"hand_cream",   name:"Крем для рук",        freq:"daily",    time:"21:00", icon:"🤲", dur:3},
+      {id:"nails_m",      name:"Стрижка ногтей",      freq:"every:10", time:"",     icon:"💅", dur:10},
     ]},
   ] : [
     {cat:"Уход за лицом", items:[
-      {id:"face_morning", name:"Утренний уход",         freq:"daily",   time:"07:00", icon:"☀️", note:"Очищение → тоник → крем"},
-      {id:"face_evening", name:"Вечерний уход",         freq:"daily",   time:"21:00", icon:"🌙", note:"Снятие макияжа → очищение → сыворотка → крем"},
-      {id:"face_mask",    name:"Маска для лица",         freq:"every:3", time:"20:00", icon:"🎭", moon:true},
-      {id:"face_scrub",   name:"Скраб / пилинг",         freq:"every:7", time:"20:00", icon:"🫧", moon:"убывающая"},
-      {id:"eye_care",     name:"Крем для глаз",          freq:"daily",   time:"21:00", icon:"👁"},
+      {id:"face_morning", name:"Утренний уход",       freq:"daily",    time:"07:00", icon:"☀️", dur:10, note:"Очищение → тоник → крем"},
+      {id:"face_evening", name:"Вечерний уход",       freq:"daily",    time:"21:00", icon:"🌙", dur:15, note:"Снятие макияжа → очищение → сыворотка → крем"},
+      {id:"face_mask",    name:"Маска для лица",       freq:"every:3",  time:"20:00", icon:"🎭", dur:20, moon:true},
+      {id:"face_scrub",   name:"Скраб / пилинг",       freq:"every:7",  time:"20:00", icon:"🫧", dur:10, moon:"убывающая"},
+      {id:"eye_care",     name:"Крем для глаз",        freq:"daily",    time:"21:00", icon:"👁", dur:3},
     ]},
     {cat:"Уход за телом", items:[
-      {id:"body_cream",   name:"Крем для тела",          freq:"daily",   time:"20:00", icon:"🧴"},
-      {id:"body_scrub",   name:"Скраб для тела",         freq:"every:4", time:"20:00", icon:"🫧"},
-      {id:"depo",         name:"Депиляция / эпиляция",   freq:"every:14",time:"",     icon:"✨", moon:"убывающая"},
-      {id:"tan",          name:"Автозагар",              freq:"every:7", time:"",     icon:"🌅"},
+      {id:"body_cream",   name:"Крем для тела",        freq:"daily",    time:"20:00", icon:"🧴", dur:5},
+      {id:"body_scrub",   name:"Скраб для тела",       freq:"every:4",  time:"20:00", icon:"🫧", dur:15, moon:"убывающая"},
+      {id:"depo",         name:"Депиляция / эпиляция", freq:"every:14", time:"",     icon:"✨", dur:30, moon:"убывающая"},
+      {id:"tan",          name:"Автозагар",            freq:"every:7",  time:"",     icon:"🌅", dur:10},
     ]},
     {cat:"Уход за волосами", items:[
-      {id:"hair_wash",    name:"Мытьё волос",            freq:"every:2", time:"20:00", icon:"🚿"},
-      {id:"hair_mask",    name:"Маска для волос",         freq:"every:7", time:"20:00", icon:"💆", note:"До мытья: держать 30-60 мин", moon:true},
-      {id:"hair_oil",     name:"Масло для волос",         freq:"every:7", time:"",     icon:"🫙"},
-      {id:"haircut",      name:"Стрижка",                 freq:"every:30",time:"",     icon:"✂️", moon:"растущая"},
-      {id:"coloring",     name:"Окрашивание",             freq:"every:42",time:"",     icon:"🎨"},
+      {id:"hair_wash",    name:"Мытьё волос",          freq:"every:2",  time:"20:00", icon:"🚿", dur:20},
+      {id:"hair_mask",    name:"Маска для волос",       freq:"every:7",  time:"20:00", icon:"💆", dur:40, moon:true},
+      {id:"hair_oil",     name:"Масло для волос",       freq:"every:7",  time:"",     icon:"🫙", dur:10},
+      {id:"haircut",      name:"Стрижка",               freq:"every:30", time:"",     icon:"✂️", dur:60, moon:"растущая"},
+      {id:"coloring",     name:"Окрашивание",           freq:"every:42", time:"",     icon:"🎨", dur:120},
     ]},
     {cat:"Маникюр и ногти", items:[
-      {id:"nails",        name:"Маникюр",                 freq:"every:21",time:"",     icon:"💅", moon:true},
-      {id:"ped",          name:"Педикюр",                 freq:"every:30",time:"",     icon:"🦶"},
-      {id:"nail_care",    name:"Уход за кутикулой",       freq:"every:3", time:"21:00", icon:"🤲"},
+      {id:"nails",        name:"Маникюр",               freq:"every:21", time:"",     icon:"💅", dur:60, moon:true},
+      {id:"ped",          name:"Педикюр",               freq:"every:30", time:"",     icon:"🦶", dur:60},
+      {id:"nail_care",    name:"Уход за кутикулой",     freq:"every:3",  time:"21:00", icon:"🤲", dur:5},
     ]},
     {cat:"Брови и ресницы", items:[
-      {id:"brows",        name:"Коррекция бровей",        freq:"every:14",time:"",     icon:"🪞"},
-      {id:"lash",         name:"Наращивание ресниц",      freq:"every:21",time:"",     icon:"✨"},
+      {id:"brows",        name:"Коррекция бровей",      freq:"every:14", time:"",     icon:"🪞", dur:20},
+      {id:"lash",         name:"Наращивание ресниц",    freq:"every:21", time:"",     icon:"✨", dur:90},
     ]},
     {cat:"Массаж и тело", items:[
-      {id:"massage",      name:"Массаж лица",             freq:"every:3", time:"21:00", icon:"💆"},
-      {id:"lymph",        name:"Лимфодренажный массаж",   freq:"every:7", time:"",     icon:"🫀"},
-      {id:"bath",         name:"Ванна с солью / пеной",   freq:"every:7", time:"21:00", icon:"🛁", moon:true},
+      {id:"massage",      name:"Массаж лица",           freq:"every:3",  time:"21:00", icon:"💆", dur:15},
+      {id:"lymph",        name:"Лимфодренажный массаж", freq:"every:7",  time:"",     icon:"🫀", dur:30},
+      {id:"bath",         name:"Ванна с солью / пеной", freq:"every:7",  time:"21:00", icon:"🛁", dur:30, moon:true},
     ]},
   ];
 
-  const toggleTopic = (id) => {
-    setSelectedTopics(p => p.includes(id) ? p.filter(x=>x!==id) : [...p, id]);
-    setSchedule(null); // сбросить старый график
+  const allItems = TOPICS.flatMap(t=>t.items);
+  const getItem = (id) => allItems.find(i=>i.id===id);
+
+  // ── Добавить процедуру в tasks ───────────────────────────────
+  const confirmProc = (item) => {
+    const s = procSettings[item.id]||{};
+    const time = s.time||item.time||"20:00";
+    const dur = s.duration||item.dur||15;
+    // Удаляем старую задачу с тем же именем если есть
+    setTasks(p=>{
+      const without = p.filter(t=>!(t.section==="beauty"&&t.beautyId===item.id));
+      const newTask = {
+        id: Date.now()+Math.random(),
+        beautyId: item.id,
+        title: item.name,
+        section: "beauty",
+        freq: item.freq,
+        priority: "m",
+        preferredTime: time,
+        beautyDuration: dur,
+        deadline: s.date||"",
+        notes: item.note||"",
+        lastDone: "", doneDate: ""
+      };
+      return [...without, newTask];
+    });
+    setProcSettings(p=>({...p,[item.id]:{...s,confirmed:true}}));
+    setActiveForm(null);
+    notify(item.name+" добавлено в расписание ✦");
   };
 
-  const buildSchedule = async () => {
-    if(!selectedTopics.length){notify("Выбери хотя бы одну процедуру");return;}
-    setLoadingSchedule(true);
-    const allItems = TOPICS.flatMap(t=>t.items).filter(i=>selectedTopics.includes(i.id));
-    const prompt = "СИСТЕМНОЕ ТРЕБОВАНИЕ: отвечай ТОЛЬКО на русском языке.\n\n"+
-      "Составь персональный график "+( isMale?"ухода за собой":"красоты")+" на неделю.\n"+
-      "Выбранные процедуры: "+allItems.map(i=>i.name+" ("+freqLabel(i.freq)+")").join(", ")+".\n"+
-      "Профиль: "+( isMale?"мужской":"женский")+", тип кожи: "+(profile.skinType||"—")+
-      (isMale?", борода: "+(profile.beard||"—"):", волосы: "+(profile.hairType||"—"))+".\n"+
-      "Рабочий график: "+(profile.workStart||"9:00")+"–"+(profile.workEnd||"18:00")+". "+
-      "Свободное время: с "+(profile.workEnd||"18:00")+" до "+(profile.sleep||"23:00")+".\n"+
-      "Луна: "+moon.n+" ("+moon.t+").\n"+
-      (isMale?"":"Учти лунный цикл — убывающая луна для очищения и пилингов, растущая для питательных масок.\n")+
-      "Распредели процедуры по дням недели с учётом работы. Формат: ## Понедельник → нумерованный список с временем. Итого 7 дней.";
-    const r = await askClaude(profile.kb||"", prompt);
-    setSchedule(r);
-    setLoadingSchedule(false);
-  };
-
-  const addScheduleToTasks = () => {
-    const allItems = TOPICS.flatMap(t=>t.items).filter(i=>selectedTopics.includes(i.id));
-    const newTasks = allItems.map(item=>({
-      id:Date.now()+Math.random(), title:item.name, section:"beauty",
-      freq:item.freq, priority:"m", preferredTime:item.time||"20:00",
-      lastDone:"", doneDate:"", notes:item.note||""
-    }));
-    const existing = new Set(beautyTasks.map(t=>t.title));
-    const fresh = newTasks.filter(t=>!existing.has(t.title));
-    setTasks(p=>[...p,...fresh]);
-    notify("Добавлено "+fresh.length+" процедур");
-  };
 
   return(
     <div>
@@ -6297,82 +6545,106 @@ function BeautySection({profile,tasks,setTasks,today,kb,notify}) {
         <span style={{fontSize:11,color:T.gold,marginLeft:"auto",fontFamily:"'JetBrains Mono'"}}>{moon.e} {moon.n}</span>
       </div>
 
-      {/* ── Выбор процедур по тематике ── */}
-      <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1.5,marginBottom:8}}>ВЫБЕРИ НУЖНЫЕ ПРОЦЕДУРЫ</div>
+      {/* ── Выбор процедур ── */}
+      <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1.5,marginBottom:8}}>ВЫБЕРИ ПРОЦЕДУРЫ</div>
       {TOPICS.map(cat=>(
-        <div key={cat.cat} style={{marginBottom:10}}>
+        <div key={cat.cat} style={{marginBottom:12}}>
           <div style={{fontSize:11,color:T.gold,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:6}}>{cat.cat.toUpperCase()}</div>
-          <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-            {cat.items.map(item=>{
-              const sel = selectedTopics.includes(item.id);
-              return (
-                <div key={item.id} onClick={()=>toggleTopic(item.id)} style={{display:"flex",alignItems:"center",gap:6,padding:"6px 12px",borderRadius:20,cursor:"pointer",background:sel?"rgba(200,164,90,0.15)":"rgba(255,255,255,0.03)",border:"1px solid "+(sel?"rgba(200,164,90,0.5)":"rgba(255,255,255,0.08)"),transition:"all .15s"}}>
+          {cat.items.map(item=>{
+            const sel = selectedTopics.includes(item.id);
+            const confirmed = procSettings[item.id]?.confirmed;
+            const s = procSettings[item.id]||{};
+            const isActive = activeForm===item.id;
+            return (
+              <div key={item.id}>
+                {/* Чип */}
+                <div style={{display:"inline-flex",alignItems:"center",gap:6,padding:"6px 12px",borderRadius:20,cursor:"pointer",marginBottom:isActive?0:6,marginRight:6,
+                  background:confirmed?"rgba(123,204,160,0.15)":sel?"rgba(200,164,90,0.15)":"rgba(255,255,255,0.03)",
+                  border:"1px solid "+(confirmed?T.success+"88":sel?"rgba(200,164,90,0.5)":"rgba(255,255,255,0.08)"),
+                  transition:"all .15s"}}
+                  onClick={()=>{
+                    if(!sel){
+                      setSelectedTopics(p=>[...p,item.id]);
+                      setActiveForm(item.id);
+                    } else {
+                      setActiveForm(isActive?null:item.id);
+                    }
+                  }}>
                   <span style={{fontSize:16}}>{item.icon}</span>
                   <div>
-                    <div style={{fontSize:13,color:sel?T.gold:T.text0}}>{item.name}</div>
-                    <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'"}}>{freqLabel(item.freq)}{item.moon?" 🌙":""}</div>
+                    <div style={{fontSize:13,color:confirmed?T.success:sel?T.gold:T.text0}}>{item.name}</div>
+                    <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'"}}>
+                      {freqLabel(item.freq)}
+                      {confirmed&&s.time&&<span style={{color:T.success,marginLeft:4}}>· {s.time}</span>}
+                      {confirmed&&(s.day||s.date)&&<span style={{color:T.success,marginLeft:4}}>· {s.day||s.date}</span>}
+                    </div>
                   </div>
+                  {confirmed&&<span style={{fontSize:12,color:T.success}}>✓</span>}
+                  {sel&&confirmed&&(
+                    <span style={{fontSize:10,color:T.danger,marginLeft:4,cursor:"pointer"}}
+                      onClick={e=>{e.stopPropagation();
+                        setSelectedTopics(p=>p.filter(x=>x!==item.id));
+                        setProcSettings(p=>{const n={...p};delete n[item.id];return n;});
+                        setTasks(p=>p.filter(t=>!(t.section==="beauty"&&t.beautyId===item.id)));
+                        if(activeForm===item.id) setActiveForm(null);
+                      }}>✕</span>
+                  )}
                 </div>
-              );
-            })}
-          </div>
+                {/* Инлайн-форма */}
+                {isActive&&<ProcForm item={item} procSettings={procSettings} setProcSettings={setProcSettings} confirmProc={confirmProc} DAY_RECS={DAY_RECS} isRare={isRare} notify={notify} onClose={()=>setActiveForm(null)}/>}
+              </div>
+            );
+          })}
         </div>
       ))}
 
-      {/* Кнопка создать график */}
-      {selectedTopics.length>0&&(
+      {/* Добавить свою процедуру */}
+      <button className="btn btn-ghost btn-sm" style={{width:"100%",marginBottom:12,fontSize:11,border:"1px dashed rgba(200,164,90,0.3)"}}
+        onClick={()=>setModal({})}>+ Добавить свою процедуру</button>
+
+      {/* ── Мои процедуры (подтверждённые) ── */}
+      {beautyTasks.length>0&&(
         <div style={{marginBottom:12}}>
-          <div style={{display:"flex",gap:8,marginBottom:8}}>
-            <button className="btn btn-primary" style={{flex:1}} onClick={buildSchedule} disabled={loadingSchedule}>
-              {loadingSchedule?"Составляю...":"✦ Составить мой график"}
-            </button>
-            <button className="btn btn-ghost" onClick={addScheduleToTasks}>📋 В задачи</button>
-          </div>
-          <div style={{fontSize:12,color:T.text3}}>Выбрано процедур: {selectedTopics.length} · Учитываю: тип кожи, луну, рабочий график</div>
+          <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1.5,marginBottom:8}}>МОИ ПРОЦЕДУРЫ</div>
+          {beautyTasks.map(task=>(
+            <div key={task.id} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",marginBottom:6,background:"rgba(255,255,255,0.02)",borderRadius:10,border:"1px solid rgba(255,255,255,0.06)"}}>
+              <span style={{fontSize:16,flexShrink:0}}>{allItems.find(i=>i.id===task.beautyId)?.icon||"✨"}</span>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:13,color:T.text0,lineHeight:1.4}}>{task.title}</div>
+                <div style={{display:"flex",gap:6,marginTop:2,flexWrap:"wrap"}}>
+                  {task.preferredTime&&<span style={{fontSize:10,color:"#E8A8C8",fontFamily:"'JetBrains Mono'"}}>🕐{task.preferredTime}</span>}
+                  {task.beautyDuration&&<span style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'"}}>{task.beautyDuration} мин</span>}
+                  <span style={{fontSize:10,color:T.text3}}>{freqLabel(task.freq)}</span>
+                </div>
+              </div>
+              {/* Изменить время */}
+              <div className="ico-btn" style={{fontSize:11,color:T.gold,padding:"2px 4px",flexShrink:0}}
+                onClick={()=>{
+                  const t=window.prompt("Новое время (ЧЧ:ММ):",task.preferredTime||"20:00");
+                  if(t&&/^\d{1,2}:\d{2}$/.test(t)) setTasks(p=>p.map(x=>x.id===task.id?{...x,preferredTime:t}:x));
+                }}>🕐</div>
+              {/* Изменить название */}
+              <div className="ico-btn" style={{fontSize:11,color:T.teal,padding:"2px 4px",flexShrink:0}}
+                onClick={()=>{
+                  const n=window.prompt("Новое название:",task.title);
+                  if(n&&n.trim()) setTasks(p=>p.map(x=>x.id===task.id?{...x,title:n.trim()}:x));
+                }}>✏️</div>
+              {/* Удалить */}
+              <div className="ico-btn danger" style={{fontSize:11,padding:"2px 4px",flexShrink:0}}
+                onClick={()=>{
+                  setTasks(p=>p.filter(t=>t.id!==task.id));
+                  if(task.beautyId){
+                    setSelectedTopics(p=>p.filter(x=>x!==task.beautyId));
+                    setProcSettings(p=>{const n={...p};delete n[task.beautyId];return n;});
+                  }
+                  notify("Процедура удалена");
+                }}>✕</div>
+            </div>
+          ))}
         </div>
       )}
 
-      {/* График */}
-      {schedule&&(
-        <div style={{marginBottom:12}}>
-          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-            <div style={{fontSize:10,color:T.text3,fontFamily:"'JetBrains Mono'",letterSpacing:1.5}}>МОЙ ГРАФИК</div>
-            <button className="btn btn-ghost btn-sm" style={{marginLeft:"auto",fontSize:11}} onClick={()=>setSchedule(null)}>Сбросить</button>
-          </div>
-          <div className="ai-content">
-            {parseAiResponse(schedule).map((b,i)=>{
-              if(b.type==="header") return <div key={i} className="ai-header"><span className="ai-header-mark">◆</span>{b.content}</div>;
-              if(b.type==="list") return <div key={i} className="ai-list">
-                {b.items.map((item,j)=>{
-                  const isObj=typeof item==="object";
-                  const title=isObj?item.title:"";
-                  const body=isObj?item.body:item;
-                  return <div key={j} className="ai-list-item">
-                    <span className="ai-list-num">{j+1}</span>
-                    <div className="ai-list-body">
-                      {title&&<div className="ai-list-title">{title}</div>}
-                      {body&&<div className="ai-list-text">{body}</div>}
-                      <div className="ai-item-actions">
-                        <button className="btn-mini" onClick={()=>{
-                          const txt=title?(title+": "+body):body;
-                          const h=parseInt((profile.workEnd||"18:00").split(":")[0])+1;
-                          const start=new Date();start.setHours(h,0,0,0);
-                          const end=new Date(start.getTime()+3600000);
-                          const f=d=>d.toISOString().replace(/[-:]/g,"").split(".")[0]+"Z";
-                          window.open("https://calendar.google.com/calendar/render?action=TEMPLATE&text="+encodeURIComponent(txt)+"&dates="+f(start)+"/"+f(end),"_blank");
-                        }}>📅 Запланировать</button>
-                      </div>
-                    </div>
-                  </div>;
-                })}
-              </div>;
-              return <div key={i} className="ai-paragraph">{b.content}</div>;
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Сегодняшние задачи по красоте */}
+      {/* ── Сегодня ── */}
       {due.length>0&&(
         <div className="card" style={{marginBottom:10}}>
           <div className="card-hd">
