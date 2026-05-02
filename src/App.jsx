@@ -2193,7 +2193,22 @@ function parseAiResponse(text) {
 function AiBox({ kb, prompt, label="ИИ-СОВЕТНИК", btnText="Получить совет", placeholder="Нажми — получи персональный совет...", actionType=null, onShopAdd=null, onTaskAdd=null, noActions=false, maxTokens=1200 }) {
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
-  const ask = async()=>{ setLoading(true); const r=await askClaude(kb,prompt,maxTokens); setText(r); setLoading(false); };
+  // Кэш — сохраняем результат в localStorage по ключу из label
+  const cacheKey = "ld_aibox_cache_"+label.replace(/\s+/g,"_");
+  useEffect(()=>{
+    try {
+      const cached = JSON.parse(localStorage.getItem(cacheKey)||"null");
+      if(cached && cached.text) setText(cached.text);
+    } catch{}
+  },[cacheKey]);
+  const ask = async()=>{
+    setLoading(true);
+    const r = await askClaude(kb, prompt, maxTokens);
+    setText(r);
+    // Сохраняем в кэш
+    try { localStorage.setItem(cacheKey, JSON.stringify({text:r, ts:Date.now()})); } catch{}
+    setLoading(false);
+  };
   const blocks = useMemo(()=>parseAiResponse(text), [text]);
   
   // Извлекаем все элементы списков для возможности добавить в задачи/покупки
@@ -2331,7 +2346,17 @@ function AiBox({ kb, prompt, label="ИИ-СОВЕТНИК", btnText="Получ�
     setDetailItem(txt);
     setDetailText("");
     setDetailLoading(true);
-    const r = await askClaude(kb, "Дай ПОЛНУЮ ПОДРОБНУЮ инструкцию как выполнить: \""+txt+"\". Структура: ## Что нужно (материалы, время); ## Шаги (нумерованным списком, очень детально); ## На что обратить внимание (3-4 пункта); ## Сколько времени займёт. Без воды, конкретно.");
+    const prompt_detail =
+      "СИСТЕМНОЕ ТРЕБОВАНИЕ: отвечай ТОЛЬКО на русском языке.\n\n"+
+      "Раскрой подробно следующую рекомендацию:\n\""+txt+"\"\n\n"+
+      "Структура ответа:\n"+
+      "1. Что именно это такое — точное определение метода/подхода/инструмента\n"+
+      "2. Почему это подходит под этот профиль — конкретная причина\n"+
+      "3. Как применить пошагово — нумерованный список конкретных действий\n"+
+      "4. Что понадобится — инструменты, ресурсы, время\n"+
+      "5. Источник или автор метода (если применимо)\n\n"+
+      "Никаких общих фраз. Только конкретика.";
+    const r = await askClaude(kb, prompt_detail, 1000);
     setDetailText(r);
     setDetailLoading(false);
   };
@@ -2394,32 +2419,58 @@ function AiBox({ kb, prompt, label="ИИ-СОВЕТНИК", btnText="Получ�
       </div>}
       
       {/* Модалка подробного описания */}
-      {detailItem && <div className="overlay" onClick={()=>setDetailItem(null)}>
-        <div className="modal" onClick={e=>e.stopPropagation()} style={{maxWidth:600,maxHeight:"85vh",overflowY:"auto"}}>
-          <span className="modal-x" onClick={()=>setDetailItem(null)}>✕</span>
-          <div className="modal-title">Подробная инструкция</div>
-          <div style={{padding:"10px 14px",background:"rgba(200,164,90,0.08)",borderRadius:10,marginBottom:14,fontSize:14,color:T.text1,fontFamily:"'Crimson Pro',serif"}}>{detailItem}</div>
-          {detailLoading && <div className="ai-dim">Готовлю подробную инструкцию...</div>}
-          {!detailLoading && detailText && <div className="ai-content">
-            {parseAiResponse(detailText).map((b, i) => {
-              if(b.type === "header") return <div key={i} className="ai-header"><span className="ai-header-mark">◆</span>{b.content}</div>;
-              if(b.type === "list") return <div key={i} className="ai-list">
-                {b.items.map((it, j) => {
-                  const isObj = typeof it === "object";
-                  return <div key={j} className="ai-list-item">
-                    <span className="ai-list-num">{j+1}</span>
-                    <div className="ai-list-body">
-                      {isObj && it.title && <div className="ai-list-title">{it.title}</div>}
-                      <div className="ai-list-text">{isObj?it.body:it}</div>
-                    </div>
-                  </div>;
-                })}
-              </div>;
-              return <div key={i} className="ai-paragraph">{b.content}</div>;
-            })}
-          </div>}
+      {detailItem && (
+        <div className="overlay" onClick={()=>{setDetailItem(null);setDetailText("");}}>
+          <div className="modal" onClick={e=>e.stopPropagation()} style={{maxWidth:500,maxHeight:"85vh",display:"flex",flexDirection:"column"}}>
+            <span className="modal-x" onClick={()=>{setDetailItem(null);setDetailText("");}}>✕</span>
+            <div className="modal-title">📖 Подробнее</div>
+            {/* Исходная рекомендация */}
+            <div style={{padding:"10px 14px",background:"rgba(200,164,90,0.08)",borderRadius:10,marginBottom:14,fontSize:14,color:T.gold,fontFamily:"'Crimson Pro',serif",fontStyle:"italic",flexShrink:0}}>
+              {detailItem}
+            </div>
+            {/* Контент */}
+            <div style={{flex:1,overflowY:"auto",paddingRight:4}}>
+              {detailLoading&&(
+                <div style={{textAlign:"center",padding:30,color:T.text3}}>
+                  <div style={{fontSize:24,marginBottom:8}}>⏳</div>
+                  <div style={{fontSize:13,fontStyle:"italic"}}>Загружаю подробное объяснение...</div>
+                </div>
+              )}
+              {!detailLoading&&detailText&&(
+                <div className="ai-content" style={{padding:"0 4px"}}>
+                  {parseAiResponse(detailText).map((b,i)=>{
+                    if(b.type==="header") return <div key={i} className="ai-header"><span className="ai-header-mark">◆</span>{b.content}</div>;
+                    if(b.type==="list") return <div key={i} className="ai-list">
+                      {b.items.map((it,j)=>{
+                        const isObj=typeof it==="object";
+                        return <div key={j} className="ai-list-item">
+                          <span className="ai-list-num">{j+1}</span>
+                          <div className="ai-list-body">
+                            {isObj&&it.title&&<div className="ai-list-title">{it.title}</div>}
+                            <div className="ai-list-text">{isObj?it.body:it}</div>
+                          </div>
+                        </div>;
+                      })}
+                    </div>;
+                    return <div key={i} className="ai-paragraph">{b.content}</div>;
+                  })}
+                </div>
+              )}
+            </div>
+            <div className="modal-foot" style={{flexShrink:0,gap:8}}>
+              <button className="btn btn-ghost" onClick={()=>{setDetailItem(null);setDetailText("");}}>Закрыть</button>
+              {detailText&&<button className="btn btn-ghost btn-sm" onClick={()=>{
+                try{
+                  const notes=JSON.parse(localStorage.getItem("ld_ai_notes")||"[]");
+                  notes.unshift({date:new Date().toISOString(),label:"Подробно: "+detailItem.slice(0,50),text:detailText});
+                  localStorage.setItem("ld_ai_notes",JSON.stringify(notes.slice(0,50)));
+                  alert("Сохранено в заметки");
+                }catch{}
+              }}>💾 Сохранить</button>}
+            </div>
+          </div>
         </div>
-      </div>}
+      )}
       <div className="ai-actions">
         <button className="btn btn-teal btn-sm" onClick={ask} disabled={loading}>{loading?"Думаю...":text?"Обновить":btnText}</button>
         {text && allListItems.length > 0 && <>
