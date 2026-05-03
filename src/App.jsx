@@ -152,10 +152,16 @@ async function askClaude(system, user, maxTokens = 1200) {
 // ══════════════════════════════════════════════════════════════
 function useStorage(key, def) {
   const [v, setV] = useState(() => {
-    try { const s = localStorage.getItem(key); return s ? JSON.parse(s) : def; } catch { return def; }
+    try { const s = localStorage.getItem(key); return s !== null ? JSON.parse(s) : def; } catch { return def; }
   });
-  useEffect(() => { try { localStorage.setItem(key, JSON.stringify(v)); } catch {} }, [key, v]);
-  return [v, setV];
+  const setVAndSave = (valOrFn) => {
+    setV(prev => {
+      const next = typeof valOrFn === "function" ? valOrFn(prev) : valOrFn;
+      try { localStorage.setItem(key, JSON.stringify(next)); } catch {}
+      return next;
+    });
+  };
+  return [v, setVAndSave];
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -1968,13 +1974,18 @@ function Onboarding({ onDone }) {
 export default function LifeDiary() {
   const [profile, setProfile] = useStorage("ld_pf_v3", null);
   const [sections, setSections] = useStorage("ld_sec_v3", DEF_SECTIONS);
-  // Миграция: переименовать "Красота" → "Уход" в сохранённых данных
+  // Миграция: переименовать "Красота" → "Уход" + удалить "Все дела"
   useEffect(()=>{
     setSections(p=>{
       if(!p) return p;
-      const updated = p.map(s=>s.id==="beauty"&&s.name==="Красота"?{...s,name:"Уход"}:s);
-      const changed = updated.some((s,i)=>s.name!==p[i]?.name);
-      return changed?updated:p;
+      let updated = p
+        .filter(s=>s.id!=="tasks") // удаляем "Все дела"
+        .map(s=>s.id==="beauty"&&s.name==="Красота"?{...s,name:"Уход"}:s);
+      // Добавляем новые разделы если их нет (из DEF_SECTIONS)
+      DEF_SECTIONS.forEach(def=>{
+        if(!updated.find(s=>s.id===def.id)) updated.push(def);
+      });
+      return updated;
     });
   },[]);
   const [tasks, setTasks] = useStorage("ld_tasks_v3", []);
@@ -6467,8 +6478,8 @@ function BeautySection({profile,tasks,setTasks,today,kb,notify}) {
           <div style={{fontSize:11,color:T.gold,fontFamily:"'JetBrains Mono'",letterSpacing:1,marginBottom:6}}>{cat.cat.toUpperCase()}</div>
           {cat.items.map(item=>{
             const sel = selectedTopics.includes(item.id);
-            const confirmed = procSettings[item.id]?.confirmed;
             const s = procSettings[item.id]||{};
+            const confirmed = s.confirmed === true;
             const isActive = !!activeForms[item.id];
             return (
               <div key={item.id}>
