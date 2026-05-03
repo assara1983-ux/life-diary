@@ -1315,7 +1315,7 @@ function Onboarding({ onDone }) {
   const zodiac = d.dob ? getZodiac(d.dob) : null;
   const eastern = d.dob ? getEastern(d.dob) : null;
   const degree = d.fullName ? calcDegree(d.fullName) : null;
-  const age = d.dob ? new Date().getFullYear()-new Date(d.dob).getFullYear() : null;
+  const age = d.dob ? (() => { const bd = new Date(d.dob); const now = new Date(); let age = now.getFullYear() - bd.getFullYear(); const m = now.getMonth() - bd.getMonth(); if (m < 0 || (m === 0 && now.getDate() < bd.getDate())) { age--; } return age; })() : null;
 
   return (
     <div className="ob-wrap">
