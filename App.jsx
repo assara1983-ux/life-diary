@@ -372,7 +372,7 @@ function freqLabel(f) {
 }
 
 function buildKB(p) {
-  const age = p.dob ? new Date().getFullYear()-new Date(p.dob).getFullYear() : null;
+  const age = p.dob ? (() => { const bd = new Date(p.dob); const now = new Date(); let age = now.getFullYear() - bd.getFullYear(); const m = now.getMonth() - bd.getMonth(); if (m < 0 || (m === 0 && now.getDate() < bd.getDate())) { age--; } return age; })() : null;
   const freeFrom = p.workEnd || "18:00";
   const wakeTime = p.wake || "07:00";
   return `Ты — личный жизненный советник Life Diary. Говори тепло, как умный близкий друг. Конкретно и по делу. ВСЕГДА учитывай весь профиль при ответе.
