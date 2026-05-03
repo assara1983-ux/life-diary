@@ -6228,15 +6228,15 @@ function ProcForm({item, procSettings, setProcSettings, confirmProc, DAY_RECS, i
   const DAYS_LIST = ["Пн","Вт","Ср","Чт","Пт","Сб","Вс"];
 
   const save = () => {
-    setProcSettings(p=>({...p,[item.id]:{
+    const settings = {
       time: formTime,
-      duration: parseInt(formDur)||item.dur,
+      duration: parseInt(formDur)||item.dur||15,
       day: formDay,
       date: formDate,
       startDate: formStartDate,
-      confirmed: true
-    }}));
-    confirmProc({...item, time: formTime});
+    };
+    // Передаём настройки явно — избегаем race condition с async setState
+    confirmProc(item, settings);
   };
 
   return (
@@ -6427,10 +6427,10 @@ function BeautySection({profile,tasks,setTasks,today,kb,notify}) {
   const getItem = (id) => allItems.find(i=>i.id===id);
 
   // ── Добавить процедуру в tasks ───────────────────────────────
-  const confirmProc = (item) => {
-    const s = procSettings[item.id]||{};
-    const time = s.time||item.time||"20:00";
-    const dur = s.duration||item.dur||15;
+  // confirmProc принимает все настройки явно — не читает из procSettings
+  // (избегаем race condition с асинхронным setState)
+  const confirmProc = (item, settings) => {
+    const { time, duration, day, date, startDate } = settings;
     const n = parseInt((item.freq||"").split(":")[1]||0);
     const isRareFreq = item.freq && item.freq.startsWith("every:") && n >= 14;
     const isSliding  = item.freq && item.freq.startsWith("every:") && n > 0 && n < 14;
@@ -6444,18 +6444,18 @@ function BeautySection({profile,tasks,setTasks,today,kb,notify}) {
         section: "beauty",
         freq: item.freq,
         priority: "m",
-        preferredTime: time,
-        beautyDuration: dur,
-        // Нечастые (≥14 дней): сохраняем конкретный deadline
-        deadline: isRareFreq ? (s.date||"") : "",
-        // Скользящие (2,3,7 дней): сохраняем стартовую дату
-        beautyStartDate: isSliding ? (s.startDate||s.date||new Date().toISOString().split("T")[0]) : "",
+        preferredTime: time,           // всегда из формы
+        beautyDuration: duration,      // всегда из формы
+        deadline: isRareFreq ? (date||"") : "",
+        beautyStartDate: isSliding ? (startDate||new Date().toISOString().split("T")[0]) : "",
         notes: item.note||"",
         lastDone: "", doneDate: ""
       };
       return [...without, newTask];
     });
-    setProcSettings(p=>({...p,[item.id]:{...s,confirmed:true}}));
+    setProcSettings(p=>({...p,[item.id]:{
+      time, duration, day, date, startDate, confirmed: true
+    }}));
     closeForm(item.id);
     notify(item.name+" добавлено в расписание ✦");
   };
