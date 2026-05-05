@@ -1,0 +1,33 @@
+/* src/index.css */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  overflow-x: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--tg-theme-bg-color, #ffffff);
+  color: var(--tg-theme-text-color, #000000);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* Стилизация скроллбара под тему Telegram */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--tg-theme-hint-color, #ccc);
+  border-radius: 3px;
+}
