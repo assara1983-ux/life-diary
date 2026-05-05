@@ -1,124 +1,83 @@
 // src/App.jsx
 import { useState } from 'react';
-import { AppProvider, useAppContext } from './store/AppContext';
-import { useAIChat } from './hooks/useAIChat';
+import { AppProvider } from './store/AppContext';
+import { DiaryView } from './components/features/DiaryView';
+import { ChatView } from './components/features/ChatView';
+import { SettingsView } from './components/features/SettingsView';
 
 function AppContent() {
-  const { isInitialized, diaryEntries, settings } = useAppContext();
-  const { messages, isLoading, error, sendMessage } = useAIChat();
   const [currentView, setCurrentView] = useState('diary');
-  const [newEntryText, setNewEntryText] = useState('');
 
-  if (!isInitialized) {
-    return (
-      <div style={{ padding: 20, textAlign: 'center', color: 'var(--tg-theme-text-color, #000)' }}>
-        Загрузка приложения...
-      </div>
-    );
-  }
-
-  const handleAddEntry = () => {
-    if (!newEntryText.trim()) return;
-    // Временная реализация через localStorage-обёртку, позже вынесем в компонент
-    setNewEntryText('');
-  };
+  const navItems = [
+    { id: 'diary', label: 'Дневник', icon: '📔' },
+    { id: 'chat', label: 'Чат', icon: '💬' },
+    { id: 'settings', label: 'Настройки', icon: '️' }
+  ];
 
   return (
     <div style={{ 
-      padding: 16, 
       minHeight: '100vh', 
       background: 'var(--tg-theme-bg-color, #ffffff)', 
-      color: 'var(--tg-theme-text-color, #000000)' 
+      color: 'var(--tg-theme-text-color, #000000)',
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+      display: 'flex',
+      flexDirection: 'column'
     }}>
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-        <h1 style={{ margin: 0, fontSize: 20 }}>Life Diary</h1>
-        <span style={{ fontSize: 12, opacity: 0.6 }}>v2.0 (Grok)</span>
+      {/* Шапка */}
+      <header style={{ 
+        padding: '16px 16px 0',
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center',
+        marginBottom: 16 
+      }}>
+        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700 }}>Life Diary</h1>
+        <span style={{ 
+          fontSize: 12, 
+          opacity: 0.6, 
+          background: 'var(--tg-theme-secondary-bg-color, #f0f0f0)', 
+          padding: '4px 8px', 
+          borderRadius: 12 
+        }}>
+          v2.0 Grok
+        </span>
       </header>
 
-      <nav style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
-        {['diary', 'chat', 'settings'].map(view => (
+      {/* Навигация */}
+      <nav style={{ 
+        display: 'flex', 
+        gap: 8, 
+        padding: '0 16px', 
+        marginBottom: 24 
+      }}>
+        {navItems.map(item => (
           <button
-            key={view}
-            onClick={() => setCurrentView(view)}
+            key={item.id}
+            onClick={() => setCurrentView(item.id)}
             style={{
-              padding: '8px 16px',
+              flex: 1,
+              padding: '10px 0',
               border: 'none',
-              borderRadius: 8,
-              background: currentView === view ? 'var(--tg-theme-button-color, #3390ec)' : 'var(--tg-theme-secondary-bg-color, #f0f0f0)',
-              color: currentView === view ? 'var(--tg-theme-button-text-color, #ffffff)' : 'var(--tg-theme-text-color, #000000)',
+              borderRadius: 10,
+              background: currentView === item.id ? 'var(--tg-theme-button-color, #3390ec)' : 'var(--tg-theme-secondary-bg-color, #f5f5f5)',
+              color: currentView === item.id ? 'var(--tg-theme-button-text-color, #ffffff)' : 'var(--tg-theme-text-color, #000000)',
               cursor: 'pointer',
-              transition: 'opacity 0.2s'            }}
+              fontWeight: 600,
+              fontSize: 14,
+              transition: 'all 0.2s',
+              boxShadow: currentView === item.id ? '0 2px 5px rgba(0,0,0,0.1)' : 'none'
+            }}
           >
-            {view === 'diary' ? 'Дневник' : view === 'chat' ? 'Чат с ИИ' : 'Настройки'}
+            {item.icon} {item.label}
           </button>
         ))}
       </nav>
 
-      <main>
-        {currentView === 'diary' && (
-          <section>
-            <h2>Записи дневника</h2>
-            <textarea
-              value={newEntryText}
-              onChange={(e) => setNewEntryText(e.target.value)}
-              placeholder="Новая запись..."
-              style={{ width: '100%', minHeight: 80, padding: 8, marginBottom: 10, borderRadius: 8, border: '1px solid #ccc' }}
-            />
-            <button 
-              onClick={handleAddEntry}
-              style={{ padding: '8px 16px', background: 'var(--tg-theme-button-color, #3390ec)', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer' }}
-            >
-              Сохранить ({diaryEntries.length} записей)
-            </button>
-          </section>
-        )}
-
-        {currentView === 'chat' && (
-          <section>
-            <h2>Чат с ИИ (Grok)</h2>
-            {error && <p style={{ color: '#e53e3e', marginBottom: 10 }}>{error}</p>}
-            
-            <div style={{ maxHeight: 300, overflowY: 'auto', marginBottom: 12, padding: 8, background: 'var(--tg-theme-secondary-bg-color, #f5f5f5)', borderRadius: 8 }}>
-              {messages.length === 0 ? (
-                <p style={{ textAlign: 'center', opacity: 0.5 }}>Начните диалог с ИИ-ассистентом</p>
-              ) : (
-                messages.map((m, i) => (
-                  <div key={i} style={{ 
-                    marginBottom: 8, 
-                    padding: 8, 
-                    background: m.role === 'user' ? '#e3f2fd' : '#f0f4f8', 
-                    borderRadius: 6 
-                  }}>
-                    <strong>{m.role === 'user' ? 'Вы' : 'Grok'}:</strong> {m.content}
-                  </div>
-                ))
-              )}
-            </div>
-
-            <button
-              onClick={() => sendMessage('Расскажи, как прошёл мой день, если бы ты был личным дневником.')}              disabled={isLoading}
-              style={{ 
-                padding: '10px 16px', 
-                background: isLoading ? '#aaa' : 'var(--tg-theme-button-color, #3390ec)', 
-                color: '#fff', 
-                border: 'none', 
-                borderRadius: 6, 
-                cursor: isLoading ? 'not-allowed' : 'pointer' 
-              }}
-            >
-              {isLoading ? 'ИИ думает...' : 'Тестовый запрос к Grok'}
-            </button>
-          </section>
-        )}
-
-        {currentView === 'settings' && (
-          <section>
-            <h2>Настройки</h2>
-            <p>Текущая тема: <strong>{settings.theme}</strong></p>
-            <p>Язык интерфейса: <strong>{settings.language}</strong></p>
-            <p style={{ opacity: 0.6, marginTop: 10 }}>Здесь будут переключатели темы, экспорт/импорт данных и управление API-ключом.</p>
-          </section>
-        )}
+      {/* Контент */}
+      <main style={{ flex: 1, padding: '0 16px 30px' }}>
+        {currentView === 'diary' && <DiaryView />}
+        {currentView === 'chat' && <ChatView />}
+        {currentView === 'settings' && <SettingsView />}
       </main>
     </div>
   );
