@@ -98,3 +98,126 @@ export function DiaryView() {
             transition: 'opacity 0.2s'
           }}        >
           Добавить запись
+        </button>
+      </div>
+
+      {/* Список записей */}
+      <div>
+        {diaryEntries.length === 0 ? (
+          <p style={{ textAlign: 'center', opacity: 0.5, padding: 40 }}>
+            Пока нет записей. Начните вести дневник! ✨
+          </p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {diaryEntries.slice().reverse().map((entry) => (
+              <div
+                key={entry.id}
+                style={{
+                  padding: 14,
+                  background: 'var(--tg-theme-bg-color, #fff)',
+                  border: '1px solid var(--tg-theme-hint-color, #e0e0e0)',
+                  borderRadius: 10,
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+                }}
+              >
+                {editingId === entry.id ? (
+                  // Режим редактирования
+                  <>
+                    <textarea
+                      value={editText}
+                      onChange={(e) => setEditText(e.target.value)}
+                      style={{
+                        width: '100%',
+                        minHeight: 80,
+                        padding: 10,
+                        marginBottom: 10,
+                        borderRadius: 6,
+                        border: '1px solid var(--tg-theme-button-color, #3390ec)',
+                        background: 'var(--tg-theme-bg-color, #fff)',
+                        color: 'var(--tg-theme-text-color, #000)',
+                        fontSize: 14,
+                        resize: 'vertical',
+                        boxSizing: 'border-box'
+                      }}
+                    />
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button
+                        onClick={handleSaveEdit}
+                        disabled={!editText.trim()}
+                        style={{
+                          flex: 1,                          padding: 10,
+                          background: editText.trim() ? 'var(--tg-theme-button-color, #3390ec)' : '#ccc',
+                          color: '#fff',
+                          border: 'none',
+                          borderRadius: 6,
+                          cursor: editText.trim() ? 'pointer' : 'not-allowed',
+                          fontWeight: 500
+                        }}
+                      >
+                        Сохранить
+                      </button>
+                      <button
+                        onClick={handleCancelEdit}
+                        style={{
+                          flex: 1,
+                          padding: 10,
+                          background: 'var(--tg-theme-secondary-bg-color, #f0f0f0)',
+                          color: 'var(--tg-theme-text-color, #000)',
+                          border: 'none',
+                          borderRadius: 6,
+                          cursor: 'pointer',
+                          fontWeight: 500
+                        }}
+                      >
+                        Отмена
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  // Режим просмотра
+                  <>
+                    <div style={{ fontSize: 12, color: 'var(--tg-theme-hint-color, #888)', marginBottom: 8 }}>
+                      {formatDate(entry.createdAt)}
+                    </div>
+                    <div style={{ fontSize: 15, lineHeight: 1.5, marginBottom: 10, whiteSpace: 'pre-wrap' }}>
+                      {entry.text}
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                      <button
+                        onClick={() => handleStartEdit(entry)}
+                        style={{
+                          padding: '6px 12px',
+                          background: 'var(--tg-theme-secondary-bg-color, #f0f0f0)',
+                          color: 'var(--tg-theme-text-color, #000)',
+                          border: 'none',
+                          borderRadius: 6,
+                          cursor: 'pointer',
+                          fontSize: 13
+                        }}
+                      >                        ✏️ Изменить
+                      </button>
+                      <button
+                        onClick={() => handleDelete(entry.id)}
+                        style={{
+                          padding: '6px 12px',
+                          background: '#ffebee',
+                          color: '#c62828',
+                          border: 'none',
+                          borderRadius: 6,
+                          cursor: 'pointer',
+                          fontSize: 13
+                        }}
+                      >
+                        🗑️ Удалить
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
