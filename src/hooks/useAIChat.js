@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from 'react';
-import { sendToGrok } from '../services/aiClient';
+import { sendToGemini } from '../services/aiClient'; // Изменено: Grok → Gemini
 
 export function useAIChat(initialMessages = []) {
   const [messages, setMessages] = useState(Array.isArray(initialMessages) ? initialMessages : []);
@@ -24,7 +24,7 @@ export function useAIChat(initialMessages = []) {
     setMessages(newMessages);
 
     try {
-      const aiResponse = await sendToGrok(newMessages, { ...options, signal: controller.signal });
+      const aiResponse = await sendToGemini(newMessages, { ...options }); // Изменено: вызов sendToGemini
       setMessages(prev => [...prev, { role: 'assistant', content: aiResponse }]);
     } catch (err) {
       if (err.name === 'AbortError') return;
