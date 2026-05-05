@@ -97,6 +97,7 @@ export function DiaryView() {
             cursor: newEntryText.trim() ? 'pointer' : 'not-allowed',
             transition: 'opacity 0.2s'
           }}        >
+          Добавить запись
           // src/components/features/DiaryView.jsx
 import { useState, useCallback } from 'react';
 import { useAppContext } from '../../store/AppContext';
