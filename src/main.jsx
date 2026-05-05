@@ -1,17 +1,42 @@
-import React from 'react'
-import ReactDOM from 'react-dom/client'
-import LifeDiary from './App.jsx'
+// src/main.jsx
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App';
+import './index.css';
 
-const tg = window.Telegram?.WebApp
+// Инициализация Telegram WebApp SDK
+const tg = window.Telegram?.WebApp;
+
 if (tg) {
-  tg.ready()
-  tg.expand()
-  tg.setHeaderColor('#05080f')
-  tg.setBackgroundColor('#05080f')
+  // Сообщаем Telegram, что приложение готово
+  tg.ready();
+  // Разворачиваем приложение на весь экран
+  tg.expand();
+  
+  // Опционально: настраиваем цвет хедера под тему
+  // Это убирает белую/черную полосу сверху в Telegram
+  try {
+    const isDark = tg.colorScheme === 'dark';
+    tg.setHeaderColor(isDark ? '#1c1c1e' : '#ffffff');
+    tg.setBackgroundColor(isDark ? '#1c1c1e' : '#ffffff');
+  } catch (e) {
+    console.warn('Не удалось установить цвет хедера:', e);
+  }
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(
-  <React.StrictMode>
-    <LifeDiary />
-  </React.StrictMode>
-)
+// Находим корневой элемент
+const rootElement = document.getElementById('root');
+
+if (!rootElement) {
+  console.error('Критическая ошибка: Элемент #root не найден в DOM.');
+} else {
+  // Создаем корень React
+  const root = ReactDOM.createRoot(rootElement);
+  
+  // Рендерим приложение
+  root.render(
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>
+  );
+}
