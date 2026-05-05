@@ -33,7 +33,7 @@ export function ChatView() {
   return (
     <section style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 120px)' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-        <h2 style={{ margin: 0, fontSize: 18 }}>💬 Чат с ИИ (Grok)</h2>
+        <h2 style={{ margin: 0, fontSize: 18 }}>💬 Чат с ИИ (Gemini)</h2>
         <button 
           onClick={clearChat}
           style={{
@@ -67,7 +67,7 @@ export function ChatView() {
             borderRadius: 8,
             fontSize: 13
           }}>
-            ⚠️ {error}
+            ️ {error}
           </div>
         )}
 
