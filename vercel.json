@@ -14,6 +14,9 @@
     },
     "api/ai.js": {
       "maxDuration": 30
+    },
+    "api/send-push.js": {
+      "maxDuration": 10
     }
   }
 }
