@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useApp } from '../store/AppContext';
 import { AiBox } from '../components/AiBox';
 import { TaskModal } from '../components/TaskModal';
+import { AccountingBlock } from '../components/AccountingBlock'; // ✅ Добавлен импорт
 import { T } from '../utils/theme';
 
 // --- КОНСТАНТЫ И ФУНКЦИИ ПОМОЩНИКИ ---
@@ -46,8 +47,8 @@ function DlRow({ t, today, setTasks, setEditDl, setAddDlModal }) {
       <div className={`chk ${t.doneDate === today ? 'done' : ''}`} style={{ flexShrink: 0, width: 18, height: 18, fontSize: 11 }}
         onClick={() => setTasks(p => p.map(x => x.id === t.id ? { ...x, doneDate: x.doneDate === today ? null : today, lastDone: x.doneDate === today ? x.lastDone : today } : x))}>
         {t.doneDate === today ? '✓' : ' '}
-      </div>
-      <div style={{ flex: 1, minWidth: 0 }}>        <div style={{ fontSize: 13, color: t.doneDate === today ? T.text3 : T.text0, textDecoration: t.doneDate === today ? 'line-through' : 'none', lineHeight: 1.3 }}>
+      </div>      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 13, color: t.doneDate === today ? T.text3 : T.text0, textDecoration: t.doneDate === today ? 'line-through' : 'none', lineHeight: 1.3 }}>
           {t.title.replace(/^[📋🏛🏦🔍💰]+\s*/, '')}
         </div>
         {t.notes && <div style={{ fontSize: 11, color: T.text3, marginTop: 1 }}>{t.notes}</div>}
@@ -95,9 +96,8 @@ export function WorkSection() {
   
   // Состояние для инструментов
   const [activeTool, setActiveTool] = useState(null);
-  const [toolLoading, setToolLoading] = useState(false);
-  const today = toDay();
-  const kb = JSON.stringify(profile); // Заглушка для kb
+  const [toolLoading, setToolLoading] = useState(false);  const today = toDay();
+  const kb = JSON.stringify(profile);
 
   const notify = useCallback((msg) => { console.log('Notify:', msg); }, []);
 
@@ -115,7 +115,6 @@ export function WorkSection() {
   const checkDeadline = async (r) => {
     setCheckingId(r.id);
     try {
-      // Симуляция проверки (так как API нет в коде)
       setTimeout(() => {
         setReports(p => p.map(rep => rep.id === r.id ? { ...rep, deadline: '2026-12-31' } : rep));
         setCheckResults(p => ({ ...p, [r.id]: { deadline: '2026-12-31', checkedAt: new Date().toISOString() } }));
@@ -145,8 +144,8 @@ export function WorkSection() {
             {r.status !== 'done' && <div title="Подготовлен" style={{ width: 18, height: 18, borderRadius: 4, border: `1px solid ${r.status === 'ready' ? 'rgba(78,201,190,0.6)' : T.bdr}`, background: r.status === 'ready' ? 'rgba(78,201,190,0.15)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 10, color: r.status === 'ready' ? T.teal : T.text3 }} onClick={() => toggleReady(r.id)}>P</div>}
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>              {showGroup && <span style={{ fontSize: 10, color: g.color, fontFamily: "'JetBrains Mono'" }}>{g.icon}</span>}
-              <span style={{ fontSize: 14, color: r.status === 'done' ? T.text3 : T.text0, textDecoration: r.status === 'done' ? 'line-through' : 'none', lineHeight: 1.4, wordBreak: 'break-word' }}>{r.name}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+              {showGroup && <span style={{ fontSize: 10, color: g.color, fontFamily: "'JetBrains Mono'" }}>{g.icon}</span>}              <span style={{ fontSize: 14, color: r.status === 'done' ? T.text3 : T.text0, textDecoration: r.status === 'done' ? 'line-through' : 'none', lineHeight: 1.4, wordBreak: 'break-word' }}>{r.name}</span>
             </div>
             <div style={{ display: 'flex', gap: 6, marginTop: 3, flexWrap: 'wrap', alignItems: 'center' }}>
               <span style={{ fontSize: 10, color: isOver ? T.danger : isSoon ? T.warn : T.text3, fontFamily: "'JetBrains Mono'", fontWeight: isOver || isSoon ? 700 : 400 }}>
@@ -193,8 +192,13 @@ export function WorkSection() {
         <div>
           {isAccountant ? (
             <div>
+              {/* ✅ НОВЫЙ БЛОК: Формы КГД и БНС (через AccountingBlock) */}
+              <div style={{ marginBottom: 16 }}>
+                <AccountingBlock />              </div>
+
               {/* На этой неделе */}
-              <div style={{ marginBottom: 12 }}>                <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 12, cursor: 'pointer', background: 'rgba(232,120,120,0.08)', border: '1px solid rgba(232,120,120,0.3)' }}>
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 12, cursor: 'pointer', background: 'rgba(232,120,120,0.08)', border: '1px solid rgba(232,120,120,0.3)' }}>
                   <span style={{ fontSize: 18 }}>📅</span>
                   <span style={{ flex: 1, fontSize: 15, fontFamily: "'Crimson Pro',serif", color: T.danger }}>На этой неделе</span>
                   <span style={{ fontSize: 11, color: T.danger, fontFamily: "'JetBrains Mono'", background: 'rgba(232,120,120,0.15)', padding: '1px 8px', borderRadius: 8 }}>3</span>
@@ -226,7 +230,6 @@ export function WorkSection() {
                 {reportGroups.map(g => {
                   const groupReports = reports.filter(r => r.group === g.id && r.enabled !== false);
                   const pendingCount = groupReports.filter(r => r.status !== 'done').length;
-                  const isOpen = g.isOpen; // В реальном коде нужно состояние для открытия
                   return (
                     <div key={g.id} style={{ marginBottom: 8 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderRadius: 12, cursor: 'pointer', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
@@ -240,10 +243,10 @@ export function WorkSection() {
                       </div>
                     </div>
                   );
-                })}
-              </div>
+                })}              </div>
 
-              {/* Задачи */}              <div style={{ marginBottom: 12 }}>
+              {/* Задачи */}
+              <div style={{ marginBottom: 12 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', borderRadius: 12, cursor: 'pointer', background: 'rgba(78,201,190,0.06)', border: '1px solid rgba(78,201,190,0.15)' }}>
                   <span style={{ fontSize: 16 }}>📋</span>
                   <span style={{ flex: 1, fontSize: 14, fontFamily: "'Crimson Pro',serif", color: T.teal, fontWeight: 500 }}>Задачи</span>
@@ -289,10 +292,10 @@ export function WorkSection() {
               <div style={{ fontSize: 16, color: T.text2, marginBottom: 8 }}>Добавь профессию в профиле, чтобы видеть отчёты</div>
             </div>
           )}
-        </div>
-      )}
+        </div>      )}
 
-      {/* - ВКЛАДКА: ИНСТРУМЕНТЫ - */}      {workTab === 'tools' && (
+      {/* - ВКЛАДКА: ИНСТРУМЕНТЫ - */}
+      {workTab === 'tools' && (
         <div>
           {toolLoading && (
             <div style={{ textAlign: 'center', padding: 30, color: T.text3 }}>
@@ -338,10 +341,10 @@ export function WorkSection() {
                 setReports(p => [...p, { ...newReport, id: 'u-' + Date.now(), group: addReportModal.groupId, enabled: true, status: 'pending', createdAt: new Date().toISOString() }]);
                 setAddReportModal(null);
                 setNewReport({ name: '', deadline: '', period: 'quarter', amount: '', notes: '' });
-                notify('Добавлено ✦');
-              }}>Добавить</button>
+                notify('Добавлено ✦');              }}>Добавить</button>
             </div>
-          </div>        </div>
+          </div>
+        </div>
       )}
 
       {editReport && (
@@ -362,4 +365,4 @@ export function WorkSection() {
       {modal !== null && <TaskModal task={modal?.id ? modal : null} defaultSection="work" onSave={(t) => { setTasks(p => modal?.id ? p.map(x => x.id === t.id ? t : x) : [...p, t]); notify(modal?.id ? 'Обновлено' : 'Добавлено'); }} onClose={() => setModal(null)} />}
     </div>
   );
-                                                                                                                                               }
+          }
