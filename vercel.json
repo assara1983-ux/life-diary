@@ -1,22 +1,36 @@
 {
-  "crons": [
-    {
-      "path": "/api/notify",
-      "schedule": "0 5 * * *"
-    }
-  ],
+  "version": 2,
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "devCommand": "npm run dev",
+  "installCommand": "npm install",
+  "framework": "vite",
   "functions": {
-    "api/notify.js": {
+    "api/*.js": {
       "maxDuration": 30
-    },
-    "api/save-subscription.js": {
-      "maxDuration": 10
-    },
-    "api/ai.js": {
-      "maxDuration": 30
-    },
-    "api/send-push.js": {
-      "maxDuration": 10
     }
-  }
+  },
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/$1" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        }
+      ]
+    }
+  ]
 }
