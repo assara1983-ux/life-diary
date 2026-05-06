@@ -1,8 +1,7 @@
 // src/sections/MentalSection.jsx
 import { useState } from 'react';
 import { useApp } from '../store/AppContext';
-import { parseAiResponse } from '../components/AiBox'; // Импортируем парсер, если нужно
-import { askClaude } from '../services/aiClient'; // Заглушка для вызова AI
+import { askClaude } from '../services/aiClient';
 import { T } from '../utils/theme';
 import { getMoon } from '../utils/helpers';
 
@@ -47,8 +46,8 @@ export function MentalSection() {
     customPractices, setCustomPractices
   } = useApp();
 
-  const [mood, setMood] = useState(mentalMood || 3);  const [stress, setStress] = useState(mentalStress || 5);
-  const [note, setNote] = useState('');
+  const [mood, setMood] = useState(mentalMood || 3);
+  const [stress, setStress] = useState(mentalStress || 5);  const [note, setNote] = useState('');
   const [saved, setSaved] = useState(false);
   const [openPractice, setOpenPractice] = useState(null);
   const [addingCustom, setAddingCustom] = useState(null);
@@ -85,26 +84,18 @@ export function MentalSection() {
   const getRecoveryPlan = async () => {
     setLoadingPlan(true);
     try {
-      // Здесь должен быть реальный вызов API. 
-      // Пока используем заглушку askClaude или логику из старого кода.
-      // В новом коде мы обычно используем AiBox, но здесь для плана восстановления сделаем прямой вызов, если нужно.
-      // Для примера просто обновим стейт.
-      
       const prompt = `Дай персональный план восстановления на сегодня. Настроение: ${mood}/5. Стресс: ${stress}/10. ` +
         `Стрессоры: ${stressors}. Восстановление: ${recovery}. Хронотип: ${profile.chronotype || '—'}. ` +
         `Свободен(а) после: ${freeFrom}. Луна: ${moon.n} (${moon.t}). ` +
         `Дай: 1) экстренную технику прямо сейчас (2-3 мин), 2) вечерний ритуал после ${freeFrom}, ` +
         `3) что поможет со сном, 4) аффирмацию под ценность ${profile.coreValue || '—'}. ` +
         `Нумерованным списком.`;
-      // const r = await askClaude(profile, prompt); // Нужно подключить реальный вызов
       
       // Заглушка для демонстрации структуры
       const mockResponse = `1. **Экстренно**: Техника дыхания 4-7-8. Вдох 4с, задержка 7с, выдох 8с.\n` +
                            `2. **Вечер**: Прогулка 20 мин без телефона.\n` +
                            `3. **Сон**: Магний и темная комната.\n` +
                            `4. **Аффирмация**: "Я в безопасности и спокоен".`;
-
-      // setRecoveryPlan(r); 
       setRecoveryPlan(mockResponse); 
     } catch (e) {
       console.error(e);
@@ -117,12 +108,11 @@ export function MentalSection() {
     if (!addingCustom || !addingCustom.name) return;
     setCustomPractices([...customPractices, { ...addingCustom, id: Date.now() }]);
     setAddingCustom(null);
-    // notify("Практика добавлена");
   };
 
   const moodEmoji = ['😔', '😟', '😐', '🙂', '😊', '🤩'][mood] || '😐';
   const moodLabel = ['Очень плохо', 'Плохо', 'Нейтрально', 'Хорошо', 'Отлично', 'Превосходно'][mood] || '';
-  const stressColor = stress <= 3 ? T.success : stress <= 6 ? T.warn : T.danger;
+  const stressColor = stress <= 3 ? T.success : stress <= 6 ? T.warning : T.error;
 
   // Базовые практики по категориям
   const PRACTICES = {
@@ -145,7 +135,8 @@ export function MentalSection() {
       icon: '🕯️', name: 'Медитация',
       items: [
         { id: 'vip', icon: '👁', name: 'Випассана — осознанность', desc: 'Наблюдай дыхание. Когда мысль — замечай её и возвращайся.', time: '10 мин', color: 'rgba(200,164,90,0.1)' },
-        ...(customPractices.filter(p => p.type === 'meditation'))      ]
+        ...(customPractices.filter(p => p.type === 'meditation'))
+      ]
     },
     sound: {
       icon: '🎵', name: 'Звукотерапия',
@@ -154,8 +145,7 @@ export function MentalSection() {
         ...(customPractices.filter(p => p.type === 'sound'))
       ]
     },
-    kpt: {
-      icon: '🧠', name: 'Психология',
+    kpt: {      icon: '🧠', name: 'Психология',
       items: [
         { id: '54321', icon: '🌱', name: '5-4-3-2-1 — заземление', desc: '5 вещей что видишь → 4 что потрогать → 3 что слышишь → 2 что чувствуешь → 1 что нюхаешь.', time: '2 мин', color: 'rgba(91,173,122,0.1)' },
         { id: 'thanks', icon: '🙏', name: 'Практика благодарности', desc: 'Запиши 3 вещи за которые благодарен сегодня.', time: '5 мин', color: 'rgba(200,164,90,0.1)' },
@@ -186,15 +176,15 @@ export function MentalSection() {
                   <div style={{ fontSize: 14, color: T.text2, lineHeight: 1.7, marginBottom: 10 }}>{item.desc}</div>
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                     <button className="btn btn-ghost btn-sm" onClick={() => {
-                        // Добавление в планировщик (нужен доступ к setTasks из контекста)
-                        // setTasks(...)
+                        // Добавление в планировщик
                     }}>⏰ В планировщик</button>
                   </div>
                 </div>
               )}
             </div>
           );
-        })}        <div style={{ marginTop: 6 }}>
+        })}
+        <div style={{ marginTop: 6 }}>
           <button className="btn btn-ghost btn-sm" style={{ width: '100%', fontSize: 12, border: '1px dashed rgba(200,164,90,0.3)' }} onClick={() => setAddingCustom({ type: catKey, name: '', desc: '', time: '', icon: '⭐' })}>+ Добавить свою практику</button>
         </div>
       </div>
@@ -204,8 +194,7 @@ export function MentalSection() {
   return (
     <div>
       {/* - Состояние — компактно - */}
-      <div style={{ padding: '12px 14px', background: 'rgba(200,164,90,0.06)', borderRadius: 12, border: '1px solid rgba(200,164,90,0.15)', marginBottom: 10 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+      <div style={{ padding: '12px 14px', background: 'rgba(200,164,90,0.06)', borderRadius: 12, border: '1px solid rgba(200,164,90,0.15)', marginBottom: 10 }}>        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
           <span style={{ fontSize: 28 }}>{moodEmoji}</span>
           <div style={{ flex: 1 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
@@ -243,7 +232,7 @@ export function MentalSection() {
         </div>
         
         {loadingPlan && <div style={{ fontSize: 14, color: T.text3, fontStyle: 'italic', padding: '12px 0', textAlign: 'center' }}>Составляю план под твоё состояние...</div>}
-                {!loadingPlan && mentalRecoveryPlan && (
+        {!loadingPlan && mentalRecoveryPlan && (
           <div className="ai-content">
             {parseAiResponse(mentalRecoveryPlan).map((b, i) => {
               if (b.type === 'header') return <div key={i} className="ai-header"><span className="ai-header-mark">◆</span>{b.content}</div>;
@@ -254,8 +243,7 @@ export function MentalSection() {
                     <div className="ai-list-body"><div className="ai-list-text">{item.body || item}</div></div>
                   </div>
                 ))}
-              </div>;
-              return <div key={i} className="ai-paragraph">{b.content}</div>;
+              </div>;              return <div key={i} className="ai-paragraph">{b.content}</div>;
             })}
           </div>
         )}
@@ -292,10 +280,11 @@ export function MentalSection() {
             </div>
             <div className="modal-foot">
               <button className="btn btn-ghost" onClick={() => setAddingCustom(null)}>Отмена</button>
-              <button className="btn btn-primary" onClick={saveCustomPractice}>Добавить</button>            </div>
+              <button className="btn btn-primary" onClick={saveCustomPractice}>Добавить</button>
+            </div>
           </div>
         </div>
       )}
     </div>
   );
-        }
+              }
