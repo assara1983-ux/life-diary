@@ -24,21 +24,12 @@ export function ScheduleSection() {
   const getAiSchedule = useCallback(async () => {
     setLoading(true);
     try {
-      // Используем встроенную логику промпта
       const prompt = `Составь детальное расписание на неделю для ${profile.name || "меня"}.
         Работа: ${profile.workStart || "9:00"}–${profile.workEnd || "18:00"} (${profile.workType || "офис"}),
         дорога: ${profile.commuteTime || "нет"}. Подъём: ${profile.wake || "7:00"}, отбой: ${profile.sleep || "23:00"}.
         Хронотип: ${profile.chronotype || "—"}.
         ВАЖНО: практики и спорт ТОЛЬКО после ${profile.workEnd || "18:00"}.`;
       
-      // Мы вызываем API напрямую через AiBox или импортируем askClaude, но проще использовать AiBox для рендера.
-      // Здесь мы генерируем текст для вставки в state
-      const response = await fetch('/api/ai', { // Если есть прокси, иначе используем логику из AiBox
-        method: 'POST',
-        body: JSON.stringify({ profile, prompt })
-      });
-      // Примечание: В текущей архитектуре без бэкенда лучше просто отобразить AiBox внутри раздела
-      // Поэтому этот метод оставим заглушкой, а реальный вызов будет в AiBox компоненте
       setAiText("Используйте виджет 'ИИ-план недели' ниже для генерации."); 
     } catch (e) {
       setAiText("Ошибка соединения.");
@@ -47,7 +38,8 @@ export function ScheduleSection() {
   }, [profile]);
 
   // Строим неделю
-  const now = new Date();  const startOfWeek = new Date(now);
+  const now = new Date();
+  const startOfWeek = new Date(now);
   const dayOfWeek = now.getDay() === 0 ? 6 : now.getDay() - 1;
   startOfWeek.setDate(now.getDate() - dayOfWeek + offset * 7);
   startOfWeek.setHours(0, 0, 0, 0);
@@ -55,10 +47,26 @@ export function ScheduleSection() {
   const weekDays = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(startOfWeek);
     d.setDate(startOfWeek.getDate() + i);
-    return d;
-  });
+    return d;  });
 
   const DAY_RU = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
+
+  // Хелпер для проверки даты (локальная копия)
+  const isDue = (task, today) => {
+    const last = task.lastDone;
+    const d = new Date(today); d.setHours(0,0,0,0);
+    if (!task.freq) return false;
+    if (task.doneDate === today) return false;
+    if (task.freq === "daily") return last !== today;
+    if (task.freq === "workdays") { const dn = d.getDay(); return dn >= 1 && dn <= 5 && last !== today; }
+    if (task.freq.startsWith("weekly:")) { return task.freq.split(":")[1].split(",").map(Number).includes(d.getDay()) && last !== today; }
+    if (task.freq.startsWith("every:")) {
+      const n = parseInt(task.freq.split(":")[1]);
+      if (!last) return true;
+      return Math.floor((d - new Date(last)) / 86400000) >= n;
+    }
+    return false;
+  };
 
   return (
     <div>
@@ -88,15 +96,16 @@ export function ScheduleSection() {
             <button className="btn btn-ghost btn-sm" onClick={() => changeOffset(0)}>Сегодня</button>
           </div>
 
-          {/* Дни недели */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+          {/* Дни недели */}          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
             {weekDays.map((d, i) => {
               const dStr = d.toISOString().split("T")[0];
               const isToday = dStr === todayStr;
               const isSelected = selectedDay === dStr;
               const isWork = (profile.workDaysList || [1, 2, 3, 4, 5]).includes(d.getDay());
               
-              // Фильтрация задач на этот день              const dayTasks = tasks.filter(t => 
+              // ✅ ИСПРАВЛЕНО: комментарий и const на разных строках
+              // Фильтрация задач на этот день
+              const dayTasks = tasks.filter(t => 
                 t.preferredTime && (
                   isDue(t, dStr) || t.doneDate === dStr
                 )
@@ -123,7 +132,7 @@ export function ScheduleSection() {
                     </span>
                   </div>
                   
-                  {/* Якорные события (упрощенно) */}
+                  {/* Якорные события */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 3 }}>
                     <span style={{ fontSize: 10, color: T.text3, fontFamily: "'JetBrains Mono'", minWidth: 32 }}>{profile.wake || "07:00"}</span>
                     <span style={{ fontSize: 12, color: T.text2 }}>☀️ Подъём</span>
@@ -136,8 +145,7 @@ export function ScheduleSection() {
                   )}
 
                   {/* Список задач */}
-                  {dayTasks.slice(0, 3).map(t => (
-                    <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, fontSize: 11, color: t.doneDate === dStr ? T.text3 : T.text1, textDecoration: t.doneDate === dStr ? 'line-through' : 'none' }}>
+                  {dayTasks.slice(0, 3).map(t => (                    <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, fontSize: 11, color: t.doneDate === dStr ? T.text3 : T.text1, textDecoration: t.doneDate === dStr ? 'line-through' : 'none' }}>
                       <div 
                         onClick={(e) => { e.stopPropagation(); setTasks(p => p.map(x => x.id === t.id ? { ...x, doneDate: x.doneDate === dStr ? null : dStr } : x)); }}
                         style={{ width: 14, height: 14, borderRadius: 3, border: `1px solid ${t.doneDate === dStr ? T.success : T.bdr}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, color: T.success }}
@@ -145,7 +153,8 @@ export function ScheduleSection() {
                         {t.doneDate === dStr ? "✓" : " "}
                       </div>
                       <span>{t.preferredTime} {t.title}</span>
-                    </div>                  ))}
+                    </div>
+                  ))}
                   {dayTasks.length > 3 && <div style={{ fontSize: 10, color: T.text3, marginTop: 2 }}>+{dayTasks.length - 3} ещё</div>}
                 </div>
               );
@@ -159,7 +168,6 @@ export function ScheduleSection() {
                 {new Date(selectedDay).toLocaleDateString("ru-RU", { day: "numeric", month: "long" })}
               </div>
               <button className="btn btn-ghost btn-sm" onClick={() => setTaskModal({})}>+ Добавить событие</button>
-              {/* Здесь можно вывести полный список задач на день, аналогично TodaySection */}
               <div style={{ marginTop: 8, fontSize: 12, color: T.text3 }}>
                 (Детальное расписание для этого дня отображается в разделе "Сегодня")
               </div>
@@ -186,23 +194,6 @@ export function ScheduleSection() {
           onSave={(t) => { setTasks(p => taskModal.id ? p.map(x => x.id === t.id ? t : x) : [...p, t]); notify("Сохранено"); }} 
           onClose={() => setTaskModal(null)} 
         />
-      )}
-    </div>
+      )}    </div>
   );
-}
-
-// Хелпер для проверки даты (копия из App.jsx, чтобы файл был самодостаточен)
-function isDue(task, today) {
-  const last = task.lastDone;
-  const d = new Date(today); d.setHours(0,0,0,0);  if (!task.freq) return false;
-  if (task.doneDate === today) return false;
-  if (task.freq === "daily") return last !== today;
-  if (task.freq === "workdays") { const dn = d.getDay(); return dn >= 1 && dn <= 5 && last !== today; }
-  if (task.freq.startsWith("weekly:")) { return task.freq.split(":")[1].split(",").map(Number).includes(d.getDay()) && last !== today; }
-  if (task.freq.startsWith("every:")) {
-    const n = parseInt(task.freq.split(":")[1]);
-    if (!last) return true;
-    return Math.floor((d - new Date(last)) / 86400000) >= n;
-  }
-  return false;
 }
