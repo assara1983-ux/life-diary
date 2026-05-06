@@ -1,10 +1,11 @@
 // src/App.jsx
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { AppProvider, useApp } from './store/AppContext';
+import { Onboarding } from './components/Onboarding';
 import { T } from './utils/theme';
 import './index.css';
 
-// Импорт всех секций
+// Импорт всех секций из отдельных файлов
 import { TodaySection } from './sections/TodaySection';
 import { ScheduleSection } from './sections/ScheduleSection';
 import { WorkSection } from './sections/WorkSection';
@@ -21,11 +22,7 @@ import { TravelSection } from './sections/TravelSection';
 import { JournalSection } from './sections/JournalSection';
 import { ProfileSection } from './sections/ProfileSection';
 
-// Импорт компонента онбординга (если вынесен в отдельный файл)
-// Если Onboarding еще внутри старого App.jsx, убедитесь, что вынесли его или импортируйте здесь
-import { Onboarding } from './components/Onboarding'; 
-
-// Хелпер для получения фазы луны (используется в шапке)
+// Хелпер для луны
 function getMoon(dt = new Date()) {
   const p = ((dt - new Date("2024-01-11")) / 86400000 % 29.53 + 29.53) % 29.53;
   if (p < 1.85) return { n: "Новолуние", e: "🌑", t: "Начало" };
@@ -34,25 +31,23 @@ function getMoon(dt = new Date()) {
   return { n: "Убывающая", e: "🌖", t: "Итоги" };
 }
 
-// --- Компонент содержимого приложения ---
+// --- Компонент приложения ---
 function AppContent() {
   const { profile, sections, setSections } = useApp();
   const [active, setActive] = useState("today");
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // Миграция: проверка и добавление недостающих разделов
+  // Миграция: добавляем новые разделы если их нет
   useEffect(() => {
     if (profile && sections.length > 0) {
-      const existingIds = new Set(sections.map(s => s.id));
-      // Стандартный список всех доступных разделов
       const DEF_SECTIONS = [
         {id: "today",    emoji: "☀️",  name: "Сегодня",     vis: true},
-        {id: "schedule", emoji: "🗓️",  name: "Расписание", vis: true},        {id: "work",     emoji: "💼",  name: "Работа",     vis: true},
+        {id: "schedule", emoji: "🗓️",  name: "Расписание", vis: true},
+        {id: "work",     emoji: "💼",  name: "Работа",     vis: true},
         {id: "home",     emoji: "🏡",  name: "Дом",        vis: true},
         {id: "shopping", emoji: "🛒",  name: "Покупки",    vis: true},
         {id: "pets",     emoji: "🐾",  name: "Питомцы",    vis: true},
-        {id: "car",      emoji: "🚗",  name: "Авто",       vis: true},
-        {id: "health",   emoji: "🌿",  name: "Здоровье",   vis: true},
+        {id: "car",      emoji: "🚗",  name: "Авто",       vis: true},        {id: "health",   emoji: "🌿",  name: "Здоровье",   vis: true},
         {id: "beauty",   emoji: "✨",  name: "Уход",       vis: true},
         {id: "hobbies",  emoji: "🎨",  name: "Хобби",      vis: true},
         {id: "goals",    emoji: "🎯",  name: "Мои цели",   vis: true},
@@ -65,9 +60,8 @@ function AppContent() {
       const newSections = [...sections];
       let changed = false;
 
-      // Добавляем разделы, которых нет в списке пользователя
       DEF_SECTIONS.forEach(def => {
-        if (!existingIds.has(def.id)) {
+        if (!newSections.find(s => s.id === def.id)) {
           newSections.push(def);
           changed = true;
         }
@@ -95,14 +89,14 @@ function AppContent() {
     <div className="app">
       <div className="ambient" />
       
-      {/* SIDEBAR (Боковое меню) */}
-      <nav className="sidebar">        <div className="s-logo">LD</div>
+      {/* SIDEBAR */}
+      <nav className="sidebar">
+        <div className="s-logo">LD</div>
         {sections.map(s => (
           <div 
             key={s.id} 
             className={`s-nav ${!s.vis ? 'dim' : ''} ${active === s.id ? 'act' : ''}`}
-            onClick={() => s.vis && setActive(s.id)}
-            title={s.name}
+            onClick={() => s.vis && setActive(s.id)}            title={s.name}
           >
             <span className="s-ico">{s.emoji}</span>
             <span className="s-lbl">{s.name.slice(0, 5)}</span>
@@ -110,9 +104,9 @@ function AppContent() {
         ))}
       </nav>
 
-      {/* MAIN CONTENT (Основная область) */}
+      {/* MAIN */}
       <div className="main">
-        {/* HEADER (Шапка) */}
+        {/* HEADER */}
         <div className="hdr">
            <div className="hdr-l">
              <div className="hdr-title">{activeSection.name}</div>
@@ -124,7 +118,7 @@ function AppContent() {
            </div>
         </div>
 
-        {/* SECTIONS (Рендеринг активной секции) */}
+        {/* SECTIONS */}
         <div className="page">
            {active === 'today' && <TodaySection />}
            {active === 'schedule' && <ScheduleSection />}
@@ -146,11 +140,11 @@ function AppContent() {
     </div>
   );
 }
-// --- Главный экспорт приложения ---
+
+// --- Главный экспорт ---
 export default function App() {
   return (
     <AppProvider>
-      <AppContent />
-    </AppProvider>
+      <AppContent />    </AppProvider>
   );
 }
