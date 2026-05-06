@@ -3,6 +3,7 @@ import { useState, useMemo } from 'react';
 import { useApp } from '../store/AppContext';
 import { KGD_REPORTS, BNS_REPORTS } from '../data/kz-reports';
 import { calculateNextDeadline } from '../store/AppContext';
+import { requestPermission, subscribeUser, sendPush } from '../utils/pushManager'; // ✅ Добавлен импорт
 import { T } from '../utils/theme';
 
 export function AccountingBlock() {
@@ -46,8 +47,8 @@ export function AccountingBlock() {
         addedAt: new Date().toISOString()
       };
       setAccountingReports([...accountingReports, newReport]);
-      notify('Отчет добавлен ✦');
-    }  };
+      notify('Отчет добавлен ✦');    }
+  };
 
   const addCustomReport = () => {
     if (!customForm.name || !customForm.deadline) {
@@ -76,10 +77,29 @@ export function AccountingBlock() {
     notify('Отчет удален');
   };
 
-  const toggleStatus = (id) => {
+  // ✅ Запрос разрешений на уведомления
+  const enableNotifications = async () => {
+    const granted = await requestPermission();
+    if (granted) {
+      await subscribeUser();
+      notify('Уведомления включены 🔔');
+    } else {
+      notify('Разрешение не получено');
+    }
+  };
+
+  // ✅ Обновлённая функция: отправляет пуш при выполнении отчета
+  const toggleStatus = async (id) => {
+    const report = accountingReports.find(r => r.id === id);
+    const newStatus = report.status === 'done' ? 'pending' : 'done';
+    
     setAccountingReports(accountingReports.map(r => 
-      r.id === id ? { ...r, status: r.status === 'done' ? 'pending' : 'done' } : r
+      r.id === id ? { ...r, status: newStatus } : r
     ));
+        // Если отчет выполнен — отправим поздравление
+    if (newStatus === 'done') {
+      await sendPush('Отчет сдан! 🎉', `Отчет "${report.name}" отмечен как выполненный`);
+    }
   };
 
   // --- Рендер: Активные отчеты (только выбранные) ---
@@ -92,10 +112,19 @@ export function AccountingBlock() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
           <h3 style={{ color: T.text0, margin: 0, fontSize: 18 }}>📋 Мои отчеты</h3>
           <div style={{ display: 'flex', gap: 8 }}>
-            <button className="btn btn-ghost btn-sm" onClick={() => setView('catalog')}>📚 Каталоги</button>
+            {/* ✅ Кнопка включения уведомлений */}
+            <button 
+              className="btn btn-ghost btn-sm" 
+              onClick={enableNotifications}
+              style={{ fontSize: 12, padding: '4px 8px' }}
+              title="Включить уведомления о дедлайнах"
+            >
+              🔔 Уведомления
+            </button>
             <button className="btn btn-primary btn-sm" onClick={() => setCustomModal(true)}>✦ Своя форма</button>
           </div>
         </div>
+
         {/* Активные (с дедлайнами) */}
         {activeReports.length > 0 && (
           <div style={{ marginBottom: 16 }}>
@@ -116,8 +145,7 @@ export function AccountingBlock() {
                   borderRadius: 12, padding: 12, marginBottom: 8
                 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div>
-                      <div style={{ fontSize: 14, fontWeight: 600, color: T.text0 }}>
+                    <div>                      <div style={{ fontSize: 14, fontWeight: 600, color: T.text0 }}>
                         {report.code !== '—' && <span style={{ color: T.gold, marginRight: 6 }}>{report.code}</span>}
                         {report.name}
                       </div>
@@ -145,7 +173,8 @@ export function AccountingBlock() {
                         {report.status === 'done' && <span style={{ color: '#fff', fontSize: 14 }}>✓</span>}
                       </div>
                       <span onClick={() => deleteReport(report.id)} style={{ cursor: 'pointer', color: T.text3, fontSize: 18 }}>×</span>
-                    </div>                  </div>
+                    </div>
+                  </div>
                 </div>
               );
             })}
@@ -165,8 +194,7 @@ export function AccountingBlock() {
                   border: `1px solid ${T.success}`,
                   borderRadius: 12, padding: 10, marginBottom: 6, opacity: 0.7
                 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: 13, color: T.text2 }}>{report.name}</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>                    <span style={{ fontSize: 13, color: T.text2 }}>{report.name}</span>
                     <span onClick={() => deleteReport(report.id)} style={{ cursor: 'pointer', color: T.text3 }}>×</span>
                   </div>
                 </div>
@@ -194,7 +222,8 @@ export function AccountingBlock() {
                   onChange={e => setCustomForm({...customForm, name: e.target.value})}
                   style={{ width: '100%', padding: 8, borderRadius: 8, border: `1px solid ${T.bdr}`, background: T.bg1, color: T.text0 }}
                   placeholder="Например: Отчет в пенсионный"
-                />              </div>
+                />
+              </div>
 
               <div style={{ marginBottom: 12 }}>
                 <label style={{ display: 'block', fontSize: 12, color: T.text3, marginBottom: 4 }}>Периодичность</label>
@@ -214,8 +243,7 @@ export function AccountingBlock() {
                 <label style={{ display: 'block', fontSize: 12, color: T.text3, marginBottom: 4 }}>Срок сдачи (правило)</label>
                 <input 
                   value={customForm.deadline} 
-                  onChange={e => setCustomForm({...customForm, deadline: e.target.value})}
-                  style={{ width: '100%', padding: 8, borderRadius: 8, border: `1px solid ${T.bdr}`, background: T.bg1, color: T.text0 }}
+                  onChange={e => setCustomForm({...customForm, deadline: e.target.value})}                  style={{ width: '100%', padding: 8, borderRadius: 8, border: `1px solid ${T.bdr}`, background: T.bg1, color: T.text0 }}
                   placeholder="Например: до 15 числа"
                 />
               </div>
@@ -243,7 +271,8 @@ export function AccountingBlock() {
       <div style={{ marginBottom: 16 }}>
         <div 
           onClick={() => setKgdOpen(!kgdOpen)}
-          style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', borderRadius: 12, cursor: 'pointer', background: 'rgba(200,164,90,0.06)', border: `1px solid ${T.gold}33` }}        >
+          style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', borderRadius: 12, cursor: 'pointer', background: 'rgba(200,164,90,0.06)', border: `1px solid ${T.gold}33` }}
+        >
           <span style={{ fontSize: 16 }}>🏛</span>
           <span style={{ flex: 1, fontSize: 14, fontWeight: 500, color: T.gold }}>Налоговая (КГД)</span>
           <span style={{ fontSize: 11, color: T.text3 }}>{kgdOpen ? '▲' : '▼'}</span>
@@ -263,8 +292,7 @@ export function AccountingBlock() {
                   </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 13, fontWeight: 500 }}>{r.code} {r.name}</div>
-                    <div style={{ fontSize: 11, color: T.text3 }}>{r.deadline}</div>
-                  </div>
+                    <div style={{ fontSize: 11, color: T.text3 }}>{r.deadline}</div>                  </div>
                   <span style={{ fontSize: 10, color: T.text3, fontFamily: "'JetBrains Mono'" }}>
                     {r.frequency === 'monthly' ? 'мес' : r.frequency === 'quarterly' ? 'кв' : 'год'}
                   </span>
@@ -292,7 +320,8 @@ export function AccountingBlock() {
               const isSelected = selectedIds.has(r.id);
               return (
                 <div key={r.id} 
-                  onClick={() => toggleReport(r, 'bns')}                  style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12', cursor: 'pointer', borderBottom: '1px solid rgba(0,0,0,0.05)', background: isSelected ? 'rgba(78,201,190,0.1)' : 'transparent' }}
+                  onClick={() => toggleReport(r, 'bns')}
+                  style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12', cursor: 'pointer', borderBottom: '1px solid rgba(0,0,0,0.05)', background: isSelected ? 'rgba(78,201,190,0.1)' : 'transparent' }}
                 >
                   <div style={{ width: 18, height: 18, border: `1px solid ${T.bdr}`, borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', background: isSelected ? T.teal : 'transparent' }}>
                     {isSelected && <span style={{ fontSize: 12, color: '#1a1a1a' }}>✓</span>}
@@ -312,8 +341,7 @@ export function AccountingBlock() {
       </div>
 
       <button className="btn btn-primary" onClick={() => setView('active')} style={{ width: '100%' }}>
-        Готово ({accountingReports.length} выбрано)
-      </button>
+        Готово ({accountingReports.length} выбрано)      </button>
     </div>
   );
-}
+                  }
