@@ -5,7 +5,7 @@ import { AiBox } from '../components/AiBox';
 import { TaskModal } from '../components/TaskModal';
 import { T } from '../utils/theme';
 
-function HomeSection() {
+export function HomeSection() {
   const { profile, tasks, setTasks, notify } = useApp();
   const [modal, setModal] = useState(null);
   const [adviceOpen, setAdviceOpen] = useState(true);
@@ -240,6 +240,4 @@ function HomeSection() {
       )}
     </div>
   );
-}
-
-export default HomeSection;
+                                                      }
