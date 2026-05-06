@@ -1,18 +1,31 @@
 // api/send-push.js
 import webpush from 'web-push';
 
-// Настройка VAPID ключей из переменных окружения
-webpush.setVapidDetails(
-  'mailto:your-email@example.com',
-  process.env.VAPID_PUBLIC_KEY,
-  process.env.VAPID_PRIVATE_KEY
-);
-
 export default async function handler(req, res) {
+  // ✅ Инициализация внутри хендлера + проверка переменных
+  const publicKey = process.env.VAPID_PUBLIC_KEY;
+  const privateKey = process.env.VAPID_PRIVATE_KEY;
+  
+  if (!publicKey || !privateKey) {
+    console.warn('VAPID keys not found. Push notifications disabled.');
+    // Не блокируем приложение, просто возвращаем информативный ответ
+    return res.status(200).json({ 
+      success: false, 
+      message: 'Push notifications not configured. Add VAPID keys to environment variables.' 
+    });
+  }
+
+  // Настраиваем web-push только если ключи есть
+  webpush.setVapidDetails(
+    'mailto:your-email@example.com',
+    publicKey,
+    privateKey
+  );
+
   // Разрешаем только POST запросы
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
-    }
+  }
 
   try {
     const { subscription, title, body, tag } = req.body;
