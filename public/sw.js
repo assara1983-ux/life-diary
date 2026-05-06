@@ -1,29 +1,25 @@
-// public/sw.js
+// public/sw.js (упрощённая версия без кэширования)
 const CACHE_NAME = 'life-diary-v1';
 
-// Установка SW и кэширование статики
+// Установка SW — БЕЗ кэширования
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(['/']);
-    })
-  );
+  // Пропускаем кэширование
+  self.skipWaiting();
 });
 
-// Активация и очистка старых кэшей
+// Активация
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
-        cacheNames
-          .filter((name) => name !== CACHE_NAME)
-          .map((name) => caches.delete(name))
+        cacheNames.map((name) => caches.delete(name))
       );
     })
   );
+  self.clients.claim();
 });
 
-// Обработка входящих пуш-уведомлений
+// Обработка пуш-уведомлений
 self.addEventListener('push', (event) => {
   if (!event.data) return;
   
@@ -40,11 +36,7 @@ self.addEventListener('push', (event) => {
     badge: '/icon-72.png',
     tag: payload.tag || 'report-reminder',
     requireInteraction: true,
-    actions: [
-      { action: 'open', title: 'Открыть' },
-      { action: 'close', title: 'Закрыть' }
-    ],
-    data: payload.data || {}  // ✅ Исправлено: добавлен ключ "data:"
+    data: payload.data || {}
   };
 
   event.waitUntil(
@@ -52,13 +44,12 @@ self.addEventListener('push', (event) => {
   );
 });
 
-// Обработка клика по уведомлению
+// Клик по уведомлению
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   
   if (event.action === 'close') return;
 
-  // Открываем приложение или фокусируем вкладку
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
       if (clientList.length > 0) {
