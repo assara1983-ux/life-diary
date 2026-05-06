@@ -1,10 +1,11 @@
 // src/store/AppContext.jsx
 import { createContext, useContext, useState, useEffect } from 'react';
+import { STORAGE_KEYS } from '../utils/migration';
 
 const AppContext = createContext(null);
 
-// Вспомогательный хук для синхронизации с localStorage
-// Он читает данные при старте и записывает их при изменении
+// Хук для работы со старыми ключами localStorage
+// Он читает данные при старте и сохраняет их при каждом изменении
 function useStorageState(key, defaultValue) {
   const [value, setValue] = useState(() => {
     try {
@@ -46,8 +47,8 @@ export function AppProvider({ children }) {
     { id: "mental", emoji: "🧘", name: "Ментальное", vis: true },
     { id: "travel", emoji: "✈️", name: "Поездки", vis: true },
     { id: "journal", emoji: "📖", name: "Журнал", vis: true },
-    { id: "profile", emoji: "👤", name: "Профиль", vis: true },
-  ]);
+    { id: "profile", emoji: "👤", name: "Профиль", vis: true },  ]);
+
   const [tasks, setTasks] = useStorageState('ld_tasks_v3', []);
   const [journal, setJournal] = useStorageState('ld_journal_v3', {});
   const [shopList, setShopList] = useStorageState('ld_shop_v3', []);
@@ -95,8 +96,8 @@ export function AppProvider({ children }) {
   const [workOpenUpcoming, setWorkOpenUpcoming] = useStorageState('ld_work_open_upcoming', true);
   const [workOpenGroups, setWorkOpenGroups] = useStorageState('ld_work_open_groups', true);
   const [workOpenTasks, setWorkOpenTasks] = useStorageState('ld_work_open_tasks', true);
-  const [workOpenAdvice, setWorkOpenAdvice] = useStorageState('ld_work_open_advice', true);
-    const [shopAdvice, setShopAdvice] = useStorageState('ld_shop_advice', true);
+  const [workOpenAdvice, setWorkOpenAdvice] = useStorageState('ld_work_open_advice', true);  
+  const [shopAdvice, setShopAdvice] = useStorageState('ld_shop_advice', true);
   const [shopListOpen, setShopListOpen] = useStorageState('ld_shop_list', true);
   
   const [petsAdvice, setPetsAdvice] = useStorageState('ld_pets_advice', true);
@@ -144,8 +145,8 @@ export function AppProvider({ children }) {
     // Цели
     goalsTools, setGoalsTools,
     wheelScores, setWheelScores,
-    // Здоровье/Красота/Быт
-    weekMenu, setWeekMenu,    beautyProcs, setBeautyProcs,
+    // Здоровье/Красота/Быт    weekMenu, setWeekMenu,
+    beautyProcs, setBeautyProcs,
     beautyTopics, setBeautyTopics,
     feedTimes, setFeedTimes,
     commuteSettings, setCommuteSettings,
