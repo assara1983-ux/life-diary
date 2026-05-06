@@ -1,11 +1,55 @@
 // src/store/AppContext.jsx
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { STORAGE_KEYS } from '../utils/migration';
 
 const AppContext = createContext(null);
 
+// --- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ДЛЯ РАСЧЁТА ДЕДЛАЙНОВ ---
+
+/**
+ * Рассчитывает следующую дату дедлайна на основе периодичности
+ * @param {string} frequency - 'monthly' | 'quarterly' | 'semiannual' | 'annual' | 'as_needed'
+ * @param {string} lastDeadline - дата в формате 'YYYY-MM-DD'
+ * @returns {string} следующая дата в формате 'YYYY-MM-DD'
+ */
+export function calculateNextDeadline(frequency, lastDeadline = new Date().toISOString().split('T')[0]) {
+  const date = new Date(lastDeadline);
+  
+  switch (frequency) {
+    case 'monthly':
+      date.setMonth(date.getMonth() + 1);
+      break;
+    case 'quarterly':
+      date.setMonth(date.getMonth() + 3);
+      break;
+    case 'semiannual':
+      date.setMonth(date.getMonth() + 6);
+      break;
+    case 'annual':
+      date.setFullYear(date.getFullYear() + 1);
+      break;
+    case 'as_needed':
+    default:
+      return null; // Для разовых отчетов не рассчитываем
+  }
+  
+  return date.toISOString().split('T')[0];
+}
+
+/**
+ * Рассчитывает количество дней до дедлайна
+ * @param {string} deadline - дата в формате 'YYYY-MM-DD'
+ * @returns {number} дней (отрицательное = просрочено)
+ */
+export function daysUntilDeadline(deadline) {
+  if (!deadline) return Infinity;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const dl = new Date(deadline);
+  dl.setHours(0, 0, 0, 0);
+  return Math.ceil((dl - today) / (1000 * 60 * 60 * 24));}
+
 // Хук для работы со старыми ключами localStorage
-// Он читает данные при старте и сохраняет их при каждом изменении
 function useStorageState(key, defaultValue) {
   const [value, setValue] = useState(() => {
     try {
@@ -28,10 +72,9 @@ function useStorageState(key, defaultValue) {
 }
 
 export function AppProvider({ children }) {
-  // --- Основные данные (Ключи сохранены от старой версии для миграции) ---
+  // --- Основные данные ---
   const [profile, setProfile] = useStorageState('ld_pf_v3', null);
   
-  // Список разделов меню
   const [sections, setSections] = useStorageState('ld_sec_v3', [
     { id: "today", emoji: "☀️", name: "Сегодня", vis: true },
     { id: "schedule", emoji: "🗓️", name: "Расписание", vis: true },
@@ -47,13 +90,13 @@ export function AppProvider({ children }) {
     { id: "mental", emoji: "🧘", name: "Ментальное", vis: true },
     { id: "travel", emoji: "✈️", name: "Поездки", vis: true },
     { id: "journal", emoji: "📖", name: "Журнал", vis: true },
-    { id: "profile", emoji: "👤", name: "Профиль", vis: true },  ]);
+    { id: "profile", emoji: "👤", name: "Профиль", vis: true },
+  ]);
 
   const [tasks, setTasks] = useStorageState('ld_tasks_v3', []);
   const [journal, setJournal] = useStorageState('ld_journal_v3', {});
   const [shopList, setShopList] = useStorageState('ld_shop_v3', []);
-  const [petLog, setPetLog] = useStorageState('ld_petlog_v3', {});
-  const [trips, setTrips] = useStorageState('ld_trips_v3', []);
+  const [petLog, setPetLog] = useStorageState('ld_petlog_v3', {});  const [trips, setTrips] = useStorageState('ld_trips_v3', []);
   const [hobbies, setHobbies] = useStorageState('ld_hobbies_v3', []);
 
   // --- Работа и Отчетность ---
@@ -61,6 +104,9 @@ export function AppProvider({ children }) {
   const [reports, setReports] = useStorageState('ld_reports_v2', []);
   const [workTools, setWorkTools] = useStorageState('ld_work_tools', []);
   const [checkResults, setCheckResults] = useStorageState('ld_deadline_checks', {});
+  
+  // ✅ НОВОЕ: Выбранные формы КГД/БНС с авто-расчётом дедлайнов
+  const [accountingReports, setAccountingReports] = useStorageState('ld_accounting_reports', []);
 
   // --- Цели и Трекеры ---
   const [goalsTools, setGoalsTools] = useStorageState('ld_goals_tools', {
@@ -90,43 +136,93 @@ export function AppProvider({ children }) {
   const [aiNotes, setAiNotes] = useStorageState('ld_ai_notes', []);
   const [aiJournal, setAiJournal] = useStorageState('ld_ai_journal', []);
 
-  // --- UI Состояния (Свернутые/Развернутые блоки) ---
-  // Сохраняем состояние интерфейса из старой версии
+  // --- UI Состояния ---
   const [workOpenWeek, setWorkOpenWeek] = useStorageState('ld_work_open_week', true);
-  const [workOpenUpcoming, setWorkOpenUpcoming] = useStorageState('ld_work_open_upcoming', true);
+  const [workOpenUpcoming, setWorkOpenUpcoming] = true;
   const [workOpenGroups, setWorkOpenGroups] = useStorageState('ld_work_open_groups', true);
   const [workOpenTasks, setWorkOpenTasks] = useStorageState('ld_work_open_tasks', true);
   const [workOpenAdvice, setWorkOpenAdvice] = useStorageState('ld_work_open_advice', true);  
   const [shopAdvice, setShopAdvice] = useStorageState('ld_shop_advice', true);
   const [shopListOpen, setShopListOpen] = useStorageState('ld_shop_list', true);
-  
   const [petsAdvice, setPetsAdvice] = useStorageState('ld_pets_advice', true);
-  const [petsFeed, setPetsFeed] = useStorageState('ld_pets_feed', true);
-  const [petsCare, setPetsCare] = useStorageState('ld_pets_care', true);
-  
+  const [petsFeed, setPetsFeed] = useStorageState('ld_pets_feed', true);  const [petsCare, setPetsCare] = useStorageState('ld_pets_care', true);
   const [homeAdvice, setHomeAdvice] = useStorageState('ld_home_open_advice', true);
   const [homeTasks, setHomeTasks] = useStorageState('ld_home_open_tasks', true);
-  
   const [hobbyAdvice, setHobbyAdvice] = useStorageState('ld_hobby_advice', true);
   const [hobbyList, setHobbyList] = useStorageState('ld_hobby_list', true);
-  
   const [travelAdvice, setTravelAdvice] = useStorageState('ld_travel_advice', true);
   const [travelTrips, setTravelTrips] = useStorageState('ld_travel_trips', true);
-  
   const [journalPrompts, setJournalPrompts] = useStorageState('ld_journal_prompts', true);
   const [journalHistory, setJournalHistory] = useStorageState('ld_journal_history', true);
-  
   const [carAdvice, setCarAdvice] = useStorageState('ld_car_advice', true);
   const [carTasks, setCarTasks] = useStorageState('ld_car_tasks', true);
-  
   const [beautyProcsOpen, setBeautyProcsOpen] = useStorageState('ld_beauty_procs_open', true);
   const [beautyTodayOpen, setBeautyTodayOpen] = useStorageState('ld_beauty_today_open', true);
   const [beautyChooseOpen, setBeautyChooseOpen] = useStorageState('ld_beauty_choose_open', true);
-  
   const [healthAdvice, setHealthAdvice] = useStorageState('ld_health_advice', true);
   const [healthHabits, setHealthHabits] = useStorageState('ld_health_habits', true);
 
-  // Собираем всё в один объект для удобного доступа
+  // ✅ ЛОГИКА: Синхронизация отчетов с задачами (за 5 дней до дедлайна)
+  const syncReportsToTasks = useCallback(() => {
+    const today = new Date().toISOString().split('T')[0];
+    const newTasks = [];
+    
+    accountingReports.forEach(report => {
+      if (!report.nextDeadline || report.status === 'done') return;
+      
+      const daysLeft = daysUntilDeadline(report.nextDeadline);
+      
+      // Если до дедлайна ≤ 5 дней и задачи ещё нет — создаём
+      if (daysLeft <= 5 && daysLeft >= 0) {
+        const taskExists = tasks.some(t => 
+          t.type === 'report' && t.reportId === report.id && t.doneDate !== today
+        );
+        
+        if (!taskExists) {
+          newTasks.push({
+            id: `report-${report.id}-${report.nextDeadline}`,
+            type: 'report',
+            reportId: report.id,
+            title: `📋 ${report.name}`,
+            section: 'work',
+            deadline: report.nextDeadline,
+            priority: daysLeft <= 1 ? 'h' : daysLeft <= 3 ? 'm' : 'l',
+            notes: `Срок сдачи: ${report.deadline}`,
+            freq: 'once',
+            lastDone: '',
+            doneDate: null,
+            createdAt: new Date().toISOString()
+          });
+        }
+      }      
+      // Если отчет выполнен и подошло время следующего периода — обновляем дедлайн
+      if (report.status === 'done' && report.nextDeadline && daysUntilDeadline(report.nextDeadline) <= 0) {
+        const newNextDeadline = calculateNextDeadline(report.frequency, report.nextDeadline);
+        setAccountingReports(prev => prev.map(r => 
+          r.id === report.id 
+            ? { ...r, status: 'pending', nextDeadline: newNextDeadline, lastCompleted: report.nextDeadline }
+            : r
+        ));
+      }
+    });
+    
+    if (newTasks.length > 0) {
+      setTasks(prev => {
+        // Удаляем старые выполненные задачи-отчеты
+        const filtered = prev.filter(t => !(t.type === 'report' && t.doneDate && t.doneDate < today));
+        return [...filtered, ...newTasks];
+      });
+    }
+  }, [accountingReports, tasks, setTasks, setAccountingReports]);
+
+  // Запускаем синхронизацию при монтировании и при изменении отчетов
+  useEffect(() => {
+    if (accountingReports.length > 0) {
+      syncReportsToTasks();
+    }
+  }, [accountingReports, syncReportsToTasks]);
+
+  // Собираем всё в один объект
   const value = {
     // Основные данные
     profile, setProfile,
@@ -142,11 +238,12 @@ export function AppProvider({ children }) {
     reports, setReports,
     workTools, setWorkTools,
     checkResults, setCheckResults,
+    accountingReports, setAccountingReports, // ✅ Новое
     // Цели
     goalsTools, setGoalsTools,
     wheelScores, setWheelScores,
-    // Здоровье/Красота/Быт    weekMenu, setWeekMenu,
-    beautyProcs, setBeautyProcs,
+    // Здоровье/Красота/Быт
+    weekMenu, setWeekMenu,    beautyProcs, setBeautyProcs,
     beautyTopics, setBeautyTopics,
     feedTimes, setFeedTimes,
     commuteSettings, setCommuteSettings,
