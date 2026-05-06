@@ -1,12 +1,12 @@
 // src/sections/WorkSection.jsx
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useApp } from '../store/AppContext';
 import { AiBox } from '../components/AiBox';
 import { TaskModal } from '../components/TaskModal';
-import { AccountingBlock } from '../components/AccountingBlock'; // ✅ Добавлен импорт
+import { AccountingBlock } from '../components/AccountingBlock';
 import { T } from '../utils/theme';
 
-// --- КОНСТАНТЫ И ФУНКЦИИ ПОМОЩНИКИ ---
+// --- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ---
 function toDay(d = new Date()) { return d.toISOString().split('T')[0]; }
 function isDue(task, today) {
   const last = task.lastDone, d = new Date(today); d.setHours(0, 0, 0, 0);
@@ -38,65 +38,24 @@ function openGCal(title, date, desc = '') {
   const s = new Date(date), e = new Date(s.getTime() + 3600000), f = d => d.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
   window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${f(s)}/${f(e)}&details=${encodeURIComponent(desc)}`, '_blank');
 }
-function DlRow({ t, today, setTasks, setEditDl, setAddDlModal }) {
-  const dl = t.deadline ? new Date(t.deadline) : null;
-  const daysLeft = dl ? Math.ceil((dl - new Date()) / 86400000) : null;
-  const isOver = t.deadline && t.deadline < today;
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 12px', borderBottom: `1px solid ${T.bdrS}` }}>
-      <div className={`chk ${t.doneDate === today ? 'done' : ''}`} style={{ flexShrink: 0, width: 18, height: 18, fontSize: 11 }}
-        onClick={() => setTasks(p => p.map(x => x.id === t.id ? { ...x, doneDate: x.doneDate === today ? null : today, lastDone: x.doneDate === today ? x.lastDone : today } : x))}>
-        {t.doneDate === today ? '✓' : ' '}
-      </div>      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 13, color: t.doneDate === today ? T.text3 : T.text0, textDecoration: t.doneDate === today ? 'line-through' : 'none', lineHeight: 1.3 }}>
-          {t.title.replace(/^[📋🏛🏦🔍💰]+\s*/, '')}
-        </div>
-        {t.notes && <div style={{ fontSize: 11, color: T.text3, marginTop: 1 }}>{t.notes}</div>}
-      </div>
-      {dl && <div style={{ fontSize: 11, color: isOver ? T.danger : daysLeft <= 3 ? T.warn : T.text3, fontFamily: "'JetBrains Mono'", flexShrink: 0, fontWeight: isOver || daysLeft <= 3 ? 700 : 400 }}>
-        {isOver ? 'просроч' : daysLeft === 0 ? 'сегодня' : daysLeft === 1 ? 'завтра' : dl.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
-      </div>}
-      <div className="ico-btn" style={{ fontSize: 11, color: T.teal, opacity: .6, flexShrink: 0 }} onClick={() => { setEditDl(t); setAddDlModal(true); }}>✏️</div>
-      <div className="ico-btn danger" style={{ fontSize: 11, flexShrink: 0 }} onClick={() => setTasks(p => p.filter(x => x.id !== t.id))}>✕</div>
-    </div>
-  );
-}
 
-// --- КАЛЕНДАРИ КГД И БНС (2026) ---
+// --- КАЛЕНДАРИ (оставляем для совместимости) ---
 const KGD_CALENDAR = [
   { group: 'kgd', name: 'ФНО 910.00 — 1 полугодие', period: 'semi', deadline: '2026-08-17', cat: 'КГД' },
   { group: 'kgd', name: 'ФНО 910.00 — 2 полугодие', period: 'semi', deadline: '2027-02-17', cat: 'КГД' },
-  { group: 'kgd', name: 'ФНО 200.00 — 1 квартал', period: 'quarter', deadline: '2026-05-15', cat: 'КГД' },
-  { group: 'kgd', name: 'ФНО 200.00 — 2 квартал', period: 'quarter', deadline: '2026-08-17', cat: 'КГД' },
-  { group: 'kgd', name: 'ФНО 200.00 — 3 квартал', period: 'quarter', deadline: '2026-11-16', cat: 'КГД' },
-  { group: 'kgd', name: 'ФНО 300.00 — 1 квартал (НДС)', period: 'quarter', deadline: '2026-05-15', cat: 'КГД' },
-  { group: 'kgd', name: 'ФНО 300.00 — 2 квартал (НДС)', period: 'quarter', deadline: '2026-08-17', cat: 'КГД' },
-  { group: 'kgd', name: 'ФНО 300.00 — 3 квартал (НДС)', period: 'quarter', deadline: '2026-11-16', cat: 'КГД' },
-  { group: 'kgd', name: 'ФНО 100.00 — годовой (КПН)', period: 'annual', deadline: '2027-03-31', cat: 'КГД' },
-  { group: 'pay', name: 'Уплата ОПВ+ИПН+ОСМС+СО', period: 'monthly', deadline: '2026-05-25', cat: 'Платежи' },
-  { group: 'pay', name: 'Уплата НДС', period: 'quarter', deadline: '2026-05-25', cat: 'Платежи' },
-  { group: 'bns', name: '1-Т — Отчёт по труду (2 кв.)', period: 'quarter', deadline: '2026-07-15', cat: 'БНС' },
-  { group: 'bns', name: '2-МП — Малое предприятие (2 кв.)', period: 'quarter', deadline: '2026-07-20', cat: 'БНС' },
-];
-
-const EAES_FORMS = [
-  { id: 'eaes1', name: 'ФНО 328.00 — НДС при импорте из ЕАЭС', period: 'monthly', deadline_day: '20' },
-  { id: 'eaes2', name: 'Заявление о ввозе товаров и уплате налогов', period: 'monthly', deadline_day: '20' },
 ];
 
 export function WorkSection() {
-  const { profile, tasks, setTasks, reportGroups, setReportGroups, reports, setReports, checkResults, setCheckResults, workTools, setWorkTools } = useApp();
-  const [workTab, setWorkTab] = useState('reports');
-  const [modal, setModal] = useState(null);
+  const { profile, tasks, setTasks, reportGroups, setReportGroups, reports, setReports, checkResults, setCheckResults, workTools, setWorkTools, accountingReports } = useApp();
+  const [workTab, setWorkTab] = useState('reports');  const [modal, setModal] = useState(null);
   const [addReportModal, setAddReportModal] = useState(null);
   const [editReport, setEditReport] = useState(null);
-  const [showFormPicker, setShowFormPicker] = useState(null);
   const [newReport, setNewReport] = useState({ name: '', deadline: '', period: 'quarter', amount: '', notes: '' });
   const [checkingId, setCheckingId] = useState(null);
   
-  // Состояние для инструментов
   const [activeTool, setActiveTool] = useState(null);
-  const [toolLoading, setToolLoading] = useState(false);  const today = toDay();
+  const [toolLoading, setToolLoading] = useState(false);
+  const today = toDay();
   const kb = JSON.stringify(profile);
 
   const notify = useCallback((msg) => { console.log('Notify:', msg); }, []);
@@ -109,7 +68,6 @@ export function WorkSection() {
   })();
 
   const toggleDone = (id) => setReports(p => p.map(r => r.id === id ? { ...r, status: r.status === 'done' ? 'pending' : 'done' } : r));
-  const toggleReady = (id) => setReports(p => p.map(r => r.id === id ? { ...r, status: r.status === 'ready' ? 'pending' : 'ready' } : r));
   const deleteReport = (id) => setReports(p => p.filter(r => r.id !== id));
 
   const checkDeadline = async (r) => {
@@ -129,37 +87,36 @@ export function WorkSection() {
 
   const daysLeft = (dl) => { const d = new Date(dl); d.setHours(0, 0, 0, 0); return Math.ceil((d - new Date()) / 86400000); };
 
+  // ✅ Фильтр: только активные отчеты с приближающимися дедлайнами (≤ 14 дней)
+  const urgentReports = useMemo(() => {
+    return (accountingReports || [])
+      .filter(r => r.status !== 'done' && r.nextDeadline)
+      .map(r => {
+        const days = daysLeft(r.nextDeadline);
+        return { ...r, daysLeft: days, isOverdue: days < 0, isSoon: days >= 0 && days <= 5 };
+      })
+      .sort((a, b) => a.daysLeft - b.daysLeft);
+  }, [accountingReports]);
   const ReportRow = ({ r, showGroup = false }) => {
-    const days = daysLeft(r.deadline);
-    const isOver = days < 0;
-    const isSoon = days >= 0 && days <= 3;
-    const g = reportGroups.find(g => g.id === r.group) || { name: r.group, icon: '📋', color: T.text3 };
+    const isOver = r.isOverdue;
+    const isSoon = r.isSoon;
     const isChecking = checkingId === r.id;
-    const checked = checkResults[r.id];
     return (
       <div style={{ padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 3, flexShrink: 0, paddingTop: 2 }}>
-            <div title="Выполнено" className={`chk ${r.status === 'done' ? 'done' : ''}`} style={{ width: 18, height: 18, fontSize: 10 }} onClick={() => toggleDone(r.id)}>{r.status === 'done' ? '✓' : ' '}</div>
-            {r.status !== 'done' && <div title="Подготовлен" style={{ width: 18, height: 18, borderRadius: 4, border: `1px solid ${r.status === 'ready' ? 'rgba(78,201,190,0.6)' : T.bdr}`, background: r.status === 'ready' ? 'rgba(78,201,190,0.15)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 10, color: r.status === 'ready' ? T.teal : T.text3 }} onClick={() => toggleReady(r.id)}>P</div>}
+            <div title="Выполнено" className={`chk ${r.status === 'done' ? 'done' : ''}`} style={{ width: 18, height: 18, fontSize: 10 }} onClick={() => { /* handled by AccountingBlock */ }}>{r.status === 'done' ? '✓' : ' '}</div>
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-              {showGroup && <span style={{ fontSize: 10, color: g.color, fontFamily: "'JetBrains Mono'" }}>{g.icon}</span>}              <span style={{ fontSize: 14, color: r.status === 'done' ? T.text3 : T.text0, textDecoration: r.status === 'done' ? 'line-through' : 'none', lineHeight: 1.4, wordBreak: 'break-word' }}>{r.name}</span>
+              {showGroup && <span style={{ fontSize: 10, color: T.text3, fontFamily: "'JetBrains Mono'" }}>📋</span>}
+              <span style={{ fontSize: 14, color: r.status === 'done' ? T.text3 : T.text0, textDecoration: r.status === 'done' ? 'line-through' : 'none', lineHeight: 1.4, wordBreak: 'break-word' }}>{r.name}</span>
             </div>
             <div style={{ display: 'flex', gap: 6, marginTop: 3, flexWrap: 'wrap', alignItems: 'center' }}>
-              <span style={{ fontSize: 10, color: isOver ? T.danger : isSoon ? T.warn : T.text3, fontFamily: "'JetBrains Mono'", fontWeight: isOver || isSoon ? 700 : 400 }}>
-                {isOver ? '⚠ Просрочен' : days === 0 ? '📍 Сегодня' : days === 1 ? '📍 Завтра' : '📅 ' + new Date(r.deadline).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
+              <span style={{ fontSize: 10, color: isOver ? T.error : isSoon ? T.warning : T.text3, fontFamily: "'JetBrains Mono'", fontWeight: isOver || isSoon ? 700 : 400 }}>
+                {isOver ? '⚠ Просрочен' : r.daysLeft === 0 ? '📍 Сегодня' : r.daysLeft === 1 ? '📍 Завтра' : '📅 ' + new Date(r.nextDeadline).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
               </span>
-              <button onClick={() => checkDeadline(r)} disabled={isChecking}
-                style={{ fontSize: 9, padding: '1px 6px', borderRadius: 8, border: '1px solid rgba(130,170,221,0.4)', background: 'rgba(130,170,221,0.08)', color: isChecking ? '#888' : '#82AADD', cursor: isChecking ? 'wait' : 'pointer', fontFamily: "'JetBrains Mono'", flexShrink: 0 }}>
-                {isChecking ? '⏳...' : '🔍 Проверить срок'}
-              </button>
             </div>
-          </div>
-          <div style={{ display: 'flex', gap: 3, flexShrink: 0 }}>
-            <div className="ico-btn" style={{ fontSize: 12, padding: '2px 4px' }} onClick={() => setEditReport({ ...r })}>✏️</div>
-            <div className="ico-btn danger" style={{ fontSize: 12, padding: '2px 4px' }} onClick={() => deleteReport(r.id)}>✕</div>
           </div>
         </div>
       </div>
@@ -188,64 +145,36 @@ export function WorkSection() {
       </div>
 
       {/* - ВКЛАДКА: ОТЧЁТНОСТЬ - */}
-      {workTab === 'reports' && (
-        <div>
+      {workTab === 'reports' && (        <div>
           {isAccountant ? (
             <div>
-              {/* ✅ НОВЫЙ БЛОК: Формы КГД и БНС (через AccountingBlock) */}
-              <div style={{ marginBottom: 16 }}>
-                <AccountingBlock />              </div>
-
-              {/* На этой неделе */}
-              <div style={{ marginBottom: 12 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 12, cursor: 'pointer', background: 'rgba(232,120,120,0.08)', border: '1px solid rgba(232,120,120,0.3)' }}>
-                  <span style={{ fontSize: 18 }}>📅</span>
-                  <span style={{ flex: 1, fontSize: 15, fontFamily: "'Crimson Pro',serif", color: T.danger }}>На этой неделе</span>
-                  <span style={{ fontSize: 11, color: T.danger, fontFamily: "'JetBrains Mono'", background: 'rgba(232,120,120,0.15)', padding: '1px 8px', borderRadius: 8 }}>3</span>
-                </div>
-                <div style={{ marginTop: 6, padding: '8px 14px', background: 'rgba(255,255,255,0.01)', borderRadius: '0 0 12px 12px', border: '1px solid rgba(255,255,255,0.05)', borderTop: 'none' }}>
-                  {reports.filter(r => r.status !== 'done' && r.deadline && daysLeft(r.deadline) < 7).map(r => {
-                    const days = daysLeft(r.deadline);
-                    return (
-                      <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                        <span style={{ fontSize: 16 }}>📋</span>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 14, color: r.status === 'done' ? T.text3 : T.text0, textDecoration: r.status === 'done' ? 'line-through' : 'none', lineHeight: 1.4, wordBreak: 'break-word' }}>{r.name}</div>
-                          <div style={{ display: 'flex', gap: 6, marginTop: 2 }}>
-                            <span style={{ fontSize: 10, color: days === 0 ? T.danger : days === 1 ? '#E8A85A' : T.text3, fontFamily: "'JetBrains Mono'" }}>
-                              {days === 0 ? '📍 Сегодня' : days === 1 ? '⚠ Завтра' : '📅 ' + new Date(r.deadline).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
-                            </span>
-                          </div>
-                        </div>
-                        <div className={`chk ${r.status === 'done' ? 'done' : ''}`} style={{ width: 20, height: 20, fontSize: 11, flexShrink: 0 }} onClick={() => toggleDone(r.id)}>{r.status === 'done' ? '✓' : ' '}</div>
-                      </div>
-                    );
-                  })}
-                </div>
+              {/* ✅ БЛОК: Управление отчетами (КГД/БНС) */}
+              <div style={{ marginBottom: 20 }}>
+                <AccountingBlock />
               </div>
 
-              {/* Все разделы */}
-              <div style={{ marginBottom: 12 }}>
-                <div style={{ fontSize: 10, color: T.text3, fontFamily: "'JetBrains Mono'", letterSpacing: 1.5, marginBottom: 8 }}>ВСЕ РАЗДЕЛЫ</div>
-                {reportGroups.map(g => {
-                  const groupReports = reports.filter(r => r.group === g.id && r.enabled !== false);
-                  const pendingCount = groupReports.filter(r => r.status !== 'done').length;
-                  return (
-                    <div key={g.id} style={{ marginBottom: 8 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderRadius: 12, cursor: 'pointer', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                        <span style={{ fontSize: 22 }}>{g.icon}</span>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: 16, fontFamily: "'Crimson Pro',serif", color: g.color }}>{g.name}</div>
-                          {pendingCount > 0 && <div style={{ fontSize: 11, color: T.text3 }}>Активных: {pendingCount}</div>}
-                        </div>
-                        <button className="btn-mini" style={{ padding: '3px 8px', fontSize: 11, zIndex: 1 }} onClick={(e) => { e.stopPropagation(); setAddReportModal({ groupId: g.id }); }} title="Добавить отчёт">+</button>
-                        <span style={{ fontSize: 12, color: T.text3 }}>▼</span>
+              {/* ✅ СЕКЦИЯ: Срочные отчеты (авто-фильтр ≤ 14 дней) */}
+              {urgentReports.length > 0 && (
+                <div style={{ marginBottom: 16 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 12, background: 'rgba(232,120,120,0.08)', border: '1px solid rgba(232,120,120,0.3)', marginBottom: 8 }}>
+                    <span style={{ fontSize: 18 }}>⚠️</span>
+                    <span style={{ flex: 1, fontSize: 14, fontFamily: "'Crimson Pro',serif", color: T.error, fontWeight: 500 }}>Требуют внимания</span>
+                    <span style={{ fontSize: 11, color: T.error, fontFamily: "'JetBrains Mono'", background: 'rgba(232,120,120,0.15)', padding: '1px 8px', borderRadius: 8 }}>{urgentReports.length}</span>
+                  </div>
+                  <div style={{ padding: '8px 14px', background: 'rgba(255,255,255,0.01)', borderRadius: '0 0 12px 12px', border: '1px solid rgba(255,255,255,0.05)', borderTop: 'none' }}>
+                    {urgentReports.slice(0, 5).map(r => (
+                      <ReportRow key={r.id} r={r} />
+                    ))}
+                    {urgentReports.length > 5 && (
+                      <div style={{ fontSize: 12, color: T.text3, textAlign: 'center', padding: '8px 0' }}>
+                        + ещё {urgentReports.length - 5} отчетов (см. в «Мои отчеты»)
                       </div>
-                    </div>
-                  );
-                })}              </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
-              {/* Задачи */}
+              {/* Задачи (обычные, не отчеты) */}
               <div style={{ marginBottom: 12 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', borderRadius: 12, cursor: 'pointer', background: 'rgba(78,201,190,0.06)', border: '1px solid rgba(78,201,190,0.15)' }}>
                   <span style={{ fontSize: 16 }}>📋</span>
@@ -253,7 +182,7 @@ export function WorkSection() {
                   <button className="btn btn-ghost btn-sm" style={{ fontSize: 12, padding: '2px 8px', color: T.teal }} onClick={() => setModal({})}>+</button>
                 </div>
                 <div style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(78,201,190,0.1)', borderTop: 'none', borderRadius: '0 0 12px 12px', padding: '4px 0' }}>
-                  {tasks.filter(t => t.section === 'work' && !t.isDeadline).map(task => (
+                  {tasks.filter(t => t.section === 'work' && !t.isDeadline && t.type !== 'report').map(task => (
                     <div key={task.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 14px', borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
                       <div className={`chk ${task.doneDate === today ? 'done' : ''}`} style={{ width: 18, height: 18, fontSize: 11, flexShrink: 0 }}
                         onClick={() => setTasks(p => p.map(t => t.id === task.id ? { ...t, doneDate: t.doneDate === today ? null : today, lastDone: t.doneDate === today ? t.lastDone : today } : t))}>
@@ -265,8 +194,7 @@ export function WorkSection() {
                       <div className="ico-btn" style={{ fontSize: 11, padding: '2px 4px', flexShrink: 0 }} onClick={() => setModal(task)}>✏️</div>
                       <div className="ico-btn danger" style={{ fontSize: 11, padding: '2px 4px', flexShrink: 0 }} onClick={() => setTasks(p => p.filter(t => t.id !== task.id))}>✕</div>
                     </div>
-                  ))}
-                </div>
+                  ))}                </div>
               </div>
 
               {/* Советы */}
@@ -292,7 +220,8 @@ export function WorkSection() {
               <div style={{ fontSize: 16, color: T.text2, marginBottom: 8 }}>Добавь профессию в профиле, чтобы видеть отчёты</div>
             </div>
           )}
-        </div>      )}
+        </div>
+      )}
 
       {/* - ВКЛАДКА: ИНСТРУМЕНТЫ - */}
       {workTab === 'tools' && (
@@ -314,8 +243,7 @@ export function WorkSection() {
             <div key={tool.id} style={{ marginBottom: 10 }}>
               <div onClick={() => setActiveTool(activeTool === tool.id ? null : tool.id)}
                 style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', borderRadius: 12, cursor: 'pointer', background: activeTool === tool.id ? 'rgba(200,164,90,0.1)' : 'rgba(255,255,255,0.02)', border: `1px solid ${activeTool === tool.id ? T.gold + '55' : 'rgba(255,255,255,0.06)'}`, transition: 'all .15s' }}>
-                <span style={{ fontSize: 22 }}>{'🛠'}</span>
-                <div style={{ flex: 1, minWidth: 0 }}>
+                <span style={{ fontSize: 22 }}>{'🛠'}</span>                <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 14, color: T.text0, fontWeight: 500, wordBreak: 'break-word' }}>{tool.title}</div>
                   <div style={{ fontSize: 11, color: T.text3, marginTop: 2, lineHeight: 1.4, wordBreak: 'break-word' }}>{tool.description}</div>
                 </div>
@@ -326,7 +254,7 @@ export function WorkSection() {
         </div>
       )}
 
-      {/* Модалки */}
+      {/* Модалки для старых отчетов (если используются) */}
       {addReportModal && (
         <div className="overlay" onClick={() => { setAddReportModal(null); setNewReport({ name: '', deadline: '', period: 'quarter', amount: '', notes: '' }); }}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
@@ -341,7 +269,8 @@ export function WorkSection() {
                 setReports(p => [...p, { ...newReport, id: 'u-' + Date.now(), group: addReportModal.groupId, enabled: true, status: 'pending', createdAt: new Date().toISOString() }]);
                 setAddReportModal(null);
                 setNewReport({ name: '', deadline: '', period: 'quarter', amount: '', notes: '' });
-                notify('Добавлено ✦');              }}>Добавить</button>
+                notify('Добавлено ✦');
+              }}>Добавить</button>
             </div>
           </div>
         </div>
@@ -363,6 +292,5 @@ export function WorkSection() {
       )}
 
       {modal !== null && <TaskModal task={modal?.id ? modal : null} defaultSection="work" onSave={(t) => { setTasks(p => modal?.id ? p.map(x => x.id === t.id ? t : x) : [...p, t]); notify(modal?.id ? 'Обновлено' : 'Добавлено'); }} onClose={() => setModal(null)} />}
-    </div>
-  );
-          }
+    </div>  );
+}
