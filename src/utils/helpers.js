@@ -47,8 +47,7 @@ export function getMoon(date = new Date()) {
     { n: 'Последняя четверть', t: 'убывающая', p: 75 },
     { n: 'Старая', t: 'убывающая', p: 87.5 }
   ];
-  
-  return phases[b] || phases[0];
+    return phases[b] || phases[0];
 }
 
 /**
@@ -96,4 +95,8 @@ export function addDays(date, days) {
   return result;
 }
 
-export default { getMoon, formatDate, getDayName, isToday, addDays };
+// ✅ Заглушки для совместимости (чтобы приложение не падало)
+export function getZodiac(date) { return { sign: '—', element: '—' }; }export function getEastern(date) { return { animal: '—', element: '—' }; }
+export function calcDegree(date) { return 0; }
+
+export default { getMoon, formatDate, getDayName, isToday, addDays, getZodiac, getEastern, calcDegree };
