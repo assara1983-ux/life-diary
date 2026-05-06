@@ -86,3 +86,9 @@ export async function quickAsk(prompt, systemPrompt = '') {
   messages.push({ role: 'user', content: prompt });
   return sendToGemini(messages);
 }
+
+// ✅ Заглушка для совместимости (чтобы приложение не падало)
+export async function askClaude(profile, prompt) {
+  console.warn('askClaude: заглушка, используйте sendToGemini');
+  return "Ответ будет доступен после настройки API";
+}
