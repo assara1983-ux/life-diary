@@ -1,48 +1,70 @@
-// ── Life Diary Service Worker ──────────────────────────────────
-const CACHE = 'life-diary-v1';
+// public/sw.js
+const CACHE_NAME = 'life-diary-v1';
 
-// Установка SW
-self.addEventListener('install', e => {
-  self.skipWaiting();
+// Установка SW и кэширование статики
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.addAll(['/']);
+    })
+  );
 });
 
-self.addEventListener('activate', e => {
-  e.waitUntil(clients.claim());
+// Активация и очистка старых кэшей
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames
+          .filter((name) => name !== CACHE_NAME)
+          .map((name) => caches.delete(name))
+      );
+    })
+  );
 });
 
-// ── Push-уведомления ──────────────────────────────────────────
-self.addEventListener('push', e => {
-  if (!e.data) return;
-  let data = {};
-  try { data = e.data.json(); } catch { data = { title: 'Life Diary', body: e.data.text() }; }
+// Обработка входящих пуш-уведомлений
+self.addEventListener('push', (event) => {
+  if (!event.data) return;
+  
+  let payload;
+  try {
+    payload = event.data.json();
+  } catch (e) {
+    payload = { title: 'Life Diary', body: event.data.text() };
+  }
 
   const options = {
-    body: data.body || '',
-    icon: data.icon || '/icon-192.png',
-    badge: '/icon-192.png',
-    tag: data.tag || 'life-diary-' + Date.now(),
-    requireInteraction: data.requireInteraction || false,
-    data: { url: data.url || '/', deadline: data.deadline },
+    body: payload.body || 'Напоминание о задаче',
+    icon: '/icon-192.png', // Убедись, что иконка есть в public/
+    badge: '/icon-72.png',
+    tag: payload.tag || 'report-reminder',
+    requireInteraction: true,
     actions: [
-      { action: 'open', title: '📋 Открыть' },
-      { action: 'dismiss', title: 'Позже' }
-    ]
+      { action: 'open', title: 'Открыть' },
+      { action: 'close', title: 'Закрыть' }
+    ],
+     payload.data || {}
   };
 
-  e.waitUntil(self.registration.showNotification(data.title || 'Life Diary', options));
+  event.waitUntil(
+    self.registration.showNotification(payload.title || 'Life Diary', options)
+  );
 });
 
-// Клик по уведомлению
-self.addEventListener('notificationclick', e => {
-  e.notification.close();
-  if (e.action === 'dismiss') return;
-  e.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(cs => {
-      const url = (e.notification.data && e.notification.data.url) || '/';
-      for (const c of cs) {
-        if (c.url.includes(self.location.origin) && 'focus' in c) return c.focus();
+// Обработка клика по уведомлению
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  
+  if (event.action === 'close') return;
+
+  // Открываем приложение или фокусируем вкладку
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      if (clientList.length > 0) {
+        return clientList[0].focus();
       }
-      if (clients.openWindow) return clients.openWindow(url);
+      return clients.openWindow('/');
     })
   );
 });
