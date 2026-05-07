@@ -1,7 +1,7 @@
 // src/store/AppContext.jsx
 import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { STORAGE_KEYS } from '../utils/migration';
-// Импортируем каталоги
+// ✅ ИМПОРТ КАТАЛОГОВ
 import { KGD_CATALOG, BNS_CATALOG } from '../data/reportsCatalog';
 
 const AppContext = createContext(null);
@@ -19,7 +19,6 @@ export function calculateNextDeadline(frequency, lastDeadline = new Date().toISO
     case 'annual': date.setFullYear(date.getFullYear() + 1); break;
     default: return null;
   }
-  // Сохраняем день, если возможно (для простоты)
   return date.toISOString().split('T')[0];
 }
 
@@ -47,8 +46,8 @@ function useStorageState(key, defaultValue) {
 
 export function AppProvider({ children }) {
   // --- Основные данные ---
-  const [profile, setProfile] = useStorageState('ld_pf_v3', null);  const [sections, setSections] = useStorageState('ld_sec_v3', [
-    { id: "today", emoji: "☀️", name: "Сегодня", vis: true },
+  const [profile, setProfile] = useStorageState('ld_pf_v3', null);
+  const [sections, setSections] = useStorageState('ld_sec_v3', [    { id: "today", emoji: "☀️", name: "Сегодня", vis: true },
     { id: "schedule", emoji: "🗓️", name: "Расписание", vis: true },
     { id: "work", emoji: "💼", name: "Работа", vis: true },
     { id: "home", emoji: "🏡", name: "Дом", vis: true },
@@ -78,13 +77,13 @@ export function AppProvider({ children }) {
   const [checkResults, setCheckResults] = useStorageState('ld_deadline_checks', {});
   const [accountingReports, setAccountingReports] = useStorageState('ld_accounting_reports', []);
 
-  // ✅ ШАГ A.1: Состояние сворачивания секций
+  // ✅ ШАГ 1.1: Состояние сворачивания секций
   const [collapsedSections, setCollapsedSections] = useStorageState('ld_collapsed_sections', {});
   const toggleSection = (id) => {
     setCollapsedSections(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
-  // ✅ ШАГ A.2: Пользовательские группы отчетов
+  // ✅ ШАГ 1.2: Пользовательские группы отчетов
   const [customReportGroups, setCustomReportGroups] = useStorageState('ld_custom_report_groups', []);
 
   const addCustomGroup = (name) => {
@@ -96,11 +95,24 @@ export function AppProvider({ children }) {
   };
 
   const addCustomReport = (groupId, reportData) => {
-    setCustomReportGroups(prev => prev.map(g => {      if (g.id === groupId) {
-        return { ...g, reports: [...g.reports, { id: 'r-' + Date.now(), ...reportData }] };
+    setCustomReportGroups(prev => prev.map(g => {
+      if (g.id === groupId) {        return { ...g, reports: [...g.reports, { id: 'r-' + Date.now(), ...reportData }] };
       }
       return g;
     }));
+  };
+
+  // ✅ ШАГ 1.3: Функции управления инструментами
+  const addWorkTool = (toolData) => {
+    setWorkTools(prev => [...prev, { id: 't-' + Date.now(), ...toolData, steps: toolData.steps || [], createdAt: new Date().toISOString() }]);
+  };
+
+  const deleteWorkTool = (toolId) => {
+    setWorkTools(prev => prev.filter(t => t.id !== toolId));
+  };
+
+  const updateWorkTool = (toolId, updates) => {
+    setWorkTools(prev => prev.map(t => t.id === toolId ? { ...t, ...updates } : t));
   };
 
   // ✅ ШАГ 2.2: Список выбранных форм отчетности (массив ID из каталога)
@@ -133,8 +145,7 @@ export function AppProvider({ children }) {
   const [customPractices, setCustomPractices] = useStorageState('custom_practices', []);
 
   // --- AI Заметки и Журнал ---
-  const [aiNotes, setAiNotes] = useStorageState('ld_ai_notes', []);
-  const [aiJournal, setAiJournal] = useStorageState('ld_ai_journal', []);
+  const [aiNotes, setAiNotes] = useStorageState('ld_ai_notes', []);  const [aiJournal, setAiJournal] = useStorageState('ld_ai_journal', []);
 
   // --- UI Состояния ---
   const [workOpenWeek, setWorkOpenWeek] = useStorageState('ld_work_open_week', true);
@@ -145,7 +156,8 @@ export function AppProvider({ children }) {
   const [shopAdvice, setShopAdvice] = useStorageState('ld_shop_advice', true);
   const [shopListOpen, setShopListOpen] = useStorageState('ld_shop_list', true);
   const [petsAdvice, setPetsAdvice] = useStorageState('ld_pets_advice', true);
-  const [petsFeed, setPetsFeed] = useStorageState('ld_pets_feed', true);  const [petsCare, setPetsCare] = useStorageState('ld_pets_care', true);
+  const [petsFeed, setPetsFeed] = useStorageState('ld_pets_feed', true);
+  const [petsCare, setPetsCare] = useStorageState('ld_pets_care', true);
   const [homeAdvice, setHomeAdvice] = useStorageState('ld_home_open_advice', true);
   const [homeTasks, setHomeTasks] = useStorageState('ld_home_open_tasks', true);
   const [hobbyAdvice, setHobbyAdvice] = useStorageState('ld_hobby_advice', true);
@@ -162,7 +174,7 @@ export function AppProvider({ children }) {
   const [healthAdvice, setHealthAdvice] = useStorageState('ld_health_advice', true);
   const [healthHabits, setHealthHabits] = useStorageState('ld_health_habits', true);
 
-  // --- ШАГ A.3: Умная синхронизация отчетов в задачи ---
+  // --- ШАГ 1.4: Умная синхронизация отчетов в задачи ---
   // Объединяем каталоги для быстрого поиска
   const allCatalogReports = useMemo(() => [...KGD_CATALOG, ...BNS_CATALOG], []);
 
@@ -182,7 +194,6 @@ export function AppProvider({ children }) {
     selectedReports.forEach(reportId => {
       const reportData = allCatalogReports.find(r => r.id === reportId);
       if (!reportData) return;
-
       // Проверяем все дедлайны из каталога на 2026 год
       reportData.deadlines2026.forEach(deadlineStr => {
         // Условие: Дедлайн в будущем (или сегодня) И попадает в окно 7 дней
@@ -194,7 +205,8 @@ export function AppProvider({ children }) {
             newTasks.push({
               id: taskId,
               type: 'report',
-              source: 'catalog', // помечаем, что из каталога              reportId: reportId,
+              source: 'catalog', // помечаем, что из каталога
+              reportId: reportId,
               title: `📋 ${reportData.name}`,
               section: 'work',
               deadline: deadlineStr,
@@ -231,8 +243,7 @@ export function AppProvider({ children }) {
                title: `📋 ${report.name}`,
                section: 'work',
                deadline: deadlineStr,
-               priority: 'h',
-               notes: `Срок сдачи: ${deadlineStr} (пер: ${report.frequency})`,
+               priority: 'h',               notes: `Срок сдачи: ${deadlineStr} (пер: ${report.frequency})`,
                doneDate: null,
                createdAt: new Date().toISOString()
              });
@@ -243,7 +254,8 @@ export function AppProvider({ children }) {
 
     if (newTasks.length > 0) {
       setTasks(prev => [...prev, ...newTasks]);
-    }  }, [selectedReports, customReportGroups, tasks, setTasks, allCatalogReports]);
+    }
+  }, [selectedReports, customReportGroups, tasks, setTasks, allCatalogReports]);
 
   // Собираем всё в один объект
   const value = {
@@ -280,8 +292,7 @@ export function AppProvider({ children }) {
     workOpenTasks, setWorkOpenTasks,
     workOpenAdvice, setWorkOpenAdvice,
     shopAdvice, setShopAdvice,
-    shopListOpen, setShopListOpen,
-    petsAdvice, setPetsAdvice,
+    shopListOpen, setShopListOpen,    petsAdvice, setPetsAdvice,
     petsFeed, setPetsFeed,
     petsCare, setPetsCare,
     homeAdvice, setHomeAdvice,
@@ -292,14 +303,15 @@ export function AppProvider({ children }) {
     travelTrips, setTravelTrips,
     journalPrompts, setJournalPrompts,
     journalHistory, setJournalHistory,
-    carAdvice, setCarAdvice,    carTasks, setCarTasks,
+    carAdvice, setCarAdvice,
+    carTasks, setCarTasks,
     beautyProcsOpen, setBeautyProcsOpen,
     beautyTodayOpen, setBeautyTodayOpen,
     beautyChooseOpen, setBeautyChooseOpen,
     healthAdvice, setHealthAdvice,
     healthHabits, setHealthHabits,
     
-    // ✅ НОВЫЕ ДАННЫЕ И ФУНКЦИИ ШАГА A
+    // ✅ НОВЫЕ ДАННЫЕ И ФУНКЦИИ ШАГА 1
     selectedReports,
     toggleReport,
     collapsedSections,
@@ -308,6 +320,9 @@ export function AppProvider({ children }) {
     addCustomGroup,
     addCustomReport,
     deleteGroup,
+    addWorkTool,
+    deleteWorkTool,
+    updateWorkTool,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
