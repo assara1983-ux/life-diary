@@ -1,7 +1,7 @@
 // src/store/AppContext.jsx
 import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { STORAGE_KEYS } from '../utils/migration';
-// ИМПОРТ КАТАЛОГОВ
+// Импорт каталогов отчетности
 import { KGD_CATALOG, BNS_CATALOG } from '../data/reportsCatalog';
 
 const AppContext = createContext(null);
@@ -26,6 +26,7 @@ export function daysUntilDeadline(deadline) {
   return Math.ceil((dl - today) / (1000 * 60 * 60 * 24));
 }
 
+// Хук для работы со старыми ключами localStorage
 function useStorageState(key, defaultValue) {
   const [value, setValue] = useState(() => {
     try {
@@ -46,8 +47,8 @@ export function AppProvider({ children }) {
   const [sections, setSections] = useStorageState('ld_sec_v3', [
     { id: "today", emoji: "☀️", name: "Сегодня", vis: true },
     { id: "schedule", emoji: "🗓️", name: "Расписание", vis: true },
-    { id: "work", emoji: "💼", name: "Работа", vis: true },
-    { id: "home", emoji: "🏡", name: "Дом", vis: true },    { id: "shopping", emoji: "🛒", name: "Покупки", vis: true },
+    { id: "work", emoji: "💼", name: "Работа", vis: true },    { id: "home", emoji: "🏡", name: "Дом", vis: true },
+    { id: "shopping", emoji: "🛒", name: "Покупки", vis: true },
     { id: "pets", emoji: "🐾", name: "Питомцы", vis: true },
     { id: "car", emoji: "🚗", name: "Авто", vis: true },
     { id: "health", emoji: "🌿", name: "Здоровье", vis: true },
@@ -66,12 +67,12 @@ export function AppProvider({ children }) {
   const [trips, setTrips] = useStorageState('ld_trips_v3', []);
   const [hobbies, setHobbies] = useStorageState('ld_hobbies_v3', []);
 
-  // --- Работа и Отчетность (ОБНОВЛЕНО) ---
+  // --- Работа и Отчетность ---
   const [reportGroups, setReportGroups] = useStorageState('ld_report_groups', []);
   const [reports, setReports] = useStorageState('ld_reports_v2', []);
   const [checkResults, setCheckResults] = useStorageState('ld_deadline_checks', {});
   const [accountingReports, setAccountingReports] = useStorageState('ld_accounting_reports', []);
-  
+
   // ✅ Инструменты
   const [workTools, setWorkTools] = useStorageState('ld_work_tools', []);
   const addWorkTool = (toolData) => {
@@ -95,8 +96,8 @@ export function AppProvider({ children }) {
       return g;
     }));
   };
-
-  // ✅ Выбор отчетов из Каталога (КГД/БНС)  const [selectedReports, setSelectedReports] = useStorageState('ld_selected_reports', []);
+  // ✅ Выбор отчетов из Каталога (КГД/БНС)
+  const [selectedReports, setSelectedReports] = useStorageState('ld_selected_reports', []);
   const toggleReport = (reportId) => {
     setSelectedReports(prev => prev.includes(reportId) ? prev.filter(id => id !== reportId) : [...prev, reportId]);
   };
@@ -193,8 +194,8 @@ export function AppProvider({ children }) {
     selectedReports, toggleReport,
     collapsedSections, toggleSection,
     goalsTools: useStorageState('ld_goals_tools', { weightLog: [], habits: [], calories: { goal: 0, log: [] }, workout: null, workoutSetup: null })[0],
-    wheelScores: useStorageState('ld_wheel', {})[0],
-    weekMenu: useStorageState('ld_week_menu', null)[0],    beautyProcs: useStorageState('ld_beauty_procs', {})[0],
+    wheelScores: useStorageState('ld_wheel', {})[0],    weekMenu: useStorageState('ld_week_menu', null)[0],
+    beautyProcs: useStorageState('ld_beauty_procs', {})[0],
     beautyTopics: useStorageState('ld_beauty_topics', [])[0],
     feedTimes: useStorageState('ld_feed_times', {})[0],
     commuteSettings: useStorageState('ld_commute_settings', {})[0],
