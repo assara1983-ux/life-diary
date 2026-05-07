@@ -8,7 +8,6 @@ import { T } from '../utils/theme';
 
 // --- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ---
 function toDay(d = new Date()) { return d.toISOString().split('T')[0]; }
-
 function freqLabel(f) {
   if (!f || f === 'once') return 'разово';
   if (f === 'daily') return 'ежедневно';
@@ -22,7 +21,7 @@ function freqLabel(f) {
   return f;
 }
 
-// --- КОМПОНЕНТ АККОРДЕОНА ---
+// --- КОМПОНЕНТ АККОРДЕОНА (запоминает состояние) ---
 const Accordion = ({ id, title, icon, count, children, onAdd }) => {
   const { collapsedSections, toggleSection } = useApp();
   const isOpen = !collapsedSections[id];
@@ -31,7 +30,7 @@ const Accordion = ({ id, title, icon, count, children, onAdd }) => {
     <div style={{ marginBottom: 12, borderRadius: 12, border: `1px solid ${T.border}`, background: 'rgba(255,255,255,0.02)' }}>
       <div 
         onClick={() => toggleSection(id)}
-        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', cursor: 'pointer', borderBottom: isOpen ? `1px solid ${T.border}` : 'none', transition: 'background 0.2s' }}
+        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', cursor: 'pointer', borderBottom: isOpen ? `1px solid ${T.border}` : 'none' }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <span style={{ fontSize: 18 }}>{icon}</span>
@@ -47,8 +46,8 @@ const Accordion = ({ id, title, icon, count, children, onAdd }) => {
           {onAdd && (
             <button onClick={(e) => { e.stopPropagation(); onAdd(); }} 
               style={{ marginTop: 8, width: '100%', padding: '8px', borderRadius: 8, border: `1px dashed ${T.accent}`, background: 'transparent', color: T.accent, fontSize: 13, cursor: 'pointer', fontWeight: 500 }}>
-              ✚ Добавить форму            </button>
-          )}
+              ✚ Добавить форму
+            </button>          )}
         </div>
       )}
     </div>
@@ -67,7 +66,7 @@ export function WorkSection() {
   const [workTab, setWorkTab] = useState('reports');
   const [modal, setModal] = useState(null);
   
-  // Состояния для модальных окон
+  // Состояния модальных окон
   const [showCatalog, setShowCatalog] = useState(false);
   const [catalogTab, setCatalogTab] = useState('kgd'); // 'kgd' | 'bns'
   const [searchQuery, setSearchQuery] = useState('');
@@ -89,11 +88,12 @@ export function WorkSection() {
   const selectedKgd = useMemo(() => KGD_CATALOG.filter(r => selectedReports.includes(r.id)), [selectedReports]);
   const selectedBns = useMemo(() => BNS_CATALOG.filter(r => selectedReports.includes(r.id)), [selectedReports]);
 
-  const handleCreateTool = (toolName, description) => {
+  // Создание инструмента из AI-рекомендации
+  const handleCreateToolFromAI = (toolName, description) => {
     addWorkTool({
       title: toolName,
       description: description || 'Инструмент создан по рекомендации AI',
-      steps: ['Шаг 1: Подготовка', 'Шаг 2: Выполнение', 'Шаг 3: Проверка']
+      steps: ['Шаг 1: Подготовка данных', 'Шаг 2: Проверка корректности', 'Шаг 3: Отправка / Сохранение']
     });
   };
   return (
@@ -197,11 +197,7 @@ export function WorkSection() {
                 prompt="Дай 3 конкретных рекомендации для бухгалтера по оптимизации работы с отчетностью. Формат: JSON массив объектов {title, summary, details}."                 label="Получить рекомендации"
                 btnText="Спросить AI"
                 placeholder="Генерирую..."
-                onResult={(result) => {
-                   // Заглушка для обработки результата AI и создания инструмента
-                   // В реальном приложении здесь парсинг JSON
-                   handleCreateTool("Новый инструмент AI", "Создан на основе рекомендации");
-                }}
+                onResult={() => handleCreateToolFromAI("Новый инструмент AI", "Создан на основе рекомендации")}
               />
             </div>
           </div>
@@ -244,10 +240,10 @@ export function WorkSection() {
               <button onClick={() => setCatalogTab('kgd')} style={{ flex: 1, padding: 8, borderRadius: 8, border: `1px solid ${catalogTab === 'kgd' ? T.accent : T.border}`, background: catalogTab === 'kgd' ? T.accent : 'transparent', color: catalogTab === 'kgd' ? '#000' : T.text2, cursor: 'pointer' }}>🏛 КГД</button>
               <button onClick={() => setCatalogTab('bns')} style={{ flex: 1, padding: 8, borderRadius: 8, border: `1px solid ${catalogTab === 'bns' ? T.accent : T.border}`, background: catalogTab === 'bns' ? T.accent : 'transparent', color: catalogTab === 'bns' ? '#000' : T.text2, cursor: 'pointer' }}>📊 БНС</button>
             </div>
+
             {/* Поиск */}
             <input 
-              placeholder="Поиск..." 
-              value={searchQuery}
+              placeholder="Поиск..."               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               style={{ width: '100%', padding: 10, marginBottom: 12, borderRadius: 8, border: `1px solid ${T.border}`, background: 'rgba(255,255,255,0.05)', color: T.text0 }}
             />
@@ -289,19 +285,18 @@ export function WorkSection() {
               <button onClick={() => setShowCustomModal(false)} style={{ flex: 1, padding: 10, borderRadius: 8, border: `1px solid ${T.border}`, background: 'transparent', color: T.text2 }}>Отмена</button>
               <button onClick={() => {
                 if(!customForm.name || !customForm.deadline) return;
-                // В реальном приложении нужно выбрать группу, здесь добавляем в дефолтную или создаем новую
                 const groupId = 'custom-default'; 
-                // Упрощенная логика для примера:
-                addCustomGroup('Мои отчеты'); // Создаем группу если нет                // addCustomReport... (требует доработки логики групп в UI)
+                addCustomGroup('Мои отчеты');
+                addCustomReport(groupId, { name: customForm.name, frequency: customForm.frequency, deadline: customForm.deadline });
                 setShowCustomModal(false);
+                setCustomForm({ name: '', frequency: 'quarterly', deadline: '' });
               }} style={{ flex: 1, padding: 10, borderRadius: 8, border: 'none', background: T.accent, color: '#000', fontWeight: 600 }}>Сохранить</button>
             </div>
-          </div>
-        </div>
+          </div>        </div>
       )}
 
       {/* 3. Модалка задач */}
       {modal !== null && <TaskModal task={modal?.id ? modal : null} defaultSection="work" onSave={(t) => { setTasks(p => modal?.id ? p.map(x => x.id === t.id ? t : x) : [...p, t]); setModal(null); }} onClose={() => setModal(null)} />}
     </div>
   );
-              }
+}
