@@ -1,9 +1,8 @@
 // api/ai.js — Vercel Serverless Function
-// Groq API — llama-3.3-70b-versatile
-// Температура 0.1 — минимальная фантазия, максимальная точность
+// Google Gemini API — gemini-1.5-flash
 
 export default async function handler(req, res) {
-  // CORS заголовки
+  // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -11,59 +10,65 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  // Проверка ключа с мягким падением
-  const groqKey = process.env.GROQ_API_KEY;
-  if (!groqKey) {
-    console.warn('GROQ_API_KEY not configured');
-    // Возвращаем заглушку, чтобы приложение не падало
+  // Проверка ключа Gemini
+  const geminiKey = process.env.GEMINI_API_KEY;
+  if (!geminiKey) {
     return res.status(200).json({ 
-      text: 'AI-функции временно недоступны. Добавьте GROQ_API_KEY в переменные окружения Vercel.' 
+      text: 'AI временно недоступен. Добавьте GEMINI_API_KEY в переменные окружения.' 
     });
   }
 
-  const { system, user, maxTokens = 1200 } = req.body;
+  const { system, user, maxTokens = 2048 } = req.body;
   
   if (!user) {
-    return res.status(400).json({ error: 'Missing "user" field in request body' });
+    return res.status(400).json({ error: 'Missing "user" field' });
   }
 
   try {
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${groqKey}`
-      },
-      body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
-        messages: [
-          ...(system ? [{ role: 'system', content: system }] : []),
-          { role: 'user', content: user }
-        ],
-        max_tokens: maxTokens,
-        temperature: 0.1
-      })
-    });
+    // Формируем запрос к Gemini API
+    const contents = [];
+    if (system) {
+      contents.push({ role: 'user', parts: [{ text: system }] });
+      contents.push({ role: 'model', parts: [{ text: 'Понял инструкцию.' }] });
+    }
+    contents.push({ role: 'user', parts: [{ text: user }] });
+
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          contents: contents,
+          generationConfig: {
+            maxOutputTokens: maxTokens,
+            temperature: 0.1
+          }
+        })
+      }
+    );
 
     const data = await response.json();
 
     if (!response.ok) {
-      console.error('Groq error:', data);
-      // Не падаем критично — возвращаем понятное сообщение
+      console.error('Gemini error:', data);
       return res.status(200).json({ 
-        text: `⚠️ AI-сервис временно недоступен: ${data.error?.message || 'Ошибка соединения'}` 
+        text: `⚠️ AI недоступен: ${data.error?.message || 'Ошибка соединения'}` 
       });
     }
 
-    const text = data.choices?.[0]?.message?.content;
-    if (!text) return res.status(200).json({ text: 'Пустой ответ от AI-сервиса' });
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!text) {
+      return res.status(200).json({ text: 'Пустой ответ от AI' });
+    }
 
     return res.status(200).json({ text });
   } catch (error) {
     console.error('Server error:', error);
-    // Мягкое падение — приложение продолжит работать
     return res.status(200).json({ 
-      text: '⚠️ Ошибка соединения с AI-сервисом. Попробуйте позже.' 
+      text: '⚠️ Ошибка соединения с AI. Попробуйте позже.' 
     });
   }
 }
