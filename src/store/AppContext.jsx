@@ -6,11 +6,11 @@ const AppContext = createContext(null);
 
 // --- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ДЛЯ РАСЧЁТА ДЕДЛАЙНОВ ---
 /**
-* Рассчитывает следующую дату дедлайна на основе периодичности
-* @param {string} frequency - 'monthly' | 'quarterly' | 'semiannual' | 'annual' | 'as_needed'
-* @param {string} lastDeadline - дата в формате 'YYYY-MM-DD'
-* @returns {string} следующая дата в формате 'YYYY-MM-DD'
-*/
+ * Рассчитывает следующую дату дедлайна на основе периодичности
+ * @param {string} frequency - 'monthly' | 'quarterly' | 'semiannual' | 'annual' | 'as_needed'
+ * @param {string} lastDeadline - дата в формате 'YYYY-MM-DD'
+ * @returns {string} следующая дата в формате 'YYYY-MM-DD'
+ */
 export function calculateNextDeadline(frequency, lastDeadline = new Date().toISOString().split('T')[0]) {
   const date = new Date(lastDeadline);
   switch (frequency) {
@@ -28,16 +28,16 @@ export function calculateNextDeadline(frequency, lastDeadline = new Date().toISO
       break;
     case 'as_needed':
     default:
-      return null; // Для разовых отчетов не рассчитываем
+      return null;
   }
   return date.toISOString().split('T')[0];
 }
 
 /**
-* Рассчитывает количество дней до дедлайна
-* @param {string} deadline - дата в формате 'YYYY-MM-DD'
-* @returns {number} дней (отрицательное = просрочено)
-*/
+ * Рассчитывает количество дней до дедлайна
+ * @param {string} deadline - дата в формате 'YYYY-MM-DD'
+ * @returns {number} дней (отрицательное = просрочено)
+ */
 export function daysUntilDeadline(deadline) {
   if (!deadline) return Infinity;
   const today = new Date();
@@ -99,7 +99,6 @@ export function AppProvider({ children }) {
   const [reportGroups, setReportGroups] = useStorageState('ld_report_groups', []);  const [reports, setReports] = useStorageState('ld_reports_v2', []);
   const [workTools, setWorkTools] = useStorageState('ld_work_tools', []);
   const [checkResults, setCheckResults] = useStorageState('ld_deadline_checks', {});
-  // ✅ НОВОЕ: Выбранные формы КГД/БНС с авто-расчётом дедлайнов
   const [accountingReports, setAccountingReports] = useStorageState('ld_accounting_reports', []);
 
   // --- Цели и Трекеры ---
@@ -145,8 +144,8 @@ export function AppProvider({ children }) {
   const [homeTasks, setHomeTasks] = useStorageState('ld_home_open_tasks', true);
   const [hobbyAdvice, setHobbyAdvice] = useStorageState('ld_hobby_advice', true);
   const [hobbyList, setHobbyList] = useStorageState('ld_hobby_list', true);
-  const [travelAdvice, setTravelAdvice] = useStorageState('ld_travel_advice', true);  const [travelTrips, setTravelTrips] = useStorageState('ld_travel_trips', true);
-  const [journalPrompts, setJournalPrompts] = useStorageState('ld_journal_prompts', true);
+  const [travelAdvice, setTravelAdvice] = useStorageState('ld_travel_advice', true);
+  const [travelTrips, setTravelTrips] = useStorageState('ld_travel_trips', true);  const [journalPrompts, setJournalPrompts] = useStorageState('ld_journal_prompts', true);
   const [journalHistory, setJournalHistory] = useStorageState('ld_journal_history', true);
   const [carAdvice, setCarAdvice] = useStorageState('ld_car_advice', true);
   const [carTasks, setCarTasks] = useStorageState('ld_car_tasks', true);
@@ -156,14 +155,15 @@ export function AppProvider({ children }) {
   const [healthAdvice, setHealthAdvice] = useStorageState('ld_health_advice', true);
   const [healthHabits, setHealthHabits] = useStorageState('ld_health_habits', true);
 
-  // ✅ ЛОГИКА: Синхронизация отчетов с задачами (за 5 дней до дедлайна)
+  // ✅ ЛОГИКА: Синхронизация отчетов с задачами
   const syncReportsToTasks = useCallback(() => {
     const today = new Date().toISOString().split('T')[0];
     const newTasks = [];
+    
     accountingReports.forEach(report => {
       if (!report.nextDeadline || report.status === 'done') return;
       const daysLeft = daysUntilDeadline(report.nextDeadline);
-      // Если до дедлайна ≤ 5 дней и задачи ещё нет — создаём
+      
       if (daysLeft <= 5 && daysLeft >= 0) {
         const taskExists = tasks.some(t =>
           t.type === 'report' && t.reportId === report.id && t.doneDate !== today
@@ -185,7 +185,7 @@ export function AppProvider({ children }) {
           });
         }
       }
-      // Если отчет выполнен и подошло время следующего периода — обновляем дедлайн
+      
       if (report.status === 'done' && report.nextDeadline && daysUntilDeadline(report.nextDeadline) <= 0) {
         const newNextDeadline = calculateNextDeadline(report.frequency, report.nextDeadline);
         setAccountingReports(prev => prev.map(r =>
@@ -194,16 +194,15 @@ export function AppProvider({ children }) {
             : r
         ));
       }
-    });    if (newTasks.length > 0) {
+    });    
+    if (newTasks.length > 0) {
       setTasks(prev => {
-        // Удаляем старые выполненные задачи-отчеты
         const filtered = prev.filter(t => !(t.type === 'report' && t.doneDate && t.doneDate < today));
         return [...filtered, ...newTasks];
       });
     }
   }, [accountingReports, tasks, setTasks, setAccountingReports]);
 
-  // Запускаем синхронизацию при монтировании и при изменении отчетов
   useEffect(() => {
     if (accountingReports.length > 0) {
       syncReportsToTasks();
@@ -212,7 +211,6 @@ export function AppProvider({ children }) {
 
   // Собираем всё в один объект
   const value = {
-    // Основные данные
     profile, setProfile,
     sections, setSections,
     tasks, setTasks,
@@ -221,37 +219,31 @@ export function AppProvider({ children }) {
     petLog, setPetLog,
     trips, setTrips,
     hobbies, setHobbies,
-    // Работа
     reportGroups, setReportGroups,
     reports, setReports,
     workTools, setWorkTools,
     checkResults, setCheckResults,
-    accountingReports, setAccountingReports, // ✅ Новое
-    // Цели
+    accountingReports, setAccountingReports,
     goalsTools, setGoalsTools,
     wheelScores, setWheelScores,
-    // Здоровье/Красота/Быт
     weekMenu, setWeekMenu,
     beautyProcs, setBeautyProcs,
     beautyTopics, setBeautyTopics,
     feedTimes, setFeedTimes,
     commuteSettings, setCommuteSettings,
-    // Ментальное
     mentalMood, setMentalMood,
     mentalStress, setMentalStress,
     mentalLog, setMentalLog,
     mentalRecoveryPlan, setMentalRecoveryPlan,
     customPractices, setCustomPractices,
-    // AI
-    aiNotes, setAiNotes,    aiJournal, setAiJournal,
-    // UI Состояния
+    aiNotes, setAiNotes,
+    aiJournal, setAiJournal,
     workOpenWeek, setWorkOpenWeek,
     workOpenUpcoming, setWorkOpenUpcoming,
     workOpenGroups, setWorkOpenGroups,
     workOpenTasks, setWorkOpenTasks,
     workOpenAdvice, setWorkOpenAdvice,
-    shopAdvice, setShopAdvice,
-    shopListOpen, setShopListOpen,
+    shopAdvice, setShopAdvice,    shopListOpen, setShopListOpen,
     petsAdvice, setPetsAdvice,
     petsFeed, setPetsFeed,
     petsCare, setPetsCare,
