@@ -1,18 +1,14 @@
 // src/store/AppContext.jsx
 import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { STORAGE_KEYS } from '../utils/migration';
-
-// Импортируем справочники (убедитесь, что файл reportsCatalog.js существует в src/data)
+// ИМПОРТ КАТАЛОГОВ
 import { KGD_CATALOG, BNS_CATALOG } from '../data/reportsCatalog';
 
 const AppContext = createContext(null);
 
 // --- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ---
-
-// Расчет следующего дедлайна на основе частоты
 export function calculateNextDeadline(frequency, lastDeadline = new Date().toISOString().split('T')[0]) {
   const date = new Date(lastDeadline);
-  const day = date.getDate(); 
   switch (frequency) {
     case 'monthly': date.setMonth(date.getMonth() + 1); break;
     case 'quarterly': date.setMonth(date.getMonth() + 3); break;
@@ -30,7 +26,6 @@ export function daysUntilDeadline(deadline) {
   return Math.ceil((dl - today) / (1000 * 60 * 60 * 24));
 }
 
-// Хук для работы со старыми ключами localStorage
 function useStorageState(key, defaultValue) {
   const [value, setValue] = useState(() => {
     try {
@@ -47,12 +42,12 @@ function useStorageState(key, defaultValue) {
 
 export function AppProvider({ children }) {
   // --- Основные данные ---
-  const [profile, setProfile] = useStorageState('ld_pf_v3', null);  const [sections, setSections] = useStorageState('ld_sec_v3', [
+  const [profile, setProfile] = useStorageState('ld_pf_v3', null);
+  const [sections, setSections] = useStorageState('ld_sec_v3', [
     { id: "today", emoji: "☀️", name: "Сегодня", vis: true },
     { id: "schedule", emoji: "🗓️", name: "Расписание", vis: true },
     { id: "work", emoji: "💼", name: "Работа", vis: true },
-    { id: "home", emoji: "🏡", name: "Дом", vis: true },
-    { id: "shopping", emoji: "🛒", name: "Покупки", vis: true },
+    { id: "home", emoji: "🏡", name: "Дом", vis: true },    { id: "shopping", emoji: "🛒", name: "Покупки", vis: true },
     { id: "pets", emoji: "🐾", name: "Питомцы", vis: true },
     { id: "car", emoji: "🚗", name: "Авто", vis: true },
     { id: "health", emoji: "🌿", name: "Здоровье", vis: true },
@@ -71,88 +66,62 @@ export function AppProvider({ children }) {
   const [trips, setTrips] = useStorageState('ld_trips_v3', []);
   const [hobbies, setHobbies] = useStorageState('ld_hobbies_v3', []);
 
-  // --- Работа и Отчетность ---
+  // --- Работа и Отчетность (ОБНОВЛЕНО) ---
   const [reportGroups, setReportGroups] = useStorageState('ld_report_groups', []);
   const [reports, setReports] = useStorageState('ld_reports_v2', []);
   const [checkResults, setCheckResults] = useStorageState('ld_deadline_checks', {});
+  const [accountingReports, setAccountingReports] = useStorageState('ld_accounting_reports', []);
   
-  // ✅ Новое состояние для инструментов
+  // ✅ Инструменты
   const [workTools, setWorkTools] = useStorageState('ld_work_tools', []);
-
-  // ✅ Функции управления инструментами
   const addWorkTool = (toolData) => {
-    setWorkTools(prev => [...prev, { 
-      id: 'tool-' + Date.now(), 
-      ...toolData, 
-      steps: toolData.steps || [],
-      createdAt: new Date().toISOString()
-    }]);
+    setWorkTools(prev => [...prev, { id: 'tool-' + Date.now(), ...toolData, steps: toolData.steps || [], createdAt: new Date().toISOString() }]);
   };
-
   const deleteWorkTool = (toolId) => {
     setWorkTools(prev => prev.filter(t => t.id !== toolId));
   };
 
-  const updateWorkToolStep = (toolId, stepIndex, completed) => {
-    setWorkTools(prev => prev.map(tool => {
-      if (tool.id !== toolId) return tool;
-      const newSteps = [...tool.steps];      newSteps[stepIndex] = { ...newSteps[stepIndex], completed };
-      return { ...tool, steps: newSteps };
-    }));
-  };
-
-  // --- Состояние для сворачивания секций (UI) ---
-  const [collapsedSections, setCollapsedSections] = useStorageState('ld_collapsed_sections', {});
-  
-  const toggleSection = (id) => {
-    setCollapsedSections(prev => ({ ...prev, [id]: !prev[id] }));
-  };
-
-  // --- Пользовательские группы отчетов ---
+  // ✅ Пользовательские группы отчетов
   const [customReportGroups, setCustomReportGroups] = useStorageState('ld_custom_report_groups', []);
-
   const addCustomGroup = (name) => {
     setCustomReportGroups(prev => [...prev, { id: 'g-' + Date.now(), name, reports: [] }]);
   };
-
   const deleteGroup = (groupId) => {
     setCustomReportGroups(prev => prev.filter(g => g.id !== groupId));
   };
-
   const addCustomReport = (groupId, reportData) => {
     setCustomReportGroups(prev => prev.map(g => {
-      if (g.id === groupId) {
-        return { ...g, reports: [...g.reports, { id: 'r-' + Date.now(), ...reportData }] };
-      }
+      if (g.id === groupId) return { ...g, reports: [...g.reports, { id: 'r-' + Date.now(), ...reportData }] };
       return g;
     }));
   };
 
-  // --- Выбор отчетов из каталога (КГД/БНС) ---
-  const [selectedReports, setSelectedReports] = useStorageState('ld_selected_reports', []);
-  
+  // ✅ Выбор отчетов из Каталога (КГД/БНС)  const [selectedReports, setSelectedReports] = useStorageState('ld_selected_reports', []);
   const toggleReport = (reportId) => {
-    setSelectedReports(prev => {
-      if (prev.includes(reportId)) {
-        return prev.filter(id => id !== reportId);
-      }
-      return [...prev, reportId];
-    });
+    setSelectedReports(prev => prev.includes(reportId) ? prev.filter(id => id !== reportId) : [...prev, reportId]);
   };
 
-  // --- Ментальное здоровье и прочее (без изменений) ---
+  // ✅ Состояние сворачивания секций
+  const [collapsedSections, setCollapsedSections] = useStorageState('ld_collapsed_sections', {});
+  const toggleSection = (id) => {
+    setCollapsedSections(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  // --- Ментальное здоровье и прочее ---
   const [mentalMood, setMentalMood] = useStorageState('mental_mood', 3);
   const [mentalStress, setMentalStress] = useStorageState('mental_stress', 5);
   const [mentalLog, setMentalLog] = useStorageState('mental_log', []);
   const [mentalRecoveryPlan, setMentalRecoveryPlan] = useStorageState('mental_recovery_plan', '');
   const [customPractices, setCustomPractices] = useStorageState('custom_practices', []);
-  // --- UI Состояния (без изменений) ---
+  const [aiNotes, setAiNotes] = useStorageState('ld_ai_notes', []);
+  const [aiJournal, setAiJournal] = useStorageState('ld_ai_journal', []);
+
+  // --- UI Состояния ---
   const [workOpenWeek, setWorkOpenWeek] = useStorageState('ld_work_open_week', true);
   const [workOpenUpcoming, setWorkOpenUpcoming] = useStorageState('ld_work_open_upcoming', true); 
   const [workOpenGroups, setWorkOpenGroups] = useStorageState('ld_work_open_groups', true);
   const [workOpenTasks, setWorkOpenTasks] = useStorageState('ld_work_open_tasks', true);
   const [workOpenAdvice, setWorkOpenAdvice] = useStorageState('ld_work_open_advice', true);
-  // ... (остальные состояния UI сохранены для совместимости)
   const [shopAdvice, setShopAdvice] = useStorageState('ld_shop_advice', true);
   const [shopListOpen, setShopListOpen] = useStorageState('ld_shop_list', true);
   const [petsAdvice, setPetsAdvice] = useStorageState('ld_pets_advice', true);
@@ -173,153 +142,76 @@ export function AppProvider({ children }) {
   const [beautyChooseOpen, setBeautyChooseOpen] = useStorageState('ld_beauty_choose_open', true);
   const [healthAdvice, setHealthAdvice] = useStorageState('ld_health_advice', true);
   const [healthHabits, setHealthHabits] = useStorageState('ld_health_habits', true);
-  const [aiNotes, setAiNotes] = useStorageState('ld_ai_notes', []);
-  const [aiJournal, setAiJournal] = useStorageState('ld_ai_journal', []);
 
-  // --- УМНАЯ СИНХРОНИЗАЦИЯ ЗАДАЧ (ШАГ 1.4) ---
-  // Объединяем каталоги для поиска
+  // --- УМНАЯ СИНХРОНИЗАЦИЯ ЗАДАЧ (КАТАЛОГИ + СВОИ ОТЧЕТЫ) ---
   const allCatalogReports = useMemo(() => [...KGD_CATALOG, ...BNS_CATALOG], []);
-
   useEffect(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const today = new Date(); today.setHours(0, 0, 0, 0);
     const todayStr = today.toISOString().split('T')[0];
-    
-    // Окно предупреждения: сегодня + 7 дней
-    const warningDate = new Date(today);
-    warningDate.setDate(today.getDate() + 7);
+    const warningDate = new Date(today); warningDate.setDate(today.getDate() + 7);
     const warningDateStr = warningDate.toISOString().split('T')[0];
-
     const newTasks = [];
 
-    // 1. Обработка отчетов из Каталога (КГД/БНС)
+    // 1. Отчеты из Каталога
     selectedReports.forEach(reportId => {
-      const reportData = allCatalogReports.find(r => r.id === reportId);      if (!reportData) return;
-
-      // Проверяем все дедлайны из каталога на 2026 год
+      const reportData = allCatalogReports.find(r => r.id === reportId);
+      if (!reportData) return;
       reportData.deadlines2026.forEach(deadlineStr => {
-        // Условие: Дедлайн в будущем (или сегодня) И попадает в окно 7 дней
         if (deadlineStr >= todayStr && deadlineStr <= warningDateStr) {
           const taskId = `report-task-${reportId}-${deadlineStr}`;
-          const taskExists = tasks.some(t => t.id === taskId);
-
-          if (!taskExists) {
-            newTasks.push({
-              id: taskId,
-              type: 'report',
-              source: 'catalog',
-              reportId: reportId,
-              title: `📋 ${reportData.name}`,
-              section: 'work',
-              deadline: deadlineStr,
-              priority: 'h',
-              notes: `Срок сдачи: ${deadlineStr}`,
-              doneDate: null,
-              createdAt: new Date().toISOString()
-            });
+          if (!tasks.some(t => t.id === taskId)) {
+            newTasks.push({ id: taskId, type: 'report', source: 'catalog', reportId, title: `📋 ${reportData.name}`, section: 'work', deadline: deadlineStr, priority: 'h', notes: `Срок: ${deadlineStr}`, doneDate: null, createdAt: new Date().toISOString() });
           }
         }
       });
     });
 
-    // 2. Обработка пользовательских отчетов (Custom)
+    // 2. Пользовательские отчеты
     customReportGroups.forEach(group => {
       group.reports.forEach(report => {
-        if (!report.deadline || !report.frequency) return;
-        
-        const deadlineStr = report.deadline;
-
-        if (deadlineStr >= todayStr && deadlineStr <= warningDateStr) {
-           const taskId = `custom-task-${report.id}-${deadlineStr}`;
-           const taskExists = tasks.some(t => t.id === taskId);
-
-           if (!taskExists) {
-             newTasks.push({
-               id: taskId,
-               type: 'report',
-               source: 'custom',
-               reportId: report.id,
-               title: `📋 ${report.name}`,
-               section: 'work',
-               deadline: deadlineStr,
-               priority: 'h',
-               notes: `Срок сдачи: ${deadlineStr} (пер: ${report.frequency})`,               doneDate: null,
-               createdAt: new Date().toISOString()
-             });
+        if (report.deadline && report.deadline >= todayStr && report.deadline <= warningDateStr) {
+           const taskId = `custom-task-${report.id}-${report.deadline}`;
+           if (!tasks.some(t => t.id === taskId)) {
+             newTasks.push({ id: taskId, type: 'report', source: 'custom', reportId: report.id, title: `📋 ${report.name}`, section: 'work', deadline: report.deadline, priority: 'h', notes: `Срок: ${report.deadline}`, doneDate: null, createdAt: new Date().toISOString() });
            }
         }
       });
     });
 
-    if (newTasks.length > 0) {
-      setTasks(prev => [...prev, ...newTasks]);
-    }
+    if (newTasks.length > 0) setTasks(prev => [...prev, ...newTasks]);
   }, [selectedReports, customReportGroups, tasks, setTasks, allCatalogReports]);
 
-  // Собираем всё в один объект
+  // --- Экспорт данных ---
   const value = {
-    profile, setProfile,
-    sections, setSections,
-    tasks, setTasks,
-    journal, setJournal,
-    shopList, setShopList,
-    petLog, setPetLog,
-    trips, setTrips,
-    hobbies, setHobbies,
-    reportGroups, setReportGroups,
-    reports, setReports,
-    workTools, setWorkTools,
-    checkResults, setCheckResults,
-    
-    // Новые функции инструментов
-    addWorkTool,
-    deleteWorkTool,
-    updateWorkToolStep,
-    
-    // Новые функции отчетов
-    customReportGroups,
-    addCustomGroup,
-    deleteGroup,
-    addCustomReport,
-    selectedReports,
-    toggleReport,
-    
-    // UI функции
-    collapsedSections,
-    toggleSection,
-
-    // Остальное (сохраняем для совместимости)
-    mentalMood, setMentalMood,
-    mentalStress, setMentalStress,
-    mentalLog, setMentalLog,
-    mentalRecoveryPlan, setMentalRecoveryPlan,    customPractices, setCustomPractices,
-    aiNotes, setAiNotes,
-    aiJournal, setAiJournal,
-    workOpenWeek, setWorkOpenWeek,
-    workOpenUpcoming, setWorkOpenUpcoming,
-    workOpenGroups, setWorkOpenGroups,
-    workOpenTasks, setWorkOpenTasks,
-    workOpenAdvice, setWorkOpenAdvice,
-    shopAdvice, setShopAdvice,
-    shopListOpen, setShopListOpen,
-    petsAdvice, setPetsAdvice,
-    petsFeed, setPetsFeed,
-    petsCare, setPetsCare,
-    homeAdvice, setHomeAdvice,
-    homeTasks, setHomeTasks,
-    hobbyAdvice, setHobbyAdvice,
-    hobbyList, setHobbyList,
-    travelAdvice, setTravelAdvice,
-    travelTrips, setTravelTrips,
-    journalPrompts, setJournalPrompts,
-    journalHistory, setJournalHistory,
-    carAdvice, setCarAdvice,
-    carTasks, setCarTasks,
-    beautyProcsOpen, setBeautyProcsOpen,
-    beautyTodayOpen, setBeautyTodayOpen,
-    beautyChooseOpen, setBeautyChooseOpen,
-    healthAdvice, setHealthAdvice,
-    healthHabits, setHealthHabits,
+    profile, setProfile, sections, setSections, tasks, setTasks,
+    journal, setJournal, shopList, setShopList, petLog, setPetLog,
+    trips, setTrips, hobbies, setHobbies,
+    reportGroups, setReportGroups, reports, setReports,
+    workTools, setWorkTools, addWorkTool, deleteWorkTool,
+    checkResults, setCheckResults, accountingReports, setAccountingReports,
+    customReportGroups, addCustomGroup, deleteGroup, addCustomReport,
+    selectedReports, toggleReport,
+    collapsedSections, toggleSection,
+    goalsTools: useStorageState('ld_goals_tools', { weightLog: [], habits: [], calories: { goal: 0, log: [] }, workout: null, workoutSetup: null })[0],
+    wheelScores: useStorageState('ld_wheel', {})[0],
+    weekMenu: useStorageState('ld_week_menu', null)[0],    beautyProcs: useStorageState('ld_beauty_procs', {})[0],
+    beautyTopics: useStorageState('ld_beauty_topics', [])[0],
+    feedTimes: useStorageState('ld_feed_times', {})[0],
+    commuteSettings: useStorageState('ld_commute_settings', {})[0],
+    mentalMood, setMentalMood, mentalStress, setMentalStress, mentalLog, setMentalLog,
+    mentalRecoveryPlan, setMentalRecoveryPlan, customPractices, setCustomPractices,
+    aiNotes, setAiNotes, aiJournal, setAiJournal,
+    workOpenWeek, setWorkOpenWeek, workOpenUpcoming, setWorkOpenUpcoming, workOpenGroups, setWorkOpenGroups,
+    workOpenTasks, setWorkOpenTasks, workOpenAdvice, setWorkOpenAdvice,
+    shopAdvice, setShopAdvice, shopListOpen, setShopListOpen,
+    petsAdvice, setPetsAdvice, petsFeed, setPetsFeed, petsCare, setPetsCare,
+    homeAdvice, setHomeAdvice, homeTasks, setHomeTasks,
+    hobbyAdvice, setHobbyAdvice, hobbyList, setHobbyList,
+    travelAdvice, setTravelAdvice, travelTrips, setTravelTrips,
+    journalPrompts, setJournalPrompts, journalHistory, setJournalHistory,
+    carAdvice, setCarAdvice, carTasks, setCarTasks,
+    beautyProcsOpen, setBeautyProcsOpen, beautyTodayOpen, setBeautyTodayOpen,
+    beautyChooseOpen, setBeautyChooseOpen, healthAdvice, setHealthAdvice, healthHabits, setHealthHabits,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
