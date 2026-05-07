@@ -4,13 +4,6 @@ import { STORAGE_KEYS } from '../utils/migration';
 
 const AppContext = createContext(null);
 
-// --- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ДЛЯ РАСЧЁТА ДЕДЛАЙНОВ ---
-/**
- * Рассчитывает следующую дату дедлайна на основе периодичности
- * @param {string} frequency - 'monthly' | 'quarterly' | 'semiannual' | 'annual' | 'as_needed'
- * @param {string} lastDeadline - дата в формате 'YYYY-MM-DD'
- * @returns {string} следующая дата в формате 'YYYY-MM-DD'
- */
 export function calculateNextDeadline(frequency, lastDeadline = new Date().toISOString().split('T')[0]) {
   const date = new Date(lastDeadline);
   switch (frequency) {
@@ -33,11 +26,6 @@ export function calculateNextDeadline(frequency, lastDeadline = new Date().toISO
   return date.toISOString().split('T')[0];
 }
 
-/**
- * Рассчитывает количество дней до дедлайна
- * @param {string} deadline - дата в формате 'YYYY-MM-DD'
- * @returns {number} дней (отрицательное = просрочено)
- */
 export function daysUntilDeadline(deadline) {
   if (!deadline) return Infinity;
   const today = new Date();
@@ -47,7 +35,7 @@ export function daysUntilDeadline(deadline) {
   return Math.ceil((dl - today) / (1000 * 60 * 60 * 24));
 }
 
-// Хук для работы со старыми ключами localStoragefunction useStorageState(key, defaultValue) {
+function useStorageState(key, defaultValue) {
   const [value, setValue] = useState(() => {
     try {
       const item = localStorage.getItem(key);
@@ -59,8 +47,7 @@ export function daysUntilDeadline(deadline) {
 
   useEffect(() => {
     try {
-      localStorage.setItem(key, JSON.stringify(value));
-    } catch (e) {
+      localStorage.setItem(key, JSON.stringify(value));    } catch (e) {
       console.error(`Ошибка сохранения ${key}:`, e);
     }
   }, [key, value]);
@@ -69,8 +56,8 @@ export function daysUntilDeadline(deadline) {
 }
 
 export function AppProvider({ children }) {
-  // --- Основные данные ---
   const [profile, setProfile] = useStorageState('ld_pf_v3', null);
+  
   const [sections, setSections] = useStorageState('ld_sec_v3', [
     { id: "today", emoji: "☀️", name: "Сегодня", vis: true },
     { id: "schedule", emoji: "🗓️", name: "Расписание", vis: true },
@@ -88,6 +75,7 @@ export function AppProvider({ children }) {
     { id: "journal", emoji: "📖", name: "Журнал", vis: true },
     { id: "profile", emoji: "👤", name: "Профиль", vis: true },
   ]);
+
   const [tasks, setTasks] = useStorageState('ld_tasks_v3', []);
   const [journal, setJournal] = useStorageState('ld_journal_v3', {});
   const [shopList, setShopList] = useStorageState('ld_shop_v3', []);
@@ -95,13 +83,12 @@ export function AppProvider({ children }) {
   const [trips, setTrips] = useStorageState('ld_trips_v3', []);
   const [hobbies, setHobbies] = useStorageState('ld_hobbies_v3', []);
 
-  // --- Работа и Отчетность ---
-  const [reportGroups, setReportGroups] = useStorageState('ld_report_groups', []);  const [reports, setReports] = useStorageState('ld_reports_v2', []);
+  const [reportGroups, setReportGroups] = useStorageState('ld_report_groups', []);
+  const [reports, setReports] = useStorageState('ld_reports_v2', []);
   const [workTools, setWorkTools] = useStorageState('ld_work_tools', []);
   const [checkResults, setCheckResults] = useStorageState('ld_deadline_checks', {});
   const [accountingReports, setAccountingReports] = useStorageState('ld_accounting_reports', []);
 
-  // --- Цели и Трекеры ---
   const [goalsTools, setGoalsTools] = useStorageState('ld_goals_tools', {
     weightLog: [],
     habits: [],
@@ -110,28 +97,23 @@ export function AppProvider({ children }) {
     workoutSetup: null
   });
   const [wheelScores, setWheelScores] = useStorageState('ld_wheel', {});
-
-  // --- Здоровье, Красота и Быт ---
   const [weekMenu, setWeekMenu] = useStorageState('ld_week_menu', null);
   const [beautyProcs, setBeautyProcs] = useStorageState('ld_beauty_procs', {});
   const [beautyTopics, setBeautyTopics] = useStorageState('ld_beauty_topics', []);
   const [feedTimes, setFeedTimes] = useStorageState('ld_feed_times', {});
   const [commuteSettings, setCommuteSettings] = useStorageState('ld_commute_settings', {});
 
-  // --- Ментальное здоровье ---
   const [mentalMood, setMentalMood] = useStorageState('mental_mood', 3);
   const [mentalStress, setMentalStress] = useStorageState('mental_stress', 5);
   const [mentalLog, setMentalLog] = useStorageState('mental_log', []);
   const [mentalRecoveryPlan, setMentalRecoveryPlan] = useStorageState('mental_recovery_plan', '');
   const [customPractices, setCustomPractices] = useStorageState('custom_practices', []);
 
-  // --- AI Заметки и Журнал ---
   const [aiNotes, setAiNotes] = useStorageState('ld_ai_notes', []);
   const [aiJournal, setAiJournal] = useStorageState('ld_ai_journal', []);
 
-  // --- UI Состояния ---
   const [workOpenWeek, setWorkOpenWeek] = useStorageState('ld_work_open_week', true);
-  const [workOpenUpcoming, setWorkOpenUpcoming] = useStorageState('ld_work_open_upcoming', true); // ✅ ИСПРАВЛЕНО
+  const [workOpenUpcoming, setWorkOpenUpcoming] = useStorageState('ld_work_open_upcoming', true);
   const [workOpenGroups, setWorkOpenGroups] = useStorageState('ld_work_open_groups', true);
   const [workOpenTasks, setWorkOpenTasks] = useStorageState('ld_work_open_tasks', true);
   const [workOpenAdvice, setWorkOpenAdvice] = useStorageState('ld_work_open_advice', true);
@@ -145,7 +127,8 @@ export function AppProvider({ children }) {
   const [hobbyAdvice, setHobbyAdvice] = useStorageState('ld_hobby_advice', true);
   const [hobbyList, setHobbyList] = useStorageState('ld_hobby_list', true);
   const [travelAdvice, setTravelAdvice] = useStorageState('ld_travel_advice', true);
-  const [travelTrips, setTravelTrips] = useStorageState('ld_travel_trips', true);  const [journalPrompts, setJournalPrompts] = useStorageState('ld_journal_prompts', true);
+  const [travelTrips, setTravelTrips] = useStorageState('ld_travel_trips', true);
+  const [journalPrompts, setJournalPrompts] = useStorageState('ld_journal_prompts', true);
   const [journalHistory, setJournalHistory] = useStorageState('ld_journal_history', true);
   const [carAdvice, setCarAdvice] = useStorageState('ld_car_advice', true);
   const [carTasks, setCarTasks] = useStorageState('ld_car_tasks', true);
@@ -155,7 +138,6 @@ export function AppProvider({ children }) {
   const [healthAdvice, setHealthAdvice] = useStorageState('ld_health_advice', true);
   const [healthHabits, setHealthHabits] = useStorageState('ld_health_habits', true);
 
-  // ✅ ЛОГИКА: Синхронизация отчетов с задачами
   const syncReportsToTasks = useCallback(() => {
     const today = new Date().toISOString().split('T')[0];
     const newTasks = [];
@@ -163,8 +145,7 @@ export function AppProvider({ children }) {
     accountingReports.forEach(report => {
       if (!report.nextDeadline || report.status === 'done') return;
       const daysLeft = daysUntilDeadline(report.nextDeadline);
-      
-      if (daysLeft <= 5 && daysLeft >= 0) {
+            if (daysLeft <= 5 && daysLeft >= 0) {
         const taskExists = tasks.some(t =>
           t.type === 'report' && t.reportId === report.id && t.doneDate !== today
         );
@@ -194,7 +175,8 @@ export function AppProvider({ children }) {
             : r
         ));
       }
-    });    
+    });
+    
     if (newTasks.length > 0) {
       setTasks(prev => {
         const filtered = prev.filter(t => !(t.type === 'report' && t.doneDate && t.doneDate < today));
@@ -209,12 +191,10 @@ export function AppProvider({ children }) {
     }
   }, [accountingReports, syncReportsToTasks]);
 
-  // Собираем всё в один объект
   const value = {
     profile, setProfile,
     sections, setSections,
-    tasks, setTasks,
-    journal, setJournal,
+    tasks, setTasks,    journal, setJournal,
     shopList, setShopList,
     petLog, setPetLog,
     trips, setTrips,
@@ -243,7 +223,8 @@ export function AppProvider({ children }) {
     workOpenGroups, setWorkOpenGroups,
     workOpenTasks, setWorkOpenTasks,
     workOpenAdvice, setWorkOpenAdvice,
-    shopAdvice, setShopAdvice,    shopListOpen, setShopListOpen,
+    shopAdvice, setShopAdvice,
+    shopListOpen, setShopListOpen,
     petsAdvice, setPetsAdvice,
     petsFeed, setPetsFeed,
     petsCare, setPetsCare,
@@ -263,7 +244,6 @@ export function AppProvider({ children }) {
     healthAdvice, setHealthAdvice,
     healthHabits, setHealthHabits,
   };
-
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }
 
