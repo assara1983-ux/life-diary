@@ -1,51 +1,50 @@
-// api/send-push.js — безопасная заглушка
-// Возвращает мягкий ответ, чтобы приложение не падало
+// api/send-push.js
+// Отправка Web Push уведомлений
+// Использует переменные окружения из Vercel Dashboard
 
 export default async function handler(req, res) {
-  // CORS
+  // Разрешаем кросс-доменные запросы (CORS)
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  
+
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
-    const { subscription, title, body, tag } = req.body;
-    
-    // Если нет данных — мягко отвечаем
-    if (!subscription || !title || !body) {
-      return res.status(200).json({ ok: false, message: 'Missing data, push skipped' });
-    }
-
-    // Проверяем ключи
-    const publicKey = process.env.VAPID_PUBLIC_KEY;
+    // ⚠️ ВАЖНО: Имена переменных должны точно совпадать с теми, что в Vercel!
+    const publicKey = process.env.VITE_VAPID_PUBLIC_KEY; 
     const privateKey = process.env.VAPID_PRIVATE_KEY;
-    
+    const subject = process.env.VAPID_SUBJECT || 'mailto:admin@lifediary.app';
+
+    const { subscription, title, body, tag } = req.body;
+
+    // Если нет ключей или данных — не падаем, а возвращаем мягкий ответ
     if (!publicKey || !privateKey) {
-      console.log('VAPID keys not configured — push notifications disabled');
-      return res.status(200).json({ ok: false, message: 'Push not configured' });
+      return res.status(200).json({ ok: false, message: 'VAPID keys not configured' });
+    }
+    if (!subscription || !title || !body) {
+      return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    // Если ключи есть — пробуем отправить (с защитой)
-    try {
-      const webpush = await import('web-push').catch(() => null);
-      if (!webpush) {
-        console.log('web-push package not available');
-        return res.status(200).json({ ok: false, message: 'web-push not installed' });
-      }
-      
-      webpush.setVapidDetails('mailto:admin@lifediary.app', publicKey, privateKey);
-      await webpush.sendNotification(subscription, JSON.stringify({ title, body, tag }));
-      
-      return res.status(200).json({ ok: true, message: 'Push sent' });
-    } catch (e) {
-      console.error('Push send error:', e.message);
-      // Не падаем критично
-      return res.status(200).json({ ok: false, message: 'Push failed: ' + e.message });
+    // Динамический импорт web-push для безопасности
+    const webpush = await import('web-push').catch(() => null);
+    if (!webpush) {
+      return res.status(200).json({ ok: false, message: 'web-push module missing' });
     }
-  } catch (e) {
-    console.error('send-push handler error:', e);
-    return res.status(200).json({ ok: false, message: 'Handler error' });
+
+    webpush.setVapidDetails(subject, publicKey, privateKey);
+
+    // Отправка
+    await webpush.sendNotification(subscription, JSON.stringify({ title, body, tag }));
+
+    return res.status(200).json({ success: true, message: 'Push sent' });
+  } catch (error) {
+    console.error('Push error:', error);
+    // Если подписка устарела (410)
+    if (error.statusCode === 410) {
+      return res.status(410).json({ error: 'Subscription expired' });
+    }
+    return res.status(500).json({ error: error.message });
   }
 }
