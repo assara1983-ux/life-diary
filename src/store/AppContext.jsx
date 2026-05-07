@@ -1,6 +1,8 @@
 // src/store/AppContext.jsx
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { STORAGE_KEYS } from '../utils/migration';
+// ✅ ШАГ 2.3: Импорт каталога отчетов
+import { KGD_CATALOG, BNS_CATALOG } from '../data/reportsCatalog';
 
 const AppContext = createContext(null);
 
@@ -45,9 +47,9 @@ export function AppProvider({ children }) {
   const [profile, setProfile] = useStorageState('ld_pf_v3', null);
   const [sections, setSections] = useStorageState('ld_sec_v3', [
     { id: "today", emoji: "☀️", name: "Сегодня", vis: true },
-    { id: "schedule", emoji: "🗓️", name: "Расписание", vis: true },
-    { id: "work", emoji: "💼", name: "Работа", vis: true },
-    { id: "home", emoji: "🏡", name: "Дом", vis: true },    { id: "shopping", emoji: "🛒", name: "Покупки", vis: true },
+    { id: "schedule", emoji: "🗓️", name: "Расписание", vis: true },    { id: "work", emoji: "💼", name: "Работа", vis: true },
+    { id: "home", emoji: "🏡", name: "Дом", vis: true },
+    { id: "shopping", emoji: "🛒", name: "Покупки", vis: true },
     { id: "pets", emoji: "🐾", name: "Питомцы", vis: true },
     { id: "car", emoji: "🚗", name: "Авто", vis: true },
     { id: "health", emoji: "🌿", name: "Здоровье", vis: true },
@@ -94,9 +96,9 @@ export function AppProvider({ children }) {
   const [wheelScores, setWheelScores] = useStorageState('ld_wheel', {});
 
   // --- Здоровье, Красота и Быт ---
-  const [weekMenu, setWeekMenu] = useStorageState('ld_week_menu', null);
-  const [beautyProcs, setBeautyProcs] = useStorageState('ld_beauty_procs', {});
-  const [beautyTopics, setBeautyTopics] = useStorageState('ld_beauty_topics', []);  const [feedTimes, setFeedTimes] = useStorageState('ld_feed_times', {});
+  const [weekMenu, setWeekMenu] = useStorageState('ld_week_menu', null);  const [beautyProcs, setBeautyProcs] = useStorageState('ld_beauty_procs', {});
+  const [beautyTopics, setBeautyTopics] = useStorageState('ld_beauty_topics', []);
+  const [feedTimes, setFeedTimes] = useStorageState('ld_feed_times', {});
   const [commuteSettings, setCommuteSettings] = useStorageState('ld_commute_settings', {});
 
   // --- Ментальное здоровье ---
@@ -140,36 +142,59 @@ export function AppProvider({ children }) {
   const [healthAdvice, setHealthAdvice] = useStorageState('ld_health_advice', true);
   const [healthHabits, setHealthHabits] = useStorageState('ld_health_habits', true);
 
-  // Логика синхронизации отчетов с задачами (пока работает на основе accountingReports)
-  const syncReportsToTasks = useCallback(() => {
-    const today = new Date().toISOString().split('T')[0];
+  // --- ШАГ 2.3: ЛОГИКА СИНХРОНИЗАЦИИ ОТЧЕТОВ В ЗАДАЧИ ---
+  // Объединяем каталоги для поиска
+  const allReports = [...KGD_CATALOG, ...BNS_CATALOG];
+  useEffect(() => {
+    if (selectedReports.length === 0) return;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayStr = today.toISOString().split('T')[0];
+    
+    // Окно предупреждения: сегодня + 7 дней
+    const warningDate = new Date(today);
+    warningDate.setDate(today.getDate() + 7);
+    const warningDateStr = warningDate.toISOString().split('T')[0];
+
     const newTasks = [];
-    accountingReports.forEach(report => {
-      if (!report.nextDeadline || report.status === 'done') return;      const daysLeft = daysUntilDeadline(report.nextDeadline);
-      if (daysLeft <= 5 && daysLeft >= 0) {
-        const taskExists = tasks.some(t => t.type === 'report' && t.reportId === report.id && t.doneDate !== today);
-        if (!taskExists) {
-          newTasks.push({
-            id: `report-${report.id}-${report.nextDeadline}`,
-            type: 'report', reportId: report.id,
-            title: `📋 ${report.name}`, section: 'work',
-            deadline: report.nextDeadline,
-            priority: daysLeft <= 1 ? 'h' : daysLeft <= 3 ? 'm' : 'l',
-            notes: `Срок сдачи: ${report.deadline}`, freq: 'once',
-            lastDone: '', doneDate: null, createdAt: new Date().toISOString()
-          });
+
+    selectedReports.forEach(reportId => {
+      const reportData = allReports.find(r => r.id === reportId);
+      if (!reportData) return;
+
+      // Проверяем все дедлайны из каталога
+      reportData.deadlines2026.forEach(deadlineStr => {
+        // Условие: Дедлайн в будущем (или сегодня) И попадает в окно 7 дней
+        if (deadlineStr >= todayStr && deadlineStr <= warningDateStr) {
+          
+          const taskId = `report-task-${reportId}-${deadlineStr}`;
+          const taskExists = tasks.some(t => t.id === taskId);
+
+          if (!taskExists) {
+            newTasks.push({
+              id: taskId,
+              type: 'report',
+              reportId: reportId,
+              title: `📋 ${reportData.name}`,
+              section: 'work',
+              deadline: deadlineStr,
+              priority: 'h', // Высокий приоритет для отчетности
+              notes: `Срок сдачи: ${deadlineStr}`,
+              freq: 'once',
+              lastDone: '',
+              doneDate: null,
+              createdAt: new Date().toISOString()
+            });
+          }
         }
-      }
+      });
     });
+
     if (newTasks.length > 0) {
       setTasks(prev => [...prev, ...newTasks]);
     }
-  }, [accountingReports, tasks, setTasks]);
-
-  useEffect(() => {
-    if (accountingReports.length > 0) syncReportsToTasks();
-  }, [accountingReports, syncReportsToTasks]);
-
+  }, [selectedReports, tasks, setTasks]);
   // Собираем всё в один объект
   const value = {
     profile, setProfile,
@@ -194,7 +219,8 @@ export function AppProvider({ children }) {
     commuteSettings, setCommuteSettings,
     mentalMood, setMentalMood,
     mentalStress, setMentalStress,
-    mentalLog, setMentalLog,    mentalRecoveryPlan, setMentalRecoveryPlan,
+    mentalLog, setMentalLog,
+    mentalRecoveryPlan, setMentalRecoveryPlan,
     customPractices, setCustomPractices,
     aiNotes, setAiNotes,
     aiJournal, setAiJournal,
@@ -217,13 +243,12 @@ export function AppProvider({ children }) {
     journalPrompts, setJournalPrompts,
     journalHistory, setJournalHistory,
     carAdvice, setCarAdvice,
-    carTasks, setCarTasks,
-    beautyProcsOpen, setBeautyProcsOpen,
+    carTasks, setCarTasks,    beautyProcsOpen, setBeautyProcsOpen,
     beautyTodayOpen, setBeautyTodayOpen,
     beautyChooseOpen, setBeautyChooseOpen,
     healthAdvice, setHealthAdvice,
     healthHabits, setHealthHabits,
-    // ✅ ШАГ 2.2: Экспорт новых данных и функции
+    // ✅ ШАГ 2.2 & 2.3: Экспорт новых данных и функции
     selectedReports,
     toggleReport,
   };
