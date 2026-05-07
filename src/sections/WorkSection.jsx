@@ -1,13 +1,16 @@
 // src/sections/WorkSection.jsx
 import { useState, useMemo } from 'react';
 import { useApp } from '../store/AppContext';
+// Импортируем каталоги форм
 import { KGD_CATALOG, BNS_CATALOG } from '../data/reportsCatalog';
+// Компоненты
 import { AiBox } from '../components/AiBox';
 import { TaskModal } from '../components/TaskModal';
 import { T } from '../utils/theme';
 
 // --- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ---
 function toDay(d = new Date()) { return d.toISOString().split('T')[0]; }
+
 function freqLabel(f) {
   if (!f || f === 'once') return 'разово';
   if (f === 'daily') return 'ежедневно';
@@ -21,7 +24,7 @@ function freqLabel(f) {
   return f;
 }
 
-// --- КОМПОНЕНТ АККОРДЕОНА (запоминает состояние) ---
+// --- КОМПОНЕНТ АККОРДЕОНА (состояние хранения в Context) ---
 const Accordion = ({ id, title, icon, count, children, onAdd }) => {
   const { collapsedSections, toggleSection } = useApp();
   const isOpen = !collapsedSections[id];
@@ -44,10 +47,10 @@ const Accordion = ({ id, title, icon, count, children, onAdd }) => {
         <div style={{ padding: '10px 14px' }}>
           {children}
           {onAdd && (
-            <button onClick={(e) => { e.stopPropagation(); onAdd(); }} 
-              style={{ marginTop: 8, width: '100%', padding: '8px', borderRadius: 8, border: `1px dashed ${T.accent}`, background: 'transparent', color: T.accent, fontSize: 13, cursor: 'pointer', fontWeight: 500 }}>
+            <button onClick={(e) => { e.stopPropagation(); onAdd(); }}               style={{ marginTop: 8, width: '100%', padding: '8px', borderRadius: 8, border: `1px dashed ${T.accent}`, background: 'transparent', color: T.accent, fontSize: 13, cursor: 'pointer', fontWeight: 500 }}>
               ✚ Добавить форму
-            </button>          )}
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -59,8 +62,7 @@ export function WorkSection() {
     profile, tasks, setTasks, 
     selectedReports, toggleReport, 
     customReportGroups, addCustomGroup, addCustomReport,
-    workTools, addWorkTool,
-    collapsedSections, toggleSection 
+    workTools, addWorkTool
   } = useApp();
 
   const [workTab, setWorkTab] = useState('reports');
@@ -73,6 +75,11 @@ export function WorkSection() {
   
   const [showCustomModal, setShowCustomModal] = useState(false);
   const [customForm, setCustomForm] = useState({ name: '', frequency: 'quarterly', deadline: '' });
+
+  // AI состояние
+  const [aiRecommendations, setAiRecommendations] = useState([]);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [expandedRecId, setExpandedRecId] = useState(null);
 
   const today = toDay();
   const kb = JSON.stringify(profile);
@@ -88,14 +95,81 @@ export function WorkSection() {
   const selectedKgd = useMemo(() => KGD_CATALOG.filter(r => selectedReports.includes(r.id)), [selectedReports]);
   const selectedBns = useMemo(() => BNS_CATALOG.filter(r => selectedReports.includes(r.id)), [selectedReports]);
 
-  // Создание инструмента из AI-рекомендации
-  const handleCreateToolFromAI = (toolName, description) => {
-    addWorkTool({
-      title: toolName,
-      description: description || 'Инструмент создан по рекомендации AI',
-      steps: ['Шаг 1: Подготовка данных', 'Шаг 2: Проверка корректности', 'Шаг 3: Отправка / Сохранение']
-    });
+  // --- ЛОГИКА AI ---
+  const handleGetAI = async () => {    setAiLoading(true);
+    setAiRecommendations([]);
+    try {
+      // Системный промпт для строгого формата JSON
+      const systemPrompt = `Ты строгий AI-консультант для бухгалтера/ИП в РК.
+ПРАВИЛА ОТВЕТА:
+1. Отвечай ТОЛЬКО валидным JSON массивом объектов. Никакого текста до или после JSON.
+2. Формат каждого объекта строго: 
+   {
+     "id": "rec_1",
+     "title": "Краткое название метода/инструмента",
+     "summary": "Суть и конкретная польза (1-2 предложения)",
+     "details": "Подробное пошаговое описание метода",
+     "source": "Нормативный акт РК / ТКМ-справочник / Официальный источник",
+     "tool": {
+       "title": "Готовое название инструмента",
+       "description": "Краткое назначение",
+       "steps": ["Шаг 1", "Шаг 2", "Шаг 3"]
+     }
+   }
+3. Уровень фантазии: минимальный. Только проверенные методы, актуальные на 2026 год.
+4. Без воды, только четкие инструкции. Если данных недостаточно — верни пустой массив [].`;
+
+      const prof = profile?.profession || 'Бухгалтер';
+      const userPrompt = `Профиль: ${prof}. Дай 3 конкретные рекомендации по оптимизации работы с отчетностью или автоматизации рутины.`;
+
+      const res = await fetch('/api/ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ system: systemPrompt, user: userPrompt, maxTokens: 2048 })
+      });
+
+      const data = await res.json();
+      if (data?.text) {
+        let clean = data.text.replace(/```json/g, '').replace(/```/g, '').trim();
+        const parsed = JSON.parse(clean);
+        if (Array.isArray(parsed)) {
+          setAiRecommendations(parsed);
+        } else {
+          throw new Error('Неверная структура');
+        }
+      }
+    } catch (e) {
+      console.error(e);
+      // Fallback если AI не вернул JSON
+      setAiRecommendations([
+        {
+          id: 'fallback-1',
+          title: 'Пример рекомендации',
+          summary: 'Используйте шаблоны для однотипных отчетов.',          details: 'Создайте папку с шаблонами Excel, чтобы не заполнять форму заново.',
+          source: 'Опыт специалистов',
+          tool: {
+            title: 'Шаблоны отчетов',
+            description: 'Папка с готовыми формами Excel',
+            steps: ['Создать папку "Шаблоны"', 'Скачать формы с e-Salyq', 'Сохранить локально']
+          }
+        }
+      ]);
+    } finally {
+      setAiLoading(false);
+    }
   };
+
+  const handleCreateToolFromAI = (rec) => {
+    if (rec.tool) {
+      addWorkTool({
+        title: rec.tool.title,
+        description: rec.tool.description || rec.summary,
+        steps: rec.tool.steps || ['Шаг 1']
+      });
+      setExpandedRecId(null);
+    }
+  };
+
   return (
     <div>
       {/* Шапка */}
@@ -120,8 +194,7 @@ export function WorkSection() {
           {/* 1. Мои отчёты (Пользовательские) */}
           <Accordion id="custom-reports" title="Мои отчёты" icon="📝" count={customReportGroups.length} onAdd={() => setShowCustomModal(true)}>
             {customReportGroups.length === 0 ? (
-              <div style={{ fontSize: 12, color: T.text3, textAlign: 'center', padding: '10px 0' }}>Список пуст. Создайте свою группу отчетов.</div>
-            ) : customReportGroups.map(group => (
+              <div style={{ fontSize: 12, color: T.text3, textAlign: 'center', padding: '10px 0' }}>Список пуст. Создайте свою группу отчетов.</div>            ) : customReportGroups.map(group => (
               <div key={group.id} style={{ marginBottom: 10 }}>
                 <div style={{ fontSize: 13, fontWeight: 600, color: T.text0, marginBottom: 4 }}>📂 {group.name}</div>
                 {group.reports.map(r => (
@@ -145,7 +218,8 @@ export function WorkSection() {
                 </div>
                 <button onClick={() => toggleReport(r.id)} style={{ color: T.error, background: 'none', border: 'none', cursor: 'pointer', fontSize: 16 }}>✕</button>
               </div>
-            ))}          </Accordion>
+            ))}
+          </Accordion>
 
           {/* 3. БНС (Только выбранные) */}
           <Accordion id="bns-reports" title="📊 БНС" icon="📊" count={selectedBns.length} onAdd={() => { setCatalogTab('bns'); setShowCatalog(true); }}>
@@ -169,8 +243,7 @@ export function WorkSection() {
               <span style={{ flex: 1, fontSize: 14, fontFamily: "'Crimson Pro',serif", color: T.teal, fontWeight: 500 }}>Обычные задачи</span>
               <button style={{ fontSize: 12, padding: '2px 8px', color: T.teal, background: 'none', border: 'none', cursor: 'pointer' }}>+</button>
             </div>
-            <div style={{ background: 'rgba(255,255,255,0.01)', border: `1px solid ${T.teal}22`, borderTop: 'none', borderRadius: '0 0 12px 12px', padding: '4px 0' }}>
-              {tasks.filter(t => t.section === 'work' && t.type !== 'report').slice(0, 5).map(task => (
+            <div style={{ background: 'rgba(255,255,255,0.01)', border: `1px solid ${T.teal}22`, borderTop: 'none', borderRadius: '0 0 12px 12px', padding: '4px 0' }}>              {tasks.filter(t => t.section === 'work' && t.type !== 'report').slice(0, 5).map(task => (
                 <div key={task.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 14px', borderBottom: `1px solid ${T.border}` }}>
                   <div style={{ width: 16, height: 16, borderRadius: 4, border: `1px solid ${task.doneDate === today ? T.teal : T.text3}`, background: task.doneDate === today ? T.teal : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#000' }}>
                     {task.doneDate === today ? '✓' : ''}
@@ -188,17 +261,61 @@ export function WorkSection() {
               <span style={{ fontSize: 16 }}>💡</span>
               <span style={{ flex: 1, fontSize: 14, fontFamily: "'Crimson Pro',serif", color: T.gold, fontWeight: 500 }}>AI Рекомендации</span>
             </div>
-            <div style={{ border: `1px solid ${T.gold}22`, borderTop: 'none', borderRadius: '0 0 12px 12px', overflow: 'hidden', padding: 14 }}>
-              <p style={{ fontSize: 13, color: T.text1, margin: '0 0 12px' }}>
-                Получите рекомендации по оптимизации работы. Понравившуюся рекомендацию можно превратить в инструмент.
-              </p>
-              <AiBox 
-                kb={kb} 
-                prompt="Дай 3 конкретных рекомендации для бухгалтера по оптимизации работы с отчетностью. Формат: JSON массив объектов {title, summary, details}."                 label="Получить рекомендации"
-                btnText="Спросить AI"
-                placeholder="Генерирую..."
-                onResult={() => handleCreateToolFromAI("Новый инструмент AI", "Создан на основе рекомендации")}
-              />
+            <div style={{ border: `1px solid ${T.gold}22`, borderTop: 'none', borderRadius: '0 0 12px 12px', overflow: 'hidden', background: 'rgba(255,255,255,0.01)' }}>
+              <div style={{ padding: 14 }}>
+                <p style={{ fontSize: 13, color: T.text1, margin: '0 0 12px', lineHeight: 1.5 }}>
+                  Получите рекомендации по оптимизации работы. Понравившуюся можно сохранить как готовый инструмент.
+                </p>
+                
+                <button 
+                  onClick={handleGetAI} 
+                  disabled={aiLoading}
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: 'none', background: aiLoading ? T.text3 : T.gold, color: '#000', fontWeight: 600, cursor: aiLoading ? 'wait' : 'pointer', transition: 'all 0.2s' }}
+                >
+                  {aiLoading ? '⏳ Генерация...' : '✨ Получить AI-рекомендации'}
+                </button>
+              </div>
+
+              {aiRecommendations.length > 0 && (
+                <div style={{ borderTop: `1px solid ${T.border}` }}>
+                  {aiRecommendations.map(rec => {
+                    const isExpanded = expandedRecId === rec.id;
+                    return (
+                      <div key={rec.id} style={{ borderBottom: `1px solid ${T.border}` }}>
+                        <div 
+                          onClick={() => setExpandedRecId(isExpanded ? null : rec.id)}
+                          style={{ padding: '12px 14px', cursor: 'pointer', background: isExpanded ? 'rgba(200,164,90,0.05)' : 'transparent', transition: 'background 0.2s' }}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontSize: 14, fontWeight: 600, color: T.text0, marginBottom: 4 }}>{rec.title}</div>
+                              <div style={{ fontSize: 12, color: T.text2, lineHeight: 1.4 }}>{rec.summary}</div>
+                            </div>
+                            <span style={{ fontSize: 12, color: T.text3, flexShrink: 0 }}>{isExpanded ? '▲' : '▼'}</span>
+                          </div>                        </div>
+
+                        {isExpanded && (
+                          <div style={{ padding: '0 14px 14px', fontSize: 13, color: T.text1, lineHeight: 1.5 }}>
+                            <div style={{ marginBottom: 8, padding: 8, borderRadius: 6, background: 'rgba(255,255,255,0.03)', borderLeft: `2px solid ${T.accent}` }}>
+                              <strong>📖 Подробно:</strong> {rec.details}
+                            </div>
+                            {rec.source && <div style={{ fontSize: 11, color: T.text3, marginBottom: 10, fontStyle: 'italic' }}>📚 Источник: {rec.source}</div>}
+                            
+                            {rec.tool && (
+                              <button 
+                                onClick={() => handleCreateToolFromAI(rec)}
+                                style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: `1px solid ${T.accent}`, background: 'transparent', color: T.accent, fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                              >
+                                ✦ Создать инструмент: {rec.tool.title}
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -225,7 +342,6 @@ export function WorkSection() {
       )}
 
       {/* --- МОДАЛЬНЫЕ ОКНА --- */}
-
       {/* 1. Модалка Каталога (Выбор КГД/БНС) */}
       {showCatalog && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={() => setShowCatalog(false)}>
@@ -243,7 +359,8 @@ export function WorkSection() {
 
             {/* Поиск */}
             <input 
-              placeholder="Поиск..."               value={searchQuery}
+              placeholder="Поиск..." 
+              value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               style={{ width: '100%', padding: 10, marginBottom: 12, borderRadius: 8, border: `1px solid ${T.border}`, background: 'rgba(255,255,255,0.05)', color: T.text0 }}
             />
@@ -273,8 +390,7 @@ export function WorkSection() {
       {showCustomModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={() => setShowCustomModal(false)}>
           <div style={{ background: T.bg, width: '100%', maxWidth: 400, borderRadius: 16, padding: 20 }} onClick={e => e.stopPropagation()}>
-            <h3 style={{ margin: '0 0 16px', color: T.text0 }}>Добавить отчет</h3>
-            <input placeholder="Название формы" value={customForm.name} onChange={e => setCustomForm(p => ({...p, name: e.target.value}))} style={{ width: '100%', padding: 10, marginBottom: 10, borderRadius: 8, border: `1px solid ${T.border}`, background: 'rgba(255,255,255,0.05)', color: T.text0 }} />
+            <h3 style={{ margin: '0 0 16px', color: T.text0 }}>Добавить отчет</h3>            <input placeholder="Название формы" value={customForm.name} onChange={e => setCustomForm(p => ({...p, name: e.target.value}))} style={{ width: '100%', padding: 10, marginBottom: 10, borderRadius: 8, border: `1px solid ${T.border}`, background: 'rgba(255,255,255,0.05)', color: T.text0 }} />
             <select value={customForm.frequency} onChange={e => setCustomForm(p => ({...p, frequency: e.target.value}))} style={{ width: '100%', padding: 10, marginBottom: 10, borderRadius: 8, border: `1px solid ${T.border}`, background: 'rgba(255,255,255,0.05)', color: T.text0 }}>
               <option value="monthly">Ежемесячно</option>
               <option value="quarterly">Ежеквартально</option>
@@ -292,7 +408,8 @@ export function WorkSection() {
                 setCustomForm({ name: '', frequency: 'quarterly', deadline: '' });
               }} style={{ flex: 1, padding: 10, borderRadius: 8, border: 'none', background: T.accent, color: '#000', fontWeight: 600 }}>Сохранить</button>
             </div>
-          </div>        </div>
+          </div>
+        </div>
       )}
 
       {/* 3. Модалка задач */}
