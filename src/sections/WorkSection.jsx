@@ -1,10 +1,7 @@
 // src/sections/WorkSection.jsx
 import { useState, useMemo } from 'react';
 import { useApp } from '../store/AppContext';
-// Импортируем каталоги форм
 import { KGD_CATALOG, BNS_CATALOG } from '../data/reportsCatalog';
-// Компоненты
-import { AiBox } from '../components/AiBox';
 import { TaskModal } from '../components/TaskModal';
 import { T } from '../utils/theme';
 
@@ -24,7 +21,7 @@ function freqLabel(f) {
   return f;
 }
 
-// --- КОМПОНЕНТ АККОРДЕОНА (состояние хранения в Context) ---
+// --- КОМПОНЕНТ АККОРДЕОНА ---
 const Accordion = ({ id, title, icon, count, children, onAdd }) => {
   const { collapsedSections, toggleSection } = useApp();
   const isOpen = !collapsedSections[id];
@@ -47,10 +44,10 @@ const Accordion = ({ id, title, icon, count, children, onAdd }) => {
         <div style={{ padding: '10px 14px' }}>
           {children}
           {onAdd && (
-            <button onClick={(e) => { e.stopPropagation(); onAdd(); }}               style={{ marginTop: 8, width: '100%', padding: '8px', borderRadius: 8, border: `1px dashed ${T.accent}`, background: 'transparent', color: T.accent, fontSize: 13, cursor: 'pointer', fontWeight: 500 }}>
+            <button onClick={(e) => { e.stopPropagation(); onAdd(); }} 
+              style={{ marginTop: 8, width: '100%', padding: '8px', borderRadius: 8, border: `1px dashed ${T.accent}`, background: 'transparent', color: T.accent, fontSize: 13, cursor: 'pointer', fontWeight: 500 }}>
               ✚ Добавить форму
-            </button>
-          )}
+            </button>          )}
         </div>
       )}
     </div>
@@ -62,7 +59,9 @@ export function WorkSection() {
     profile, tasks, setTasks, 
     selectedReports, toggleReport, 
     customReportGroups, addCustomGroup, addCustomReport,
-    workTools, addWorkTool
+    workTools, addWorkTool, updateWorkToolStep,
+    // ✅ AI рекомендации теперь из контекста (сохраняются)
+    aiRecommendations, setAiRecommendations
   } = useApp();
 
   const [workTab, setWorkTab] = useState('reports');
@@ -70,14 +69,12 @@ export function WorkSection() {
   
   // Состояния модальных окон
   const [showCatalog, setShowCatalog] = useState(false);
-  const [catalogTab, setCatalogTab] = useState('kgd'); // 'kgd' | 'bns'
+  const [catalogTab, setCatalogTab] = useState('kgd');
   const [searchQuery, setSearchQuery] = useState('');
   
   const [showCustomModal, setShowCustomModal] = useState(false);
   const [customForm, setCustomForm] = useState({ name: '', frequency: 'quarterly', deadline: '' });
 
-  // AI состояние
-  const [aiRecommendations, setAiRecommendations] = useState([]);
   const [aiLoading, setAiLoading] = useState(false);
   const [expandedRecId, setExpandedRecId] = useState(null);
 
@@ -91,36 +88,32 @@ export function WorkSection() {
     r.id.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Фильтруем выбранные отчеты для отображения в списках
   const selectedKgd = useMemo(() => KGD_CATALOG.filter(r => selectedReports.includes(r.id)), [selectedReports]);
   const selectedBns = useMemo(() => BNS_CATALOG.filter(r => selectedReports.includes(r.id)), [selectedReports]);
 
-  // --- ЛОГИКА AI ---
-  const handleGetAI = async () => {    setAiLoading(true);
-    setAiRecommendations([]);
+  // --- ЛОГИКА AI (ОБНОВЛЕНА) ---
+  const handleGetAI = async () => {
+    setAiLoading(true);
+    setAiRecommendations([]); // Очищаем старые перед новым запросом
     try {
-      // Системный промпт для строгого формата JSON
-      const systemPrompt = `Ты строгий AI-консультант для бухгалтера/ИП в РК.
+      // ✅ Расширенный системный промпт      const systemPrompt = `Ты строгий AI-консультант для бухгалтера/ИП в РК.
 ПРАВИЛА ОТВЕТА:
 1. Отвечай ТОЛЬКО валидным JSON массивом объектов. Никакого текста до или после JSON.
 2. Формат каждого объекта строго: 
    {
      "id": "rec_1",
-     "title": "Краткое название метода/инструмента",
-     "summary": "Суть и конкретная польза (1-2 предложения)",
-     "details": "Подробное пошаговое описание метода",
-     "source": "Нормативный акт РК / ТКМ-справочник / Официальный источник",
-     "tool": {
-       "title": "Готовое название инструмента",
-       "description": "Краткое назначение",
-       "steps": ["Шаг 1", "Шаг 2", "Шаг 3"]
-     }
+     "title": "Краткое название",
+     "summary": "Суть и польза (1-2 предложения)",
+     "details": "Подробное описание",
+     "source": "Источник (НК РК, ТКМ, официальный сайт)",
+     "tool": { "title": "Название инструмента", "description": "Назначение", "steps": ["Шаг 1", "Шаг 2"] }
    }
-3. Уровень фантазии: минимальный. Только проверенные методы, актуальные на 2026 год.
-4. Без воды, только четкие инструкции. Если данных недостаточно — верни пустой массив [].`;
+3. ТЕМЫ: Бухгалтерия (отчетность, налоги, документы) + ЛИЧНАЯ ЭФФЕКТИВНОСТЬ (тайм-менеджмент, мозговой штурм, техники запоминания, фокус).
+4. Минимум фантазии. Только проверенные методы на 2026 год. Без воды.
+5. Если данных недостаточно — верни пустой массив [].`;
 
       const prof = profile?.profession || 'Бухгалтер';
-      const userPrompt = `Профиль: ${prof}. Дай 3 конкретные рекомендации по оптимизации работы с отчетностью или автоматизации рутины.`;
+      const userPrompt = `Профиль: ${prof}. Дай 3 рекомендации: можно по бухгалтерии, можно по тайм-менеджменту, мозговому штурму или запоминанию.`;
 
       const res = await fetch('/api/ai', {
         method: 'POST',
@@ -133,27 +126,14 @@ export function WorkSection() {
         let clean = data.text.replace(/```json/g, '').replace(/```/g, '').trim();
         const parsed = JSON.parse(clean);
         if (Array.isArray(parsed)) {
-          setAiRecommendations(parsed);
+          setAiRecommendations(parsed); // ✅ Сохраняется в AppContext (localStorage)
         } else {
           throw new Error('Неверная структура');
         }
       }
     } catch (e) {
       console.error(e);
-      // Fallback если AI не вернул JSON
-      setAiRecommendations([
-        {
-          id: 'fallback-1',
-          title: 'Пример рекомендации',
-          summary: 'Используйте шаблоны для однотипных отчетов.',          details: 'Создайте папку с шаблонами Excel, чтобы не заполнять форму заново.',
-          source: 'Опыт специалистов',
-          tool: {
-            title: 'Шаблоны отчетов',
-            description: 'Папка с готовыми формами Excel',
-            steps: ['Создать папку "Шаблоны"', 'Скачать формы с e-Salyq', 'Сохранить локально']
-          }
-        }
-      ]);
+      setAiRecommendations([{ id: 'fallback-1', title: 'Ошибка загрузки', summary: 'Попробуйте позже', details: '', source: '', tool: null }]);
     } finally {
       setAiLoading(false);
     }
@@ -164,9 +144,8 @@ export function WorkSection() {
       addWorkTool({
         title: rec.tool.title,
         description: rec.tool.description || rec.summary,
-        steps: rec.tool.steps || ['Шаг 1']
-      });
-      setExpandedRecId(null);
+        steps: (rec.tool.steps || ['Шаг 1']).map(s => ({ text: s, completed: false })) // ✅ Шаги с состоянием
+      });      setExpandedRecId(null);
     }
   };
 
@@ -191,10 +170,11 @@ export function WorkSection() {
       {/* - ВКЛАДКА: ОТЧЁТНОСТЬ - */}
       {workTab === 'reports' && (
         <div>
-          {/* 1. Мои отчёты (Пользовательские) */}
+          {/* Мои отчёты */}
           <Accordion id="custom-reports" title="Мои отчёты" icon="📝" count={customReportGroups.length} onAdd={() => setShowCustomModal(true)}>
             {customReportGroups.length === 0 ? (
-              <div style={{ fontSize: 12, color: T.text3, textAlign: 'center', padding: '10px 0' }}>Список пуст. Создайте свою группу отчетов.</div>            ) : customReportGroups.map(group => (
+              <div style={{ fontSize: 12, color: T.text3, textAlign: 'center', padding: '10px 0' }}>Список пуст. Создайте свою группу отчетов.</div>
+            ) : customReportGroups.map(group => (
               <div key={group.id} style={{ marginBottom: 10 }}>
                 <div style={{ fontSize: 13, fontWeight: 600, color: T.text0, marginBottom: 4 }}>📂 {group.name}</div>
                 {group.reports.map(r => (
@@ -206,25 +186,24 @@ export function WorkSection() {
             ))}
           </Accordion>
 
-          {/* 2. КГД (Только выбранные) */}
+          {/* КГД */}
           <Accordion id="kgd-reports" title="🏛 КГД" icon="🏛" count={selectedKgd.length} onAdd={() => { setCatalogTab('kgd'); setShowCatalog(true); }}>
             {selectedKgd.length === 0 ? (
-              <div style={{ fontSize: 12, color: T.text3, textAlign: 'center', padding: '10px 0' }}>Нет выбранных форм. Нажмите «Добавить форму».</div>
+              <div style={{ fontSize: 12, color: T.text3, textAlign: 'center', padding: '10px 0' }}>Нет выбранных форм.</div>
             ) : selectedKgd.map(r => (
               <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: `1px solid ${T.border}` }}>
                 <div>
                   <div style={{ fontSize: 13, fontWeight: 500, color: T.text0 }}>{r.name}</div>
-                  <div style={{ fontSize: 10, color: T.text3 }}>{r.id} • {freqLabel(r.frequency)}</div>
-                </div>
+                  <div style={{ fontSize: 10, color: T.text3 }}>{r.id} • {freqLabel(r.frequency)}</div>                </div>
                 <button onClick={() => toggleReport(r.id)} style={{ color: T.error, background: 'none', border: 'none', cursor: 'pointer', fontSize: 16 }}>✕</button>
               </div>
             ))}
           </Accordion>
 
-          {/* 3. БНС (Только выбранные) */}
+          {/* БНС */}
           <Accordion id="bns-reports" title="📊 БНС" icon="📊" count={selectedBns.length} onAdd={() => { setCatalogTab('bns'); setShowCatalog(true); }}>
             {selectedBns.length === 0 ? (
-              <div style={{ fontSize: 12, color: T.text3, textAlign: 'center', padding: '10px 0' }}>Нет выбранных форм. Нажмите «Добавить форму».</div>
+              <div style={{ fontSize: 12, color: T.text3, textAlign: 'center', padding: '10px 0' }}>Нет выбранных форм.</div>
             ) : selectedBns.map(r => (
               <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: `1px solid ${T.border}` }}>
                 <div>
@@ -236,14 +215,15 @@ export function WorkSection() {
             ))}
           </Accordion>
 
-          {/* Задачи (обычные) */}
+          {/* Задачи */}
           <div style={{ marginBottom: 12, marginTop: 20 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', borderRadius: 12, cursor: 'pointer', background: 'rgba(78,201,190,0.06)', border: `1px solid ${T.teal}33` }} onClick={() => setModal({})}>
               <span style={{ fontSize: 16 }}>📋</span>
               <span style={{ flex: 1, fontSize: 14, fontFamily: "'Crimson Pro',serif", color: T.teal, fontWeight: 500 }}>Обычные задачи</span>
               <button style={{ fontSize: 12, padding: '2px 8px', color: T.teal, background: 'none', border: 'none', cursor: 'pointer' }}>+</button>
             </div>
-            <div style={{ background: 'rgba(255,255,255,0.01)', border: `1px solid ${T.teal}22`, borderTop: 'none', borderRadius: '0 0 12px 12px', padding: '4px 0' }}>              {tasks.filter(t => t.section === 'work' && t.type !== 'report').slice(0, 5).map(task => (
+            <div style={{ background: 'rgba(255,255,255,0.01)', border: `1px solid ${T.teal}22`, borderTop: 'none', borderRadius: '0 0 12px 12px', padding: '4px 0' }}>
+              {tasks.filter(t => t.section === 'work' && t.type !== 'report').slice(0, 5).map(task => (
                 <div key={task.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 14px', borderBottom: `1px solid ${T.border}` }}>
                   <div style={{ width: 16, height: 16, borderRadius: 4, border: `1px solid ${task.doneDate === today ? T.teal : T.text3}`, background: task.doneDate === today ? T.teal : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#000' }}>
                     {task.doneDate === today ? '✓' : ''}
@@ -263,20 +243,18 @@ export function WorkSection() {
             </div>
             <div style={{ border: `1px solid ${T.gold}22`, borderTop: 'none', borderRadius: '0 0 12px 12px', overflow: 'hidden', background: 'rgba(255,255,255,0.01)' }}>
               <div style={{ padding: 14 }}>
-                <p style={{ fontSize: 13, color: T.text1, margin: '0 0 12px', lineHeight: 1.5 }}>
-                  Получите рекомендации по оптимизации работы. Понравившуюся можно сохранить как готовый инструмент.
+                <p style={{ fontSize: 13, color: T.text1, margin: '0 0 12px', lineHeight: 1.5 }}>                  Рекомендации сохраняются до нового запроса.
                 </p>
-                
                 <button 
                   onClick={handleGetAI} 
                   disabled={aiLoading}
-                  style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: 'none', background: aiLoading ? T.text3 : T.gold, color: '#000', fontWeight: 600, cursor: aiLoading ? 'wait' : 'pointer', transition: 'all 0.2s' }}
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: 'none', background: aiLoading ? T.text3 : T.gold, color: '#000', fontWeight: 600, cursor: aiLoading ? 'wait' : 'pointer' }}
                 >
-                  {aiLoading ? '⏳ Генерация...' : '✨ Получить AI-рекомендации'}
+                  {aiLoading ? '⏳ Генерация...' : '✨ Получить рекомендации'}
                 </button>
               </div>
 
-              {aiRecommendations.length > 0 && (
+              {aiRecommendations?.length > 0 && (
                 <div style={{ borderTop: `1px solid ${T.border}` }}>
                   {aiRecommendations.map(rec => {
                     const isExpanded = expandedRecId === rec.id;
@@ -284,27 +262,26 @@ export function WorkSection() {
                       <div key={rec.id} style={{ borderBottom: `1px solid ${T.border}` }}>
                         <div 
                           onClick={() => setExpandedRecId(isExpanded ? null : rec.id)}
-                          style={{ padding: '12px 14px', cursor: 'pointer', background: isExpanded ? 'rgba(200,164,90,0.05)' : 'transparent', transition: 'background 0.2s' }}
+                          style={{ padding: '12px 14px', cursor: 'pointer', background: isExpanded ? 'rgba(200,164,90,0.05)' : 'transparent' }}
                         >
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
                             <div style={{ flex: 1 }}>
                               <div style={{ fontSize: 14, fontWeight: 600, color: T.text0, marginBottom: 4 }}>{rec.title}</div>
-                              <div style={{ fontSize: 12, color: T.text2, lineHeight: 1.4 }}>{rec.summary}</div>
+                              <div style={{ fontSize: 12, color: T.text2 }}>{rec.summary}</div>
                             </div>
-                            <span style={{ fontSize: 12, color: T.text3, flexShrink: 0 }}>{isExpanded ? '▲' : '▼'}</span>
-                          </div>                        </div>
-
+                            <span style={{ fontSize: 12, color: T.text3 }}>{isExpanded ? '▲' : '▼'}</span>
+                          </div>
+                        </div>
                         {isExpanded && (
                           <div style={{ padding: '0 14px 14px', fontSize: 13, color: T.text1, lineHeight: 1.5 }}>
                             <div style={{ marginBottom: 8, padding: 8, borderRadius: 6, background: 'rgba(255,255,255,0.03)', borderLeft: `2px solid ${T.accent}` }}>
                               <strong>📖 Подробно:</strong> {rec.details}
                             </div>
                             {rec.source && <div style={{ fontSize: 11, color: T.text3, marginBottom: 10, fontStyle: 'italic' }}>📚 Источник: {rec.source}</div>}
-                            
                             {rec.tool && (
                               <button 
                                 onClick={() => handleCreateToolFromAI(rec)}
-                                style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: `1px solid ${T.accent}`, background: 'transparent', color: T.accent, fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                                style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: `1px solid ${T.accent}`, background: 'transparent', color: T.accent, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
                               >
                                 ✦ Создать инструмент: {rec.tool.title}
                               </button>
@@ -315,69 +292,67 @@ export function WorkSection() {
                     );
                   })}
                 </div>
-              )}
-            </div>
+              )}            </div>
           </div>
         </div>
       )}
 
-      {/* - ВКЛАДКА: ИНСТРУМЕНТЫ - */}
+      {/* - ВКЛАДКА: ИНСТРУМЕНТЫ (ОБНОВЛЕНА) - */}
       {workTab === 'tools' && (
         <div>
           {workTools.length === 0 ? (
             <div style={{ textAlign: 'center', padding: 40, color: T.text3 }}>
               <div style={{ fontSize: 32, marginBottom: 10 }}>🛠</div>
-              <div>Инструментов пока нет. Создайте их через AI рекомендации.</div>
+              <div>Инструментов пока нет.</div>
             </div>
           ) : workTools.map(tool => (
             <div key={tool.id} style={{ marginBottom: 10, padding: 14, borderRadius: 12, border: `1px solid ${T.border}`, background: 'rgba(255,255,255,0.02)' }}>
               <div style={{ fontSize: 14, fontWeight: 600, color: T.text0, marginBottom: 6 }}>{tool.title}</div>
               <div style={{ fontSize: 12, color: T.text1, marginBottom: 8 }}>{tool.description}</div>
-              {tool.steps && tool.steps.map((step, idx) => (
-                <div key={idx} style={{ fontSize: 12, color: T.text3, marginBottom: 2 }}>• {step}</div>
+              {/* ✅ Чек-лист шагов с отслеживанием прогресса */}
+              {tool.steps?.map((step, idx) => (
+                <label key={idx} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: T.text3, marginBottom: 4, cursor: 'pointer' }}>
+                  <input 
+                    type="checkbox" 
+                    checked={step.completed || false} 
+                    onChange={(e) => updateWorkToolStep(tool.id, idx, e.target.checked)}
+                    style={{ width: 14, height: 14, cursor: 'pointer' }}
+                  />
+                  <span style={{ textDecoration: step.completed ? 'line-through' : 'none', color: step.completed ? T.text4 : T.text3 }}>
+                    {typeof step === 'string' ? step : step.text}
+                  </span>
+                </label>
               ))}
+              {/* Прогресс-бар */}
+              {tool.steps?.length > 0 && (
+                <div style={{ marginTop: 8, fontSize: 10, color: T.text4 }}>
+                  Прогресс: {tool.steps.filter(s => (typeof s === 'string' ? false : s.completed)).length} / {tool.steps.length}
+                </div>
+              )}
             </div>
           ))}
         </div>
       )}
 
       {/* --- МОДАЛЬНЫЕ ОКНА --- */}
-      {/* 1. Модалка Каталога (Выбор КГД/БНС) */}
       {showCatalog && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={() => setShowCatalog(false)}>
           <div style={{ background: T.bg, width: '100%', maxWidth: 500, maxHeight: '85vh', borderRadius: 16, padding: 20, display: 'flex', flexDirection: 'column' }} onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
               <h3 style={{ margin: 0, color: T.text0 }}>Каталог форм</h3>
               <button onClick={() => setShowCatalog(false)} style={{ background: 'none', border: 'none', color: T.text3, fontSize: 20 }}>✕</button>
-            </div>
-            
-            {/* Табы */}
-            <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+            </div>            <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
               <button onClick={() => setCatalogTab('kgd')} style={{ flex: 1, padding: 8, borderRadius: 8, border: `1px solid ${catalogTab === 'kgd' ? T.accent : T.border}`, background: catalogTab === 'kgd' ? T.accent : 'transparent', color: catalogTab === 'kgd' ? '#000' : T.text2, cursor: 'pointer' }}>🏛 КГД</button>
               <button onClick={() => setCatalogTab('bns')} style={{ flex: 1, padding: 8, borderRadius: 8, border: `1px solid ${catalogTab === 'bns' ? T.accent : T.border}`, background: catalogTab === 'bns' ? T.accent : 'transparent', color: catalogTab === 'bns' ? '#000' : T.text2, cursor: 'pointer' }}>📊 БНС</button>
             </div>
-
-            {/* Поиск */}
-            <input 
-              placeholder="Поиск..." 
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              style={{ width: '100%', padding: 10, marginBottom: 12, borderRadius: 8, border: `1px solid ${T.border}`, background: 'rgba(255,255,255,0.05)', color: T.text0 }}
-            />
-
-            {/* Список */}
+            <input placeholder="Поиск..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} style={{ width: '100%', padding: 10, marginBottom: 12, borderRadius: 8, border: `1px solid ${T.border}`, background: 'rgba(255,255,255,0.05)', color: T.text0 }} />
             <div style={{ overflowY: 'auto', flex: 1 }}>
               {filteredCatalog.map(r => {
                 const isSelected = selectedReports.includes(r.id);
                 return (
                   <div key={r.id} onClick={() => toggleReport(r.id)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0', borderBottom: `1px solid ${T.border}`, cursor: 'pointer' }}>
-                    <div style={{ width: 18, height: 18, borderRadius: 4, border: `2px solid ${isSelected ? T.accent : T.text3}`, background: isSelected ? T.accent : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#000', fontSize: 12 }}>
-                      {isSelected && '✓'}
-                    </div>
-                    <div>
-                      <div style={{ fontSize: 13, color: T.text0, fontWeight: 500 }}>{r.name}</div>
-                      <div style={{ fontSize: 10, color: T.text3 }}>{r.id}</div>
-                    </div>
+                    <div style={{ width: 18, height: 18, borderRadius: 4, border: `2px solid ${isSelected ? T.accent : T.text3}`, background: isSelected ? T.accent : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#000', fontSize: 12 }}>{isSelected && '✓'}</div>
+                    <div><div style={{ fontSize: 13, color: T.text0, fontWeight: 500 }}>{r.name}</div><div style={{ fontSize: 10, color: T.text3 }}>{r.id}</div></div>
                   </div>
                 );
               })}
@@ -386,34 +361,24 @@ export function WorkSection() {
         </div>
       )}
 
-      {/* 2. Модалка создания пользовательского отчета */}
       {showCustomModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={() => setShowCustomModal(false)}>
           <div style={{ background: T.bg, width: '100%', maxWidth: 400, borderRadius: 16, padding: 20 }} onClick={e => e.stopPropagation()}>
-            <h3 style={{ margin: '0 0 16px', color: T.text0 }}>Добавить отчет</h3>            <input placeholder="Название формы" value={customForm.name} onChange={e => setCustomForm(p => ({...p, name: e.target.value}))} style={{ width: '100%', padding: 10, marginBottom: 10, borderRadius: 8, border: `1px solid ${T.border}`, background: 'rgba(255,255,255,0.05)', color: T.text0 }} />
+            <h3 style={{ margin: '0 0 16px', color: T.text0 }}>Добавить отчет</h3>
+            <input placeholder="Название формы" value={customForm.name} onChange={e => setCustomForm(p => ({...p, name: e.target.value}))} style={{ width: '100%', padding: 10, marginBottom: 10, borderRadius: 8, border: `1px solid ${T.border}`, background: 'rgba(255,255,255,0.05)', color: T.text0 }} />
             <select value={customForm.frequency} onChange={e => setCustomForm(p => ({...p, frequency: e.target.value}))} style={{ width: '100%', padding: 10, marginBottom: 10, borderRadius: 8, border: `1px solid ${T.border}`, background: 'rgba(255,255,255,0.05)', color: T.text0 }}>
-              <option value="monthly">Ежемесячно</option>
-              <option value="quarterly">Ежеквартально</option>
-              <option value="annual">Ежегодно</option>
+              <option value="monthly">Ежемесячно</option><option value="quarterly">Ежеквартально</option><option value="annual">Ежегодно</option>
             </select>
             <input type="date" value={customForm.deadline} onChange={e => setCustomForm(p => ({...p, deadline: e.target.value}))} style={{ width: '100%', padding: 10, marginBottom: 16, borderRadius: 8, border: `1px solid ${T.border}`, background: 'rgba(255,255,255,0.05)', color: T.text0 }} />
             <div style={{ display: 'flex', gap: 8 }}>
               <button onClick={() => setShowCustomModal(false)} style={{ flex: 1, padding: 10, borderRadius: 8, border: `1px solid ${T.border}`, background: 'transparent', color: T.text2 }}>Отмена</button>
-              <button onClick={() => {
-                if(!customForm.name || !customForm.deadline) return;
-                const groupId = 'custom-default'; 
-                addCustomGroup('Мои отчеты');
-                addCustomReport(groupId, { name: customForm.name, frequency: customForm.frequency, deadline: customForm.deadline });
-                setShowCustomModal(false);
-                setCustomForm({ name: '', frequency: 'quarterly', deadline: '' });
-              }} style={{ flex: 1, padding: 10, borderRadius: 8, border: 'none', background: T.accent, color: '#000', fontWeight: 600 }}>Сохранить</button>
+              <button onClick={() => { if(!customForm.name || !customForm.deadline) return; const groupId = 'custom-default'; addCustomGroup('Мои отчеты'); addCustomReport(groupId, { name: customForm.name, frequency: customForm.frequency, deadline: customForm.deadline }); setShowCustomModal(false); setCustomForm({ name: '', frequency: 'quarterly', deadline: '' }); }} style={{ flex: 1, padding: 10, borderRadius: 8, border: 'none', background: T.accent, color: '#000', fontWeight: 600 }}>Сохранить</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* 3. Модалка задач */}
       {modal !== null && <TaskModal task={modal?.id ? modal : null} defaultSection="work" onSave={(t) => { setTasks(p => modal?.id ? p.map(x => x.id === t.id ? t : x) : [...p, t]); setModal(null); }} onClose={() => setModal(null)} />}
     </div>
   );
-}
+                                                     }
