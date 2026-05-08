@@ -1,65 +1,99 @@
 // src/hooks/useNotificationCheck.js
 import { useEffect } from 'react';
 import { useApp } from '../store/AppContext';
-import { KGD_CATALOG, BNS_CATALOG } from '../data/reportsCatalog';
+
+const CHECK_INTERVAL_MS = 30 * 60 * 1000; // 30 минут
+const REMINDER_DAYS = [5, 3, 1, 0];
 
 export function useNotificationCheck() {
-  const { selectedReports } = useApp();
-
-  useEffect(() => {
-    // 1. Запрашиваем разрешение на уведомления
-    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission();
-    }
-
-    // 2. Запускаем проверку дедлайнов
-    checkDeadlines();
-  }, [selectedReports]); // Перепроверяем при изменении списка отчетов
+  const { selectedReports = [] } = useApp();
 
   const checkDeadlines = () => {
-    if (Notification.permission !== 'granted') return;
+    if (!selectedReports || selectedReports.length === 0) return;
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const todayStr = today.toISOString().split('T')[0];
 
-    // Собираем все отчеты из каталогов
-    const allReports = [...KGD_CATALOG, ...BNS_CATALOG];
-    
-    // Фильтруем только выбранные пользователем
-    const userReports = allReports.filter(r => selectedReports.includes(r.id));
-
-    userReports.forEach(report => {
-      // Проверяем все даты сдачи (deadlines2026)
-      report.deadlines2026.forEach(deadlineStr => {
-        const deadlineDate = new Date(deadlineStr);
+    selectedReports.forEach(report => {
+      try {
+        // 🔹 Валидация даты
+        if (!report.deadline) return;
+        const deadlineDate = new Date(report.deadline);
+        if (isNaN(deadlineDate.getTime())) {
+          console.warn(`Invalid deadline for report ${report.id}: ${report.deadline}`);
+          return;
+        }
         deadlineDate.setHours(0, 0, 0, 0);
 
-        // Разница в днях
         const diffTime = deadlineDate - today;
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-        // Логика: Напомнить за 5, 3, 1 день и в сам день (0)
-        const alertDays = [5, 3, 1, 0];
+        // 🔹 Проверка на попадание в интервал напоминания
+        if (!REMINDER_DAYS.includes(diffDays)) return;
 
-        if (alertDays.includes(diffDays)) {
-          // Формируем текст
-          let timeText = "";
-          if (diffDays === 0) timeText = "СЕГОДНЯ!";
-          else if (diffDays === 1) timeText = "ЗАВТРА!";
-          else timeText = `Через ${diffDays} дней`;
+        // 🔹 Проверка разрешения на уведомления
+        if (Notification.permission !== 'granted') return;
 
-          // Отправляем уведомление
-          new Notification(`📋 ${report.name}`, {
-            body: `Срок сдачи: ${deadlineStr} (${timeText}). Не забудьте сдать!`,
-            icon: '/icon.png',
-            tag: `${report.id}-${deadlineStr}`, // Чтобы не дублировать
-            requireInteraction: diffDays === 0 // На день сдачи не закрывать само
-          });
+        // 🔹 Формирование текста
+        let bodyText = '';
+        if (diffDays === 0) {
+          bodyText = `⚠️ СЕГОДНЯ дедлайн: ${report.name}`;
+        } else if (diffDays === 1) {
+          bodyText = `⏰ ЗАВТРА: ${report.name}`;
+        } else {
+          bodyText = `📅 Через ${diffDays} дн.: ${report.name}`;
         }
-      });
+
+        // 🔹 Отправка уведомления
+        const tag = `deadline-${report.id}-${report.deadline}`;
+        
+        new Notification('Life Diary: Отчётность', {
+          body: bodyText,
+          icon: '/icon.png',
+          tag,
+          renotify: true,
+          requireInteraction: diffDays === 0,
+          vibrate: diffDays === 0 ? [200, 100, 200] : [100],
+          data: {
+            url: '/work',
+            reportId: report.id,
+            deadline: report.deadline
+          }
+        });
+
+        console.log(`Notification sent for ${report.name}: ${diffDays} days left`);
+
+      } catch (err) {
+        console.error(`Error checking deadline for report ${report?.id}:`, err);
+      }
     });
   };
 
-  return null;
+  useEffect(() => {
+    // 🔹 Запрос разрешения при первом запуске
+    if (Notification.permission === 'default') {
+      Notification.requestPermission().then(permission => {
+        console.log('Notification permission:', permission);
+        if (permission === 'granted') {
+          checkDeadlines();
+        }
+      }).catch(err => {
+        console.error('Failed to request notification permission:', err);
+      });
+    } else if (Notification.permission === 'granted') {
+      checkDeadlines();
+    }
+
+    // 🔹 Периодическая проверка (каждые 30 минут)
+    const intervalId = setInterval(() => {
+      if (Notification.permission === 'granted') {
+        checkDeadlines();
+      }
+    }, CHECK_INTERVAL_MS);
+
+    // 🔹 Очистка интервала при размонтировании
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [selectedReports]);
 }
