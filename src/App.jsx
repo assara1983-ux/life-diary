@@ -46,10 +46,12 @@ function AppContent() {
     // Регистрация Service Worker (для фоновых уведомлений)
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js').then(reg => {
-          console.log('SW registered: ', reg);        }).catch(err => {
-          console.log('SW registration failed: ', err);
-        });
+        navigator.serviceWorker.register('/sw.js')
+          .then(reg => {            console.log('SW registered: ', reg);
+          })
+          .catch(err => {
+            console.log('SW registration failed: ', err);
+          });
       });
     }
   }, []);
@@ -95,8 +97,8 @@ function AppContent() {
   if (!profile) {
     return <Onboarding />;
   }
-
-  const activeSection = sections.find(s => s.id === active) || sections[0];  const moon = getMoon();
+  const activeSection = sections.find(s => s.id === active) || sections[0];
+  const moon = getMoon();
   const today = new Date().toISOString().split('T')[0];
 
   return (
@@ -143,9 +145,9 @@ function AppContent() {
           {active === 'car' && <CarSection />}
           {active === 'health' && <HealthSection />}
           {active === 'beauty' && <BeautySection />}
-          {active === 'hobbies' && <HobbiesSection />}
-          {active === 'goals' && <GoalsSection />}
-          {active === 'mental' && <MentalSection />}          {active === 'travel' && <TravelSection />}
+          {active === 'hobbies' && <HobbiesSection />}          {active === 'goals' && <GoalsSection />}
+          {active === 'mental' && <MentalSection />}
+          {active === 'travel' && <TravelSection />}
           {active === 'journal' && <JournalSection />}
           {active === 'profile' && <ProfileSection />}
         </div>
