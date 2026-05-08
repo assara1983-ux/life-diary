@@ -78,11 +78,17 @@ export function AppProvider({ children }) {
   const deleteWorkTool = (toolId) => {
     setWorkTools(prev => prev.filter(t => t.id !== toolId));
   };
+  
+  // ✅ ИСПРАВЛЕНИЕ: Безопасная нормализация шагов чек-листа
   const updateWorkToolStep = (toolId, stepIndex, completed) => {
     setWorkTools(prev => prev.map(tool => {
       if (tool.id !== toolId) return tool;
       const newSteps = [...tool.steps];
-      newSteps[stepIndex] = { ...newSteps[stepIndex], completed };
+      const current = newSteps[stepIndex];
+      newSteps[stepIndex] = {
+        text: typeof current === 'string' ? current : current.text,
+        completed: Boolean(completed)
+      };
       return { ...tool, steps: newSteps };
     }));
   };
@@ -90,13 +96,13 @@ export function AppProvider({ children }) {
   // ✅ Пользовательские группы отчетов
   const [customReportGroups, setCustomReportGroups] = useStorageState('ld_custom_report_groups', []);
   const addCustomGroup = (name) => {
-    setCustomReportGroups(prev => [...prev, { id: 'g-' + Date.now(), name, reports: [] }]);
-  };
+    setCustomReportGroups(prev => [...prev, { id: 'g-' + Date.now(), name, reports: [] }]);  };
   const deleteGroup = (groupId) => {
     setCustomReportGroups(prev => prev.filter(g => g.id !== groupId));
   };
   const addCustomReport = (groupId, reportData) => {
-    setCustomReportGroups(prev => prev.map(g => {      if (g.id === groupId) {
+    setCustomReportGroups(prev => prev.map(g => {
+      if (g.id === groupId) {
         return {
           ...g,
           reports: [...g.reports, { id: 'r-' + Date.now(), ...reportData }]
@@ -118,7 +124,7 @@ export function AppProvider({ children }) {
     setCollapsedSections(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
-  // ✅ AI Рекомендации (НОВОЕ: сохранение до нового запроса)
+  // ✅ AI Рекомендации
   const [aiRecommendations, setAiRecommendations] = useStorageState('ld_ai_recommendations', []);
 
   // --- Ментальное здоровье и прочее ---
@@ -139,13 +145,13 @@ export function AppProvider({ children }) {
   const [shopAdvice, setShopAdvice] = useStorageState('ld_shop_advice', true);
   const [shopListOpen, setShopListOpen] = useStorageState('ld_shop_list', true);
   const [petsAdvice, setPetsAdvice] = useStorageState('ld_pets_advice', true);
-  const [petsFeed, setPetsFeed] = useStorageState('ld_pets_feed', true);
-  const [petsCare, setPetsCare] = useStorageState('ld_pets_care', true);
+  const [petsFeed, setPetsFeed] = useStorageState('ld_pets_feed', true);  const [petsCare, setPetsCare] = useStorageState('ld_pets_care', true);
   const [homeAdvice, setHomeAdvice] = useStorageState('ld_home_open_advice', true);
   const [homeTasks, setHomeTasks] = useStorageState('ld_home_open_tasks', true);
   const [hobbyAdvice, setHobbyAdvice] = useStorageState('ld_hobby_advice', true);
   const [hobbyList, setHobbyList] = useStorageState('ld_hobby_list', true);
-  const [travelAdvice, setTravelAdvice] = useStorageState('ld_travel_advice', true);  const [travelTrips, setTravelTrips] = useStorageState('ld_travel_trips', true);
+  const [travelAdvice, setTravelAdvice] = useStorageState('ld_travel_advice', true);
+  const [travelTrips, setTravelTrips] = useStorageState('ld_travel_trips', true);
   const [journalPrompts, setJournalPrompts] = useStorageState('ld_journal_prompts', true);
   const [journalHistory, setJournalHistory] = useStorageState('ld_journal_history', true);
   const [carAdvice, setCarAdvice] = useStorageState('ld_car_advice', true);
@@ -188,12 +194,12 @@ export function AppProvider({ children }) {
            if (!tasks.some(t => t.id === taskId)) {
              newTasks.push({ id: taskId, type: 'report', source: 'custom', reportId: report.id, title: `📋 ${report.name}`, section: 'work', deadline: report.deadline, priority: 'h', notes: `Срок: ${report.deadline}`, doneDate: null, createdAt: new Date().toISOString() });
            }
-        }
-      });
+        }      });
     });
 
     if (newTasks.length > 0) setTasks(prev => [...prev, ...newTasks]);
   }, [selectedReports, customReportGroups, tasks, setTasks, allCatalogReports]);
+
   // --- Экспорт данных ---
   const value = {
     profile, setProfile, sections, setSections, tasks, setTasks,
