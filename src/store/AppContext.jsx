@@ -1,7 +1,6 @@
 // src/store/AppContext.jsx
 import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { STORAGE_KEYS } from '../utils/migration';
-// Импорт каталогов отчетности
 import { KGD_CATALOG, BNS_CATALOG } from '../data/reportsCatalog';
 
 const AppContext = createContext(null);
@@ -26,7 +25,6 @@ export function daysUntilDeadline(deadline) {
   return Math.ceil((dl - today) / (1000 * 60 * 60 * 24));
 }
 
-// Хук для работы со старыми ключами localStorage
 function useStorageState(key, defaultValue) {
   const [value, setValue] = useState(() => {
     try {
@@ -47,9 +45,9 @@ export function AppProvider({ children }) {
   const [sections, setSections] = useStorageState('ld_sec_v3', [
     { id: "today", emoji: "☀️", name: "Сегодня", vis: true },
     { id: "schedule", emoji: "🗓️", name: "Расписание", vis: true },
-    { id: "work", emoji: "💼", name: "Работа", vis: true },    { id: "home", emoji: "🏡", name: "Дом", vis: true },
-    { id: "shopping", emoji: "🛒", name: "Покупки", vis: true },
-    { id: "pets", emoji: "🐾", name: "Питомцы", vis: true },
+    { id: "work", emoji: "💼", name: "Работа", vis: true },
+    { id: "home", emoji: "🏡", name: "Дом", vis: true },
+    { id: "shopping", emoji: "🛒", name: "Покупки", vis: true },    { id: "pets", emoji: "🐾", name: "Питомцы", vis: true },
     { id: "car", emoji: "🚗", name: "Авто", vis: true },
     { id: "health", emoji: "🌿", name: "Здоровье", vis: true },
     { id: "beauty", emoji: "✨", name: "Уход", vis: true },
@@ -71,7 +69,6 @@ export function AppProvider({ children }) {
   const [reportGroups, setReportGroups] = useStorageState('ld_report_groups', []);
   const [reports, setReports] = useStorageState('ld_reports_v2', []);
   const [checkResults, setCheckResults] = useStorageState('ld_deadline_checks', {});
-  const [accountingReports, setAccountingReports] = useStorageState('ld_accounting_reports', []);
 
   // ✅ Инструменты
   const [workTools, setWorkTools] = useStorageState('ld_work_tools', []);
@@ -80,6 +77,14 @@ export function AppProvider({ children }) {
   };
   const deleteWorkTool = (toolId) => {
     setWorkTools(prev => prev.filter(t => t.id !== toolId));
+  };
+  const updateWorkToolStep = (toolId, stepIndex, completed) => {
+    setWorkTools(prev => prev.map(tool => {
+      if (tool.id !== toolId) return tool;
+      const newSteps = [...tool.steps];
+      newSteps[stepIndex] = { ...newSteps[stepIndex], completed };
+      return { ...tool, steps: newSteps };
+    }));
   };
 
   // ✅ Пользовательские группы отчетов
@@ -91,12 +96,12 @@ export function AppProvider({ children }) {
     setCustomReportGroups(prev => prev.filter(g => g.id !== groupId));
   };
   const addCustomReport = (groupId, reportData) => {
-    setCustomReportGroups(prev => prev.map(g => {
-      if (g.id === groupId) return { ...g, reports: [...g.reports, { id: 'r-' + Date.now(), ...reportData }] };
+    setCustomReportGroups(prev => prev.map(g => {      if (g.id === groupId) return { ...g, reports: [...g.reports, { id: 'r-' + Date.now(), ...reportData }] };
       return g;
     }));
   };
-  // ✅ Выбор отчетов из Каталога (КГД/БНС)
+
+  // ✅ Выбор отчетов из Каталога
   const [selectedReports, setSelectedReports] = useStorageState('ld_selected_reports', []);
   const toggleReport = (reportId) => {
     setSelectedReports(prev => prev.includes(reportId) ? prev.filter(id => id !== reportId) : [...prev, reportId]);
@@ -107,6 +112,9 @@ export function AppProvider({ children }) {
   const toggleSection = (id) => {
     setCollapsedSections(prev => ({ ...prev, [id]: !prev[id] }));
   };
+
+  // ✅ AI Рекомендации (НОВОЕ: сохранение до нового запроса)
+  const [aiRecommendations, setAiRecommendations] = useStorageState('ld_ai_recommendations', []);
 
   // --- Ментальное здоровье и прочее ---
   const [mentalMood, setMentalMood] = useStorageState('mental_mood', 3);
@@ -137,15 +145,15 @@ export function AppProvider({ children }) {
   const [journalPrompts, setJournalPrompts] = useStorageState('ld_journal_prompts', true);
   const [journalHistory, setJournalHistory] = useStorageState('ld_journal_history', true);
   const [carAdvice, setCarAdvice] = useStorageState('ld_car_advice', true);
-  const [carTasks, setCarTasks] = useStorageState('ld_car_tasks', true);
-  const [beautyProcsOpen, setBeautyProcsOpen] = useStorageState('ld_beauty_procs_open', true);
+  const [carTasks, setCarTasks] = useStorageState('ld_car_tasks', true);  const [beautyProcsOpen, setBeautyProcsOpen] = useStorageState('ld_beauty_procs_open', true);
   const [beautyTodayOpen, setBeautyTodayOpen] = useStorageState('ld_beauty_today_open', true);
   const [beautyChooseOpen, setBeautyChooseOpen] = useStorageState('ld_beauty_choose_open', true);
   const [healthAdvice, setHealthAdvice] = useStorageState('ld_health_advice', true);
   const [healthHabits, setHealthHabits] = useStorageState('ld_health_habits', true);
 
-  // --- УМНАЯ СИНХРОНИЗАЦИЯ ЗАДАЧ (КАТАЛОГИ + СВОИ ОТЧЕТЫ) ---
+  // --- УМНАЯ СИНХРОНИЗАЦИЯ ЗАДАЧ ---
   const allCatalogReports = useMemo(() => [...KGD_CATALOG, ...BNS_CATALOG], []);
+
   useEffect(() => {
     const today = new Date(); today.setHours(0, 0, 0, 0);
     const todayStr = today.toISOString().split('T')[0];
@@ -186,19 +194,15 @@ export function AppProvider({ children }) {
   const value = {
     profile, setProfile, sections, setSections, tasks, setTasks,
     journal, setJournal, shopList, setShopList, petLog, setPetLog,
-    trips, setTrips, hobbies, setHobbies,
-    reportGroups, setReportGroups, reports, setReports,
-    workTools, setWorkTools, addWorkTool, deleteWorkTool,
-    checkResults, setCheckResults, accountingReports, setAccountingReports,
+    trips, setTrips, hobbies, setHobbies,    reportGroups, setReportGroups, reports, setReports,
+    workTools, setWorkTools, addWorkTool, deleteWorkTool, updateWorkToolStep,
+    checkResults, setCheckResults,
     customReportGroups, addCustomGroup, deleteGroup, addCustomReport,
     selectedReports, toggleReport,
     collapsedSections, toggleSection,
-    goalsTools: useStorageState('ld_goals_tools', { weightLog: [], habits: [], calories: { goal: 0, log: [] }, workout: null, workoutSetup: null })[0],
-    wheelScores: useStorageState('ld_wheel', {})[0],    weekMenu: useStorageState('ld_week_menu', null)[0],
-    beautyProcs: useStorageState('ld_beauty_procs', {})[0],
-    beautyTopics: useStorageState('ld_beauty_topics', [])[0],
-    feedTimes: useStorageState('ld_feed_times', {})[0],
-    commuteSettings: useStorageState('ld_commute_settings', {})[0],
+    // ✅ AI Рекомендации (экспорт)
+    aiRecommendations, setAiRecommendations,
+    // Остальное
     mentalMood, setMentalMood, mentalStress, setMentalStress, mentalLog, setMentalLog,
     mentalRecoveryPlan, setMentalRecoveryPlan, customPractices, setCustomPractices,
     aiNotes, setAiNotes, aiJournal, setAiJournal,
