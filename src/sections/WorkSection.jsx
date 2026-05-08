@@ -197,7 +197,7 @@ export function WorkSection() {
             ))}          </Accordion>
 
           {/* БНС */}
-          <Accordion id="bns-reports" title="📊 БНС" icon="📊" count={selectedBns.length} onAdd={() => { setCatalogTab('bns'); setShowCatalog(true); }}>
+          <Accordion id="bns-reports" title="📊 БНС" icon="" count={selectedBns.length} onAdd={() => { setCatalogTab('bns'); setShowCatalog(true); }}>
             {selectedBns.length === 0 ? (
               <div style={{ fontSize: 12, color: T.text3, textAlign: 'center', padding: '10px 0' }}>Нет выбранных форм.</div>
             ) : selectedBns.map(r => (
@@ -246,7 +246,7 @@ export function WorkSection() {
                   onClick={handleGetAI}                  disabled={aiLoading}
                   style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: 'none', background: aiLoading ? T.text3 : T.gold, color: '#000', fontWeight: 600, cursor: aiLoading ? 'wait' : 'pointer' }}
                 >
-                  {aiLoading ? '⏳ Генерация...' : '✨ Получить рекомендации'}
+                  {aiLoading ? ' Генерация...' : '✨ Получить рекомендации'}
                 </button>
               </div>
 
@@ -329,6 +329,8 @@ export function WorkSection() {
       )}
 
       {/* --- МОДАЛЬНЫЕ ОКНА --- */}
+      
+      {/* 1. Каталог форм */}
       {showCatalog && (
         <div 
           style={{ 
@@ -339,9 +341,9 @@ export function WorkSection() {
             display: 'flex', 
             alignItems: 'center', 
             justifyContent: 'center', 
-            padding: 16 
-          }} 
-          onClick={() => setShowCatalog(false)}        >
+            padding: 16           }} 
+          onClick={() => setShowCatalog(false)}
+        >
           <div 
             style={{ 
               background: T.bg || '#1a1a2e', 
@@ -362,7 +364,7 @@ export function WorkSection() {
               <button onClick={() => setShowCatalog(false)} style={{ background: 'none', border: 'none', color: '#aaa', fontSize: 20, cursor: 'pointer' }}>✕</button>
             </div>
             <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-              <button onClick={() => setCatalogTab('kgd')} style={{ flex: 1, padding: 8, borderRadius: 8, border: `1px solid ${catalogTab === 'kgd' ? T.accent : '#333'}`, background: catalogTab === 'kgd' ? (T.accent || '#c8a45a') : 'transparent', color: catalogTab === 'kgd' ? '#000' : '#ccc', cursor: 'pointer' }}>🏛 КГД</button>
+              <button onClick={() => setCatalogTab('kgd')} style={{ flex: 1, padding: 8, borderRadius: 8, border: `1px solid ${catalogTab === 'kgd' ? T.accent : '#333'}`, background: catalogTab === 'kgd' ? (T.accent || '#c8a45a') : 'transparent', color: catalogTab === 'kgd' ? '#000' : '#ccc', cursor: 'pointer' }}> КГД</button>
               <button onClick={() => setCatalogTab('bns')} style={{ flex: 1, padding: 8, borderRadius: 8, border: `1px solid ${catalogTab === 'bns' ? T.accent : '#333'}`, background: catalogTab === 'bns' ? (T.accent || '#c8a45a') : 'transparent', color: catalogTab === 'bns' ? '#000' : '#ccc', cursor: 'pointer' }}>📊 БНС</button>
             </div>
             <input 
@@ -388,9 +390,9 @@ export function WorkSection() {
                     <div style={{ width: 18, height: 18, borderRadius: 4, border: `2px solid ${isSelected ? (T.accent || '#c8a45a') : '#555'}`, background: isSelected ? (T.accent || '#c8a45a') : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#000', fontSize: 12, flexShrink: 0 }}>{isSelected && '✓'}</div>
                     <div style={{ minWidth: 0 }}>
                       <div style={{ fontSize: 13, color: '#fff', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.name}</div>
-                      <div style={{ fontSize: 10, color: '#aaa' }}>{r.id}</div>
-                    </div>
-                  </div>                );
+                      <div style={{ fontSize: 10, color: '#aaa' }}>{r.id}</div>                    </div>
+                  </div>
+                );
               })}
               {filteredCatalog.length === 0 && (
                 <div style={{ padding: 20, textAlign: 'center', color: '#aaa', fontSize: 13 }}>
@@ -402,18 +404,106 @@ export function WorkSection() {
         </div>
       )}
 
+      {/* 2. Добавить отчет */}
       {showCustomModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={() => setShowCustomModal(false)}>
-          <div style={{ background: T.bg, width: '100%', maxWidth: 400, borderRadius: 16, padding: 20 }} onClick={e => e.stopPropagation()}>
-            <h3 style={{ margin: '0 0 16px', color: T.text0 }}>Добавить отчет</h3>
-            <input placeholder="Название формы" value={customForm.name} onChange={e => setCustomForm(p => ({...p, name: e.target.value}))} style={{ width: '100%', padding: 10, marginBottom: 10, borderRadius: 8, border: `1px solid ${T.border}`, background: 'rgba(255,255,255,0.05)', color: T.text0 }} />
-            <select value={customForm.frequency} onChange={e => setCustomForm(p => ({...p, frequency: e.target.value}))} style={{ width: '100%', padding: 10, marginBottom: 10, borderRadius: 8, border: `1px solid ${T.border}`, background: 'rgba(255,255,255,0.05)', color: T.text0 }}>
-              <option value="monthly">Ежемесячно</option><option value="quarterly">Ежеквартально</option><option value="annual">Ежегодно</option>
+        <div 
+          style={{ 
+            position: 'fixed', 
+            inset: 0, 
+            background: 'rgba(0,0,0,0.7)', 
+            zIndex: 1000, 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            padding: 16 
+          }} 
+          onClick={() => setShowCustomModal(false)}
+        >
+          <div 
+            style={{ 
+              background: T.bg || '#1a1a2e', 
+              width: '100%', 
+              maxWidth: 400, 
+              borderRadius: 16, 
+              padding: 20, 
+              zIndex: 1001, 
+              border: `1px solid ${T.border || '#333'}` 
+            }} 
+            onClick={e => e.stopPropagation()}
+          >
+            <h3 style={{ margin: '0 0 16px', color: '#fff', fontWeight: 600 }}>Добавить отчет</h3>
+            <input 
+              placeholder="Название формы" 
+              value={customForm.name} 
+              onChange={e => setCustomForm(p => ({...p, name: e.target.value}))} 
+              style={{ 
+                width: '100%', 
+                padding: 10, 
+                marginBottom: 10,                 borderRadius: 8, 
+                border: `1px solid ${T.border || '#333'}`, 
+                background: 'rgba(255,255,255,0.1)', 
+                color: '#fff', 
+                outline: 'none' 
+              }} 
+            />
+            <select 
+              value={customForm.frequency} 
+              onChange={e => setCustomForm(p => ({...p, frequency: e.target.value}))} 
+              style={{ 
+                width: '100%', 
+                padding: 10, 
+                marginBottom: 10, 
+                borderRadius: 8, 
+                border: `1px solid ${T.border || '#333'}`, 
+                background: 'rgba(255,255,255,0.1)', 
+                color: '#fff', 
+                outline: 'none',
+                colorScheme: 'dark'
+              }}
+            >
+              <option value="monthly" style={{background: '#1a1a2e', color: '#fff'}}>Ежемесячно</option>
+              <option value="quarterly" style={{background: '#1a1a2e', color: '#fff'}}>Ежеквартально</option>
+              <option value="annual" style={{background: '#1a1a2e', color: '#fff'}}>Ежегодно</option>
             </select>
-            <input type="date" value={customForm.deadline} onChange={e => setCustomForm(p => ({...p, deadline: e.target.value}))} style={{ width: '100%', padding: 10, marginBottom: 16, borderRadius: 8, border: `1px solid ${T.border}`, background: 'rgba(255,255,255,0.05)', color: T.text0 }} />
+            <input 
+              type="date" 
+              value={customForm.deadline} 
+              onChange={e => setCustomForm(p => ({...p, deadline: e.target.value}))} 
+              style={{ 
+                width: '100%', 
+                padding: 10, 
+                marginBottom: 16, 
+                borderRadius: 8, 
+                border: `1px solid ${T.border || '#333'}`, 
+                background: 'rgba(255,255,255,0.1)', 
+                color: '#fff', 
+                outline: 'none',
+                colorScheme: 'dark'
+              }} 
+            />
             <div style={{ display: 'flex', gap: 8 }}>
-              <button onClick={() => setShowCustomModal(false)} style={{ flex: 1, padding: 10, borderRadius: 8, border: `1px solid ${T.border}`, background: 'transparent', color: T.text2 }}>Отмена</button>
-              <button onClick={() => { if(!customForm.name || !customForm.deadline) return; const groupId = 'custom-default'; addCustomGroup('Мои отчеты'); addCustomReport(groupId, { name: customForm.name, frequency: customForm.frequency, deadline: customForm.deadline }); setShowCustomModal(false); setCustomForm({ name: '', frequency: 'quarterly', deadline: '' }); }} style={{ flex: 1, padding: 10, borderRadius: 8, border: 'none', background: T.accent, color: '#000', fontWeight: 600 }}>Сохранить</button>
+              <button onClick={() => setShowCustomModal(false)} style={{ flex: 1, padding: 10, borderRadius: 8, border: `1px solid ${T.border || '#333'}`, background: 'transparent', color: '#ccc', cursor: 'pointer' }}>Отмена</button>
+              <button 
+                onClick={() => { 
+                  if(!customForm.name || !customForm.deadline) return; 
+                  const groupId = 'custom-default'; 
+                  addCustomGroup('Мои отчеты'); 
+                  addCustomReport(groupId, { name: customForm.name, frequency: customForm.frequency, deadline: customForm.deadline });                   setShowCustomModal(false); 
+                  setCustomForm({ name: '', frequency: 'quarterly', deadline: '' }); 
+                }} 
+                style={{ 
+                  flex: 1, 
+                  padding: 10, 
+                  borderRadius: 8, 
+                  border: 'none', 
+                  background: T.accent || '#c8a45a', 
+                  color: '#000', 
+                  fontWeight: 600, 
+                  cursor: 'pointer' 
+                }}
+              >
+                Сохранить
+              </button>
             </div>
           </div>
         </div>
@@ -422,4 +512,4 @@ export function WorkSection() {
       {modal !== null && <TaskModal task={modal?.id ? modal : null} defaultSection="work" onSave={(t) => { setTasks(p => modal?.id ? p.map(x => x.id === t.id ? t : x) : [...p, t]); setModal(null); }} onClose={() => setModal(null)} />}
     </div>
   );
-                            }
+              }
