@@ -156,9 +156,14 @@ export function AppProvider({ children }) {
   const [journalHistory, setJournalHistory] = useStorageState('ld_journal_history', true);
   const [carAdvice, setCarAdvice] = useStorageState('ld_car_advice', true);
   const [carTasks, setCarTasks] = useStorageState('ld_car_tasks', true);
+  
+  // ✅ Раздел "Уход" (исправлено: добавлены beautyProcs и beautyTopics)
+  const [beautyProcs, setBeautyProcs] = useStorageState('ld_beauty_procs', {});
+  const [beautyTopics, setBeautyTopics] = useStorageState('ld_beauty_topics', []);
   const [beautyProcsOpen, setBeautyProcsOpen] = useStorageState('ld_beauty_procs_open', true);
   const [beautyTodayOpen, setBeautyTodayOpen] = useStorageState('ld_beauty_today_open', true);
   const [beautyChooseOpen, setBeautyChooseOpen] = useStorageState('ld_beauty_choose_open', true);
+  
   const [healthAdvice, setHealthAdvice] = useStorageState('ld_health_advice', true);
   const [healthHabits, setHealthHabits] = useStorageState('ld_health_habits', true);
 
@@ -189,12 +194,12 @@ export function AppProvider({ children }) {
     // 2. Пользовательские отчеты
     customReportGroups.forEach(group => {
       group.reports.forEach(report => {
-        if (report.deadline && report.deadline >= todayStr && report.deadline <= warningDateStr) {
-           const taskId = `custom-task-${report.id}-${report.deadline}`;
+        if (report.deadline && report.deadline >= todayStr && report.deadline <= warningDateStr) {           const taskId = `custom-task-${report.id}-${report.deadline}`;
            if (!tasks.some(t => t.id === taskId)) {
              newTasks.push({ id: taskId, type: 'report', source: 'custom', reportId: report.id, title: `📋 ${report.name}`, section: 'work', deadline: report.deadline, priority: 'h', notes: `Срок: ${report.deadline}`, doneDate: null, createdAt: new Date().toISOString() });
            }
-        }      });
+        }
+      });
     });
 
     if (newTasks.length > 0) setTasks(prev => [...prev, ...newTasks]);
@@ -226,6 +231,8 @@ export function AppProvider({ children }) {
     travelAdvice, setTravelAdvice, travelTrips, setTravelTrips,
     journalPrompts, setJournalPrompts, journalHistory, setJournalHistory,
     carAdvice, setCarAdvice, carTasks, setCarTasks,
+    // ✅ Раздел "Уход" (исправлено: добавлены beautyProcs и beautyTopics в экспорт)
+    beautyProcs, setBeautyProcs, beautyTopics, setBeautyTopics,
     beautyProcsOpen, setBeautyProcsOpen, beautyTodayOpen, setBeautyTodayOpen,
     beautyChooseOpen, setBeautyChooseOpen, healthAdvice, setHealthAdvice, healthHabits, setHealthHabits,
   };
@@ -236,5 +243,4 @@ export function AppProvider({ children }) {
 export function useApp() {
   const ctx = useContext(AppContext);
   if (!ctx) throw new Error('useApp must be used within AppProvider');
-  return ctx;
-}
+  return ctx;}
