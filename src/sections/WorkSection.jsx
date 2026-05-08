@@ -60,14 +60,12 @@ export function WorkSection() {
     selectedReports, toggleReport, 
     customReportGroups, addCustomGroup, addCustomReport,
     workTools, addWorkTool, updateWorkToolStep,
-    // ✅ AI рекомендации теперь из контекста (сохраняются)
     aiRecommendations, setAiRecommendations
   } = useApp();
 
   const [workTab, setWorkTab] = useState('reports');
   const [modal, setModal] = useState(null);
   
-  // Состояния модальных окон
   const [showCatalog, setShowCatalog] = useState(false);
   const [catalogTab, setCatalogTab] = useState('kgd');
   const [searchQuery, setSearchQuery] = useState('');
@@ -79,7 +77,6 @@ export function WorkSection() {
   const [expandedRecId, setExpandedRecId] = useState(null);
 
   const today = toDay();
-  const kb = JSON.stringify(profile);
 
   // --- ЛОГИКА КАТАЛОГА ---
   const fullCatalog = catalogTab === 'kgd' ? KGD_CATALOG : BNS_CATALOG;
@@ -91,16 +88,15 @@ export function WorkSection() {
   const selectedKgd = useMemo(() => KGD_CATALOG.filter(r => selectedReports.includes(r.id)), [selectedReports]);
   const selectedBns = useMemo(() => BNS_CATALOG.filter(r => selectedReports.includes(r.id)), [selectedReports]);
 
-  // --- ЛОГИКА AI (ОБНОВЛЕНА) ---
+  // --- ЛОГИКА AI ---
   const handleGetAI = async () => {
     setAiLoading(true);
-    setAiRecommendations([]); // Очищаем старые перед новым запросом
+    setAiRecommendations([]);
     try {
-      // ✅ Расширенный системный промпт      const systemPrompt = `Ты строгий AI-консультант для бухгалтера/ИП в РК.
+      const systemPrompt = `Ты строгий AI-консультант для бухгалтера/ИП в РК.
 ПРАВИЛА ОТВЕТА:
 1. Отвечай ТОЛЬКО валидным JSON массивом объектов. Никакого текста до или после JSON.
-2. Формат каждого объекта строго: 
-   {
+2. Формат каждого объекта строго:    {
      "id": "rec_1",
      "title": "Краткое название",
      "summary": "Суть и польза (1-2 предложения)",
@@ -126,7 +122,7 @@ export function WorkSection() {
         let clean = data.text.replace(/```json/g, '').replace(/```/g, '').trim();
         const parsed = JSON.parse(clean);
         if (Array.isArray(parsed)) {
-          setAiRecommendations(parsed); // ✅ Сохраняется в AppContext (localStorage)
+          setAiRecommendations(parsed);
         } else {
           throw new Error('Неверная структура');
         }
@@ -144,11 +140,11 @@ export function WorkSection() {
       addWorkTool({
         title: rec.tool.title,
         description: rec.tool.description || rec.summary,
-        steps: (rec.tool.steps || ['Шаг 1']).map(s => ({ text: s, completed: false })) // ✅ Шаги с состоянием
-      });      setExpandedRecId(null);
+        steps: (rec.tool.steps || ['Шаг 1']).map(s => ({ text: s, completed: false }))
+      });
+      setExpandedRecId(null);
     }
   };
-
   return (
     <div>
       {/* Шапка */}
@@ -194,11 +190,11 @@ export function WorkSection() {
               <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: `1px solid ${T.border}` }}>
                 <div>
                   <div style={{ fontSize: 13, fontWeight: 500, color: T.text0 }}>{r.name}</div>
-                  <div style={{ fontSize: 10, color: T.text3 }}>{r.id} • {freqLabel(r.frequency)}</div>                </div>
+                  <div style={{ fontSize: 10, color: T.text3 }}>{r.id} • {freqLabel(r.frequency)}</div>
+                </div>
                 <button onClick={() => toggleReport(r.id)} style={{ color: T.error, background: 'none', border: 'none', cursor: 'pointer', fontSize: 16 }}>✕</button>
               </div>
-            ))}
-          </Accordion>
+            ))}          </Accordion>
 
           {/* БНС */}
           <Accordion id="bns-reports" title="📊 БНС" icon="📊" count={selectedBns.length} onAdd={() => { setCatalogTab('bns'); setShowCatalog(true); }}>
@@ -243,11 +239,11 @@ export function WorkSection() {
             </div>
             <div style={{ border: `1px solid ${T.gold}22`, borderTop: 'none', borderRadius: '0 0 12px 12px', overflow: 'hidden', background: 'rgba(255,255,255,0.01)' }}>
               <div style={{ padding: 14 }}>
-                <p style={{ fontSize: 13, color: T.text1, margin: '0 0 12px', lineHeight: 1.5 }}>                  Рекомендации сохраняются до нового запроса.
+                <p style={{ fontSize: 13, color: T.text1, margin: '0 0 12px', lineHeight: 1.5 }}>
+                  Рекомендации сохраняются до нового запроса.
                 </p>
                 <button 
-                  onClick={handleGetAI} 
-                  disabled={aiLoading}
+                  onClick={handleGetAI}                   disabled={aiLoading}
                   style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: 'none', background: aiLoading ? T.text3 : T.gold, color: '#000', fontWeight: 600, cursor: aiLoading ? 'wait' : 'pointer' }}
                 >
                   {aiLoading ? '⏳ Генерация...' : '✨ Получить рекомендации'}
@@ -292,12 +288,12 @@ export function WorkSection() {
                     );
                   })}
                 </div>
-              )}            </div>
+              )}
+            </div>
           </div>
         </div>
       )}
-
-      {/* - ВКЛАДКА: ИНСТРУМЕНТЫ (ОБНОВЛЕНА) - */}
+      {/* - ВКЛАДКА: ИНСТРУМЕНТЫ - */}
       {workTab === 'tools' && (
         <div>
           {workTools.length === 0 ? (
@@ -309,7 +305,6 @@ export function WorkSection() {
             <div key={tool.id} style={{ marginBottom: 10, padding: 14, borderRadius: 12, border: `1px solid ${T.border}`, background: 'rgba(255,255,255,0.02)' }}>
               <div style={{ fontSize: 14, fontWeight: 600, color: T.text0, marginBottom: 6 }}>{tool.title}</div>
               <div style={{ fontSize: 12, color: T.text1, marginBottom: 8 }}>{tool.description}</div>
-              {/* ✅ Чек-лист шагов с отслеживанием прогресса */}
               {tool.steps?.map((step, idx) => (
                 <label key={idx} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: T.text3, marginBottom: 4, cursor: 'pointer' }}>
                   <input 
@@ -323,7 +318,6 @@ export function WorkSection() {
                   </span>
                 </label>
               ))}
-              {/* Прогресс-бар */}
               {tool.steps?.length > 0 && (
                 <div style={{ marginTop: 8, fontSize: 10, color: T.text4 }}>
                   Прогресс: {tool.steps.filter(s => (typeof s === 'string' ? false : s.completed)).length} / {tool.steps.length}
@@ -341,13 +335,13 @@ export function WorkSection() {
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
               <h3 style={{ margin: 0, color: T.text0 }}>Каталог форм</h3>
               <button onClick={() => setShowCatalog(false)} style={{ background: 'none', border: 'none', color: T.text3, fontSize: 20 }}>✕</button>
-            </div>            <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+            </div>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
               <button onClick={() => setCatalogTab('kgd')} style={{ flex: 1, padding: 8, borderRadius: 8, border: `1px solid ${catalogTab === 'kgd' ? T.accent : T.border}`, background: catalogTab === 'kgd' ? T.accent : 'transparent', color: catalogTab === 'kgd' ? '#000' : T.text2, cursor: 'pointer' }}>🏛 КГД</button>
               <button onClick={() => setCatalogTab('bns')} style={{ flex: 1, padding: 8, borderRadius: 8, border: `1px solid ${catalogTab === 'bns' ? T.accent : T.border}`, background: catalogTab === 'bns' ? T.accent : 'transparent', color: catalogTab === 'bns' ? '#000' : T.text2, cursor: 'pointer' }}>📊 БНС</button>
             </div>
             <input placeholder="Поиск..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} style={{ width: '100%', padding: 10, marginBottom: 12, borderRadius: 8, border: `1px solid ${T.border}`, background: 'rgba(255,255,255,0.05)', color: T.text0 }} />
-            <div style={{ overflowY: 'auto', flex: 1 }}>
-              {filteredCatalog.map(r => {
+            <div style={{ overflowY: 'auto', flex: 1 }}>              {filteredCatalog.map(r => {
                 const isSelected = selectedReports.includes(r.id);
                 return (
                   <div key={r.id} onClick={() => toggleReport(r.id)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0', borderBottom: `1px solid ${T.border}`, cursor: 'pointer' }}>
@@ -381,4 +375,4 @@ export function WorkSection() {
       {modal !== null && <TaskModal task={modal?.id ? modal : null} defaultSection="work" onSave={(t) => { setTasks(p => modal?.id ? p.map(x => x.id === t.id ? t : x) : [...p, t]); setModal(null); }} onClose={() => setModal(null)} />}
     </div>
   );
-                                                     }
+                  }
