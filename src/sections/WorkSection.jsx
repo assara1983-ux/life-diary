@@ -96,7 +96,7 @@ export function WorkSection() {
       const systemPrompt = `Ты строгий AI-консультант для бухгалтера/ИП в РК.
 ПРАВИЛА ОТВЕТА:
 1. Отвечай ТОЛЬКО валидным JSON массивом объектов. Никакого текста до или после JSON.
-2. Формат каждого объекта строго:    {
+2. Формат каждого объекта строго:   {
      "id": "rec_1",
      "title": "Краткое название",
      "summary": "Суть и польза (1-2 предложения)",
@@ -243,7 +243,7 @@ export function WorkSection() {
                   Рекомендации сохраняются до нового запроса.
                 </p>
                 <button 
-                  onClick={handleGetAI}                   disabled={aiLoading}
+                  onClick={handleGetAI}                  disabled={aiLoading}
                   style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: 'none', background: aiLoading ? T.text3 : T.gold, color: '#000', fontWeight: 600, cursor: aiLoading ? 'wait' : 'pointer' }}
                 >
                   {aiLoading ? '⏳ Генерация...' : '✨ Получить рекомендации'}
@@ -330,26 +330,73 @@ export function WorkSection() {
 
       {/* --- МОДАЛЬНЫЕ ОКНА --- */}
       {showCatalog && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={() => setShowCatalog(false)}>
-          <div style={{ background: T.bg, width: '100%', maxWidth: 500, maxHeight: '85vh', borderRadius: 16, padding: 20, display: 'flex', flexDirection: 'column' }} onClick={e => e.stopPropagation()}>
+        <div 
+          style={{ 
+            position: 'fixed', 
+            inset: 0, 
+            background: 'rgba(0,0,0,0.7)', 
+            zIndex: 1000, 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            padding: 16 
+          }} 
+          onClick={() => setShowCatalog(false)}        >
+          <div 
+            style={{ 
+              background: T.bg || '#1a1a2e', 
+              width: '100%', 
+              maxWidth: 500, 
+              maxHeight: '85vh', 
+              borderRadius: 16, 
+              padding: 20, 
+              display: 'flex', 
+              flexDirection: 'column',
+              zIndex: 1001,
+              border: `1px solid ${T.border || '#333'}`
+            }} 
+            onClick={e => e.stopPropagation()}
+          >
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-              <h3 style={{ margin: 0, color: T.text0 }}>Каталог форм</h3>
-              <button onClick={() => setShowCatalog(false)} style={{ background: 'none', border: 'none', color: T.text3, fontSize: 20 }}>✕</button>
+              <h3 style={{ margin: 0, color: '#fff', fontWeight: 600 }}>Каталог форм</h3>
+              <button onClick={() => setShowCatalog(false)} style={{ background: 'none', border: 'none', color: '#aaa', fontSize: 20, cursor: 'pointer' }}>✕</button>
             </div>
             <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-              <button onClick={() => setCatalogTab('kgd')} style={{ flex: 1, padding: 8, borderRadius: 8, border: `1px solid ${catalogTab === 'kgd' ? T.accent : T.border}`, background: catalogTab === 'kgd' ? T.accent : 'transparent', color: catalogTab === 'kgd' ? '#000' : T.text2, cursor: 'pointer' }}>🏛 КГД</button>
-              <button onClick={() => setCatalogTab('bns')} style={{ flex: 1, padding: 8, borderRadius: 8, border: `1px solid ${catalogTab === 'bns' ? T.accent : T.border}`, background: catalogTab === 'bns' ? T.accent : 'transparent', color: catalogTab === 'bns' ? '#000' : T.text2, cursor: 'pointer' }}>📊 БНС</button>
+              <button onClick={() => setCatalogTab('kgd')} style={{ flex: 1, padding: 8, borderRadius: 8, border: `1px solid ${catalogTab === 'kgd' ? T.accent : '#333'}`, background: catalogTab === 'kgd' ? (T.accent || '#c8a45a') : 'transparent', color: catalogTab === 'kgd' ? '#000' : '#ccc', cursor: 'pointer' }}>🏛 КГД</button>
+              <button onClick={() => setCatalogTab('bns')} style={{ flex: 1, padding: 8, borderRadius: 8, border: `1px solid ${catalogTab === 'bns' ? T.accent : '#333'}`, background: catalogTab === 'bns' ? (T.accent || '#c8a45a') : 'transparent', color: catalogTab === 'bns' ? '#000' : '#ccc', cursor: 'pointer' }}>📊 БНС</button>
             </div>
-            <input placeholder="Поиск..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} style={{ width: '100%', padding: 10, marginBottom: 12, borderRadius: 8, border: `1px solid ${T.border}`, background: 'rgba(255,255,255,0.05)', color: T.text0 }} />
-            <div style={{ overflowY: 'auto', flex: 1 }}>              {filteredCatalog.map(r => {
+            <input 
+              placeholder="Поиск..." 
+              value={searchQuery} 
+              onChange={e => setSearchQuery(e.target.value)} 
+              style={{ 
+                width: '100%', 
+                padding: 10, 
+                marginBottom: 12, 
+                borderRadius: 8, 
+                border: `1px solid ${T.border || '#333'}`, 
+                background: 'rgba(255,255,255,0.1)', 
+                color: '#fff',
+                outline: 'none'
+              }} 
+            />
+            <div style={{ overflowY: 'auto', flex: 1, paddingRight: 4 }}>
+              {filteredCatalog.map(r => {
                 const isSelected = selectedReports.includes(r.id);
                 return (
-                  <div key={r.id} onClick={() => toggleReport(r.id)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0', borderBottom: `1px solid ${T.border}`, cursor: 'pointer' }}>
-                    <div style={{ width: 18, height: 18, borderRadius: 4, border: `2px solid ${isSelected ? T.accent : T.text3}`, background: isSelected ? T.accent : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#000', fontSize: 12 }}>{isSelected && '✓'}</div>
-                    <div><div style={{ fontSize: 13, color: T.text0, fontWeight: 500 }}>{r.name}</div><div style={{ fontSize: 10, color: T.text3 }}>{r.id}</div></div>
-                  </div>
-                );
+                  <div key={r.id} onClick={() => toggleReport(r.id)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0', borderBottom: `1px solid ${T.border || '#333'}`, cursor: 'pointer' }}>
+                    <div style={{ width: 18, height: 18, borderRadius: 4, border: `2px solid ${isSelected ? (T.accent || '#c8a45a') : '#555'}`, background: isSelected ? (T.accent || '#c8a45a') : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#000', fontSize: 12, flexShrink: 0 }}>{isSelected && '✓'}</div>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: 13, color: '#fff', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.name}</div>
+                      <div style={{ fontSize: 10, color: '#aaa' }}>{r.id}</div>
+                    </div>
+                  </div>                );
               })}
+              {filteredCatalog.length === 0 && (
+                <div style={{ padding: 20, textAlign: 'center', color: '#aaa', fontSize: 13 }}>
+                  Ничего не найдено
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -375,4 +422,4 @@ export function WorkSection() {
       {modal !== null && <TaskModal task={modal?.id ? modal : null} defaultSection="work" onSave={(t) => { setTasks(p => modal?.id ? p.map(x => x.id === t.id ? t : x) : [...p, t]); setModal(null); }} onClose={() => setModal(null)} />}
     </div>
   );
-                  }
+                            }
