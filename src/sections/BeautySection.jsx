@@ -1,7 +1,6 @@
 // src/sections/BeautySection.jsx
 import { useState } from 'react';
 import { useApp } from '../store/AppContext';
-import { AiBox } from '../components/AiBox';
 import { TaskModal } from '../components/TaskModal';
 
 // --- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ---
@@ -43,11 +42,16 @@ function freqLabel(f) {
   return f;
 }
 
-function buildKB(p) {
-  return `Пользователь: ${p.name || '—'}, ${p.gender || '—'}. Тип кожи: ${p.skinType || '—'}. ${p.gender === 'Мужской' ? 'Борода: ' + (p.beard || '—') : 'Волосы: ' + (p.hairType || '—')}. Приоритет в уходе: ${p.beautyPriority || '—'}.`;
-}
+export function BeautySection() {
+  // БЕЗОПАСНОЕ ИЗВЛЕЧЕНИЕ ДАННЫХ (защита от белого экрана)
+  const app = useApp();
+  const profile = app.profile || {};
+  const tasks = app.tasks || [];
+  const setTasks = app.setTasks || (() => {});  const beautyProcs = app.beautyProcs || {};
+  const setBeautyProcs = app.setBeautyProcs || (() => {});
+  const beautyTopics = app.beautyTopics || [];
+  const setBeautyTopics = app.setBeautyTopics || (() => {});
 
-export function BeautySection() {  const { profile, tasks, setTasks, beautyProcs, setBeautyProcs, beautyTopics, setBeautyTopics } = useApp();
   const [modal, setModal] = useState(null);
   const [procsOpen, setProcsOpen] = useState(true);
   const [todayOpen, setTodayOpen] = useState(true);
@@ -72,7 +76,7 @@ export function BeautySection() {  const { profile, tasks, setTasks, beautyProcs
     { cat: 'Борода и волосы', items: [
       { id: 'beard_care', name: 'Уход за бородой', freq: 'every:2', time: '08:00', icon: '🧔', dur: 10 },
       { id: 'hair_wash', name: 'Мытьё волос', freq: 'every:2', time: '20:00', icon: '🚿', dur: 20 },
-      { id: 'haircut', name: 'Стрижка / барбер', freq: 'every:30', time: '', icon: '✂️', dur: 60 },
+      { id: 'haircut', name: 'Стрижка / барбер', freq: 'every:30', time: '', icon: '️', dur: 60 },
     ]},
     { cat: 'Руки и ногти', items: [
       { id: 'hand_cream', name: 'Крем для рук', freq: 'daily', time: '21:00', icon: '🤲', dur: 3 },
@@ -87,16 +91,16 @@ export function BeautySection() {  const { profile, tasks, setTasks, beautyProcs
       { id: 'eye_care', name: 'Крем для глаз', freq: 'daily', time: '21:00', icon: '👁', dur: 3 },
     ]},
     { cat: 'Уход за телом', items: [
-      { id: 'body_cream', name: 'Крем для тела', freq: 'daily', time: '20:00', icon: '🧴', dur: 5 },
-      { id: 'body_scrub', name: 'Скраб для тела', freq: 'every:4', time: '20:00', icon: '🫧', dur: 15, moon: 'убывающая' },
+      { id: 'body_cream', name: 'Крем для тела', freq: 'daily', time: '20:00', icon: '', dur: 5 },
+      { id: 'body_scrub', name: 'Скраб для тела', freq: 'every:4', time: '20:00', icon: '', dur: 15, moon: 'убывающая' },
       { id: 'depo', name: 'Депиляция / эпиляция', freq: 'every:14', time: '', icon: '✨', dur: 30, moon: 'убывающая' },
       { id: 'tan', name: 'Автозагар', freq: 'every:7', time: '', icon: '🌅', dur: 10 },
     ]},
-    { cat: 'Уход за волосами', items: [
-      { id: 'hair_wash', name: 'Мытьё волос', freq: 'every:2', time: '20:00', icon: '🚿', dur: 20 },
+    { cat: 'Уход за волосами', items: [      { id: 'hair_wash', name: 'Мытьё волос', freq: 'every:2', time: '20:00', icon: '🚿', dur: 20 },
       { id: 'hair_mask', name: 'Маска для волос', freq: 'every:7', time: '20:00', icon: '💆', dur: 40, moon: true },
       { id: 'hair_oil', name: 'Масло для волос', freq: 'every:7', time: '', icon: '🫙', dur: 10 },
-      { id: 'haircut', name: 'Стрижка', freq: 'every:30', time: '', icon: '✂️', dur: 60, moon: 'растущая' },      { id: 'coloring', name: 'Окрашивание', freq: 'every:42', time: '', icon: '🎨', dur: 120 },
+      { id: 'haircut', name: 'Стрижка', freq: 'every:30', time: '', icon: '✂️', dur: 60, moon: 'растущая' },
+      { id: 'coloring', name: 'Окрашивание', freq: 'every:42', time: '', icon: '🎨', dur: 120 },
     ]},
     { cat: 'Маникюр и ногти', items: [
       { id: 'nails', name: 'Маникюр', freq: 'every:21', time: '', icon: '💅', dur: 60, moon: true },
@@ -142,10 +146,10 @@ export function BeautySection() {  const { profile, tasks, setTasks, beautyProcs
     });
     setBeautyProcs(p => ({ ...p, [item.id]: { time, duration, day, date, startDate, confirmed: true } }));
   };
-
   return (
     <div style={{ 
-      background: 'linear-gradient(180deg, #f4ecd8 0%, #e8dcc4 100%)',       minHeight: '100vh', 
+      background: 'linear-gradient(180deg, #f4ecd8 0%, #e8dcc4 100%)', 
+      minHeight: '100vh', 
       padding: '20px', 
       color: '#2c241b', 
       fontFamily: "'Cormorant Garamond', serif",
@@ -190,11 +194,11 @@ export function BeautySection() {  const { profile, tasks, setTasks, beautyProcs
               {cat.items.map(item => {
                 const sel = beautyTopics.includes(item.id);
                 const s = beautyProcs[item.id] || {};
-                const confirmed = s.confirmed === true;
-                return (
+                const confirmed = s.confirmed === true;                return (
                   <div key={item.id} onClick={() => { if (!sel) setBeautyTopics(p => [...p, item.id]); }} style={{ 
                     display: 'flex', alignItems: 'center', gap: 10, 
-                    padding: '8px 0', borderBottom: '1px dotted #c4b898',                     cursor: 'pointer' 
+                    padding: '8px 0', borderBottom: '1px dotted #c4b898', 
+                    cursor: 'pointer' 
                   }}>
                     <span style={{ fontSize: 18 }}>{item.icon}</span>
                     <div style={{ flex: 1 }}>
@@ -239,11 +243,11 @@ export function BeautySection() {  const { profile, tasks, setTasks, beautyProcs
           <div style={{ 
             fontFamily: "'Playfair Display', serif", 
             fontSize: '16px', color: '#b86b5d', 
-            fontStyle: 'italic', marginBottom: 10,
-            borderBottom: '1px solid #b86b5d', paddingBottom: 5 
+            fontStyle: 'italic', marginBottom: 10,            borderBottom: '1px solid #b86b5d', paddingBottom: 5 
           }}>Сегодня</div>
           {due.map(task => (
-            <div key={task.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0' }}>              <div 
+            <div key={task.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0' }}>
+              <div 
                 onClick={() => setTasks(p => p.map(t => t.id === task.id ? { ...t, doneDate: t.doneDate === today ? null : today, lastDone: t.doneDate === today ? t.lastDone : today } : t))}
                 style={{ 
                   width: 24, height: 24, borderRadius: '50%', 
@@ -272,17 +276,7 @@ export function BeautySection() {  const { profile, tasks, setTasks, beautyProcs
         </div>
       )}
 
-      {/* AI советы (без customStyles) */}
-      <div style={{ marginTop: 30, paddingTop: 20, borderTop: '1px solid #a89070' }}>
-        <AiBox
-          kb={buildKB(profile)}
-          prompt={`Дай персональные рекомендации по уходу. Пол: ${profile.gender}. Тип кожи: ${profile.skinType || '—'}. ${!isMale ? 'Тип волос: ' + (profile.hairType || '—') + '.' : 'Борода: ' + (profile.beard || '—') + '.'} Приоритет: ${profile.beautyPriority || '—'}. Свободное время: с ${profile.workEnd || '18:00'} до ${profile.sleep || '23:00'}.`}
-          label="Советы по уходу"
-          btnText="Получить советы"
-          placeholder="Анализирую профиль..."
-        />
-      </div>
-
+      {/* Модальное окно */}
       {modal !== null && (
         <TaskModal
           task={modal.id ? modal : null}
@@ -292,4 +286,5 @@ export function BeautySection() {  const { profile, tasks, setTasks, beautyProcs
         />
       )}
     </div>
-  );}
+  );
+}
