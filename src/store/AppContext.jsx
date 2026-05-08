@@ -96,7 +96,12 @@ export function AppProvider({ children }) {
     setCustomReportGroups(prev => prev.filter(g => g.id !== groupId));
   };
   const addCustomReport = (groupId, reportData) => {
-    setCustomReportGroups(prev => prev.map(g => {      if (g.id === groupId) return { ...g, reports: [...g.reports, { id: 'r-' + Date.now(), ...reportData }] };
+    setCustomReportGroups(prev => prev.map(g => {      if (g.id === groupId) {
+        return {
+          ...g,
+          reports: [...g.reports, { id: 'r-' + Date.now(), ...reportData }]
+        };
+      }
       return g;
     }));
   };
@@ -140,12 +145,12 @@ export function AppProvider({ children }) {
   const [homeTasks, setHomeTasks] = useStorageState('ld_home_open_tasks', true);
   const [hobbyAdvice, setHobbyAdvice] = useStorageState('ld_hobby_advice', true);
   const [hobbyList, setHobbyList] = useStorageState('ld_hobby_list', true);
-  const [travelAdvice, setTravelAdvice] = useStorageState('ld_travel_advice', true);
-  const [travelTrips, setTravelTrips] = useStorageState('ld_travel_trips', true);
+  const [travelAdvice, setTravelAdvice] = useStorageState('ld_travel_advice', true);  const [travelTrips, setTravelTrips] = useStorageState('ld_travel_trips', true);
   const [journalPrompts, setJournalPrompts] = useStorageState('ld_journal_prompts', true);
   const [journalHistory, setJournalHistory] = useStorageState('ld_journal_history', true);
   const [carAdvice, setCarAdvice] = useStorageState('ld_car_advice', true);
-  const [carTasks, setCarTasks] = useStorageState('ld_car_tasks', true);  const [beautyProcsOpen, setBeautyProcsOpen] = useStorageState('ld_beauty_procs_open', true);
+  const [carTasks, setCarTasks] = useStorageState('ld_car_tasks', true);
+  const [beautyProcsOpen, setBeautyProcsOpen] = useStorageState('ld_beauty_procs_open', true);
   const [beautyTodayOpen, setBeautyTodayOpen] = useStorageState('ld_beauty_today_open', true);
   const [beautyChooseOpen, setBeautyChooseOpen] = useStorageState('ld_beauty_choose_open', true);
   const [healthAdvice, setHealthAdvice] = useStorageState('ld_health_advice', true);
@@ -189,12 +194,12 @@ export function AppProvider({ children }) {
 
     if (newTasks.length > 0) setTasks(prev => [...prev, ...newTasks]);
   }, [selectedReports, customReportGroups, tasks, setTasks, allCatalogReports]);
-
   // --- Экспорт данных ---
   const value = {
     profile, setProfile, sections, setSections, tasks, setTasks,
     journal, setJournal, shopList, setShopList, petLog, setPetLog,
-    trips, setTrips, hobbies, setHobbies,    reportGroups, setReportGroups, reports, setReports,
+    trips, setTrips, hobbies, setHobbies,
+    reportGroups, setReportGroups, reports, setReports,
     workTools, setWorkTools, addWorkTool, deleteWorkTool, updateWorkToolStep,
     checkResults, setCheckResults,
     customReportGroups, addCustomGroup, deleteGroup, addCustomReport,
