@@ -3,8 +3,51 @@ import { useState } from 'react';
 import { useApp } from '../store/AppContext';
 import { AiBox } from '../components/AiBox';
 import { TaskModal } from '../components/TaskModal';
-import { T } from '../utils/theme';
 
+// --- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ---
+function isDue(task, today) {
+  const last = task.lastDone;
+  const d = new Date(today);
+  d.setHours(0, 0, 0, 0);
+
+  if (!task.freq) return false;
+  if (task.doneDate === today) return false;
+
+  if (task.freq === 'daily') return last !== today;
+  if (task.freq === 'workdays') {
+    const dn = d.getDay();
+    return dn >= 1 && dn <= 5 && last !== today;
+  }
+  if (task.freq.startsWith('weekly:')) {
+    return task.freq.split(':')[1].split(',').map(Number).includes(d.getDay()) && last !== today;
+  }
+  if (task.freq.startsWith('every:')) {
+    const n = parseInt(task.freq.split(':')[1]);
+    if (!last) return true;
+    return Math.floor((d - new Date(last)) / 86400000) >= n;
+  }
+  if (task.freq.startsWith('monthly:')) {
+    return task.freq.split(':')[1].split(',').map(Number).includes(d.getDate()) && last !== today;
+  }
+  return false;
+}
+
+function freqLabel(f) {
+  if (!f || f === 'once') return 'разово';
+  if (f === 'daily') return 'ежедневно';
+  if (f === 'workdays') return 'пн–пт';
+  if (f.startsWith('weekly:')) {
+    const m = { 0: 'вс', 1: 'пн', 2: 'вт', 3: 'ср', 4: 'чт', 5: 'пт', 6: 'сб' };
+    return f.split(':')[1].split(',').map(n => m[n]).join(', ');
+  }
+  if (f.startsWith('every:')) return `каждые ${f.split(':')[1]} дн.`;
+  if (f.startsWith('monthly:')) return `${f.split(':')[1]} числа`;
+  return f;
+}
+
+function buildKB(p) {
+  return `Пользователь: ${p.name || '—'}, ${p.gender || '—'}. Тип кожи: ${p.skinType || '—'}. ${p.gender === 'Мужской' ? 'Борода: ' + (p.beard || '—') : 'Волосы: ' + (p.hairType || '—')}. Приоритет в уходе: ${p.beautyPriority || '—'}.`;
+}
 export function BeautySection() {
   const { profile, tasks, setTasks, beautyProcs, setBeautyProcs, beautyTopics, setBeautyTopics } = useApp();
   const [modal, setModal] = useState(null);
@@ -17,36 +60,6 @@ export function BeautySection() {
   const today = new Date().toISOString().split('T')[0];
   const due = beautyTasks.filter(t => isDue(t, today));
 
-  // Справочник процедур
-  const DURATIONS = {
-    face_morning: 10, face_evening: 15, face_mask: 20, face_scrub: 10,
-    eye_care: 3, body_cream: 5, body_scrub: 15, depo: 30, tan: 10,
-    hair_wash: 20, hair_mask: 40, hair_oil: 10, haircut: 60, coloring: 120,
-    nails: 60, ped: 60, nail_care: 5, brows: 20, lash: 90,
-    massage: 15, lymph: 30, bath: 30,
-    beard_care: 10, hair_wash_m: 20, nails_m: 10, body_scrub_m: 15, hand_cream: 3,
-  };
-
-  const DAY_RECS = {
-    face_scrub: 'убывающая луна, пн/ср/пт',
-    face_mask: 'растущая луна, вт/чт',
-    hair_mask: 'растущая луна, вс',
-    haircut: 'растущая луна',
-    depo: 'убывающая луна',
-    nails: 'растущая луна, сб/вс',
-    bath: 'растущая луна, пт/сб',
-    body_scrub: 'убывающая луна',
-    lymph: 'вт/чт',
-    massage: 'пн/чт',
-    hair_oil: 'вс',
-    brows: 'любой день, раз в 2 нед.',
-  };
-
-  const isRare = (freq) => {
-    if (!freq) return false;
-    const n = parseInt((freq.match(/every:(\d+)/) || [0, 0])[1]);
-    return n >= 14;
-  };
   const TOPICS = isMale ? [
     { cat: 'Лицо', items: [
       { id: 'face_morning', name: 'Умывание утром', freq: 'daily', time: '07:00', icon: '💧', dur: 10 },
@@ -83,8 +96,7 @@ export function BeautySection() {
     ]},
     { cat: 'Уход за волосами', items: [
       { id: 'hair_wash', name: 'Мытьё волос', freq: 'every:2', time: '20:00', icon: '🚿', dur: 20 },
-      { id: 'hair_mask', name: 'Маска для волос', freq: 'every:7', time: '20:00', icon: '💆', dur: 40, moon: true },
-      { id: 'hair_oil', name: 'Масло для волос', freq: 'every:7', time: '', icon: '🫙', dur: 10 },
+      { id: 'hair_mask', name: 'Маска для волос', freq: 'every:7', time: '20:00', icon: '💆', dur: 40, moon: true },      { id: 'hair_oil', name: 'Масло для волос', freq: 'every:7', time: '', icon: '🫙', dur: 10 },
       { id: 'haircut', name: 'Стрижка', freq: 'every:30', time: '', icon: '✂️', dur: 60, moon: 'растущая' },
       { id: 'coloring', name: 'Окрашивание', freq: 'every:42', time: '', icon: '🎨', dur: 120 },
     ]},
@@ -96,7 +108,8 @@ export function BeautySection() {
     { cat: 'Брови и ресницы', items: [
       { id: 'brows', name: 'Коррекция бровей', freq: 'every:14', time: '', icon: '🪞', dur: 20 },
       { id: 'lash', name: 'Наращивание ресниц', freq: 'every:21', time: '', icon: '✨', dur: 90 },
-    ]},    { cat: 'Массаж и тело', items: [
+    ]},
+    { cat: 'Массаж и тело', items: [
       { id: 'massage', name: 'Массаж лица', freq: 'every:3', time: '21:00', icon: '💆', dur: 15 },
       { id: 'lymph', name: 'Лимфодренажный массаж', freq: 'every:7', time: '', icon: '🫀', dur: 30 },
       { id: 'bath', name: 'Ванна с солью / пеной', freq: 'every:7', time: '21:00', icon: '🛁', dur: 30, moon: true },
@@ -132,52 +145,111 @@ export function BeautySection() {
 
     setBeautyProcs(p => ({ ...p, [item.id]: { time, duration, day, date, startDate, confirmed: true } }));
   };
+  // --- СТИЛИ "ВИКТОРИАНСКИЙ ДНЕВНИК" ---
+  const styles = {
+    page: {
+      background: 'linear-gradient(180deg, #f4ecd8 0%, #e8dcc4 50%, #d4c4a8 100%)',
+      padding: '24px 20px',
+      minHeight: '100%',
+      color: '#2c241b',
+      fontFamily: "'Cormorant Garamond', serif",
+      boxShadow: 'inset 0 0 60px rgba(101,67,33,0.2)',
+      backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 31px, rgba(139,115,85,0.05) 31px, rgba(139,115,85,0.05) 32px)',
+    },
+    header: {
+      fontFamily: "'Dancing Script', cursive",
+      fontSize: '32px',
+      color: '#3d2817',
+      textAlign: 'center',
+      marginBottom: '20px',
+      fontWeight: 700,
+      textShadow: '1px 1px 0 rgba(255,255,255,0.5)',
+    },
+    section: {
+      marginBottom: '20px',
+      padding: '15px',
+      background: 'rgba(255,255,255,0.25)',
+      borderLeft: '3px solid #8b7355',
+      borderRadius: '2px',
+    },
+    sectionTitle: {
+      fontFamily: "'Playfair Display', serif",
+      fontSize: '16px',
+      color: '#5d4a3a',
+      fontStyle: 'italic',
+      marginBottom: '10px',
+      borderBottom: '1px solid #a89070',
+      paddingBottom: '4px',
+    },
+    item: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '10px',
+      padding: '8px 0',
+      borderBottom: '1px dotted #c4b898',
+      fontSize: '16px',
+    },
+    itemTime: {
+      marginLeft: 'auto',
+      fontFamily: "'Marck Script', cursive",
+      color: '#6b5a4a',
+      fontSize: '16px',
+    },    buttonVintage: {
+      width: '100%',
+      padding: '10px',
+      marginTop: '15px',
+      background: 'linear-gradient(180deg, #e8dcc4 0%, #d4c4a8 100%)',
+      border: '2px solid #8b7355',
+      borderRadius: '4px',
+      color: '#2c241b',
+      fontFamily: "'Playfair Display', serif",
+      fontSize: '14px',
+      cursor: 'pointer',
+      fontWeight: 600,
+    },
+    tag: {
+      fontSize: '12px',
+      padding: '2px 8px',
+      borderRadius: '12px',
+      background: 'rgba(139,115,85,0.15)',
+      border: '1px solid #8b7355',
+      color: '#5d4a3a',
+    }
+  };
 
   return (
-    <div>
-      {/* Шапка профиля */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, padding: '8px 12px', background: 'rgba(45,32,16,0.05)', borderRadius: 10, marginBottom: 12, alignItems: 'center' }}>
-        {profile.skinType && <span style={{ fontSize: 12, color: T.text2 }}>✨ {profile.skinType}</span>}
-        {!isMale && profile.hairType && <span style={{ fontSize: 12, color: T.text3 }}>· 💇 {profile.hairType}</span>}
-        {isMale && profile.beard && <span style={{ fontSize: 12, color: T.text3 }}>· 🧔 {profile.beard}</span>}
+    <div style={styles.page}>
+      {/* Шапка */}
+      <div style={styles.header}>Beauty Journal</div>
+
+      {/* Профиль */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, justifyContent: 'center', marginBottom: 20, opacity: 0.8 }}>
+        {profile.skinType && <span style={styles.tag}>✨ {profile.skinType}</span>}
+        {!isMale && profile.hairType && <span style={styles.tag}>💇 {profile.hairType}</span>}
       </div>
 
       {/* Выбор процедур */}
-      <div onClick={() => setChooseOpen(o => !o)} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', marginBottom: chooseOpen ? 8 : 12, padding: '6px 0' }}>
-        <div style={{ fontSize: 10, color: T.text3, fontFamily: "'JetBrains Mono'", letterSpacing: 1.5, flex: 1 }}>ВЫБЕРИ ПРОЦЕДУРЫ</div>
-        <span style={{ fontSize: 11, color: T.text3 }}>{chooseOpen ? '▲' : '▼'}</span>      </div>
+      <div onClick={() => setChooseOpen(o => !o)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer', marginBottom: chooseOpen ? 10 : 0, color: '#5d4a3a', fontFamily: "'Playfair Display', serif", fontStyle: 'italic' }}>
+        <span style={{ fontSize: '14px' }}>{chooseOpen ? '▲' : '▼'}</span>
+        <span>Выбрать процедуры</span>
+      </div>
 
       {chooseOpen && (
         <div>
           {TOPICS.map(cat => (
-            <div key={cat.cat} style={{ marginBottom: 12 }}>
-              <div style={{ fontSize: 11, color: T.gold, fontFamily: "'JetBrains Mono'", letterSpacing: 1, marginBottom: 6 }}>{cat.cat.toUpperCase()}</div>
+            <div key={cat.cat} style={styles.section}>
+              <div style={styles.sectionTitle}>{cat.cat}</div>
               {cat.items.map(item => {
                 const sel = beautyTopics.includes(item.id);
                 const s = beautyProcs[item.id] || {};
                 const confirmed = s.confirmed === true;
-
-                return (
-                  <div key={item.id}>
-                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 20, cursor: 'pointer', marginBottom: 6, marginRight: 6,
-                      background: confirmed ? 'rgba(123,204,160,0.15)' : sel ? 'rgba(200,164,90,0.15)' : 'rgba(255,255,255,0.03)',
-                      border: '1px solid ' + (confirmed ? T.success + '88' : sel ? 'rgba(200,164,90,0.5)' : 'rgba(255,255,255,0.08)'),
-                      transition: 'all .15s' }}
-                      onClick={() => {
-                        if (!sel) {
-                          setBeautyTopics(p => [...p, item.id]);
-                        }
-                      }}>
-                      <span style={{ fontSize: 16 }}>{item.icon}</span>
-                      <div>
-                        <div style={{ fontSize: 13, color: confirmed ? T.success : sel ? T.gold : T.text0 }}>{item.name}</div>
-                        <div style={{ fontSize: 10, color: T.text3, fontFamily: "'JetBrains Mono'" }}>
-                          {freqLabel(item.freq)}
-                          {confirmed && s.time && <span style={{ color: T.success, marginLeft: 4 }}>· {s.time}</span>}
-                        </div>
-                      </div>
-                      {confirmed && <span style={{ fontSize: 12, color: T.success }}>✓</span>}
+                return (                  <div key={item.id} style={{ ...styles.item, borderBottom: 'none', cursor: 'pointer' }} onClick={() => { if (!sel) setBeautyTopics(p => [...p, item.id]); }}>
+                    <span style={{ fontSize: '18px' }}>{item.icon}</span>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: confirmed ? 700 : 400, color: confirmed ? '#1a4d3e' : '#2c241b' }}>{item.name}</div>
+                      <div style={{ fontSize: '12px', opacity: 0.7 }}>{freqLabel(item.freq)}</div>
                     </div>
+                    {confirmed && <span style={{ color: '#1a4d3e', fontSize: '18px' }}>✓</span>}
                   </div>
                 );
               })}
@@ -188,74 +260,58 @@ export function BeautySection() {
 
       {/* Мои процедуры */}
       {beautyTasks.length > 0 && (
-        <div style={{ marginBottom: 12 }}>
-          <div onClick={() => setProcsOpen(o => !o)} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', marginBottom: procsOpen ? 8 : 0, padding: '6px 0' }}>
-            <div style={{ fontSize: 10, color: T.text3, fontFamily: "'JetBrains Mono'", letterSpacing: 1.5, flex: 1 }}>МОИ ПРОЦЕДУРЫ</div>
-            <span style={{ fontSize: 10, color: T.text3, fontFamily: "'JetBrains Mono'" }}>{beautyTasks.length}</span>
-            <span style={{ fontSize: 11, color: T.text3 }}>{procsOpen ? '▲' : '▼'}</span>
+        <div style={styles.section}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', marginBottom: procsOpen ? 10 : 0, color: '#5d4a3a', fontFamily: "'Playfair Display', serif", fontStyle: 'italic' }} onClick={() => setProcsOpen(o => !o)}>
+            <span>{procsOpen ? '▲' : '▼'}</span>
+            <span>Мои ритуалы ({beautyTasks.length})</span>
           </div>
-          {procsOpen && (
-            <div>
-              {beautyTasks.map(task => (
-                <div key={task.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', marginBottom: 6, background: 'rgba(255,255,255,0.02)', borderRadius: 10, border: '1px solid rgba(255,255,255,0.06)' }}>
-                  <span style={{ fontSize: 16, flexShrink: 0 }}>{allItems.find(i => i.id === task.beautyId)?.icon || '✨'}</span>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13, color: T.text0, lineHeight: 1.4 }}>{task.title}</div>
-                    <div style={{ display: 'flex', gap: 6, marginTop: 2, flexWrap: 'wrap' }}>
-                      {task.preferredTime && <span style={{ fontSize: 10, color: '#E8A8C8', fontFamily: "'JetBrains Mono'" }}>🕐{task.preferredTime}</span>}
-                      {task.beautyDuration && <span style={{ fontSize: 10, color: T.text3, fontFamily: "'JetBrains Mono'" }}>{task.beautyDuration} мин</span>}
-                      <span style={{ fontSize: 10, color: T.text3 }}>{freqLabel(task.freq)}</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
+          {procsOpen && beautyTasks.map(task => (
+            <div key={task.id} style={styles.item}>
+              <span style={{ fontSize: '18px' }}>{allItems.find(i => i.id === task.beautyId)?.icon || '✨'}</span>
+              <div style={{ flex: 1 }}>
+                <div>{task.title}</div>
+                <div style={{ fontSize: '12px', opacity: 0.7 }}>{freqLabel(task.freq)} · {task.beautyDuration} мин</div>
+              </div>
             </div>
-          )}
+          ))}
         </div>
       )}
 
       {/* Сегодня */}
       {due.length > 0 && (
-        <div style={{ marginBottom: 10 }}>
-          <div onClick={() => setTodayOpen(o => !o)} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', padding: '10px 14px', borderRadius: todayOpen ? '12px 12px 0 0' : '12px', background: 'rgba(232,168,200,0.06)', border: '1px solid rgba(232,168,200,0.2)' }}>
-            <span style={{ fontSize: 14 }}>✨</span>
-            <span style={{ flex: 1, fontSize: 14, fontFamily: "'Crimson Pro',serif", color: '#E8A8C8', fontWeight: 500 }}>Сегодня</span>
-            <span style={{ fontSize: 10, color: '#E8A8C8', fontFamily: "'JetBrains Mono'", background: 'rgba(232,168,200,0.1)', padding: '1px 7px', borderRadius: 8 }}>{due.filter(t => t.doneDate === today).length}/{due.length}</span>
-            <button className="btn btn-ghost btn-sm" style={{ fontSize: 11 }} onClick={e => { e.stopPropagation(); setModal({}); }}>+ Своя</button>
-            <span style={{ fontSize: 11, color: T.text3 }}>{todayOpen ? '▲' : '▼'}</span>
-          </div>
-
-          {todayOpen && (
-            <div style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(232,168,200,0.1)', borderTop: 'none', borderRadius: '0 0 12px 12px', padding: '4px 0' }}>
-              {due.map(task => (
-                <div key={task.id} className="task-row">
-                  <div className={'chk' + (task.doneDate === today ? ' done' : '')} onClick={() => setTasks(p => p.map(t => t.id === task.id ? { ...t, doneDate: t.doneDate === today ? null : today, lastDone: t.doneDate === today ? t.lastDone : today } : t))}>
-                    {task.doneDate === today ? '✓' : ' '}
-                  </div>
-                  <div className="task-body">
-                    <div className={'task-name' + (task.doneDate === today ? ' done' : '')}>{task.title}</div>
-                    <div className="task-meta">
-                      <span className="badge bp">{freqLabel(task.freq)}</span>
-                      {task.preferredTime && <span className="badge bg">🕐{task.preferredTime}</span>}
-                    </div>
-                    {task.notes && <div className="task-notes">{task.notes}</div>}
-                  </div>
-                  <div className="ico-btn" onClick={() => setModal(task)} style={{ color: T.teal, opacity: .7 }}>✏️</div>
-                  <div className="ico-btn danger" onClick={() => setTasks(p => p.filter(t => t.id !== task.id))}>✕</div>
-                </div>
-              ))}            </div>
-          )}
+        <div style={{ ...styles.section, background: 'rgba(255,255,255,0.4)', borderLeft: '3px solid #b86b5d' }}>
+          <div style={{ ...styles.sectionTitle, color: '#b86b5d', borderColor: '#b86b5d' }}>Сегодня</div>
+          {due.map(task => (
+            <div key={task.id} style={{ ...styles.item, borderBottom: 'none' }}>
+              <div 
+                onClick={() => setTasks(p => p.map(t => t.id === task.id ? { ...t, doneDate: t.doneDate === today ? null : today, lastDone: t.doneDate === today ? t.lastDone : today } : t))}
+                style={{ width: '24px', height: '24px', borderRadius: '50%', border: '2px solid #b86b5d', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '14px', color: '#b86b5d', background: task.doneDate === today ? 'rgba(184,107,93,0.1)' : 'transparent' }}
+              >
+                {task.doneDate === today ? '✓' : ''}
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ textDecoration: task.doneDate === today ? 'line-through' : 'none' }}>{task.title}</div>
+                <div style={{ fontSize: '12px', opacity: 0.7 }}>{task.preferredTime}</div>
+              </div>            </div>
+          ))}
+          <button style={styles.buttonVintage} onClick={() => setModal({})}>+ Добавить в дневник</button>
         </div>
       )}
 
       {/* AI советы */}
-      <div style={{ marginBottom: 12 }}>
+      <div style={{ marginTop: '30px', paddingTop: '20px', borderTop: '1px solid #a89070' }}>
         <AiBox
           kb={buildKB(profile)}
           prompt={`Дай персональные рекомендации по уходу. Пол: ${profile.gender}. Тип кожи: ${profile.skinType || '—'}. ${!isMale ? 'Тип волос: ' + (profile.hairType || '—') + '.' : 'Борода: ' + (profile.beard || '—') + '.'} Приоритет: ${profile.beautyPriority || '—'}. Свободное время: с ${profile.workEnd || '18:00'} до ${profile.sleep || '23:00'}.`}
           label="Советы по уходу"
           btnText="Получить советы"
-          placeholder="Анализирую профиль и даю конкретные рекомендации..."
+          placeholder="Анализирую профиль..."
+          customStyles={{
+            wrapper: { background: 'rgba(255,255,255,0.3)', border: '1px solid #8b7355', borderRadius: '4px', padding: '15px' },
+            title: { fontFamily: "'Playfair Display', serif", color: '#3d2817', fontSize: '18px', fontStyle: 'italic', marginBottom: '10px' },
+            button: { background: '#8b7355', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '4px', cursor: 'pointer', fontFamily: "'Playfair Display', serif" },
+            input: { background: 'rgba(255,255,255,0.5)', border: '1px solid #a89070', borderRadius: '4px', padding: '8px', width: '100%', color: '#2c241b', marginBottom: '10px' }
+          }}
         />
       </div>
 
@@ -271,47 +327,4 @@ export function BeautySection() {
       )}
     </div>
   );
-}
-
-function isDue(task, today) {
-  const last = task.lastDone;
-  const d = new Date(today);
-  d.setHours(0, 0, 0, 0);
-
-  if (!task.freq) return false;
-  if (task.doneDate === today) return false;
-
-  if (task.freq === 'daily') return last !== today;
-  if (task.freq === 'workdays') {
-    const dn = d.getDay();
-    return dn >= 1 && dn <= 5 && last !== today;
-  }
-  if (task.freq.startsWith('weekly:')) {
-    return task.freq.split(':')[1].split(',').map(Number).includes(d.getDay()) && last !== today;
-  }
-  if (task.freq.startsWith('every:')) {
-    const n = parseInt(task.freq.split(':')[1]);
-    if (!last) return true;
-    return Math.floor((d - new Date(last)) / 86400000) >= n;  }
-  if (task.freq.startsWith('monthly:')) {
-    return task.freq.split(':')[1].split(',').map(Number).includes(d.getDate()) && last !== today;
-  }
-  return false;
-}
-
-function freqLabel(f) {
-  if (!f || f === 'once') return 'разово';
-  if (f === 'daily') return 'ежедневно';
-  if (f === 'workdays') return 'пн–пт';
-  if (f.startsWith('weekly:')) {
-    const m = { 0: 'вс', 1: 'пн', 2: 'вт', 3: 'ср', 4: 'чт', 5: 'пт', 6: 'сб' };
-    return f.split(':')[1].split(',').map(n => m[n]).join(', ');
-  }
-  if (f.startsWith('every:')) return `каждые ${f.split(':')[1]} дн.`;
-  if (f.startsWith('monthly:')) return `${f.split(':')[1]} числа`;
-  return f;
-}
-
-function buildKB(p) {
-  return `Пользователь: ${p.name || '—'}, ${p.gender || '—'}. Тип кожи: ${p.skinType || '—'}. ${p.gender === 'Мужской' ? 'Борода: ' + (p.beard || '—') : 'Волосы: ' + (p.hairType || '—')}. Приоритет в уходе: ${p.beautyPriority || '—'}.`;
 }
