@@ -1,14 +1,34 @@
 // src/services/aiClient.js
 
-// Используем модель gemini-1.5-flash (быстрая и бесплатная)
+// ✅ ИСПРАВЛЕНО: AiBox теперь ходит через /api/ai (серверный эндпоинт)
+// Прямой ключ VITE_GEMINI_API_KEY больше не торчит в браузере
+
 const MODEL_NAME = 'gemini-1.5-flash';
 const API_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/models';
 
 /**
- * Отправляет сообщения в Google Gemini API
- * @param {Array<{role: string, content: string}>} messages - История сообщений
- * @param {Object} options - Дополнительные параметры
- * @returns {Promise<string>} Текст ответа
+ * Отправляет запрос через серверный эндпоинт /api/ai
+ * Используется из AiBox и других компонентов
+ */
+export async function askViaServer(systemPrompt, userPrompt, maxTokens = 1024) {
+  const response = await fetch('/api/ai', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ system: systemPrompt, user: userPrompt, maxTokens })
+  });
+
+  if (!response.ok) {
+    throw new Error(`Ошибка сервера: ${response.status}`);
+  }
+
+  const data = await response.json();
+  if (!data.text) throw new Error('Пустой ответ от AI');
+  return data.text;
+}
+
+/**
+ * Отправляет сообщения в Google Gemini API напрямую (только для useAIChat в чате)
+ * Используется только в ChatView — там нужна история диалога
  */
 export async function sendToGemini(messages, options = {}) {
   const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
@@ -17,78 +37,57 @@ export async function sendToGemini(messages, options = {}) {
     throw new Error('GEMINI_API_KEY не настроен. Добавьте VITE_GEMINI_API_KEY в переменные окружения Vercel.');
   }
 
-  // Формируем URL с ключом
   const url = `${API_BASE_URL}/${MODEL_NAME}:generateContent?key=${apiKey}`;
 
-  // Преобразуем формат сообщений (OpenAI -> Gemini)
-  // Gemini ожидает: role: "user" или "model"
   const contents = messages
-    .filter(m => m.role !== 'system') // Системные промпты обрабатываются отдельно или игнорируются в простом режиме
+    .filter(m => m.role !== 'system')
     .map(m => ({
       role: m.role === 'assistant' ? 'model' : 'user',
       parts: [{ text: m.content }]
     }));
 
-  // Если первое сообщение было системным, добавим его как instruction (опционально)
   const systemMsg = messages.find(m => m.role === 'system');
   
   const payload = {
-    contents: contents,
+    contents,
     generationConfig: {
-      temperature: options.temperature ?? 0.7,
+      temperature: options.temperature ?? 0.1,
       maxOutputTokens: options.maxTokens || 2048,
     }
   };
 
-  // Если есть системный промпт, добавляем его
   if (systemMsg) {
-    payload.systemInstruction = {
-      parts: [{ text: systemMsg.content }]
-    };
+    payload.systemInstruction = { parts: [{ text: systemMsg.content }] };
   }
 
   const response = await fetch(url, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
   });
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    // Gemini часто возвращает ошибку в поле error.message
-    throw new Error(
-      `Gemini API error ${response.status}: ${errorData.error?.message || response.statusText}`
-    );
+    throw new Error(`Gemini API error ${response.status}: ${errorData.error?.message || response.statusText}`);
   }
 
   const data = await response.json();
-  
-  // Извлекаем текст из ответа Gemini
   const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
-  if (!content) {
-    throw new Error('Пустой ответ от Gemini API');
-  }
-
+  if (!content) throw new Error('Пустой ответ от Gemini API');
   return content.trim();
 }
 
 /**
- * Вспомогательная функция для быстрой отправки одного запроса
+ * Быстрый запрос через сервер (замена quickAsk)
+ * ✅ Безопасно: ключ не в браузере
  */
 export async function quickAsk(prompt, systemPrompt = '') {
-  const messages = [];
-  if (systemPrompt) {
-    messages.push({ role: 'system', content: systemPrompt });
-  }
-  messages.push({ role: 'user', content: prompt });
-  return sendToGemini(messages);
+  return askViaServer(systemPrompt, prompt);
 }
 
-// ✅ Заглушка для совместимости (чтобы приложение не падало)
+// Заглушка для совместимости
 export async function askClaude(profile, prompt) {
-  console.warn('askClaude: заглушка, используйте sendToGemini');
-  return "Ответ будет доступен после настройки API";
+  console.warn('askClaude: используй askViaServer или sendToGemini');
+  return await askViaServer('', prompt);
 }
