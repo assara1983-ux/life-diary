@@ -1,6 +1,6 @@
 // api/ai.js — Vercel Serverless Function
 // Google Gemini API — gemini-1.5-flash
-// Использует переменную окружения: VITE_GEMINI_API_KEY
+// ✅ ИСПРАВЛЕНО: используется GEMINI_API_KEY (без VITE_ префикса — он только для клиента)
 
 export default async function handler(req, res) {
   // CORS headers
@@ -11,38 +11,39 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  // Получаем ключ Gemini (название совпадает с твоим на скриншоте)
-  const apiKey = process.env.VITE_GEMINI_API_KEY;
+  // ✅ ИСПРАВЛЕНО: на сервере нет VITE_ переменных, используем GEMINI_API_KEY
+  // В Vercel добавить переменную: GEMINI_API_KEY = ваш ключ AIzaSy...
+  const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
+
   if (!apiKey) {
-    console.warn('VITE_GEMINI_API_KEY не найден');
+    console.warn('GEMINI_API_KEY не найден в переменных окружения Vercel');
     return res.status(200).json({ 
-      text: 'AI временно недоступен. Настройка ключа в процессе.' 
+      text: 'AI временно недоступен. Проверьте GEMINI_API_KEY в настройках Vercel.' 
     });
   }
 
-  const { system, user, maxTokens = 2048 } = req.body;
+  const { system, user, maxTokens = 1024 } = req.body;
   if (!user) return res.status(400).json({ error: 'Missing user message' });
 
   try {
-    // Подготовка сообщения (включаем системный промпт в историю диалога)
+    // Подготовка сообщения с системным промптом
     const contents = [];
     if (system) {
       contents.push({ role: 'user', parts: [{ text: `Инструкции: ${system}` }] });
-      contents.push({ role: 'model', parts: [{ text: 'Понял задачу. Готов отвечать.' }] });
+      contents.push({ role: 'model', parts: [{ text: 'Понял задачу. Отвечаю строго по базе знаний.' }] });
     }
     contents.push({ role: 'user', parts: [{ text: user }] });
 
-    // Запрос к API Gemini
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: contents,
+          contents,
           generationConfig: {
             maxOutputTokens: maxTokens,
-            temperature: 0.1
+            temperature: 0.1  // ✅ Минимальная "фантазия" — только факты из базы знаний
           }
         })
       }
