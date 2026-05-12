@@ -1007,3 +1007,8 @@ select { appearance: none; cursor: pointer; }
 }
 
 /* === GLOBAL PAPER TEXTURE — END === */
+/* Анимация пульсации для скелетона */
+@keyframes pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
