@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { AppProvider, useApp } from './store/AppContext';
 import { Onboarding } from './components/Onboarding';
 import { getMoon } from './utils/helpers';
-import { Icon } from './components/Icon';
+import { Icon } from './components/Icon'; // ✅ Импортируем иконки
 import './index.css';
 
 import { TodaySection }    from './sections/TodaySection';
@@ -22,6 +22,7 @@ import { TravelSection }   from './sections/TravelSection';
 import { JournalSection }  from './sections/JournalSection';
 import { ProfileSection }  from './sections/ProfileSection';
 
+// ✅ Убраны эмодзи — теперь используем ID для иконок
 const DEF_SECTIONS = [
   { id:"today",    name:"Сегодня",   vis:true },
   { id:"schedule", name:"Расписание", vis:true },
@@ -43,11 +44,11 @@ const DEF_SECTIONS = [
 function AppContent() {
   const { profile, sections, setSections, toastMsg } = useApp();
   const [active, setActive] = useState("today");
-  const [tooltip, setTooltip] = useState(null);
+  const [tooltip, setTooltip] = useState(null); // Для подсказки
 
   useEffect(() => {
-    if (!profile) return;
-    const current = sections.length > 0 ? sections : DEF_SECTIONS;    const merged = [...current];
+    if (!profile) return;    const current = sections.length > 0 ? sections : DEF_SECTIONS;
+    const merged = [...current];
     let changed = sections.length === 0;
     DEF_SECTIONS.forEach(def => {
       if (!merged.find(s => s.id === def.id)) { merged.push(def); changed = true; }
@@ -82,7 +83,7 @@ function AppContent() {
         </div>
       )}
 
-      {/* SIDEBAR — COMPACT */}
+      {/* SIDEBAR — COMPACT VERSION */}
       <nav className="sidebar sidebar-compact">
         <div className="s-logo">LD</div>
         {vis.map(s => (
@@ -94,9 +95,10 @@ function AppContent() {
             onMouseLeave={() => setTooltip(null)}
           >
             <span className="s-ico">
-              <Icon name={s.id} size={18} animated={active === s.id} />
-            </span>
-          </div>        ))}
+              {/* ✅ Используем компонент Icon вместо эмодзи */}
+              <Icon name={s.id} size={18} animated={active === s.id} />            </span>
+          </div>
+        ))}
         
         {/* Tooltip */}
         {tooltip && (
@@ -114,7 +116,7 @@ function AppContent() {
             </div>
           </div>
           <div className="hdr-r">
-            <div className="moon-tag">{moon.e || '🌙'} {moon.n}</div>
+            <div className="moon-tag">{moon.e || ''} {moon.n}</div>
             <div className="date-tag">{today}</div>
           </div>
         </div>
@@ -143,7 +145,7 @@ function AppContent() {
 
 export default function App() {
   return (
-    <AppProvider>
-      <AppContent />
-    </AppProvider>  );
+    <AppProvider>      <AppContent />
+    </AppProvider>
+  );
 }
