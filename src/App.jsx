@@ -1,9 +1,10 @@
-// src/App.jsx — Blueprint Theme (Compact Sidebar)
+// src/App.jsx — Blueprint Theme v2
 import { useState, useEffect } from "react";
 import { AppProvider, useApp } from './store/AppContext';
 import { Onboarding } from './components/Onboarding';
 import { getMoon } from './utils/helpers';
-import { Icon } from './components/Icon'; // ✅ Импортируем иконки
+import { Icon } from './components/Icon';
+import { getSectionGraphic } from './config/sectionGraphics';
 import './index.css';
 
 import { TodaySection }    from './sections/TodaySection';
@@ -22,7 +23,6 @@ import { TravelSection }   from './sections/TravelSection';
 import { JournalSection }  from './sections/JournalSection';
 import { ProfileSection }  from './sections/ProfileSection';
 
-// ✅ Убраны эмодзи — теперь используем ID для иконок
 const DEF_SECTIONS = [
   { id:"today",    name:"Сегодня",   vis:true },
   { id:"schedule", name:"Расписание", vis:true },
@@ -44,10 +44,11 @@ const DEF_SECTIONS = [
 function AppContent() {
   const { profile, sections, setSections, toastMsg } = useApp();
   const [active, setActive] = useState("today");
-  const [tooltip, setTooltip] = useState(null); // Для подсказки
+  const [bgLoaded, setBgLoaded] = useState(false);
+  const [bgUrl, setBgUrl] = useState(null);
 
-  useEffect(() => {
-    if (!profile) return;    const current = sections.length > 0 ? sections : DEF_SECTIONS;
+  useEffect(() => {    if (!profile) return;
+    const current = sections.length > 0 ? sections : DEF_SECTIONS;
     const merged = [...current];
     let changed = sections.length === 0;
     DEF_SECTIONS.forEach(def => {
@@ -55,6 +56,18 @@ function AppContent() {
     });
     if (changed) setSections(merged);
   }, [profile]);
+
+  // Загрузка фона для текущей секции
+  useEffect(() => {
+    const graphic = getSectionGraphic(active);
+    if (graphic?.image) {
+      setBgUrl(graphic.image);
+      setBgLoaded(false);
+      const img = new Image();
+      img.onload = () => setBgLoaded(true);
+      img.src = graphic.image;
+    }
+  }, [active]);
 
   if (!profile) return <Onboarding />;
 
@@ -64,64 +77,107 @@ function AppContent() {
   const today = new Date().toISOString().split('T')[0];
 
   return (
-    <div className="app">
-      <div className="ambient" />
+    <div className="app" style={{ display: 'grid', gridTemplateColumns: '80px 1fr', height: '100vh', overflow: 'hidden' }}>
+      {/* Background Watermark */}
+      {bgUrl && bgLoaded && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 0,
+          backgroundImage: `url(${bgUrl})`,
+          backgroundSize: 'contain',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+          opacity: 0.08,
+          mixBlendMode: 'multiply',
+          pointerEvents: 'none',
+          filter: 'grayscale(20%) sepia(10%)',
+        }} />
+      )}
 
       {/* Toast */}
       {toastMsg && (
         <div style={{
-          position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)',
-          background: '#fff', color: '#0070c0', padding: '10px 20px',
+          position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)',          background: '#fff', color: '#0070c0', padding: '10px 20px',
           borderRadius: 6, fontSize: 13, fontWeight: 500, zIndex: 9999,
           border: '1.5px solid rgba(0,112,192,0.4)',
           boxShadow: '0 4px 16px rgba(0,112,192,0.15)',
           fontFamily: "'JetBrains Mono', monospace",
-          letterSpacing: '1px',
-          whiteSpace: 'nowrap',
         }}>
           {toastMsg}
         </div>
       )}
 
-      {/* SIDEBAR — COMPACT VERSION */}
-      <nav className="sidebar sidebar-compact">
-        <div className="s-logo">LD</div>
+      {/* SIDEBAR — WIDE */}
+      <nav className="sidebar-wide" style={{
+        gridColumn: '1 / 2',
+        background: 'rgba(245,240,225,0.95)',
+        borderRight: '1px solid rgba(0,112,192,0.15)',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        padding: '12px 0',
+        gap: 6,
+        overflowY: 'auto',
+        zIndex: 10,
+      }}>
+        <div className="s-logo" style={{ fontSize: 16, fontWeight: 700, color: '#0070c0', marginBottom: 12 }}>LD</div>
         {vis.map(s => (
           <div
             key={s.id}
-            className={`s-nav${!s.vis?' dim':''}${active===s.id?' act':''}`}
             onClick={() => s.vis && setActive(s.id)}
-            onMouseEnter={() => setTooltip(s.name)}
-            onMouseLeave={() => setTooltip(null)}
+            style={{
+              width: 64,
+              height: 64,
+              borderRadius: 12,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 4,
+              cursor: 'pointer',
+              background: active === s.id ? 'rgba(0,112,192,0.12)' : 'transparent',
+              border: active === s.id ? '1px solid #0070c0' : '1px solid transparent',
+              transition: 'all 0.2s',
+            }}
           >
-            <span className="s-ico">
-              {/* ✅ Используем компонент Icon вместо эмодзи */}
-              <Icon name={s.id} size={18} animated={active === s.id} />            </span>
+            <Icon name={s.id} size={20} animated={active === s.id} />
+            <span style={{ fontSize: 9, color: active === s.id ? '#0070c0' : '#5c4a30', textAlign: 'center', lineHeight: 1.1 }}>
+              {s.name.slice(0, 6)}
+            </span>
           </div>
         ))}
-        
-        {/* Tooltip */}
-        {tooltip && (
-          <div className="sidebar-tooltip">{tooltip}</div>
-        )}
       </nav>
-
-      {/* MAIN */}
-      <div className="main">
-        <div className="hdr">
-          <div className="hdr-l">
-            <div className="hdr-title">{activeSection?.name}</div>
-            <div className="hdr-sub">
+      {/* MAIN CONTENT */}
+      <main className="main" style={{
+        gridColumn: '2 / 3',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+        position: 'relative',
+        zIndex: 1,
+      }}>
+        {/* Header */}
+        <div className="hdr" style={{
+          padding: '16px 24px',
+          background: 'rgba(245,240,225,0.9)',
+          borderBottom: '1px solid rgba(0,112,192,0.15)',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}>
+          <div>
+            <div className="hdr-title" style={{ fontSize: 20, fontWeight: 600, color: '#0070c0' }}>{activeSection?.name}</div>
+            <div className="hdr-sub" style={{ fontSize: 12, color: '#5c4a30' }}>
               {new Date().toLocaleDateString("ru-RU",{weekday:"long",day:"numeric",month:"long"})}
             </div>
           </div>
-          <div className="hdr-r">
-            <div className="moon-tag">{moon.e || ''} {moon.n}</div>
-            <div className="date-tag">{today}</div>
+          <div className="hdr-r" style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+            <div className="moon-tag" style={{ fontSize: 12, color: '#5c4a30' }}>{moon.e} {moon.n}</div>
+            <div className="date-tag" style={{ fontSize: 12, fontFamily: "'JetBrains Mono'", color: '#0070c0' }}>{today}</div>
           </div>
         </div>
 
-        <div className="page">
+        {/* Scrollable Content */}
+        <div className="page" style={{ flex: 1, overflowY: 'auto', padding: 24 }}>
           {active==='today'    && <TodaySection />}
           {active==='schedule' && <ScheduleSection />}
           {active==='work'     && <WorkSection />}
@@ -138,14 +194,14 @@ function AppContent() {
           {active==='journal'  && <JournalSection />}
           {active==='profile'  && <ProfileSection />}
         </div>
-      </div>
-    </div>
+      </main>    </div>
   );
 }
 
 export default function App() {
   return (
-    <AppProvider>      <AppContent />
+    <AppProvider>
+      <AppContent />
     </AppProvider>
   );
 }
