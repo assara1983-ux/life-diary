@@ -22,7 +22,6 @@ export const ICON_PATHS = {
   x: "M18 6L6 18M6 6l12 12",
 };
 
-// Вспомогательные данные для метаданных
 export const ICON_META = {
   today: { label: "Сегодня", color: "#e8d4a0" },
   schedule: { label: "Расписание", color: "#82AADD" },
