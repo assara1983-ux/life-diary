@@ -9,14 +9,12 @@ export function Icon({ name, size = 24, color, animated = true, className = '' }
   const meta = ICON_META[name] || {};
   const finalColor = color || meta.color || 'currentColor';
   
-  // Размер и цвет
   const style = {
     width: `${size}px`,
     height: `${size}px`,
     stroke: finalColor,
   };
 
-  // Классы для анимации и стиля
   const svgClasses = `icon-svg ${animated ? 'icon-draw' : ''} ${className}`;
 
   return (
