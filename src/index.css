@@ -760,3 +760,101 @@ select { appearance: none; cursor: pointer; }
 }
 
 /* === BLUEPRINT ICONS — END === */
+/* === COMPACT SIDEBAR — START === */
+
+.sidebar-compact {
+  width: 56px;
+  padding: 12px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  position: relative;
+}
+
+.sidebar-compact .s-logo {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0070c0;
+  margin-bottom: 16px;
+  letter-spacing: 1px;
+}
+
+.sidebar-compact .s-nav {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+  position: relative;
+}
+
+.sidebar-compact .s-nav:hover {
+  background: rgba(0, 112, 192, 0.08);
+  border-color: rgba(0, 112, 192, 0.2);
+}
+
+.sidebar-compact .s-nav.act {
+  background: rgba(0, 112, 192, 0.12);
+  border-color: #0070c0;
+  box-shadow: 0 0 8px rgba(0, 112, 192, 0.2);
+}
+
+.sidebar-compact .s-ico {
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sidebar-compact .s-lbl {
+  display: none; /* Скрываем текст */
+}
+
+/* Tooltip */
+.sidebar-tooltip {
+  position: absolute;
+  left: 64px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #1a1208;
+  color: #f5f0e1;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  white-space: nowrap;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+  animation: tooltip-fade 0.2s ease;
+}
+
+@keyframes tooltip-fade {
+  from { opacity: 0; transform: translateY(-50%) translateX(-4px); }
+  to { opacity: 1; transform: translateY(-50%) translateX(0); }
+}
+
+/* Мобильная адаптация */
+@media (max-width: 768px) {
+  .sidebar-compact {
+    width: 48px;
+    padding: 8px 4px;
+  }
+  
+  .sidebar-compact .s-nav {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .sidebar-tooltip {
+    display: none; /* На мобильных tooltip не нужен */
+  }
+}
+
+/* === COMPACT SIDEBAR — END === */
