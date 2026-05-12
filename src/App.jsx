@@ -1,9 +1,9 @@
-// src/App.jsx — Blueprint Theme
+// src/App.jsx — Blueprint Theme (Compact Sidebar)
 import { useState, useEffect } from "react";
 import { AppProvider, useApp } from './store/AppContext';
 import { Onboarding } from './components/Onboarding';
 import { getMoon } from './utils/helpers';
-import { Icon } from './components/Icon'; // ✅ Добавлен импорт Icon
+import { Icon } from './components/Icon';
 import './index.css';
 
 import { TodaySection }    from './sections/TodaySection';
@@ -22,7 +22,6 @@ import { TravelSection }   from './sections/TravelSection';
 import { JournalSection }  from './sections/JournalSection';
 import { ProfileSection }  from './sections/ProfileSection';
 
-// ✅ Убраны эмодзи — иконки теперь в компоненте Icon
 const DEF_SECTIONS = [
   { id:"today",    name:"Сегодня",   vis:true },
   { id:"schedule", name:"Расписание", vis:true },
@@ -44,6 +43,7 @@ const DEF_SECTIONS = [
 function AppContent() {
   const { profile, sections, setSections, toastMsg } = useApp();
   const [active, setActive] = useState("today");
+  const [tooltip, setTooltip] = useState(null);
 
   useEffect(() => {
     if (!profile) return;
@@ -82,22 +82,26 @@ function AppContent() {
         </div>
       )}
 
-      {/* SIDEBAR */}
-      <nav className="sidebar">
+      {/* SIDEBAR — COMPACT */}
+      <nav className="sidebar sidebar-compact">
         <div className="s-logo">LD</div>
         {vis.map(s => (
           <div
             key={s.id}
             className={`s-nav${!s.vis?' dim':''}${active===s.id?' act':''}`}
             onClick={() => s.vis && setActive(s.id)}
-            title={s.name}
+            onMouseEnter={() => setTooltip(s.name)}
+            onMouseLeave={() => setTooltip(null)}
           >
-            {/* ✅ ЗАМЕНА: эмодзи → компонент Icon с анимацией */}
             <span className="s-ico">
-              <Icon name={s.id} size={20} animated={active === s.id} />
+              <Icon name={s.id} size={18} animated={active === s.id} />
             </span>
-            <span className="s-lbl">{s.name.slice(0,5)}</span>          </div>
-        ))}
+          </div>        ))}
+        
+        {/* Tooltip */}
+        {tooltip && (
+          <div className="sidebar-tooltip">{tooltip}</div>
+        )}
       </nav>
 
       {/* MAIN */}
@@ -141,6 +145,5 @@ export default function App() {
   return (
     <AppProvider>
       <AppContent />
-    </AppProvider>
-  );
+    </AppProvider>  );
 }
