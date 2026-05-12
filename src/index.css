@@ -707,8 +707,9 @@ select { appearance: none; cursor: pointer; }
   .hdr { padding: 10px 14px; }
   .hdr-title { font-size: 13px; }
   .app { background-size: 15px 15px; }
-   
-/* Добавьте это в конец src/index.css */
+
+}
+/* === BLUEPRINT ICONS — START === */
 
 /* Базовый стиль для иконок */
 .icon-svg {
@@ -749,7 +750,7 @@ select { appearance: none; cursor: pointer; }
 
 .s-nav.act .s-ico .icon-svg {
   filter: drop-shadow(0 0 3px rgba(200, 164, 90, 0.6));
-  stroke: #c8a45a !important; /* Золотой цвет при активе */
+  stroke: #c8a45a !important;
 }
 
 /* Hover эффект */
@@ -757,3 +758,5 @@ select { appearance: none; cursor: pointer; }
   transform: scale(1.1);
   transition: transform 0.2s ease;
 }
+
+/* === BLUEPRINT ICONS — END === */
