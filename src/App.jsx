@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { AppProvider, useApp } from './store/AppContext';
 import { Onboarding } from './components/Onboarding';
 import { getMoon } from './utils/helpers';
+import { Icon } from './components/Icon'; // ✅ Добавлен импорт Icon
 import './index.css';
 
 import { TodaySection }    from './sections/TodaySection';
@@ -21,22 +22,23 @@ import { TravelSection }   from './sections/TravelSection';
 import { JournalSection }  from './sections/JournalSection';
 import { ProfileSection }  from './sections/ProfileSection';
 
+// ✅ Убраны эмодзи — иконки теперь в компоненте Icon
 const DEF_SECTIONS = [
-  { id:"today",    emoji:"☀️",  name:"Сегодня",   vis:true },
-  { id:"schedule", emoji:"🗓️", name:"Расписание", vis:true },
-  { id:"work",     emoji:"💼",  name:"Работа",     vis:true },
-  { id:"home",     emoji:"🏡",  name:"Дом",        vis:true },
-  { id:"shopping", emoji:"🛒",  name:"Покупки",    vis:true },
-  { id:"pets",     emoji:"🐾",  name:"Питомцы",    vis:true },
-  { id:"car",      emoji:"🚗",  name:"Авто",       vis:true },
-  { id:"health",   emoji:"🌿",  name:"Здоровье",   vis:true },
-  { id:"beauty",   emoji:"✨",  name:"Уход",       vis:true },
-  { id:"hobbies",  emoji:"🎨",  name:"Хобби",      vis:true },
-  { id:"goals",    emoji:"🎯",  name:"Мои цели",   vis:true },
-  { id:"mental",   emoji:"🧘",  name:"Ментальное", vis:true },
-  { id:"travel",   emoji:"✈️",  name:"Поездки",    vis:true },
-  { id:"journal",  emoji:"📖",  name:"Журнал",     vis:true },
-  { id:"profile",  emoji:"👤",  name:"Профиль",    vis:true },
+  { id:"today",    name:"Сегодня",   vis:true },
+  { id:"schedule", name:"Расписание", vis:true },
+  { id:"work",     name:"Работа",     vis:true },
+  { id:"home",     name:"Дом",        vis:true },
+  { id:"shopping", name:"Покупки",    vis:true },
+  { id:"pets",     name:"Питомцы",    vis:true },
+  { id:"car",      name:"Авто",       vis:true },
+  { id:"health",   name:"Здоровье",   vis:true },
+  { id:"beauty",   name:"Уход",       vis:true },
+  { id:"hobbies",  name:"Хобби",      vis:true },
+  { id:"goals",    name:"Мои цели",   vis:true },
+  { id:"mental",   name:"Ментальное", vis:true },
+  { id:"travel",   name:"Поездки",    vis:true },
+  { id:"journal",  name:"Журнал",     vis:true },
+  { id:"profile",  name:"Профиль",    vis:true },
 ];
 
 function AppContent() {
@@ -45,8 +47,7 @@ function AppContent() {
 
   useEffect(() => {
     if (!profile) return;
-    const current = sections.length > 0 ? sections : DEF_SECTIONS;
-    const merged = [...current];
+    const current = sections.length > 0 ? sections : DEF_SECTIONS;    const merged = [...current];
     let changed = sections.length === 0;
     DEF_SECTIONS.forEach(def => {
       if (!merged.find(s => s.id === def.id)) { merged.push(def); changed = true; }
@@ -91,9 +92,11 @@ function AppContent() {
             onClick={() => s.vis && setActive(s.id)}
             title={s.name}
           >
-            <span className="s-ico">{s.emoji}</span>
-            <span className="s-lbl">{s.name.slice(0,5)}</span>
-          </div>
+            {/* ✅ ЗАМЕНА: эмодзи → компонент Icon с анимацией */}
+            <span className="s-ico">
+              <Icon name={s.id} size={20} animated={active === s.id} />
+            </span>
+            <span className="s-lbl">{s.name.slice(0,5)}</span>          </div>
         ))}
       </nav>
 
