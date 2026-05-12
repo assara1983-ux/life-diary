@@ -1012,3 +1012,100 @@ select { appearance: none; cursor: pointer; }
   0%, 100% { opacity: 0.4; }
   50% { opacity: 0.8; }
 }
+/* === WIDE SIDEBAR & LAYOUT === */
+.sidebar-wide {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0,112,192,0.2) transparent;
+}
+
+.sidebar-wide::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar-wide::-webkit-scrollbar-thumb {
+  background: rgba(0,112,192,0.2);
+  border-radius: 2px;
+}
+
+.icon-wrapper {
+  transition: transform 0.2s;
+}
+
+.icon-wrapper:hover {
+  transform: scale(1.1);
+}
+
+.icon-draw path {
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  animation: draw-path 1s ease forwards;
+}
+
+@keyframes draw-path {
+  to { stroke-dashoffset: 0; }
+}
+
+/* === RECOMMENDATION CARDS === */
+.rec-card {
+  background: rgba(255,255,255,0.7);
+  border-left: 3px solid #0070c0;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.rec-card.warning {
+  border-left-color: #e8556d;
+  background: rgba(232,85,109,0.05);
+}
+
+.rec-card.practice {
+  border-left-color: #7bcca0;
+  background: rgba(123,204,160,0.05);
+}
+
+.rec-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1208;
+  margin-bottom: 4px;
+}
+
+.rec-text {
+  font-size: 12px;
+  color: #5c4a30;
+  line-height: 1.5;
+}
+
+.rec-source {
+  font-size: 10px;
+  color: #8c7a5a;
+  font-style: italic;
+  margin-top: 6px;
+}
+
+/* === MOBILE RESPONSIVE === */
+@media (max-width: 768px) {
+  .app {
+    gridTemplateColumns: 60px 1fr !important;
+  }
+  
+  .sidebar-wide {
+    padding: 8px 0;
+    gap: 4px;
+  }
+  
+  .sidebar-wide > div {
+    width: 48px !important;
+    height: 48px !important;
+  }
+  
+  .sidebar-wide span {
+    font-size: 8px !important;
+  }
+  
+  .main {
+    padding: 12px !important;
+  }
+}
