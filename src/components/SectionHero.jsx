@@ -1,16 +1,67 @@
 // src/components/SectionHero.jsx
-// Blueprint illustration component with mix-blend-mode: multiply
-import { useState } from 'react';
+// Blueprint illustration component with smooth transitions & preload
+import { useState, useEffect } from 'react';
 import { getSectionGraphic } from '../config/sectionGraphics';
+
+// Кэш для preload изображений
+const imageCache = new Set();
 
 export function SectionHero({ sectionId, height = 'auto', className = '' }) {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const graphic = getSectionGraphic(sectionId);
 
   if (!graphic) return null;
 
   const imgSrc = error && graphic.fallback ? graphic.fallback : graphic.image;
+
+  // Preload следующего изображения
+  useEffect(() => {
+    setIsTransitioning(true);
+    setLoaded(false);
+    
+    const img = new Image();
+    img.src = imgSrc;
+    img.onload = () => {
+      setLoaded(true);
+      setIsTransitioning(false);
+      imageCache.add(imgSrc);
+    };
+    img.onerror = () => {
+      if (!error && graphic.fallback) {
+        setError(true);
+      } else {
+        setIsTransitioning(false);
+      }
+    };
+
+    return () => {
+      // Cleanup если компонент размонтировался до загрузки
+      img.onload = null;
+      img.onerror = null;
+    };
+  }, [imgSrc, error, graphic.fallback]);
+
+  // Preload соседних секций (оптимизация)
+  useEffect(() => {
+    const allSections = Object.keys(getSectionGraphic);
+    const currentIndex = allSections.indexOf(sectionId);
+        // Preload следующей и предыдущей секции
+    const neighbors = [
+      allSections[(currentIndex + 1) % allSections.length],
+      allSections[(currentIndex - 1 + allSections.length) % allSections.length]
+    ];
+
+    neighbors.forEach(section => {
+      const neighborGraphic = getSectionGraphic(section);
+      if (neighborGraphic && !imageCache.has(neighborGraphic.image)) {
+        const preloadImg = new Image();
+        preloadImg.src = neighborGraphic.image;
+        imageCache.add(neighborGraphic.image);
+      }
+    });
+  }, [sectionId]);
 
   return (
     <div
@@ -24,6 +75,9 @@ export function SectionHero({ sectionId, height = 'auto', className = '' }) {
         background: '#f5f0e1',
         boxShadow: '0 2px 10px rgba(0,112,192,0.08)',
         minHeight: loaded ? 'auto' : 120,
+        opacity: isTransitioning ? 0.6 : 1,
+        transition: 'opacity 0.4s ease, transform 0.4s ease',
+        transform: isTransitioning ? 'scale(0.995)' : 'scale(1)',
       }}
     >
       {/* Угловые декоры как на чертежах */}
@@ -42,8 +96,7 @@ export function SectionHero({ sectionId, height = 'auto', className = '' }) {
         <line x1="96" y1="50" x2="100" y2="50" stroke="rgba(0,112,192,0.2)" strokeWidth="0.5"/>
       </svg>
 
-      {/* Скелетон пока не загружено */}
-      {!loaded && (
+      {/* Скелетон пока не загружено */}      {!loaded && (
         <div style={{
           position: 'absolute', inset: 0, zIndex: 1,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -54,6 +107,7 @@ export function SectionHero({ sectionId, height = 'auto', className = '' }) {
             fontSize: 9, letterSpacing: 2,
             color: 'rgba(0,112,192,0.3)',
             textTransform: 'uppercase',
+            animation: 'pulse 1.5s ease-in-out infinite',
           }}>Loading · {graphic.caption}</div>
         </div>
       )}
@@ -62,8 +116,6 @@ export function SectionHero({ sectionId, height = 'auto', className = '' }) {
       <img
         src={imgSrc}
         alt={graphic.alt}
-        onLoad={() => setLoaded(true)}
-        onError={() => { if (!error) setError(true); }}
         style={{
           width: '100%',
           height: height === 'auto' ? 'auto' : height,
@@ -71,7 +123,7 @@ export function SectionHero({ sectionId, height = 'auto', className = '' }) {
           display: 'block',
           mixBlendMode: 'multiply',
           opacity: loaded ? 0.92 : 0,
-          transition: 'opacity .3s',
+          transition: 'opacity 0.5s ease',
         }}
       />
 
@@ -93,8 +145,7 @@ export function SectionHero({ sectionId, height = 'auto', className = '' }) {
             {graphic.caption}
           </span>
           <span style={{
-            fontFamily: "'JetBrains Mono', monospace",
-            fontSize: 7, letterSpacing: 1,
+            fontFamily: "'JetBrains Mono', monospace",            fontSize: 7, letterSpacing: 1,
             color: 'rgba(200,164,90,0.7)',
           }}>
             {graphic.scale}
