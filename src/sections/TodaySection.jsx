@@ -1,79 +1,142 @@
+// src/sections/TodaySection.jsx
 import { useState, useEffect } from "react";
 import { useApp } from "../store/AppContext";
-import { getProfileInsights, getMoonDay } from "../utils/knowledgeEngine";
+import { Icon } from "../components/Icon";
+import { 
+  getProfileInsights, 
+  getMoonDay, 
+  getCurrentMeridian 
+} from "../utils/knowledgeEngine";
 
 export function TodaySection() {
   const { profile } = useApp();
-  const insights = getProfileInsights(profile);
+  
+  // Состояние для обновления времени (чтобы меридиан менялся в реальном времени)
   const [now, setNow] = useState(new Date());
+
+  // Получаем данные из Мозга приложения
+  const insights = getProfileInsights(profile) || {};
+  const moonDay = getMoonDay(now) || 1;
+  
+  // Обновляем меридиан каждую минуту
+  const meridian = getCurrentMeridian(now);
 
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 60000);
     return () => clearInterval(timer);
   }, []);
 
-  const currentHour = now.getHours();
-  let activeMeridian = "Перикард";
-  if (currentHour >= 3 && currentHour < 5) activeMeridian = "Лёгкие";
-  else if (currentHour >= 5 && currentHour < 7) activeMeridian = "Толстый кишечник";
-  else if (currentHour >= 7 && currentHour < 9) activeMeridian = "Желудок";
-  else if (currentHour >= 9 && currentHour < 11) activeMeridian = "Селезёнка";
-  else if (currentHour >= 11 && currentHour < 13) activeMeridian = "Сердце";
-  else if (currentHour >= 13 && currentHour < 15) activeMeridian = "Тонкий кишечник";
-  else if (currentHour >= 15 && currentHour < 17) activeMeridian = "Мочевой пузырь";
-  else if (currentHour >= 17 && currentHour < 19) activeMeridian = "Почки";
-  else if (currentHour >= 19 && currentHour < 21) activeMeridian = "Перикард";
-  else if (currentHour >= 21 && currentHour < 23) activeMeridian = "3 обогревателя";
+  // Логика продуктивности на основе хроно-типа
+  const getChronoAdvice = () => {
+    const type = profile?.chronotype || "🕊️ Голубь";
+    const hour = now.getHours();
+    
+    if (type.includes("Сова")) {
+      return hour >= 14 ? "Сейчас ваш пик! Беритесь за сложные задачи." : "Утро для рутины. Пик энергии наступит вечером.";
+    }
+    if (type.includes("Жаворонок")) {
+      return hour < 12 ? "Идеальное время для аналитики и решений." : "Сложные дела на завтра. Время для отдыха.";
+    }
+    return "Сбалансированный ритм. Распределяйте нагрузку равномерно.";
+  };
 
-  const moon = getMoonDay();
+  const chronoText = getChronoAdvice();
+  const restriction = insights.moonRestriction?.forbidden || "Нет строгих запретов";
 
   return (
-    <div className="page">
-      <div className="card" style={{ background: "linear-gradient(135deg, #fff 0%, #f8f4e8 100%)", borderLeft: "4px solid var(--blue)" }}>
-        <div className="card-hd">
-          <div className="card-title">☀️ Энергия дня</div>
-          <div className="badge bm">🌙 {moon}</div>
+    <div className="page" style={{ position: "relative" }}>
+      
+      {/* ─── 1. ВИТАЛ-СТАТУС (Меридиан + Луна) ─── */}
+      <div className="g2" style={{ marginBottom: 16 }}>        
+        {/* Карточка: Меридиан (ТКМ) */}
+        <div className="card" style={{ borderLeft: "3px solid var(--blue)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+            <Icon name="health" size={20} color="var(--blue)" />
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--text3)", letterSpacing: 1 }}>
+              АКТИВЕН СЕЙЧАС ({meridian.time})
+            </span>
+          </div>
+          <div style={{ fontFamily: "var(--font-serif)", fontSize: 16, fontWeight: 600, color: "var(--text1)" }}>
+            Меридиан {meridian.name}
+          </div>
+          <div style={{ fontFamily: "var(--font-italic)", fontSize: 12, color: "var(--text2)", marginTop: 4 }}>
+            ({meridian.sign})
+          </div>
+          <div className="ai-box" style={{ marginTop: 8, padding: 8 }}>
+            <div style={{ fontSize: 11, color: "var(--text2)", lineHeight: 1.4 }}>
+              💡 <strong>Совет:</strong> {meridian.advice}
+            </div>
+          </div>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 10 }}>
-          <div className="badge bg" style={{ justifyContent: "center" }}>🫁 {activeMeridian}</div>
-          <div className="badge bgr" style={{ justifyContent: "center" }}>🧠 {insights.chronotype}</div>
-        </div>
-        <div className="ai-box" style={{ marginTop: 12 }}>
-          <div className="ai-label">◈ СОВЕТ ДНЯ</div>
-          <div className="ai-text">
-            Сейчас активен меридиан <strong>{activeMeridian}</strong>. 
-            Рекомендация: {insights.health.advice}
+
+        {/* Карточка: Лунный день */}
+        <div className="card" style={{ borderLeft: restriction !== "Нет строгих запретов" ? "3px solid var(--error)" : "3px solid var(--gold)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+            <Icon name="mental" size={20} color="var(--gold)" />
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--text3)", letterSpacing: 1 }}>
+              ЛУННЫЙ ЦИКЛ
+            </span>
+          </div>
+          <div style={{ fontFamily: "var(--font-serif)", fontSize: 16, fontWeight: 600, color: "var(--text1)" }}>
+            {moonDay}-й день
+          </div>
+          <div style={{ 
+            marginTop: 6, 
+            padding: 6, 
+            borderRadius: 4,
+            background: restriction !== "Нет строгих запретов" ? "rgba(139,32,32,0.05)" : "rgba(200,164,90,0.05)",
+            fontSize: 11,
+            color: restriction !== "Нет строгих запретов" ? "var(--error)" : "var(--text2)",
+            lineHeight: 1.4
+          }}>
+            ⚠️ <strong>Запрет:</strong> {restriction}
           </div>
         </div>
       </div>
 
-      <div className="sec-lbl">◈ ПЛАНИРОВЩИК ДНЯ</div>
-      <div className="card">
-        <div className="card-title">📅 Сегодня</div>
-        <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 8 }}>
-          <div className="task-row">
-            <div className="chk" />
-            <div className="task-body">
-              <div className="task-name">07:00 Подъём</div>
-            </div>
-          </div>
-          <div className="task-row">
-            <div className="chk" />
-            <div className="task-body">
-              <div className="task-name">09:00 Работа</div>
-            </div>
-          </div>
-          <div className="task-row">
-            <div className="chk" />
-            <div className="task-body">
-              <div className="task-name">13:00 Обед + Дыхание Сам Чон До</div>
-            </div>
-          </div>
+      {/* ─── 2. ПРОДУКТИВНОСТЬ (Хроно-тип) ─── */}
+      <div className="card" style={{ borderLeft: "3px solid var(--success)", marginBottom: 16 }}>
+        <div className="card-hd">          <div className="card-title">⏰ Окно продуктивности</div>
+          <span className="badge bgr">{profile?.chronotype || "🕊️ Голубь"}</span>
         </div>
-        <button className="btn btn-ghost btn-sm" style={{ marginTop: 12, width: "100%", justifyContent: "center" }}>
-          + Добавить событие
-        </button>
+        <div style={{ fontFamily: "var(--font-italic)", fontSize: 14, color: "var(--text1)", lineHeight: 1.5 }}>
+          {chronoText}
+        </div>
       </div>
+
+      {/* ─── 3. ПЛАНИРОВЩИК ДНЯ ─── */}
+      <div className="card">
+        <div className="card-hd">
+          <div className="card-title">📅 План на сегодня</div>
+          <button className="btn btn-ghost btn-sm" style={{ fontFamily: "var(--font-mono)", fontSize: 10 }}>
+            + Добавить
+          </button>
+        </div>
+        
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 12 }}>
+          {/* Заглушка для задач */}
+          {[
+            { time: "09:00", title: "Утренний ритуал (Дыхание Сам Чон До)", done: true },
+            { time: "10:30", title: "Блок глубокой работы (Аналитика)", done: false },
+            { time: "13:00", title: "Обед + Прогулка (Активация меридиана)", done: false }
+          ].map((task, i) => (
+            <div key={i} className="task-row" style={{ opacity: task.done ? 0.5 : 1 }}>
+              <div className={`chk ${task.done ? "done" : ""}`}>
+                {task.done && "✓"}
+              </div>
+              <div className="task-body">
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--text3)", marginBottom: 2 }}>
+                  {task.time}
+                </div>
+                <div className={`task-name ${task.done ? "done" : ""}`}>
+                  {task.title}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
     </div>
   );
 }
