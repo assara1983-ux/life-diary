@@ -69,4 +69,4 @@ export function MentalSection() {
       )}
     </div>
   );
-}.
+}
