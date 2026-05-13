@@ -1,102 +1,123 @@
 // src/sections/ProfileSection.jsx
 import React, { useState } from "react";
 import { useApp } from "../store/AppContext";
-// Импорт данных и движка
 import { getProfileInsights, getMoonDay, getCurrentMeridian } from "../utils/knowledgeEngine";
-// Импорт графики (убедись, что файл src/components/BlueprintIcons.jsx существует)
-import { 
-  MaleAvatar, FemaleAvatar, 
-  WesternZodiac, EasternZodiac, 
-  MeridianClock, LifeCycleSpiral 
-} from "../components/BlueprintIcons";
 
-// ─── КОМПОНЕНТ АККОРДЕОНА (Раскрывающийся блок) ───
-function Accordion({ title, icon, children, defaultOpen = false, accent = "blue" }) {
+// ─── КОМПОНЕНТ АККОРДЕОНА ───
+function Accordion({ title, icon, children, defaultOpen = false }) {
   const [open, setOpen] = useState(defaultOpen);
-  
-  const styles = {
-    blue: { bg: "rgba(0,112,192,0.05)", border: "rgba(0,112,192,0.2)", text: "var(--blue)" },
-    gold: { bg: "rgba(200,164,90,0.05)", border: "rgba(200,164,90,0.2)", text: "var(--gold-dark)" },
-    success: { bg: "rgba(45,106,79,0.05)", border: "rgba(45,106,79,0.2)", text: "var(--success)" }
-  };
-  const s = styles[accent] || styles.blue;
 
   return (
     <div style={{ 
-      background: "#fff", border: `1.5px solid ${s.border}`, borderRadius: 8, 
-      marginBottom: 12, overflow: "hidden" 
+      background: "#fff", 
+      border: "1.5px solid rgba(0,112,192,0.2)", 
+      borderRadius: 8, 
+      marginBottom: 16, 
+      overflow: "hidden" 
     }}>
       <div 
         onClick={() => setOpen(!open)}
         style={{ 
-          padding: "14px 16px", background: s.bg, cursor: "pointer", 
-          display: "flex", justifyContent: "space-between", alignItems: "center", 
-          fontFamily: "var(--font-head)", fontSize: 12, letterSpacing: 1.5, 
-          color: s.text, transition: "background 0.2s" 
+          padding: "16px", 
+          background: "rgba(0,112,192,0.05)", 
+          cursor: "pointer", 
+          display: "flex", 
+          justifyContent: "space-between", 
+          alignItems: "center" 
         }}
-        onMouseEnter={(e) => e.currentTarget.style.background = accent === "gold" ? "rgba(200,164,90,0.1)" : "rgba(0,112,192,0.1)"}
-        onMouseLeave={(e) => e.currentTarget.style.background = s.bg}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ fontSize: 18 }}>{icon}</span>
-          <span>{title}</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <span style={{ fontSize: 24 }}>{icon}</span>
+          <h3 style={{ 
+            fontFamily: "var(--font-head)", 
+            fontSize: 16, 
+            color: "var(--blue)", 
+            margin: 0 
+          }}>
+            {title}
+          </h3>
         </div>
-        <div style={{ transition: "transform 0.3s ease", transform: open ? "rotate(180deg)" : "rotate(0)", color: s.text }}>▼</div>
+        <div style={{ 
+          fontSize: 20, 
+          color: "var(--gold)", 
+          transition: "transform 0.3s",
+          transform: open ? "rotate(180deg)" : "rotate(0)"
+        }}>
+          ▼
+        </div>
       </div>
       
-      <div style={{ maxHeight: open ? "1000px" : "0", overflow: "hidden", transition: "max-height 0.4s ease" }}>
-        <div style={{ padding: "16px", borderTop: `1px solid ${s.border}` }}>
+      {open && (        <div style={{ padding: "16px", borderTop: "1px solid rgba(0,112,192,0.1)" }}>
           {children}
-        </div>      </div>
+        </div>
+      )}
     </div>
   );
 }
 
-// ─── КОМПОНЕНТ ИНСАЙТА (Карточка со смыслом) ───
-function InsightCard({ title, icon, meaning, impact, action, color = "blue" }) {
-  const styles = {
-    blue: { bg: "rgba(0,112,192,0.05)", border: "rgba(0,112,192,0.2)", text: "var(--blue)", accent: "#0070c0" },
-    gold: { bg: "rgba(200,164,90,0.05)", border: "rgba(200,164,90,0.2)", text: "var(--gold-dark)", accent: "#c8a45a" },
-    success: { bg: "rgba(45,106,79,0.05)", border: "rgba(45,106,79,0.2)", text: "var(--success)", accent: "#2d6a4f" }
-  };
-  const s = styles[color];
-
+// ─── КАРТОЧКА С ПОЯСНЕНИЕМ ───
+function InsightCard({ title, icon, meaning, impact, action }) {
   return (
     <div style={{ 
-      background: s.bg, border: `1.5px solid ${s.border}`, borderRadius: 8, 
-      padding: 16, marginBottom: 16, position: "relative" 
+      background: "rgba(200,164,90,0.05)", 
+      border: "1.5px solid rgba(200,164,90,0.2)", 
+      borderRadius: 8, 
+      padding: 16, 
+      marginBottom: 16 
     }}>
-      <div style={{ position: "absolute", top: 0, right: 0, width: 20, height: 20, borderTop: `2px solid ${s.text}`, borderLeft: `2px solid ${s.text}` }} />
-      
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
         <span style={{ fontSize: 24 }}>{icon}</span>
-        <h3 style={{ fontFamily: "var(--font-head)", fontSize: 16, color: s.text, margin: 0 }}>{title}</h3>
+        <h3 style={{ 
+          fontFamily: "var(--font-head)", 
+          fontSize: 16, 
+          color: "var(--gold-dark)", 
+          margin: 0 
+        }}>
+          {title}
+        </h3>
       </div>
 
-      <div style={{ fontSize: 14, lineHeight: 1.6, color: "var(--text1)", marginBottom: 12 }}>
+      <div style={{ fontSize: 14, lineHeight: 1.6, marginBottom: 12 }}>
         {meaning}
       </div>
 
       <div style={{ 
-        padding: 12, background: "rgba(255,255,255,0.6)", borderRadius: 6, 
-        borderLeft: `3px solid ${s.accent}`, marginBottom: 8 
+        padding: 12, 
+        background: "rgba(255,255,255,0.6)", 
+        borderRadius: 6, 
+        borderLeft: "3px solid var(--gold)", 
+        marginBottom: 12 
       }}>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: s.text, letterSpacing: 1, marginBottom: 4 }}>
+        <div style={{ 
+          fontFamily: "var(--font-mono)", 
+          fontSize: 9, 
+          color: "var(--gold-dark)", 
+          letterSpacing: 1, 
+          marginBottom: 4 
+        }}>
           ◈ ЧТО ЭТО ЗНАЧИТ ДЛЯ ТЕБЯ
-        </div>
-        <div style={{ fontSize: 13, lineHeight: 1.5, color: "var(--text2)" }}>
+        </div>        <div style={{ fontSize: 13, lineHeight: 1.5, color: "var(--text2)" }}>
           {impact}
         </div>
       </div>
 
       {action && (
         <div style={{ 
-          padding: 10, background: "rgba(255,255,255,0.4)", borderRadius: 6,
-          fontSize: 12, color: "var(--text2)", display: "flex", alignItems: "flex-start", gap: 8 
+          padding: 10, 
+          background: "rgba(255,255,255,0.4)", 
+          borderRadius: 6,
+          fontSize: 12, 
+          color: "var(--text2)", 
+          display: "flex", 
+          alignItems: "flex-start", 
+          gap: 8 
         }}>
           <span style={{ fontSize: 16 }}>💡</span> 
           <div>
-            <strong style={{ display: "block", marginBottom: 4, color: s.text }}>Как использовать:</strong>            {action}
+            <strong style={{ display: "block", marginBottom: 4, color: "var(--gold-dark)" }}>
+              Как использовать:
+            </strong>
+            {action}
           </div>
         </div>
       )}
@@ -104,208 +125,449 @@ function InsightCard({ title, icon, meaning, impact, action, color = "blue" }) {
   );
 }
 
-// ─── ОСНОВНОЙ ЭКРАН ───
-export function ProfileSection() {
-  const { profile } = useApp();
-  const [activeTab, setActiveTab] = useState("dashboard"); // dashboard | health | cycles
-  
-  // Данные из движка
-  const insights = getProfileInsights(profile);
-  const meridian = getCurrentMeridian();
-  const moonDay = getMoonDay();
-  const age = profile?.dob ? Math.floor((new Date() - new Date(profile.dob)) / (365.25 * 24 * 60 * 60 * 1000)) : null;
-  const currentHour = new Date().getHours();
+// ─── МЕРИДИАННЫЕ ЧАСЫ (SVG) ───
+function MeridianClock({ activeMeridian }) {
+  const meridians = [
+    { name: "Лёгкие", time: "03-05", angle: 30 },
+    { name: "Т. кишечник", time: "05-07", angle: 60 },
+    { name: "Желудок", time: "07-09", angle: 90 },
+    { name: "Селезёнка", time: "09-11", angle: 120 },
+    { name: "Сердце", time: "11-13", angle: 150 },
+    { name: "Т. кишечник", time: "13-15", angle: 180 },
+    { name: "М. пузырь", time: "15-17", angle: 210 },
+    { name: "Почки", time: "17-19", angle: 240 },
+    { name: "Перикард", time: "19-21", angle: 270 },
+    { name: "3 обогревателя", time: "21-23", angle: 300 },
+    { name: "Желчный", time: "23-01", angle: 330 },
+    { name: "Печень", time: "01-03", angle: 0 }
+  ];
 
-  if (!profile) return <div style={{ padding: 40, textAlign: "center", color: "var(--text3)" }}>Загрузка профиля...</div>;
+  const advice = {
+    "М. пузырь": "Активность, спорт, творчество. В это время энергия Ци концентрируется в этом органе.",
+    "Сердце": "Социальные контакты, важные решения, обед.",
+    "Почки": "Восстановление, тёплый чай, рефлексия.",    "Лёгкие": "Пробуждение, свежий воздух, дыхательная практика."
+  };
 
   return (
-    <div className="page" style={{ position: "relative" }}>
-      
-      {/* ФОНОВЫЙ ВОДЯНОЙ ЗНАК */}
+    <div style={{ textAlign: "center" }}>
       <div style={{ 
-        position: "fixed", top: 120, right: 40, width: 200, height: 200, zIndex: 0,
-        backgroundImage: `url("image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Ccircle cx='100' cy='100' r='80' fill='none' stroke='%230070c0' stroke-width='1'/%3E%3Cpath d='M100 20 L100 180 M20 100 L180 100' stroke='%230070c0' stroke-width='0.5'/%3E%3C/svg%3E")`,
-        backgroundSize: "contain", backgroundRepeat: "no-repeat", opacity: 0.05, pointerEvents: "none"
-      }} />
-
-      {/* ─── 1. ШАПКА ПРОФИЛЯ (Аватар + Знаки) ─── */}
-      <div className="card" style={{ borderLeft: "4px solid var(--blue)", marginBottom: 16, zIndex: 1 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "20px", marginBottom: "20px" }}>
-          {/* Аватар */}
-          <div style={{ flexShrink: 0 }}>
-            {profile?.gender === 'male' ? <MaleAvatar size={80} /> : <FemaleAvatar size={80} />}
-          </div>
+        fontSize: 18, 
+        fontFamily: "var(--font-head)", 
+        color: "var(--blue)", 
+        marginBottom: 16 
+      }}>
+        ⏰ МЕРИДИАННЫЕ ЧАСЫ
+      </div>
+      
+      <div style={{ 
+        display: "flex", 
+        justifyContent: "center", 
+        marginBottom: 20 
+      }}>
+        <svg width="280" height="280" viewBox="0 0 300 300">
+          {/* Круги */}
+          <circle cx="150" cy="150" r="130" fill="none" stroke="rgba(0,112,192,0.2)" strokeWidth="1.5" />
+          <circle cx="150" cy="150" r="100" fill="none" stroke="rgba(0,112,192,0.1)" strokeWidth="1" strokeDasharray="4 2" />
+          <circle cx="150" cy="150" r="70" fill="none" stroke="rgba(0,112,192,0.1)" strokeWidth="1" strokeDasharray="4 2" />
           
-          {/* Основная Инфо */}
-          <div style={{ flexGrow: 1 }}>
-            <div style={{ fontFamily: "var(--font-head)", fontSize: 22, color: "var(--blue)", marginBottom: 4 }}>
-              {profile.name || "Гость"}
-            </div>
-            <div style={{ fontFamily: "var(--font-italic)", fontSize: 13, color: "var(--text3)", fontStyle: "italic" }}>
-              {profile.fullName || "ФИО не указано"}
-            </div>
-            
-            {/* Бейджи (Возраст, Хроно-тип) */}            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
-              {age && <span className="badge bgr">🎂 {age} лет</span>}
-              <span className="badge bt">{profile.chronotype || "🕊️ Голубь"}</span>
-            </div>
-          </div>
+          {/* Линии секторов */}
+          {meridians.map((m, i) => {
+            const rad = (m.angle - 90) * (Math.PI / 180);
+            const x = 150 + 125 * Math.cos(rad);
+            const y = 150 + 125 * Math.sin(rad);
+            return (
+              <line 
+                key={i} 
+                x1="150" y1="150" x2={x} y2={y} 
+                stroke="rgba(0,112,192,0.15)" 
+                strokeWidth="1" 
+              />
+            );
+          })}
+
+          {/* Подписи */}
+          {meridians.map((m, i) => {
+            const rad = (m.angle - 90) * (Math.PI / 180);
+            const x = 150 + 110 * Math.cos(rad);
+            const y = 150 + 110 * Math.sin(rad);
+            const isActive = m.name === activeMeridian;
+            return (
+              <g key={i}>
+                <text 
+                  x={x} y={y}                   textAnchor="middle" 
+                  dominantBaseline="middle" 
+                  fontSize={isActive ? "11" : "8"} 
+                  fill={isActive ? "var(--blue)" : "var(--text3)"} 
+                  fontFamily="var(--font-mono)"
+                  fontWeight={isActive ? "bold" : "normal"}
+                >
+                  {m.name}
+                </text>
+                <text 
+                  x={x} y={y + 12} 
+                  textAnchor="middle" 
+                  fontSize="7" 
+                  fill={isActive ? "var(--blue)" : "var(--text3)"} 
+                  fontFamily="var(--font-mono)"
+                >
+                  {m.time}
+                </text>
+              </g>
+            );
+          })}
+
+          {/* Указатель */}
+          <line 
+            x1="150" y1="150" x2="150" y2="40" 
+            stroke="var(--blue)" 
+            strokeWidth="3" 
+            strokeLinecap="round" 
+          />
+          <circle cx="150" cy="40" r="6" fill="var(--gold)" stroke="#fff" strokeWidth="2" />
+          <circle cx="150" cy="150" r="8" fill="var(--blue)" stroke="#fff" strokeWidth="2" />
+        </svg>
+      </div>
+
+      <div style={{ 
+        fontSize: 14, 
+        color: "var(--text2)", 
+        lineHeight: 1.6 
+      }}>
+        <strong style={{ color: "var(--blue)" }}>
+          Активен меридиан {activeMeridian}
+        </strong>
+        <div style={{ marginTop: 8 }}>
+          {advice[activeMeridian] || "Время для работы с этим органом."}
         </div>
-
-        {/* Знаки Зодиака */}
-        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "30px", marginTop: "16px", borderTop: "1px solid var(--line)", paddingTop: "16px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <WesternZodiac sign={insights.zodiac} size={40} />
-            <div>
-              <div style={{ fontSize: 9, color: "var(--text3)", fontFamily: "var(--font-mono)" }}>ЗАПАДНЫЙ</div>
-              <div style={{ fontSize: 14, fontWeight: 600, color: "var(--blue)" }}>{insights.zodiac}</div>
-            </div>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <EasternZodiac sign={insights.eastern} size={40} />
-            <div>
-              <div style={{ fontSize: 9, color: "var(--text3)", fontFamily: "var(--font-mono)" }}>ВОСТОЧНЫЙ</div>
-              <div style={{ fontSize: 14, fontWeight: 600, color: "var(--gold)" }}>{insights.eastern}</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ─── 2. НАВИГАЦИЯ (Табы) ─── */}
-      <div className="tabs" style={{ marginBottom: 16, zIndex: 1 }}>
-        {[
-          { id: "dashboard", label: "Инсайты" },
-          { id: "health", label: "Здоровье" },
-          { id: "cycles", label: "Циклы" }
-        ].map(t => (
-          <button key={t.id} className={`tab ${activeTab === t.id ? "on" : ""}`} onClick={() => setActiveTab(t.id)}>
-            {t.label}
-          </button>
-        ))}
-      </div>
-
-      {/* ─── 3. КОНТЕНТ ─── */}
-      <div style={{ zIndex: 1 }}>
-        
-        {/* === ВКЛАДКА 1: ИНСАЙТЫ (Смыслы) === */}
-        {activeTab === "dashboard" && (
-          <>
-            <InsightCard 
-              title={`Градус Судьбы: ${insights.destiny?.degree || 241}°`}
-              icon="🧭"
-              meaning={insights.destiny?.interpretation || "Интеграция опыта и мудрость."}
-              impact="Ты находишься на этапе, когда накопленный опыт становится твоим главным капиталом. Твоя интуиция сейчас работает на пике. Ты видишь то, что другие упускают."              action="Каждое утро спрашивай себя: 'Какой главный урок я вынесла из прошлого опыта?' Это усилит твою способность к синтезу."
-              color="gold"
-            />
-
-            <InsightCard 
-              title="Твоя стихия и характер"
-              icon="♈"
-              meaning={`${insights.zodiac} (${insights.zodiacElement || "Воздух"}). Планета: ${insights.rulingPlanet || "Меркурий"}.`}
-              impact={`Как представитель стихии ${insights.zodiacElement || "Воздух"}, ты обладаешь быстрой адаптивностью. Твоя слабая зона — ${insights.zodiacWeaknesses || "нервная система"}. Стресс бьет именно туда.`}
-              action="Планируй важные интеллектуальные дела на время активности своей стихии. Избегай многозадачности — фокусируйся на одной задаче."
-              color="blue"
-            />
-
-            <InsightCard 
-              title="Твой Хроно-тип"
-              icon="🦉"
-              meaning={`Ты: ${profile.chronotype || "Голубь"}.`}
-              impact={profile.chronotype?.includes("Сова") 
-                ? "Твой пик продуктивности наступает вечером. Утро — это время 'разгона', а не сложных решений."
-                : "Твой мозг лучше всего работает в первой половине дня. Вечером энергия падает."
-              }
-              action={profile.chronotype?.includes("Сова")
-                ? "Перенеси творческие и аналитические задачи на 16:00–20:00. Утром оставь только рутину."
-                : "Сделай самые важные дела до 13:00. Вечером отдыхай."
-              }
-              color="success"
-            />
-          </>
-        )}
-
-        {/* === ВКЛАДКА 2: ЗДОРОВЬЕ === */}
-        {activeTab === "health" && (
-          <>
-            <Accordion title="BODY BLUEPRINT (Твои уязвимые зоны)" icon="🫁" accent="success" defaultOpen>
-              <div style={{ fontSize: 14, lineHeight: 1.6, color: "var(--text1)", marginBottom: 12 }}>
-                <strong>Слабые органы:</strong> {insights.health?.area || "Плечи, ключицы, лёгкие"}.<br/>
-                <strong>Органы под ударом:</strong> {insights.health?.organs || "Нервная система, руки"}.
-              </div>
-              <div style={{ 
-                padding: 12, background: "rgba(45,106,79,0.06)", borderRadius: 6, 
-                border: "1px solid rgba(45,106,79,0.15)" 
-              }}>
-                <div style={{ fontSize: 13, color: "var(--text1)", lineHeight: 1.5 }}>
-                  💡 <strong>Рекомендация:</strong> {insights.health?.advice || "Дыши свежим воздухом, береги плечи и руки."}
-                </div>
-              </div>
-            </Accordion>
-
-            <Accordion title="Сезонный ритм" icon="🍂" accent="gold">
-              <div style={{ fontSize: 13, lineHeight: 1.6, color: "var(--text2)" }}>                <strong>Сезон:</strong> {insights.season || "Весна (Дерево)"}<br/>
-                <strong>Риск:</strong> {insights.seasonRisk || "Перепады настроения, спазмы"}<br/>
-                <strong>Совет:</strong> {insights.seasonAdvice || "Растяжка, кислая пища умеренно, ранний подъём."}
-              </div>
-            </Accordion>
-
-            <Accordion title="Лунный запрет" icon="🌙" accent="blue">
-              <div style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.5 }}>
-                Сегодня <strong>{moonDay}-й</strong> лунный день.<br/>
-                ⛔ <strong>Не рекомендуется:</strong> {insights.moonRestriction?.forbidden || "Нет строгих запретов"}.<br/>
-                <em style={{ fontSize: 12, color: "var(--text3)" }}>Если есть возможность, отложи процедуры на эти зоны.</em>
-              </div>
-            </Accordion>
-          </>
-        )}
-
-        {/* === ВКЛАДКА 3: ЦИКЛЫ (Визуализация) === */}
-        {activeTab === "cycles" && (
-          <>
-            {/* Меридианные Часы */}
-            <div className="card" style={{ borderLeft: "3px solid var(--blue)" }}>
-              <div className="card-hd">
-                <div className="card-title">⏰ Меридианные часы</div>
-                <div className="badge bg">{meridian.name}</div>
-              </div>
-              <MeridianClock activeMeridian={meridian.name} size={200} />
-              <div style={{ marginTop: 12, fontSize: 13, lineHeight: 1.6, color: "var(--text2)", textAlign: "center" }}>
-                <strong>Активен меридиан: {meridian.name} ({meridian.sign}).</strong><br/>
-                {meridian.advice}<br/>
-                <span style={{ fontSize: 12, color: "var(--text3)" }}>
-                  Сейчас энергия тела сфокусирована здесь. Это лучшее время для работы с этим органом.
-                </span>
-              </div>
-            </div>
-
-            {/* Спираль Жизни */}
-            <div className="card" style={{ borderLeft: "3px solid var(--gold)" }}>
-              <div className="card-hd">
-                <div className="card-title">🔄 Спираль Жизненных Циклов</div>
-                <div className="badge bm">{age} лет</div>
-              </div>
-              <LifeCycleSpiral age={age} size={220} />
-              <div style={{ marginTop: 12, fontSize: 13, lineHeight: 1.6, color: "var(--text2)" }}>
-                <strong>Твой этап:</strong> {age >= 36 && age < 48 ? "Зрелость" : age >= 24 && age < 36 ? "Молодость" : "Другой этап"}.<br/>
-                {age >= 36 && age < 48 
-                  ? "Пик продуктивности и передачи опыта. Время закрепления достижений." 
-                  : "Время накопления ресурсов и поиска своего пути."}
-                <br/><br/>
-                <strong>Кармическая задача:</strong> {profile.goalAreas ? `Развитие сфер: ${profile.goalAreas.join(", ")}` : "Определи свои цели в настройках."}
-              </div>            </div>
-          </>
-        )}
-      </div>
-
-      {/* ─── 4. КНОПКИ ДЕЙСТВИЙ ─── */}
-      <div style={{ display: "flex", gap: 10, marginTop: 20, zIndex: 1 }}>
-        <button className="btn btn-primary" style={{ flex: 1, fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 1 }}>
-          ✎ РЕДАКТИРОВАТЬ
-        </button>
-        <button className="btn btn-ghost" style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 1 }}>
-          📊 АНАЛИЗ
-        </button>
       </div>
     </div>
   );
 }
+// ─── ЖИЗНЕННЫЕ ЦИКЛЫ (SVG) ───
+function LifeCycleChart({ age }) {
+  const cycles = [
+    { label: "Детство", start: 0, end: 12, color: "rgba(0,112,192,0.2)" },
+    { label: "Юность", start: 12, end: 24, color: "rgba(200,164,90,0.2)" },
+    { label: "Молодость", start: 24, end: 36, color: "rgba(45,106,79,0.2)" },
+    { label: "Зрелость", start: 36, end: 48, color: "rgba(139,32,32,0.2)" },
+    { label: "Мудрость", start: 48, end: 60, color: "rgba(29,78,107,0.2)" },
+    { label: "Долголетие", start: 60, end: 72, color: "rgba(139,32,32,0.15)" }
+  ];
+
+  return (
+    <div style={{ textAlign: "center" }}>
+      <div style={{ 
+        fontSize: 18, 
+        fontFamily: "var(--font-head)", 
+        color: "var(--blue)", 
+        marginBottom: 20 
+      }}>
+        🔄 ЖИЗНЕННЫЕ ЦИКЛЫ
+      </div>
+
+      <svg width="320" height="120" viewBox="0 0 320 120" style={{ marginBottom: 16 }}>
+        {/* Полосы циклов */}
+        {cycles.map((c, i) => {
+          const width = ((c.end - c.start) / 72) * 300;
+          const x = (c.start / 72) * 300 + 10;
+          return (
+            <rect 
+              key={i} 
+              x={x} y="40" 
+              width={width} height="40" 
+              fill={c.color} 
+              stroke="rgba(0,112,192,0.3)" 
+              strokeWidth="1"
+            />
+          );
+        })}
+        
+        {/* Подписи */}
+        {cycles.map((c, i) => {
+          const x = (c.start / 72) * 300 + ((c.end - c.start) / 72) * 150 + 10;
+          return (
+            <text 
+              key={i} 
+              x={x} y="65" 
+              textAnchor="middle" 
+              fontSize="9" 
+              fill="var(--text2)" 
+              fontFamily="var(--font-mono)"            >
+              {c.label}
+            </text>
+          );
+        })}
+
+        {/* Указатель возраста */}
+        <line 
+          x1={(age / 72) * 300 + 10} y1="30" 
+          x2={(age / 72) * 300 + 10} y2="90" 
+          stroke="var(--blue)" 
+          strokeWidth="2" 
+          strokeDasharray="4 2" 
+        />
+        <circle 
+          cx={(age / 72) * 300 + 10} cy="30" r="5" 
+          fill="var(--gold)" stroke="#fff" strokeWidth="2" 
+        />
+        <text 
+          x={(age / 72) * 300 + 10} y="22" 
+          textAnchor="middle" 
+          fontSize="11" 
+          fill="var(--blue)" 
+          fontFamily="var(--font-mono)" 
+          fontWeight="bold"
+        >
+          {age} лет
+        </text>
+      </svg>
+
+      <div style={{ 
+        fontSize: 13, 
+        color: "var(--text2)", 
+        lineHeight: 1.6,
+        padding: "12px",
+        background: "rgba(0,112,192,0.05)",
+        borderRadius: 6
+      }}>
+        <strong>Текущий этап:</strong> {age >= 36 && age < 48 ? "Зрелость" : age >= 24 && age < 36 ? "Молодость" : "Другой этап"}<br/>
+        <strong>Характеристика:</strong> {age >= 36 && age < 48 ? "Пик продуктивности и передачи опыта. Время закрепления достижений." : "Время накопления ресурсов и поиска своего пути."}
+      </div>
+    </div>
+  );
+}
+
+// ─── ОСНОВНОЙ КОМПОНЕНТ ───
+export function ProfileSection() {
+  const { profile } = useApp();
+  const [activeTab, setActiveTab] = useState("insights");
+    const insights = getProfileInsights(profile);
+  const meridian = getCurrentMeridian();
+  const moonDay = getMoonDay();
+  const age = profile?.dob ? Math.floor((new Date() - new Date(profile.dob)) / (365.25 * 24 * 60 * 60 * 1000)) : 42;
+
+  if (!profile) return <div style={{ padding: 40, textAlign: "center" }}>Загрузка...</div>;
+
+  return (
+    <div className="page">
+      {/* ШАПКА */}
+      <div className="card" style={{ borderLeft: "4px solid var(--blue)", marginBottom: 20 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12 }}>
+          <div>
+            <h1 style={{ 
+              fontFamily: "var(--font-head)", 
+              fontSize: 24, 
+              color: "var(--blue)", 
+              marginBottom: 8,
+              margin: 0
+            }}>
+              {profile.name}
+            </h1>
+            <div style={{ 
+              fontFamily: "var(--font-italic)", 
+              fontSize: 13, 
+              color: "var(--text3)", 
+              fontStyle: "italic",
+              marginBottom: 12
+            }}>
+              {profile.fullName}
+            </div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <span className="badge bg">♊ {insights.zodiac}</span>
+              <span className="badge bm">🐗 {insights.eastern}</span>
+              <span className="badge bgr">🎂 {age} лет</span>
+              <span className="badge bt">{profile.chronotype}</span>
+            </div>
+          </div>
+          
+          <div style={{ textAlign: "right", minWidth: 140 }}>
+            <div style={{ 
+              fontFamily: "var(--font-mono)", 
+              fontSize: 9, 
+              color: "var(--text3)", 
+              letterSpacing: 1.5, 
+              marginBottom: 4 
+            }}>
+              ГРАДУС СУДЬБЫ
+            </div>
+            <div style={{               fontFamily: "var(--font-head)", 
+              fontSize: 28, 
+              color: "var(--gold)", 
+              fontWeight: 600 
+            }}>
+              {insights.destiny?.degree || 241}°
+            </div>
+            <div style={{ 
+              fontFamily: "var(--font-italic)", 
+              fontSize: 11, 
+              color: "var(--text3)", 
+              maxWidth: 180, 
+              marginTop: 4, 
+              lineHeight: 1.4 
+            }}>
+              {insights.destiny?.interpretation}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ТАБЫ */}
+      <div className="tabs" style={{ marginBottom: 20 }}>
+        <button 
+          className={`tab ${activeTab === "insights" ? "on" : ""}`} 
+          onClick={() => setActiveTab("insights")}
+        >
+          Инсайты
+        </button>
+        <button 
+          className={`tab ${activeTab === "cycles" ? "on" : ""}`} 
+          onClick={() => setActiveTab("cycles")}
+        >
+          Циклы
+        </button>
+        <button 
+          className={`tab ${activeTab === "practices" ? "on" : ""}`} 
+          onClick={() => setActiveTab("practices")}
+        >
+          Практики
+        </button>
+      </div>
+
+      {/* ВКЛАДКА 1: ИНСАЙТЫ */}
+      {activeTab === "insights" && (
+        <div>
+          <InsightCard 
+            title="Градус Судьбы"
+            icon="🧭"
+            meaning={`Твой градус ${insights.destiny?.degree || 241}° находится в зоне "${insights.destiny?.interpretation || "Интеграция опыта"}".`}            impact="Ты прошла большой путь накопления опыта. Сейчас твоя суперсила — видеть суть вещей, которую другие не замечают. Твоя задача в этом цикле — не создавать новое с нуля, а систематизировать то, что уже есть, и передавать мудрость другим."
+            action="Каждое утро спрашивай себя: 'Какой урок я могу извлечь из сегодняшнего дня?' Веди дневник наблюдений — это усилит твою природную способность к анализу."
+          />
+
+          <Accordion title="Астрологический портрет" icon="♈" defaultOpen={true}>
+            <div style={{ fontSize: 14, lineHeight: 1.6, marginBottom: 12 }}>
+              <strong>{insights.zodiac}</strong> ({insights.zodiacElement || "Воздух"}) под управлением {insights.rulingPlanet || "Меркурия"}.
+            </div>
+            <div style={{ 
+              padding: 12, 
+              background: "rgba(0,112,192,0.05)", 
+              borderRadius: 6, 
+              borderLeft: "3px solid var(--blue)",
+              marginBottom: 12
+            }}>
+              <div style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--blue)", marginBottom: 4 }}>
+                ◈ ЧТО ЭТО ЗНАЧИТ ДЛЯ ТЕБЯ
+              </div>
+              <div style={{ fontSize: 13, lineHeight: 1.5, color: "var(--text2)" }}>
+                Твоя стихия {insights.zodiacElement || "Воздух"} наделяет тебя быстрой адаптивностью и интеллектом. Ты легко схватываешь информацию, но можешь распыляться. Твои слабые зоны — {insights.zodiacWeaknesses || "лёгкие и нервная система"} — первыми реагируют на стресс.
+              </div>
+            </div>
+            <div style={{ 
+              padding: 10, 
+              background: "rgba(255,255,255,0.4)", 
+              borderRadius: 6,
+              fontSize: 12, 
+              color: "var(--text2)"
+            }}>
+              <strong style={{ color: "var(--blue)", display: "block", marginBottom: 4 }}>💡 Как использовать:</strong>
+              Планируй важные дела на утро (пик активности Воздуха). Избегай многозадачности — фокусируйся на одном проекте. Ежедневная дыхательная практика (5 мин) укрепит твои слабые зоны.
+            </div>
+          </Accordion>
+
+          <Accordion title="Восточный знак" icon="🐗">
+            <div style={{ fontSize: 14, lineHeight: 1.6, marginBottom: 12 }}>
+              <strong>{insights.eastern}</strong> ({insights.easternElement || "Вода"}).
+            </div>
+            <div style={{ fontSize: 13, lineHeight: 1.5, color: "var(--text2)" }}>
+              {insights.eastern} наделяет тебя {insights.easternTraits || "честностью, щедростью и терпимостью"}. Твоя кармическая задача — {insights.easternKarma || "научиться говорить 'нет' без чувства вины"}.
+            </div>
+          </Accordion>
+
+          <Accordion title="Хроно-тип" icon="🦉">
+            <div style={{ fontSize: 14, lineHeight: 1.6, marginBottom: 12 }}>
+              <strong>{profile.chronotype || "🕊️ Голубь"}</strong>
+            </div>
+            <div style={{ fontSize: 13, lineHeight: 1.5, color: "var(--text2)" }}>
+              {profile.chronotype?.includes("Сова") 
+                ? "Твой пик продуктивности наступает вечером. Утро — это время 'разгона', а не сложных решений."                : "Твой мозг лучше всего работает в первой половине дня. Вечером энергия падает."
+              }
+            </div>
+          </Accordion>
+        </div>
+      )}
+
+      {/* ВКЛАДКА 2: ЦИКЛЫ */}
+      {activeTab === "cycles" && (
+        <div>
+          <div className="card" style={{ marginBottom: 20 }}>
+            <MeridianClock activeMeridian={meridian.name} />
+          </div>
+
+          <div className="card" style={{ marginBottom: 20 }}>
+            <div style={{ fontSize: 18, fontFamily: "var(--font-head)", color: "var(--gold-dark)", marginBottom: 16 }}>
+              🌙 ЛУННЫЙ ЦИКЛ
+            </div>
+            <div style={{ fontSize: 14, lineHeight: 1.6, color: "var(--text2)" }}>
+              <div style={{ marginBottom: 8 }}>
+                <strong>Сейчас:</strong> {moonDay > 25 ? "Завершение лунного месяца" : moonDay > 15 ? "Убывающая Луна" : "Растущая Луна"}
+              </div>
+              <div style={{ marginBottom: 8 }}>
+                <strong>Запрет сегодня:</strong> {insights.moonRestriction?.forbidden || "Нет строгих запретов"}
+              </div>
+              <div>
+                <strong>Рекомендация:</strong> {moonDay > 25 ? "Завершай начатое, не начинай нового. Идеально для подведения итогов." : moonDay > 15 ? "Время очищения — физического и ментального. Избавляйся от лишнего." : "Время роста и новых начинаний. Планируй и действуй."}
+              </div>
+            </div>
+          </div>
+
+          <div className="card">
+            <LifeCycleChart age={age} />
+          </div>
+        </div>
+      )}
+
+      {/* ВКЛАДКА 3: ПРАКТИКИ */}
+      {activeTab === "practices" && (
+        <div>
+          <div className="card" style={{ marginBottom: 16 }}>
+            <div style={{ fontSize: 18, fontFamily: "var(--font-head)", color: "var(--blue)", marginBottom: 16 }}>
+              🧘 Персональные практики
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {[
+                { title: "Сам Чон До", time: "5 мин", desc: "Настроечное дыхание: вдох 3с → выдох 6с", color: "#0070c0" },
+                { title: "6 целительных звуков", time: "10 мин", desc: "С-С-С, Ч-У-Э-Й, Ш-Ш-Ш...", color: "#2d6a4f" },
+                { title: "Настрой Норбекова", time: "7 мин", desc: "Визуализация ОМЗ", color: "#c8a45a" }
+              ].map((p, i) => (                <div key={i} className="card" style={{ 
+                  cursor: "pointer", 
+                  borderLeft: `3px solid ${p.color}`, 
+                  padding: "12px 16px" 
+                }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div>
+                      <div style={{ 
+                        fontFamily: "var(--font-serif)", 
+                        fontSize: 14, 
+                        fontWeight: 500 
+                      }}>
+                        {p.title}
+                      </div>
+                      <div style={{ 
+                        fontSize: 12, 
+                        color: "var(--text3)", 
+                        marginTop: 2, 
+                        fontStyle: "italic" 
+                      }}>
+                        {p.desc}
+                      </div>
+                    </div>
+                    <span className="badge bg">{p.time}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+      }
