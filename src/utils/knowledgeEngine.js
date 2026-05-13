@@ -1,128 +1,219 @@
 // src/utils/knowledgeEngine.js
-// Мозг приложения: связывает Онбординг с Базой Знаний
+// 🧠 МОЗГ ПРИЛОЖЕНИЯ: связывает данные Онбординга с Базой Знаний (Болотова, Давыдов, Рао, Хван, Азнауров и др.)
+// Экспортирует функции, используемые в ProfileSection.jsx, HealthSection.jsx, TodaySection.jsx
 
-// --- ДАННЫЕ ИЗ БАЗЫ ЗНАНИЙ (Сжатые версии для примера) ---
+// ─── 1. БАЗЫ ДАННЫХ (извлечены из Markdown-файлов) ──────────────────────────────
 
-// 1. Здоровье по знакам Зодиака (Источник: zodiac-body-projections-luna.md)
-export const HEALTH_BY_ZODIAC = {
-  'Овен': { area: 'Голова, лицо, шея', organs: 'Мозг, надпочечники, глаза', advice: 'Избегай стрессов, береги зрение. Полезны дыхательные практики.' },
-  'Телец': { area: 'Горло, щитовидка, шея', organs: 'Голосовые связки, лимфоузлы', advice: 'Береги горло, следи за голосом. Избегай сквозняков.' },
-  'Близнецы': { area: 'Плечи, ключицы, легкие', organs: 'Нервная система, руки', advice: 'Дыши свежим воздухом. Береги плечи и руки.' },
-  'Рак': { area: 'Грудь, печень, ЖКТ', organs: 'Пищеварение, молочные железы', advice: 'Следи за питанием. Избегай переедания на ночь.' },
-  'Лев': { area: 'Сердце, спина', organs: 'Сосудистая система, позвоночник', advice: 'Укрепляй спину. Избегай резких физических нагрузок на сердце.' },
-  'Дева': { area: 'Кишечник, пупок', organs: 'ЖКТ, нервная система', advice: 'Следи за микрофлорой. Избегай стрессов (бьют по животу).' },
-  'Весы': { area: 'Поясница, почки', organs: 'Мочеполовая система', advice: 'Пей больше воды. Береги поясницу.' },
-  'Скорпион': { area: 'Половые органы, нос', organs: 'Репродуктивная система', advice: 'Следи за детоксом организма. Избегай инфекций.' },
-  'Стрелец': { area: 'Бедра, таз', organs: 'Кровеносная система', advice: 'Укрепляй мышцы ног. Береги от травм.' },
-  'Козерог': { area: 'Колени, кости', organs: 'Суставы, зубы', advice: 'Укрепляй кости (кальций). Береги колени.' },
-  'Водолей': { area: 'Голени, лодыжки', organs: 'Нервная система, вены', advice: 'Береги вены. Избегай отеков.' },
-  'Рыбы': { area: 'Стопы, лимфа', organs: 'Иммунитет, эндокринная система', advice: 'Делай ванночки для ног. Следи за иммунитетом.' }
+const ZODIAC_MAP = [
+  { sign: 'Козерог', start: [12, 22], end: [1, 20], element: 'Земля', planet: 'Сатурн', strength: 'Дисциплина, терпение, стратегия', weakness: 'Суставы, зубы, колени, селезёнка', growth: 'Гибкость, делегирование' },
+  { sign: 'Водолей', start: [1, 21], end: [2, 19], element: 'Воздух', planet: 'Уран/Сатурн', strength: 'Инновации, гуманизм, свобода', weakness: 'Голени, лодыжки, нервная система', growth: 'Эмоциональная стабильность, заземление' },
+  { sign: 'Рыбы', start: [2, 20], end: [3, 20], element: 'Вода', planet: 'Нептун/Юпитер', strength: 'Интуиция, эмпатия, творчество', weakness: 'Стопы, лимфа, иммунитет, психосоматика', growth: 'Границы, структурирование, детокс' },
+  { sign: 'Овен', start: [3, 21], end: [4, 20], element: 'Огонь', planet: 'Марс', strength: 'Лидерство, инициатива, решительность', weakness: 'Голова, лицо, глаза, надпочечники', growth: 'Терпение, тактика, самоконтроль' },
+  { sign: 'Телец', start: [4, 21], end: [5, 21], element: 'Земля', planet: 'Венера', strength: 'Надёжность, чувственность, упорство', weakness: 'Горло, щитовидка, шея, челюсть', growth: 'Адаптивность, отпускание контроля' },
+  { sign: 'Близнецы', start: [5, 22], end: [6, 21], element: 'Воздух', planet: 'Меркурий', strength: 'Коммуникация, адаптивность, интеллект', weakness: 'Лёгкие, бронхи, плечи, нервная система', growth: 'Фокус, глубина, завершение дел' },
+  { sign: 'Рак', start: [6, 22], end: [7, 23], element: 'Вода', planet: 'Луна', strength: 'Забота, интуиция, память, эмпатия', weakness: 'Грудь, желудок, печень, эмоциональная нестабильность', growth: 'Автономия, выход из созависимости' },
+  { sign: 'Лев', start: [7, 24], end: [8, 23], element: 'Огонь', planet: 'Солнце', strength: 'Харизма, творчество, великодушие', weakness: 'Сердце, позвоночник, спина, сосуды', growth: 'Скромность, командная игра, отдых' },
+  { sign: 'Дева', start: [8, 24], end: [9, 23], element: 'Земля', planet: 'Меркурий', strength: 'Аналитика, точность, сервис, здоровье', weakness: 'Кишечник, пупок, нервная система, мнительность', growth: 'Принятие несовершенства, расслабление' },
+  { sign: 'Весы', start: [9, 24], end: [10, 23], element: 'Воздух', planet: 'Венера', strength: 'Дипломатия, эстетика, справедливость', weakness: 'Поясница, почки, мочеполовая система', growth: 'Решительность, личные границы' },
+  { sign: 'Скорпион', start: [10, 24], end: [11, 22], element: 'Вода', planet: 'Плутон/Марс', strength: 'Глубина, трансформация, проницательность', weakness: 'Половые органы, нос, прямая кишка, стресс', growth: 'Доверие, прощение, экологичная агрессия' },
+  { sign: 'Стрелец', start: [11, 23], end: [12, 21], element: 'Огонь', planet: 'Юпитер', strength: 'Оптимизм, философия, масштаб, юмор', weakness: 'Бёдра, таз, печень, нервное перенапряжение', growth: 'Детализация, финансовая дисциплина' }
+];
+
+const EASTERN_ANIMALS = ['Крыса', 'Бык', 'Тигр', 'Кролик', 'Дракон', 'Змея', 'Лошадь', 'Коза', 'Обезьяна', 'Петух', 'Собака', 'Свинья'];
+const EASTERN_ELEMENTS = ['Металл', 'Вода', 'Дерево', 'Огонь', 'Земля'];
+
+const LUNAR_RESTRICTIONS = {
+  1: 'Мизинец руки, большой палец ноги, кончик носа',
+  2: 'Наружная лодыжка', 3: 'Внутренняя часть бедра, печень, дёсна', 4: 'Поясница, врата желудка', 5: 'Ротовая полость, поверхность тела',
+  6: 'Ладони, запястья, грудная клетка', 7: 'Внутренняя лодыжка, колени, дыхательные пути', 8: 'Запястья, половые органы, бёдра',
+  9: 'Копчик, крестец, подколенная ямка', 10: 'Лопатки, поясница, лодыжка, подъём стопы', 11: 'Грудной отдел позвоночника',
+  12: 'Сердце (перикард)', 13: 'Поджелудочная железа', 14: 'Тонкий кишечник', 15: 'Поджелудочная, диафрагма',
+  16: 'Селезёнка', 17: 'Почки, надпочечники', 18: 'Кожные покровы тела', 19: 'Аппендикс, толстая кишка', 20: 'Верхняя часть спины, лопатки',
+  21: 'Печень, желчный пузырь', 22: 'Тазобедренный сустав, крестец', 23: 'Яичники, яички', 24: 'Наружные половые органы',
+  25: 'Уши, висок', 26: 'Бёдра, кожа, колени', 27: 'Голени, подъём стопы', 28: 'Глаза, голова, мозг, стопы',
+  29: 'Прямая кишка, пальцы ног', 30: 'Сердце (эпифиз), голова'
 };
 
-// 2. Лунные запреты для красоты (Источник: lunar-calendar.md)
-export const BEAUTY_RESTRICTIONS = {
-  1: { forbidden: 'Мизинец руки, большой палец ноги, кончик носа', icon: '👃' },
-  2: { forbidden: 'Наружная лодыжка', icon: '🦶' },
-  3: { forbidden: 'Внутренняя часть бедра, печень, дёсна', icon: '🦷' },
-  4: { forbidden: 'Поясница, врата желудка', icon: '🥘' },
-  5: { forbidden: 'Ротовая полость', icon: '👄' },
-  6: { forbidden: 'Ладони, запястья', icon: '✋' },
-  7: { forbidden: 'Внутренняя лодыжка, колени', icon: '🦵' },
-  8: { forbidden: 'Запястья, половые органы', icon: '⛔' },
-  9: { forbidden: 'Копчик, крестец', icon: '🦴' },
-  10: { forbidden: 'Лопатки, лодыжки', icon: '' },
-  11: { forbidden: 'Грудной отдел позвоночника', icon: '🧍' },
-  12: { forbidden: 'Сердце (перикард)', icon: '❤️' },
-  13: { forbidden: 'Поджелудочная железа', icon: '🥪' },
-  14: { forbidden: 'Тонкий кишечник', icon: '🌀' },
-  15: { forbidden: 'Поджелудочная, диафрагма', icon: '🫁' },
-  16: { forbidden: 'Селезёнка', icon: '🟤' },
-  17: { forbidden: 'Почки, надпочечники', icon: '🫘' },
-  18: { forbidden: 'Кожные покровы тела', icon: '🧴' },
-  19: { forbidden: 'Аппендикс, толстая кишка', icon: '🧻' },
-  20: { forbidden: 'Верхняя часть спины, лопатки', icon: '🦴' },
-  21: { forbidden: 'Печень, желчный пузырь', icon: '🟢' },
-  22: { forbidden: 'Тазобедренный сустав', icon: '🦵' },
-  23: { forbidden: 'Яичники, яички', icon: '🚺' },
-  24: { forbidden: 'Наружные половые органы', icon: '🚹' },
-  25: { forbidden: 'Уши, висок', icon: '👂' },
-  26: { forbidden: 'Бёдра, кожа, колени', icon: '🦵' },
-  27: { forbidden: 'Голени, подъём стопы', icon: '🦶' },  28: { forbidden: 'Глаза, голова, мозг', icon: '🧠' },
-  29: { forbidden: 'Прямая кишка, пальцы ног', icon: '🦶' },
-  30: { forbidden: 'Сердце, голова', icon: '🧠' }
+const MERIDIAN_CLOCK = [
+  { time: '23-01', name: '3 обогревателя', sign: 'Кабан', advice: 'Завершение дел, подготовка ко сну, тёплый душ' },
+  { time: '01-03', name: 'Печени', sign: 'Вол', advice: 'Глубокий сон, детокс, не ложиться позже 23:00' },
+  { time: '03-05', name: 'Лёгких', sign: 'Тигр', advice: 'Пробуждение, свежий воздух, дыхательная практика' },
+  { time: '05-07', name: 'Толстого кишечника', sign: 'Заяц', advice: 'Опорожнение, тёплая вода, лёгкий завтрак' },
+  { time: '07-09', name: 'Желудка', sign: 'Дракон', advice: 'Полноценный завтрак, планирование дня' },
+  { time: '09-11', name: 'Селезёнки', sign: 'Змея', advice: 'Аналитика, обучение, фокус на деталях' },
+  { time: '11-13', name: 'Сердца', sign: 'Лошадь', advice: 'Социальные контакты, важные решения, обед' },
+  { time: '13-15', name: 'Тонкого кишечника', sign: 'Овца', advice: 'Усвоение информации, лёгкая работа' },
+  { time: '15-17', name: 'Мочевого пузыря', sign: 'Обезьяна', advice: 'Активность, спорт, творчество' },
+  { time: '17-19', name: 'Почек', sign: 'Петух', advice: 'Восстановление, тёплый чай, рефлексия' },
+  { time: '19-21', name: 'Перикарда', sign: 'Собака', advice: 'Общение с близкими, расслабление' },
+  { time: '21-23', name: '3 обогревателя', sign: 'Кабан', advice: 'Подготовка ко сну, отказ от экранов' }
+];
+const CHRONO_WINDOWS = {
+  '🌅 Жаворонок': { peak: '08:00–11:00', type: 'deep_work', advice: 'Сложные задачи утром, рутину после 15:00' },
+  '🕊️ Голубь': { peak: '10:00–14:00', type: 'moderate_work', advice: 'Баланс активности и отдыха, буфер 20%' },
+  '🦉 Сова': { peak: '16:00–20:00', type: 'deep_work', advice: 'Аналитику вечером, утро — на лёгкие задачи' }
 };
 
-// --- ФУНКЦИИ РАСЧЕТА ---
+const PRACTICES_DB = [
+  { id: 'sam_chon_do', title: 'Сам Чон До (настроечное)', duration: 5, color: '#0070c0', desc: 'Вдох 3с → Выдох 6с. База для всех техник системы.', type: 'breathing' },
+  { id: 'healing_sounds', title: '6 целительных звуков', duration: 10, color: '#2d6a4f', desc: 'С-С-С (лёгкие), Ч-У-Э-Й (почки), Ш-Ш-Ш (печень)...', type: 'sound' },
+  { id: 'norbeikov_setting', title: 'Настрой Норбекова + ОМЗ', duration: 7, color: '#c8a45a', desc: 'Визуализация Образа Молодости и Здоровья. Включение внутренних резервов.', type: 'visualization' },
+  { id: 'cry_breathing', title: 'Рыдающее дыхание (Вилунас)', duration: 3, color: '#e8556d', desc: 'Снятие острого стресса. Вдох ртом → выдох «с-с-с».', type: 'breathing', condition: s => s > 7 }
+];
 
-// Расчет Градуса Судьбы (Нумерология)
-export function calculateDestinyDegree(fullName) {
-  if (!fullName) return { degree: 0, text: 'Не рассчитан' };
-  const ru = "абвгдеёжзийклмнопрстуфхцчшщъыьэюя";
-  let sum = 0;
-  for (const char of fullName.toLowerCase()) {
-    if (ru.includes(char)) sum += ru.indexOf(char) + 1;
-  }
-  const degree = sum % 360 || 360;
-  
-  // Интерпретация по базе знаний
-  let interpretation = "Универсальный потенциал.";
-  if (degree > 0 && degree <= 60) interpretation = "Начало пути. Сила нового. Активность.";
-  if (degree > 60 && degree <= 120) interpretation = "Стабилизация. Творчество и развитие.";
-  if (degree > 120 && degree <= 180) interpretation = "Переход. Переосмысление ценностей.";
-  if (degree > 180 && degree <= 240) interpretation = "Внутренняя работа. Духовный рост.";
-  if (degree > 240 && degree <= 300) interpretation = "Результаты. Жатва и завершение.";
-  if (degree > 300 && degree <= 360) interpretation = "Мудрость. Подготовка к новому циклу.";
-  
-  return { degree, interpretation };
-}
+// ─── 2. РАСЧЁТНЫЕ АЛГОРИТМЫ ──────────────────────────────────────────────────
 
-// Расчет Лунного дня
-export function getMoonDay(date = new Date()) {
-  // Упрощенный алгоритм (для продакшена нужна точная эфемеридная формула)
-  const knownNewMoon = new Date(2024, 0, 11); // Известное новолуние
-  const diff = date - knownNewMoon;
-  const synodicMonth = 29.53;
-  const moonCyclePos = (diff / 1000 / 60 / 60 / 24) % synodicMonth;
-  return Math.floor(moonCyclePos) + 1;
-}
-
-// Определение знака Зодиака
+/** Определение западного знака по дате рождения */
 export function getZodiacSign(dob) {
   if (!dob) return null;
   const d = new Date(dob);
   const m = d.getMonth() + 1;
   const day = d.getDate();
-  
-  if ((m === 3 && day >= 21) || (m === 4 && day <= 20)) return 'Овен';
-  if ((m === 4 && day >= 21) || (m === 5 && day <= 20)) return 'Телец';
-  if ((m === 5 && day >= 21) || (m === 6 && day <= 21)) return 'Близнецы';
-  if ((m === 6 && day >= 22) || (m === 7 && day <= 22)) return 'Рак';  if ((m === 7 && day >= 23) || (m === 8 && day <= 22)) return 'Лев';
-  if ((m === 8 && day >= 23) || (m === 9 && day <= 22)) return 'Дева';
-  if ((m === 9 && day >= 23) || (m === 10 && day <= 22)) return 'Весы';
-  if ((m === 10 && day >= 23) || (m === 11 && day <= 21)) return 'Скорпион';
-  if ((m === 11 && day >= 22) || (m === 12 && day <= 21)) return 'Стрелец';
-  if ((m === 12 && day >= 22) || (m === 1 && day <= 20)) return 'Козерог';
-  if ((m === 1 && day >= 21) || (m === 2 && day <= 19)) return 'Водолей';
-  return 'Рыбы';
+  return ZODIAC_MAP.find(z => {
+    const [sm, sd] = z.start;
+    const [em, ed] = z.end;
+    if (sm === em) return m === sm && day >= sd && day <= ed;
+    return (m === sm && day >= sd) || (m === em && day <= ed);
+  })?.sign || 'Близнецы';
 }
 
-// --- ГЛАВНЫЙ ЭКСПОРТ (ИНСАЙТЫ) ---
+/** Определение восточного знака по году */
+export function getEasternSign(year) {
+  if (!year) return 'Свинья';
+  return EASTERN_ANIMALS[(year - 4) % 12];
+}
+
+/** Расчёт Градуса Судьбы по ФИО (градусная нумерология Амриты) */
+export function calculateDestinyDegree(fullName) {
+  if (!fullName || fullName.length < 3) return { degree: 0, interpretation: 'Не задано' };
+  const ru = 'абвгдеёжзийклмнопрстуфхцчшщъыьэюя';
+  let sum = 0;
+  for (const char of fullName.toLowerCase()) {
+    if (ru.includes(char)) sum += ru.indexOf(char) + 1;
+  }
+  const degree = sum % 360 || 360;
+  let interpretation = 'Универсальный потенциал, путь самопознания.';
+  if (degree < 120) interpretation = 'Начало пути. Сила нового, инициация, активное созидание.';
+  else if (degree < 240) interpretation = 'Развитие и структура. Закрепление опыта, профессиональный рост.';
+  else interpretation = 'Завершение и мудрость. Интеграция, передача опыта, духовный синтез.';
+  return { degree, interpretation };}
+
+/** Расчёт текущего лунного дня (синодический цикл, аппроксимация 2020–2030) */
+export function getMoonDay(date = new Date()) {
+  const knownNewMoon = new Date(Date.UTC(2024, 0, 11, 11, 57));
+  const synodicMonth = 29.53058867;
+  const diffDays = (date.getTime() - knownNewMoon.getTime()) / (1000 * 60 * 60 * 24);
+  const cyclePos = ((diffDays % synodicMonth) + synodicMonth) % synodicMonth;
+  return Math.floor(cyclePos) + 1;
+}
+
+/** Текущий активный меридиан по времени суток */
+export function getCurrentMeridian() {
+  const h = new Date().getHours();
+  return MERIDIAN_CLOCK.find(m => {
+    const [start] = m.time.split('-').map(Number);
+    return h >= start && h < start + 2;
+  }) || MERIDIAN_CLOCK[0];
+}
+
+/** Текущий сезон (для ТКМ-рекомендаций) */
+export function getCurrentSeason() {
+  const m = new Date().getMonth() + 1;
+  if (m >= 3 && m <= 5) return 'Весна (Дерево)';
+  if (m >= 6 && m <= 8) return 'Лето (Огонь)';
+  if (m >= 9 && m <= 11) return 'Осень (Металл)';
+  return 'Зима (Вода)';
+}
+
+/** Определение типа восприятия времени (t-тип) на основе хроно-типа и профиля */
+export function getTimeType(profile) {
+  const c = profile?.chronotype || '🕊️ Голубь';
+  if (c.includes('Жаворонок')) return { type: 'Спешащий (t<1)', advice: 'Закладывайте +15% буфера, избегайте многозадачности' };
+  if (c.includes('Сова')) return { type: 'Медлительный (t>1)', advice: 'Ставьте жёсткие дедлайны, используйте таймеры' };
+  return { type: 'Точный (t=1)', advice: 'Синхронизированы с реальным временем, сохраняйте ритм' };
+}
+
+/** Стиль коммуникации (на основе базы Тони Рейман и психотипа) */
+export function getCommStyle(profile) {
+  const goals = profile?.goalAreas || [];
+  if (goals.includes('Карьера') || goals.includes('Финансы')) return 'Аналитический/Визуальный: используйте схемы, цифры, чёткие дедлайны';
+  if (goals.includes('Отношения') || goals.includes('Семья')) return 'Эмпатический/Кинестетический: акцент на чувствах, тактильности, доверии';
+  return 'Универсальный: адаптируйтесь под собеседника, слушайте больше, чем говорите';
+}
+
+// ─── 3. ГЛАВНАЯ ФУНКЦИЯ ПЕРСОНАЛИЗАЦИИ ──────────────────────────────────────
+
+/**
+ * Генерирует полный персонализированный профиль на основе онбординга и Базы Знаний
+ * @param {Object} profile - данные из useApp().profile * @returns {Object} структурированные инсайты для UI
+ */
 export function getProfileInsights(profile) {
-  const zodiac = getZodiacSign(profile.dob);
-  const health = HEALTH_BY_ZODIAC[zodiac] || HEALTH_BY_ZODIAC['Овен'];
-  
-  const moonDay = getMoonDay();
-  const moonRestriction = BEAUTY_RESTRICTIONS[moonDay] || { forbidden: 'Нет данных', icon: '❓' };
-  
+  if (!profile) return null;
+
+  const dob = profile.dob;
+  const year = dob ? new Date(dob).getFullYear() : null;
+  const chronotype = profile.chronotype || '🕊️ Голубь';
+  const stress = profile.stressLevel || 5;
+  const goals = profile.goalAreas || [];
+  const blocks = profile.goalBlocks || [];
+
+  const zodiac = getZodiacSign(dob);
+  const eastern = getEasternSign(year);
   const destiny = calculateDestinyDegree(profile.fullName);
-  
+  const moonDay = getMoonDay();
+  const meridian = getCurrentMeridian();
+  const season = getCurrentSeason();
+  const chronoData = CHRONO_WINDOWS[chronotype] || CHRONO_WINDOWS['🕊️ Голубь'];
+  const timeType = getTimeType(profile);
+  const commStyle = getCommStyle(profile);
+
+  // Поиск слабых зон здоровья по месяцу (из monthly-health-by-sign.md)
+  const currentMonth = new Date().getMonth() + 1;
+  let monthlyHealth = { area: 'Нет данных', advice: 'Следите за балансом отдыха и активности' };
+  // (В продакшене здесь будет маппинг по таблице Давыдова, упрощено для стабильности)
+  if (zodiac) {
+    const z = ZODIAC_MAP.find(zd => zd.sign === zodiac);
+    if (z) monthlyHealth = { area: z.weakness, advice: z.growth };
+  }
+
+  // Подбор практик под состояние
+  const recommendedPractices = PRACTICES_DB.filter(p => !p.condition || p.condition(stress));
+
+  // Жизненные циклы (упрощённая интерпретация Даша/Возрастные этапы)
+  const age = year ? new Date().getFullYear() - year : null;
+  let lifeCycle = 'Становление';
+  if (age >= 29) lifeCycle = 'Кризис смысла / Переоценка (Возврат Сатурна)';
+  if (age >= 40) lifeCycle = 'Зрелость & Трансформация';
+  if (age >= 56) lifeCycle = 'Мудрость & Наставничество';
+
   return {
     zodiac,
-    health,
-    moonDay,
-    moonRestriction,
+    eastern,
     destiny,
-    chronotype: profile.chronotype || '🕊️ Голубь (Стандартный)',
-    tcmType: profile.tcmType || 'Вода (Стандартный)'
+    chronotype,
+    chronoData,
+    timeType,
+    commStyle,
+    moonDay,    moonRestriction: { forbidden: LUNAR_RESTRICTIONS[moonDay] || 'Нет данных' },
+    meridian,
+    season,
+    health: monthlyHealth,
+    stressLevel: stress,
+    practices: recommendedPractices,
+    lifeCycle,
+    age,
+    goals,
+    blocks,
+    // Фоллбэки для UI
+    zodiacElement: ZODIAC_MAP.find(z => z.sign === zodiac)?.element || 'Воздух',
+    rulingPlanet: ZODIAC_MAP.find(z => z.sign === zodiac)?.planet || 'Меркурий',
+    zodiacStrengths: ZODIAC_MAP.find(z => z.sign === zodiac)?.strength || 'Коммуникация, адаптивность',
+    zodiacWeaknesses: ZODIAC_MAP.find(z => z.sign === zodiac)?.weakness || 'Лёгкие, нервная система',
+    easternElement: EASTERN_ELEMENTS[(year - 4) % 5] || 'Вода',
+    easternTraits: 'Честность, щедрость, терпимость',
+    easternKarma: 'Научиться говорить «нет» без чувства вины'
   };
 }
+
+// ─── ЭКСПОРТЫ ДЛЯ УДОБСТВА ──────────────────────────────────────────────────
+export { ZODIAC_MAP, EASTERN_ANIMALS, LUNAR_RESTRICTIONS, MERIDIAN_CLOCK, CHRONO_WINDOWS, PRACTICES_DB };
