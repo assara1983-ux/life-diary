@@ -1,10 +1,59 @@
 // src/sections/ProfileSection.jsx
-import { useState } from "react";
+import React, { useState } from "react";
 import { useApp } from "../store/AppContext";
+// Импорт данных и движка
 import { getProfileInsights, getMoonDay, getCurrentMeridian } from "../utils/knowledgeEngine";
+// Импорт графики (убедись, что файл src/components/BlueprintIcons.jsx существует)
+import { 
+  MaleAvatar, FemaleAvatar, 
+  WesternZodiac, EasternZodiac, 
+  MeridianClock, LifeCycleSpiral 
+} from "../components/BlueprintIcons";
 
-// ─── КОМПОНЕНТ: РАЗВЕРНУТАЯ КАРТОЧКА С ПОЯСНЕНИЯМИ ───
-function InsightCard({ title, icon, meaning, whatItMeans, howToUse, color = "blue" }) {
+// ─── КОМПОНЕНТ АККОРДЕОНА (Раскрывающийся блок) ───
+function Accordion({ title, icon, children, defaultOpen = false, accent = "blue" }) {
+  const [open, setOpen] = useState(defaultOpen);
+  
+  const styles = {
+    blue: { bg: "rgba(0,112,192,0.05)", border: "rgba(0,112,192,0.2)", text: "var(--blue)" },
+    gold: { bg: "rgba(200,164,90,0.05)", border: "rgba(200,164,90,0.2)", text: "var(--gold-dark)" },
+    success: { bg: "rgba(45,106,79,0.05)", border: "rgba(45,106,79,0.2)", text: "var(--success)" }
+  };
+  const s = styles[accent] || styles.blue;
+
+  return (
+    <div style={{ 
+      background: "#fff", border: `1.5px solid ${s.border}`, borderRadius: 8, 
+      marginBottom: 12, overflow: "hidden" 
+    }}>
+      <div 
+        onClick={() => setOpen(!open)}
+        style={{ 
+          padding: "14px 16px", background: s.bg, cursor: "pointer", 
+          display: "flex", justifyContent: "space-between", alignItems: "center", 
+          fontFamily: "var(--font-head)", fontSize: 12, letterSpacing: 1.5, 
+          color: s.text, transition: "background 0.2s" 
+        }}
+        onMouseEnter={(e) => e.currentTarget.style.background = accent === "gold" ? "rgba(200,164,90,0.1)" : "rgba(0,112,192,0.1)"}
+        onMouseLeave={(e) => e.currentTarget.style.background = s.bg}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ fontSize: 18 }}>{icon}</span>
+          <span>{title}</span>
+        </div>
+        <div style={{ transition: "transform 0.3s ease", transform: open ? "rotate(180deg)" : "rotate(0)", color: s.text }}>▼</div>
+      </div>
+      
+      <div style={{ maxHeight: open ? "1000px" : "0", overflow: "hidden", transition: "max-height 0.4s ease" }}>
+        <div style={{ padding: "16px", borderTop: `1px solid ${s.border}` }}>
+          {children}
+        </div>      </div>
+    </div>
+  );
+}
+
+// ─── КОМПОНЕНТ ИНСАЙТА (Карточка со смыслом) ───
+function InsightCard({ title, icon, meaning, impact, action, color = "blue" }) {
   const styles = {
     blue: { bg: "rgba(0,112,192,0.05)", border: "rgba(0,112,192,0.2)", text: "var(--blue)", accent: "#0070c0" },
     gold: { bg: "rgba(200,164,90,0.05)", border: "rgba(200,164,90,0.2)", text: "var(--gold-dark)", accent: "#c8a45a" },
@@ -17,7 +66,6 @@ function InsightCard({ title, icon, meaning, whatItMeans, howToUse, color = "blu
       background: s.bg, border: `1.5px solid ${s.border}`, borderRadius: 8, 
       padding: 16, marginBottom: 16, position: "relative" 
     }}>
-      {/* Декоративный уголок Blueprint */}
       <div style={{ position: "absolute", top: 0, right: 0, width: 20, height: 20, borderTop: `2px solid ${s.text}`, borderLeft: `2px solid ${s.text}` }} />
       
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
@@ -37,18 +85,18 @@ function InsightCard({ title, icon, meaning, whatItMeans, howToUse, color = "blu
           ◈ ЧТО ЭТО ЗНАЧИТ ДЛЯ ТЕБЯ
         </div>
         <div style={{ fontSize: 13, lineHeight: 1.5, color: "var(--text2)" }}>
-          {whatItMeans}
+          {impact}
         </div>
       </div>
 
-      {howToUse && (
+      {action && (
         <div style={{ 
           padding: 10, background: "rgba(255,255,255,0.4)", borderRadius: 6,
           fontSize: 12, color: "var(--text2)", display: "flex", alignItems: "flex-start", gap: 8 
         }}>
           <span style={{ fontSize: 16 }}>💡</span> 
-          <div>            <strong style={{ display: "block", marginBottom: 4, color: s.text }}>Как использовать:</strong>
-            {howToUse}
+          <div>
+            <strong style={{ display: "block", marginBottom: 4, color: s.text }}>Как использовать:</strong>            {action}
           </div>
         </div>
       )}
@@ -56,196 +104,79 @@ function InsightCard({ title, icon, meaning, whatItMeans, howToUse, color = "blu
   );
 }
 
-// ─── SVG: МЕРИДИАННЫЕ ЧАСЫ (Blueprint стиль) ───
-function MeridianClockSVG({ currentHour }) {
-  const meridians = [
-    { time: "23-01", name: "3 обогревателя", angle: 0 },
-    { time: "01-03", name: "Печени", angle: 30 },
-    { time: "03-05", name: "Лёгких", angle: 60 },
-    { time: "05-07", name: "Т. кишечника", angle: 90 },
-    { time: "07-09", name: "Желудка", angle: 120 },
-    { time: "09-11", name: "Селезёнки", angle: 150 },
-    { time: "11-13", name: "Сердца", angle: 180 },
-    { time: "13-15", name: "Т. кишечника", angle: 210 },
-    { time: "15-17", name: "М. пузыря", angle: 240 },
-    { time: "17-19", name: "Почек", angle: 270 },
-    { time: "19-21", name: "Перикарда", angle: 300 },
-    { time: "21-23", name: "3 обогревателя", angle: 330 }
-  ];
-
-  const currentIndex = Math.floor(((currentHour % 24) + 1) / 2) % 12;
-
-  return (
-    <div style={{ display: "flex", justifyContent: "center", margin: "20px 0" }}>
-      <svg viewBox="0 0 300 300" width="280" height="280" style={{ filter: "drop-shadow(0 2px 8px rgba(0,112,192,0.15))" }}>
-        {/* Фоновая сетка */}
-        <defs>
-          <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
-            <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(0,112,192,0.05)" strokeWidth="0.5"/>
-          </pattern>
-        </defs>
-        <circle cx="150" cy="150" r="140" fill="url(#grid)" stroke="rgba(0,112,192,0.2)" strokeWidth="1.5" />
-        
-        {/* Концентрические круги */}
-        <circle cx="150" cy="150" r="110" fill="none" stroke="rgba(0,112,192,0.1)" strokeWidth="1" strokeDasharray="4 4" />
-        <circle cx="150" cy="150" r="70" fill="none" stroke="rgba(0,112,192,0.1)" strokeWidth="1" strokeDasharray="4 4" />
-        
-        {/* Линии секторов */}
-        {meridians.map((m, i) => {
-          const rad = (m.angle - 90) * (Math.PI / 180);
-          const x = 150 + 135 * Math.cos(rad);
-          const y = 150 + 135 * Math.sin(rad);
-          return <line key={i} x1="150" y1="150" x2={x} y2={y} stroke="rgba(0,112,192,0.15)" strokeWidth="1" />;
-        })}
-        {/* Подписи меридианов */}
-        {meridians.map((m, i) => {
-          const rad = (m.angle - 90) * (Math.PI / 180);
-          const x = 150 + 120 * Math.cos(rad);
-          const y = 150 + 120 * Math.sin(rad);
-          const isActive = i === currentIndex;
-          return (
-            <g key={i}>
-              <text 
-                x={x} y={y} textAnchor="middle" dominantBaseline="middle" 
-                fontSize={isActive ? "10" : "8"} 
-                fill={isActive ? "var(--blue)" : "var(--text3)"} 
-                fontFamily="var(--font-mono)"
-                fontWeight={isActive ? "600" : "400"}
-              >
-                {m.name}
-              </text>
-              <text 
-                x={x} y={y + 10} textAnchor="middle" dominantBaseline="middle" 
-                fontSize="7" fill={isActive ? "var(--blue)" : "var(--text3)"} 
-                fontFamily="var(--font-mono)"
-              >
-                {m.time}
-              </text>
-            </g>
-          );
-        })}
-
-        {/* Указатель текущего времени */}
-        <g transform={`rotate(${currentIndex * 30 - 90} 150 150)`}>
-          <line x1="150" y1="150" x2="150" y2="30" stroke="var(--blue)" strokeWidth="2.5" strokeLinecap="round" />
-          <circle cx="150" cy="30" r="5" fill="var(--gold)" stroke="#fff" strokeWidth="2" />
-        </g>
-        
-        {/* Центр */}
-        <circle cx="150" cy="150" r="8" fill="var(--blue)" stroke="#fff" strokeWidth="2" />
-        <text x="150" y="165" textAnchor="middle" fontSize="8" fill="var(--text2)" fontFamily="var(--font-mono)" fontWeight="600">
-          СЕЙЧАС
-        </text>
-      </svg>
-    </div>
-  );
-}
-
-// ─── SVG: КОЛЕСО ЖИЗНЕННЫХ ЦИКЛОВ ───
-function LifeCycleWheel({ age }) {
-  const cycles = [
-    { label: "Детство", start: 0, end: 12, color: "rgba(0,112,192,0.2)" },
-    { label: "Юность", start: 12, end: 24, color: "rgba(200,164,90,0.2)" },    { label: "Молодость", start: 24, end: 36, color: "rgba(45,106,79,0.2)" },
-    { label: "Зрелость", start: 36, end: 48, color: "rgba(139,32,32,0.2)" },
-    { label: "Мудрость", start: 48, end: 60, color: "rgba(29,78,107,0.2)" },
-    { label: "Долголетие", start: 60, end: 72, color: "rgba(139,32,32,0.15)" }
-  ];
-
-  return (
-    <div style={{ display: "flex", justifyContent: "center", margin: "20px 0" }}>
-      <svg viewBox="0 0 300 200" width="280" height="200">
-        {/* Полоса циклов */}
-        {cycles.map((c, i) => {
-          const width = ((c.end - c.start) / 72) * 280;
-          const x = (c.start / 72) * 280;
-          return (
-            <rect 
-              key={i} x={x} y="80" width={width} height="40" 
-              fill={c.color} stroke="rgba(0,112,192,0.3)" strokeWidth="1"
-            />
-          );
-        })}
-        
-        {/* Подписи */}
-        {cycles.map((c, i) => {
-          const x = (c.start / 72) * 280 + ((c.end - c.start) / 72) * 140;
-          return (
-            <text key={i} x={x} y="105" textAnchor="middle" fontSize="9" fill="var(--text2)" fontFamily="var(--font-mono)">
-              {c.label}
-            </text>
-          );
-        })}
-
-        {/* Указатель текущего возраста */}
-        <line x1={(age / 72) * 280} y1="70" x2={(age / 72) * 280} y2="130" stroke="var(--blue)" strokeWidth="2" strokeDasharray="4 2" />
-        <circle cx={(age / 72) * 280} cy="70" r="5" fill="var(--gold)" stroke="#fff" strokeWidth="2" />
-        <text x={(age / 72) * 280} y="60" textAnchor="middle" fontSize="10" fill="var(--blue)" fontFamily="var(--font-mono)" fontWeight="600">
-          {age} лет
-        </text>
-      </svg>
-    </div>
-  );
-}
-
-// ─── ОСНОВНОЙ КОМПОНЕНТ ───
+// ─── ОСНОВНОЙ ЭКРАН ───
 export function ProfileSection() {
   const { profile } = useApp();
-  const [activeTab, setActiveTab] = useState("insights"); // insights | cycles | practices
+  const [activeTab, setActiveTab] = useState("dashboard"); // dashboard | health | cycles
   
+  // Данные из движка
   const insights = getProfileInsights(profile);
   const meridian = getCurrentMeridian();
-  const moonDay = getMoonDay();  const age = profile?.dob ? Math.floor((new Date() - new Date(profile.dob)) / (365.25 * 24 * 60 * 60 * 1000)) : null;
+  const moonDay = getMoonDay();
+  const age = profile?.dob ? Math.floor((new Date() - new Date(profile.dob)) / (365.25 * 24 * 60 * 60 * 1000)) : null;
   const currentHour = new Date().getHours();
 
-  if (!profile) return <div style={{ padding: 40, textAlign: "center", color: "var(--text3)" }}>Загрузка...</div>;
+  if (!profile) return <div style={{ padding: 40, textAlign: "center", color: "var(--text3)" }}>Загрузка профиля...</div>;
 
   return (
     <div className="page" style={{ position: "relative" }}>
       
-      {/* ФОНОВЫЕ ВОДЯНЫЕ ЗНАКИ */}
+      {/* ФОНОВЫЙ ВОДЯНОЙ ЗНАК */}
       <div style={{ 
         position: "fixed", top: 120, right: 40, width: 200, height: 200, zIndex: 0,
         backgroundImage: `url("image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Ccircle cx='100' cy='100' r='80' fill='none' stroke='%230070c0' stroke-width='1'/%3E%3Cpath d='M100 20 L100 180 M20 100 L180 100' stroke='%230070c0' stroke-width='0.5'/%3E%3C/svg%3E")`,
         backgroundSize: "contain", backgroundRepeat: "no-repeat", opacity: 0.05, pointerEvents: "none"
       }} />
 
-      {/* ─── ШАПКА ПРОФИЛЯ ─── */}
+      {/* ─── 1. ШАПКА ПРОФИЛЯ (Аватар + Знаки) ─── */}
       <div className="card" style={{ borderLeft: "4px solid var(--blue)", marginBottom: 16, zIndex: 1 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12 }}>
-          <div>
+        <div style={{ display: "flex", alignItems: "center", gap: "20px", marginBottom: "20px" }}>
+          {/* Аватар */}
+          <div style={{ flexShrink: 0 }}>
+            {profile?.gender === 'male' ? <MaleAvatar size={80} /> : <FemaleAvatar size={80} />}
+          </div>
+          
+          {/* Основная Инфо */}
+          <div style={{ flexGrow: 1 }}>
             <div style={{ fontFamily: "var(--font-head)", fontSize: 22, color: "var(--blue)", marginBottom: 4 }}>
-              {profile.name}
+              {profile.name || "Гость"}
             </div>
             <div style={{ fontFamily: "var(--font-italic)", fontSize: 13, color: "var(--text3)", fontStyle: "italic" }}>
-              {profile.fullName}
+              {profile.fullName || "ФИО не указано"}
             </div>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
-              <span className="badge bg">♊ {insights.zodiac}</span>
-              <span className="badge bm">🐗 {insights.eastern}</span>
+            
+            {/* Бейджи (Возраст, Хроно-тип) */}            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
               {age && <span className="badge bgr">🎂 {age} лет</span>}
               <span className="badge bt">{profile.chronotype || "🕊️ Голубь"}</span>
             </div>
           </div>
-          
-          <div style={{ textAlign: "right", minWidth: 140 }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--text3)", letterSpacing: 1.5, marginBottom: 4 }}>
-              ГРАДУС СУДЬБЫ
+        </div>
+
+        {/* Знаки Зодиака */}
+        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "30px", marginTop: "16px", borderTop: "1px solid var(--line)", paddingTop: "16px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <WesternZodiac sign={insights.zodiac} size={40} />
+            <div>
+              <div style={{ fontSize: 9, color: "var(--text3)", fontFamily: "var(--font-mono)" }}>ЗАПАДНЫЙ</div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: "var(--blue)" }}>{insights.zodiac}</div>
             </div>
-            <div style={{ fontFamily: "var(--font-head)", fontSize: 26, color: "var(--gold)", fontWeight: 600 }}>
-              {insights.destiny?.degree || 241}°
-            </div>
-            <div style={{ fontFamily: "var(--font-italic)", fontSize: 11, color: "var(--text3)", maxWidth: 180, marginTop: 4, lineHeight: 1.4 }}>
-              {insights.destiny?.interpretation || "Завершение и мудрость"}
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <EasternZodiac sign={insights.eastern} size={40} />
+            <div>
+              <div style={{ fontSize: 9, color: "var(--text3)", fontFamily: "var(--font-mono)" }}>ВОСТОЧНЫЙ</div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: "var(--gold)" }}>{insights.eastern}</div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* ─── ТАБЫ ─── */}
+      {/* ─── 2. НАВИГАЦИЯ (Табы) ─── */}
       <div className="tabs" style={{ marginBottom: 16, zIndex: 1 }}>
-        {[          { id: "insights", label: "Инсайты" },
-          { id: "cycles", label: "Циклы" },
-          { id: "practices", label: "Практики" }
+        {[
+          { id: "dashboard", label: "Инсайты" },
+          { id: "health", label: "Здоровье" },
+          { id: "cycles", label: "Циклы" }
         ].map(t => (
           <button key={t.id} className={`tab ${activeTab === t.id ? "on" : ""}`} onClick={() => setActiveTab(t.id)}>
             {t.label}
@@ -253,116 +184,120 @@ export function ProfileSection() {
         ))}
       </div>
 
-      {/* ─── КОНТЕНТ ─── */}
+      {/* ─── 3. КОНТЕНТ ─── */}
       <div style={{ zIndex: 1 }}>
         
-        {/* ВКЛАДКА 1: ИНСАЙТЫ С ПОЯСНЕНИЯМИ */}
-        {activeTab === "insights" && (
+        {/* === ВКЛАДКА 1: ИНСАЙТЫ (Смыслы) === */}
+        {activeTab === "dashboard" && (
           <>
             <InsightCard 
-              title="Градус Судьбы"
+              title={`Градус Судьбы: ${insights.destiny?.degree || 241}°`}
               icon="🧭"
-              meaning={`Твой градус ${insights.destiny?.degree || 241}° находится в зоне "${insights.destiny?.interpretation || "Интеграция опыта"}".`}
-              whatItMeans="Ты прошла большой путь накопления опыта. Сейчас твоя суперсила — видеть суть вещей, которую другие не замечают. Твоя задача в этом цикле — не создавать новое с нуля, а систематизировать то, что уже есть, и передавать мудрость другим."
-              howToUse="Каждое утро спрашивай себя: 'Какой урок я могу извлечь из сегодняшнего дня?' Веди дневник наблюдений — это усилит твою природную способность к анализу."
+              meaning={insights.destiny?.interpretation || "Интеграция опыта и мудрость."}
+              impact="Ты находишься на этапе, когда накопленный опыт становится твоим главным капиталом. Твоя интуиция сейчас работает на пике. Ты видишь то, что другие упускают."              action="Каждое утро спрашивай себя: 'Какой главный урок я вынесла из прошлого опыта?' Это усилит твою способность к синтезу."
               color="gold"
             />
 
             <InsightCard 
-              title="Астрологический портрет"
+              title="Твоя стихия и характер"
               icon="♈"
-              meaning={`${insights.zodiac} (${insights.zodiacElement || "Воздух"}) под управлением ${insights.rulingPlanet || "Меркурия"}.`}
-              whatItMeans="Твоя стихия Воздух наделяет тебя быстрой адаптивностью и интеллектом. Ты легко схватываешь информацию, но можешь распыляться. Твои слабые зоны — лёгкие и нервная система — первыми реагируют на стресс."
-              howToUse="Планируй важные дела на утро (пик активности Воздуха). Избегай многозадачности — фокусируйся на одном проекте. Ежедневная дыхательная практика (5 мин) укрепит твои слабые зоны."
+              meaning={`${insights.zodiac} (${insights.zodiacElement || "Воздух"}). Планета: ${insights.rulingPlanet || "Меркурий"}.`}
+              impact={`Как представитель стихии ${insights.zodiacElement || "Воздух"}, ты обладаешь быстрой адаптивностью. Твоя слабая зона — ${insights.zodiacWeaknesses || "нервная система"}. Стресс бьет именно туда.`}
+              action="Планируй важные интеллектуальные дела на время активности своей стихии. Избегай многозадачности — фокусируйся на одной задаче."
               color="blue"
             />
 
             <InsightCard 
-              title="Восточный знак"
-              icon="🐗"
-              meaning={`${insights.eastern} (${insights.easternElement || "Вода"}).`}
-              whatItMeans="Свинья наделяет тебя честностью, щедростью и терпимостью. Твоя кармическая задача — научиться говорить 'нет' без чувства вины. Ты склонна брать на себя слишком много, забывая о себе."
-              howToUse="Перед тем как согласиться на что-то, сделай паузу на 10 минут. Спроси себя: 'Я действительно хочу это, или делаю из чувства долга?' Практикуй здоровые границы."
+              title="Твой Хроно-тип"
+              icon="🦉"
+              meaning={`Ты: ${profile.chronotype || "Голубь"}.`}
+              impact={profile.chronotype?.includes("Сова") 
+                ? "Твой пик продуктивности наступает вечером. Утро — это время 'разгона', а не сложных решений."
+                : "Твой мозг лучше всего работает в первой половине дня. Вечером энергия падает."
+              }
+              action={profile.chronotype?.includes("Сова")
+                ? "Перенеси творческие и аналитические задачи на 16:00–20:00. Утром оставь только рутину."
+                : "Сделай самые важные дела до 13:00. Вечером отдыхай."
+              }
               color="success"
             />
           </>
         )}
 
-        {/* ВКЛАДКА 2: ЦИКЛЫ С ВИЗУАЛИЗАЦИЕЙ */}
+        {/* === ВКЛАДКА 2: ЗДОРОВЬЕ === */}
+        {activeTab === "health" && (
+          <>
+            <Accordion title="BODY BLUEPRINT (Твои уязвимые зоны)" icon="🫁" accent="success" defaultOpen>
+              <div style={{ fontSize: 14, lineHeight: 1.6, color: "var(--text1)", marginBottom: 12 }}>
+                <strong>Слабые органы:</strong> {insights.health?.area || "Плечи, ключицы, лёгкие"}.<br/>
+                <strong>Органы под ударом:</strong> {insights.health?.organs || "Нервная система, руки"}.
+              </div>
+              <div style={{ 
+                padding: 12, background: "rgba(45,106,79,0.06)", borderRadius: 6, 
+                border: "1px solid rgba(45,106,79,0.15)" 
+              }}>
+                <div style={{ fontSize: 13, color: "var(--text1)", lineHeight: 1.5 }}>
+                  💡 <strong>Рекомендация:</strong> {insights.health?.advice || "Дыши свежим воздухом, береги плечи и руки."}
+                </div>
+              </div>
+            </Accordion>
+
+            <Accordion title="Сезонный ритм" icon="🍂" accent="gold">
+              <div style={{ fontSize: 13, lineHeight: 1.6, color: "var(--text2)" }}>                <strong>Сезон:</strong> {insights.season || "Весна (Дерево)"}<br/>
+                <strong>Риск:</strong> {insights.seasonRisk || "Перепады настроения, спазмы"}<br/>
+                <strong>Совет:</strong> {insights.seasonAdvice || "Растяжка, кислая пища умеренно, ранний подъём."}
+              </div>
+            </Accordion>
+
+            <Accordion title="Лунный запрет" icon="🌙" accent="blue">
+              <div style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.5 }}>
+                Сегодня <strong>{moonDay}-й</strong> лунный день.<br/>
+                ⛔ <strong>Не рекомендуется:</strong> {insights.moonRestriction?.forbidden || "Нет строгих запретов"}.<br/>
+                <em style={{ fontSize: 12, color: "var(--text3)" }}>Если есть возможность, отложи процедуры на эти зоны.</em>
+              </div>
+            </Accordion>
+          </>
+        )}
+
+        {/* === ВКЛАДКА 3: ЦИКЛЫ (Визуализация) === */}
         {activeTab === "cycles" && (
           <>
-            {/* Меридианные часы */}
-            <div className="card" style={{ borderLeft: "3px solid var(--blue)" }}>              <div className="card-hd">
-                <div className="card-title">⏰ МЕРИДИАННЫЕ ЧАСЫ</div>
-                <div className="badge bg">Сейчас: {meridian.time}</div>
+            {/* Меридианные Часы */}
+            <div className="card" style={{ borderLeft: "3px solid var(--blue)" }}>
+              <div className="card-hd">
+                <div className="card-title">⏰ Меридианные часы</div>
+                <div className="badge bg">{meridian.name}</div>
               </div>
-              <MeridianClockSVG currentHour={currentHour} />
-              <div style={{ fontSize: 13, lineHeight: 1.6, color: "var(--text2)", textAlign: "center" }}>
-                <strong>Активен меридиан {meridian.name}</strong><br/>
-                {meridian.advice}<br/><br/>
+              <MeridianClock activeMeridian={meridian.name} size={200} />
+              <div style={{ marginTop: 12, fontSize: 13, lineHeight: 1.6, color: "var(--text2)", textAlign: "center" }}>
+                <strong>Активен меридиан: {meridian.name} ({meridian.sign}).</strong><br/>
+                {meridian.advice}<br/>
                 <span style={{ fontSize: 12, color: "var(--text3)" }}>
-                  В это время энергия Ци концентрируется в этом органе. 
-                  {currentHour >= 11 && currentHour < 13 ? " Идеально для принятия важных решений и социальных контактов." : 
-                   currentHour >= 15 && currentHour < 17 ? " Время для физической активности и выведения токсинов." : 
-                   currentHour >= 21 && currentHour < 23 ? " Подготовка ко сну, отказ от экранов." : ""}
+                  Сейчас энергия тела сфокусирована здесь. Это лучшее время для работы с этим органом.
                 </span>
               </div>
             </div>
 
-            {/* Лунный цикл */}
+            {/* Спираль Жизни */}
             <div className="card" style={{ borderLeft: "3px solid var(--gold)" }}>
               <div className="card-hd">
-                <div className="card-title">🌙 ЛУННЫЙ ЦИКЛ</div>
-                <div className="badge bm">{moonDay}-й день</div>
+                <div className="card-title">🔄 Спираль Жизненных Циклов</div>
+                <div className="badge bm">{age} лет</div>
               </div>
-              <div style={{ fontSize: 13, lineHeight: 1.6, color: "var(--text2)" }}>
-                <strong>Сейчас:</strong> {moonDay > 25 ? "Завершение лунного месяца" : moonDay > 15 ? "Убывающая Луна" : "Растущая Луна"}<br/>
-                <strong>Запрет сегодня:</strong> {insights.moonRestriction?.forbidden || "Нет строгих запретов"}<br/>
-                <strong>Рекомендация:</strong> {moonDay > 25 ? "Завершай начатое, не начинай нового. Идеально для подведения итогов." : moonDay > 15 ? "Время очищения — физического и ментального. Избавляйся от лишнего." : "Время роста и новых начинаний. Планируй и действуй."}
-              </div>
-            </div>
-
-            {/* Жизненные циклы */}
-            <div className="card" style={{ borderLeft: "3px solid var(--success)" }}>
-              <div className="card-hd">
-                <div className="card-title">🔄 ЖИЗНЕННЫЕ ЦИКЛЫ</div>
-                <div className="badge bgr">{age} лет</div>
-              </div>
-              <LifeCycleWheel age={age} />
-              <div style={{ fontSize: 13, lineHeight: 1.6, color: "var(--text2)" }}>
-                <strong>Текущий этап:</strong> {age >= 36 && age < 48 ? "Зрелость" : age >= 24 && age < 36 ? "Молодость" : "Другой этап"}<br/>
-                <strong>Характеристика:</strong> {age >= 36 && age < 48 ? "Пик продуктивности и передачи опыта. Время закрепления достижений и наставничества." : age >= 24 && age < 36 ? "Активное построение карьеры и отношений. Время экспериментов и самоопределения." : "Индивидуальный путь развития."}<br/>
-                <strong>Ближайший рубеж:</strong> {age < 42 ? `Кризис середины пути (~42 года) — переоценка ценностей` : age < 48 ? "Переход к этапу мудрости (~48-50 лет)" : "Этап передачи мудрости"}
-              </div>
-            </div>
+              <LifeCycleSpiral age={age} size={220} />
+              <div style={{ marginTop: 12, fontSize: 13, lineHeight: 1.6, color: "var(--text2)" }}>
+                <strong>Твой этап:</strong> {age >= 36 && age < 48 ? "Зрелость" : age >= 24 && age < 36 ? "Молодость" : "Другой этап"}.<br/>
+                {age >= 36 && age < 48 
+                  ? "Пик продуктивности и передачи опыта. Время закрепления достижений." 
+                  : "Время накопления ресурсов и поиска своего пути."}
+                <br/><br/>
+                <strong>Кармическая задача:</strong> {profile.goalAreas ? `Развитие сфер: ${profile.goalAreas.join(", ")}` : "Определи свои цели в настройках."}
+              </div>            </div>
           </>
-        )}
-
-        {/* ВКЛАДКА 3: ПРАКТИКИ */}
-        {activeTab === "practices" && (
-          <div className="card">
-            <div className="card-title">🧘 Персональные практики</div>            <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 12 }}>
-              {[
-                { title: "Сам Чон До", time: "5 мин", desc: "Настроечное дыхание: вдох 3с → выдох 6с", color: "#0070c0" },
-                { title: "6 целительных звуков", time: "10 мин", desc: "С-С-С, Ч-У-Э-Й, Ш-Ш-Ш...", color: "#2d6a4f" },
-                { title: "Настрой Норбекова", time: "7 мин", desc: "Визуализация ОМЗ", color: "#c8a45a" }
-              ].map((p, i) => (
-                <div key={i} className="card" style={{ cursor: "pointer", borderLeft: `3px solid ${p.color}`, padding: "12px 16px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <div>
-                      <div style={{ fontFamily: "var(--font-serif)", fontSize: 14, fontWeight: 500 }}>{p.title}</div>
-                      <div style={{ fontSize: 12, color: "var(--text3)", marginTop: 2, fontStyle: "italic" }}>{p.desc}</div>
-                    </div>
-                    <span className="badge bg">{p.time}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
         )}
       </div>
 
-      {/* КНОПКИ */}
+      {/* ─── 4. КНОПКИ ДЕЙСТВИЙ ─── */}
       <div style={{ display: "flex", gap: 10, marginTop: 20, zIndex: 1 }}>
         <button className="btn btn-primary" style={{ flex: 1, fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 1 }}>
           ✎ РЕДАКТИРОВАТЬ
@@ -373,4 +308,4 @@ export function ProfileSection() {
       </div>
     </div>
   );
-}
+          }
