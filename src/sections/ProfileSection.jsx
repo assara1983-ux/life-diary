@@ -34,92 +34,93 @@ const EASTERN_IMG = {
   'Свинья': '/assets/avatars-icons/eastern-pig.png'
 };
 
-// ─── КОМПОНЕНТ: КАРТОЧКА С ВОДЯНЫМ ЗНАКОМ ───
+// ─── КОМПОНЕНТ: КАРТОЧКА С ФОНОВОЙ ИЛЛЮСТРАЦИЕЙ ───
 function ProfileBlock({ title, illustrationSrc, children, accentColor = "var(--blue)" }) {
   const [open, setOpen] = useState(true);
 
   return (
-    <div style={{
-      position: "relative",
-      background: "linear-gradient(145deg, #ffffff 0%, #f8f4e8 100%)",
-      border: "1.5px solid rgba(0,112,192,0.25)",
-      borderRadius: 12,
-      marginBottom: 24,
-      overflow: "hidden",
-      boxShadow: "0 4px 16px rgba(0,112,192,0.12), inset 0 1px 0 rgba(255,255,255,0.7)"
-    }}>      {/* Водяной знак: эстетично, не мешает чтению */}
-      {illustrationSrc && (
-        <div style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "hidden" }}>
+    <>
+      <div style={{
+        position: "relative",
+        background: "linear-gradient(145deg, #ffffff 0%, #f8f4e8 100%)",
+        border: "1.5px solid rgba(0,112,192,0.25)",
+        borderRadius: 12,
+        marginBottom: 24,
+        overflow: "hidden",
+        boxShadow: "0 4px 16px rgba(0,112,192,0.12)"      }}>
+        {/* Фоновая иллюстрация на всю карточку */}
+        {illustrationSrc && (
           <img
             src={illustrationSrc}
             alt=""
             style={{
               position: "absolute",
-              top: "8%",
-              right: "5%",
-              width: "65%",
-              height: "auto",
-              objectFit: "contain",
-              opacity: 0.08,
-              transform: "scale(1.05)",
-              filter: "grayscale(100%) contrast(110%)"
+              inset: 0,
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              opacity: 0.07,
+              filter: "grayscale(100%) contrast(110%)",
+              mixBlendMode: "multiply",
+              zIndex: 0,
+              pointerEvents: "none"
             }}
           />
-        </div>
-      )}
+        )}
 
-      {/* Заголовок */}
-      <div
-        onClick={() => setOpen(!open)}
-        style={{
-          position: "relative",
-          zIndex: 1,
-          padding: "16px 20px",
-          background: open ? "rgba(0,112,192,0.08)" : "rgba(0,112,192,0.03)",
-          cursor: "pointer",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          borderBottom: "1px solid rgba(0,112,192,0.15)",
-          transition: "background 0.2s"
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <div style={{ width: 5, height: 26, background: accentColor, borderRadius: 3, boxShadow: "0 2px 4px rgba(0,0,0,0.1)" }} />
-          <h3 style={{
-            fontFamily: "var(--font-head)",
-            fontSize: 16,
-            color: "var(--text1)",
-            margin: 0,
-            letterSpacing: "0.6px",
-            fontWeight: 600
+        {/* Заголовок */}
+        <div
+          onClick={() => setOpen(!open)}
+          style={{
+            position: "relative",
+            zIndex: 1,
+            padding: "16px 20px",
+            background: open ? "rgba(0,112,192,0.08)" : "rgba(0,112,192,0.03)",
+            cursor: "pointer",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            borderBottom: "1px solid rgba(0,112,192,0.15)",
+            transition: "background 0.2s"
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <div style={{ width: 5, height: 26, background: accentColor, borderRadius: 3, boxShadow: "0 2px 4px rgba(0,0,0,0.1)" }} />
+            <h3 style={{
+              fontFamily: "var(--font-head)",
+              fontSize: 16,
+              color: "var(--text1)",
+              margin: 0,
+              letterSpacing: "0.6px",
+              fontWeight: 600
+            }}>
+              {title}
+            </h3>
+          </div>          <div style={{
+            fontSize: 18,
+            color: "var(--gold)",
+            transition: "transform 0.3s",
+            transform: open ? "rotate(180deg)" : "rotate(0)",
+            filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.1))"
           }}>
-            {title}
-          </h3>
-        </div>        <div style={{
-          fontSize: 18,
-          color: "var(--gold)",
-          transition: "transform 0.3s",
-          transform: open ? "rotate(180deg)" : "rotate(0)",
-          filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.1))"
-        }}>
-          ▼
+            ▼
+          </div>
         </div>
-      </div>
 
-      {/* Контент */}
-      {open && (
-        <div style={{
-          position: "relative",
-          zIndex: 1,
-          padding: "20px",
-          borderTop: "1px solid rgba(0,112,192,0.15)",
-          background: "rgba(255,255,255,0.92)"
-        }}>
-          {children}
-        </div>
-      )}
-    </div>
+        {/* Контент */}
+        {open && (
+          <div style={{
+            position: "relative",
+            zIndex: 1,
+            padding: "20px",
+            borderTop: "1px solid rgba(0,112,192,0.15)",
+            background: "rgba(255,255,255,0.92)"
+          }}>
+            {children}
+          </div>
+        )}
+      </div>
+    </>
   );
 }
 
@@ -153,38 +154,48 @@ export function ProfileSection() {
   };
 
   return (
-    <div className="page" style={{ paddingBottom: 100 }}>
+    <div className="page" style={{ position: "relative", paddingBottom: 100 }}>
+      
+      {/* 1. ФОНОВЫЙ АВАТАР (покрывает верх страницы и карточку) */}
+      <div style={{
+        position: "absolute",
+        top: -100,
+        left: "50%",
+        transform: "translateX(-50%)",
+        width: 380,
+        height: 380,
+        zIndex: 0,
+        pointerEvents: "none",
+        overflow: "hidden",
+        borderRadius: "50%",
+        filter: "drop-shadow(0 8px 24px rgba(0,112,192,0.15))"
+      }}>
+        {isMale ? <MaleAvatar size={380} /> : <FemaleAvatar size={380} />}
+      </div>
 
-      {/* 1. АВАТАР + СВОДКА */}
-      <div style={{ textAlign: "center", marginBottom: 28 }}>
-        <div style={{
-          width: 160,
-          height: 160,
-          margin: "0 auto 18px",
-          borderRadius: "50%",
-          overflow: "hidden",
-          border: "2px solid var(--bg)",
-          boxShadow: "0 6px 20px rgba(0,112,192,0.15), inset 0 0 0 3px rgba(255,255,255,0.6)",
-          background: "#fff",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center"
-        }}>
-          {isMale ? <MaleAvatar size={160} /> : <FemaleAvatar size={160} />}
-        </div>
-
+      {/* 2. КАРТОЧКА ПРОФИЛЯ (поверх аватара) */}
+      <div className="card" style={{
+        position: "relative",
+        zIndex: 1,
+        textAlign: "center",
+        padding: "24px 20px",
+        borderLeft: "5px solid var(--blue)",
+        marginBottom: 32,
+        borderRadius: 12,
+        background: "rgba(255,255,255,0.92)",
+        boxShadow: "0 6px 20px rgba(0,112,192,0.12)"
+      }}>
         <h1 style={{
           fontFamily: "var(--font-head)",
-          fontSize: 26,
+          fontSize: 28,
           color: "var(--text1)",
-          margin: "0 0 10px 0",
+          margin: "0 0 12px 0",
           letterSpacing: "1.5px",
           fontWeight: 600
         }}>
           {profile.name || "Пользователь"}
         </h1>
-
-        <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap", marginBottom: 16 }}>
+        <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap", marginBottom: 18 }}>
           <span className="badge bgr" style={{ fontSize: 13, padding: "5px 12px", fontWeight: 500 }}>🎂 {age ?? "—"} лет</span>
           {profile.chronotype && (
             <span className="badge bt" style={{ fontSize: 13, padding: "5px 12px", fontWeight: 500 }}>⏱ {profile.chronotype}</span>
@@ -194,7 +205,7 @@ export function ProfileSection() {
           )}
         </div>
 
-        {/* Техническая сводка */}        <div style={{
+        <div style={{
           fontSize: 14,
           color: "var(--text2)",
           lineHeight: 1.7,
@@ -212,7 +223,7 @@ export function ProfileSection() {
         </div>
       </div>
 
-      {/* 2. ЗАПАДНЫЙ ЗОДИАК */}
+      {/* 3. ЗАПАДНЫЙ ЗОДИАК */}
       <ProfileBlock title="Западный Зодиак" illustrationSrc={westernBg} accentColor="var(--blue)">
         <div style={{ fontSize: 14, lineHeight: 1.75, color: "var(--text2)" }}>
           <p style={{ marginBottom: 16, fontWeight: 500 }}>
@@ -232,18 +243,18 @@ export function ProfileSection() {
             <ul style={{ margin: 0, paddingLeft: 20, fontSize: 14, lineHeight: 1.9 }}>
               <li>Планируй важные дела на утро</li>
               <li>Избегай многозадачности — фокусируйся на одном деле за раз</li>
-              <li>Дыхательные практики укрепляют слабые зоны</li>
-            </ul>
+              <li>Дыхательные практики укрепляют слабые зоны</li>            </ul>
           </div>
         </div>
       </ProfileBlock>
 
-      {/* 3. ВОСТОЧНЫЙ ЗНАК */}
+      {/* 4. ВОСТОЧНЫЙ ЗНАК */}
       <ProfileBlock title="Восточный Знак" illustrationSrc={easternBg} accentColor="var(--gold)">
         <div style={{ fontSize: 14, lineHeight: 1.75, color: "var(--text2)" }}>
           <p style={{ marginBottom: 16, fontWeight: 500 }}>
             <strong style={{ color: "var(--gold-dark)", fontSize: 17 }}>{insights.eastern || "—"}</strong>{" "}
-            <span>({insights.easternElement || "Вода"}).</span>          </p>
+            <span>({insights.easternElement || "Вода"}).</span>
+          </p>
           <div style={{ padding: 16, background: "rgba(200,164,90,0.08)", borderRadius: 10, marginBottom: 16, borderLeft: "4px solid var(--gold)" }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--gold-dark)", letterSpacing: 1.2, marginBottom: 8 }}>◈ ЭНЕРГЕТИЧЕСКИЙ ПОРТРЕТ</div>
             <p style={{ margin: 0, fontSize: 14 }}>{insights.easternTraits || "Честность и терпимость"}. Твоя стихия наделяет тебя глубокой интуицией.</p>
@@ -263,7 +274,7 @@ export function ProfileSection() {
         </div>
       </ProfileBlock>
 
-      {/* 4. ГРАДУС СУДЬБЫ */}
+      {/* 5. ГРАДУС СУДЬБЫ */}
       <ProfileBlock title="Градус Судьбы" accentColor="var(--gold)">
         <div style={{ textAlign: "center", padding: "10px 0 18px" }}>
           <div style={{ fontFamily: "var(--font-head)", fontSize: 40, color: "var(--gold)", fontWeight: 600, letterSpacing: "2.5px" }}>{destiny.degree || 241}°</div>
@@ -281,25 +292,25 @@ export function ProfileSection() {
               <li>Каждое утро спрашивай: «Какой урок я могу извлечь сегодня?»</li>
               <li>Веди дневник наблюдений</li>
             </ul>
-          </div>
-        </div>
+          </div>        </div>
       </ProfileBlock>
 
-      {/* 5. ХРОНО-ТИП */}
+      {/* 6. ХРОНО-ТИП */}
       <ProfileBlock title="Хроно-тип" accentColor="var(--blue)">
         <div style={{ fontSize: 14, lineHeight: 1.75, color: "var(--text2)" }}>
           <p style={{ marginBottom: 18, fontWeight: 500 }}><strong style={{ color: "var(--blue)", fontSize: 17 }}>{profile.chronotype || "🕊️ Голубь"}</strong></p>
           <div style={{ padding: 16, background: "rgba(0,112,192,0.07)", borderRadius: 10, borderLeft: "4px solid var(--blue)" }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--blue)", letterSpacing: 1.2, marginBottom: 10 }}>◈ КАК ИСПОЛЬЗОВАТЬ</div>
             <ul style={{ margin: 0, paddingLeft: 20, fontSize: 14, lineHeight: 1.9 }}>
-              <li>Синхронизируй расписание с биоритмами</li>              <li>Сложные решения — только в пиковые часы</li>
+              <li>Синхронизируй расписание с биоритмами</li>
+              <li>Сложные решения — только в пиковые часы</li>
               <li>Провалы энергии — для делегирования и рутины</li>
             </ul>
           </div>
         </div>
       </ProfileBlock>
 
-      {/* 6. КНОПКИ УПРАВЛЕНИЯ */}
+      {/* 7. КНОПКИ УПРАВЛЕНИЯ */}
       <div style={{ display: "flex", gap: 14, marginTop: 32 }}>
         <button className="btn btn-primary" onClick={handleRefresh} disabled={isRefreshing} style={{ flex: 1, opacity: isRefreshing ? 0.7 : 1, fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 1.2, padding: "12px 16px", borderRadius: 8 }}>
           {isRefreshing ? "⏳ Обновление..." : "🔄 Обновить данные"}
