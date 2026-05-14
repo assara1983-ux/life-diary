@@ -70,7 +70,7 @@ export function ProfileSection() {
         <div style={{ display: "flex", alignItems: "center", gap: "20px", marginBottom: "20px" }}>
           <div style={{ flexShrink: 0 }}>
             {/* ✅ ИСПРАВЛЕНО: проверка на "Мужской" вместо "male" */}
-            {profile.gender === 'Мужской' ? <MaleAvatar size={80} /> : <FemaleAvatar size={80} />}
+            {profile.gender === 'Мужской' ? <MaleAvatar size={120} /> : <FemaleAvatar size={120} />}
           </div>
           <div style={{ flexGrow: 1 }}>
             <h1 style={{ fontFamily: "var(--font-head)", fontSize: 24, color: "var(--blue)", margin: 0 }}>{profile.name}</h1>
