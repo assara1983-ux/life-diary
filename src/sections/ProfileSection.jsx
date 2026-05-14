@@ -5,118 +5,98 @@ import { getProfileInsights } from "../utils/knowledgeEngine";
 import { getMeridianInfo, getChronotypePeaks } from "../data/profileKnowledge";
 import { MaleAvatar, FemaleAvatar } from "../components/BlueprintAvatars";
 
-// ─── КОМПОНЕНТ: ИЛЛЮСТРАЦИЯ (уменьшена) + КАРТОЧКА (насыщенный стиль) ───
+// ─── КОМПОНЕНТ: КАРТОЧКА С ФОНОВОЙ ИЛЛЮСТРАЦИЕЙ ───
 function ProfileBlock({ title, illustrationSrc, children, accentColor = "var(--blue)", defaultOpen = true }) {
   const [open, setOpen] = useState(defaultOpen);
 
   return (
-    <>
-      {/* ИЛЛЮСТРАЦИЯ: ~20% меньше, пропорциональное растяжение, без обрезки */}
+    <div style={{
+      position: "relative",
+      background: "linear-gradient(145deg, #ffffff 0%, #f8f4e8 100%)",
+      border: "1.5px solid rgba(0,112,192,0.25)",
+      borderRadius: 12,
+      marginBottom: 24,
+      overflow: "hidden",
+      boxShadow: "0 4px 16px rgba(0,112,192,0.12), inset 0 1px 0 rgba(255,255,255,0.7)"
+    }}>
+      {/* Фоновая иллюстрация */}
       {illustrationSrc && (
-        <div style={{
-          width: "100%",
-          height: 100,
-          marginBottom: 12,
-          background: "rgba(0,112,192,0.04)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          borderRadius: 8,
-          overflow: "hidden",
-          border: "1.5px solid rgba(0,112,192,0.2)",
-          position: "relative"
-        }}>
+        <div style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 0 }}>
           <img
             src={illustrationSrc}
-            alt={title}
+            alt=""
             style={{
-              width: "100%",
+              width: "80%",
               height: "auto",
               objectFit: "contain",
-              display: "block",
-              opacity: 0.95
+              opacity: 0.07,
+              position: "absolute",
+              right: "2%",
+              top: "50%",
+              transform: "translateY(-50%)"
             }}
-            onError={(e) => { e.target.style.display = "none"; }}
           />
         </div>
       )}
 
-      {/* КАРТОЧКА С КОНТЕНТОМ: насыщенный Blueprint-стиль */}
-      <div style={{
-        background: "linear-gradient(145deg, #ffffff 0%, #f7f3e9 100%)",
-        border: "1.5px solid rgba(0,112,192,0.25)",
-        borderRadius: 10,
-        marginBottom: 24,
-        overflow: "hidden",        boxShadow: "0 4px 16px rgba(0,112,192,0.12), inset 0 1px 0 rgba(255,255,255,0.7)",
-        position: "relative"
-      }}>
-        {/* Фоновая blueprint-сетка */}
-        <div style={{
-          position: "absolute",
-          inset: 0,
-          backgroundImage: "linear-gradient(rgba(0,112,192,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(0,112,192,0.06) 1px, transparent 1px)",
-          backgroundSize: "14px 14px",
-          pointerEvents: "none",
-          opacity: 0.6
-        }} />
-
-        <div
-          onClick={() => setOpen(!open)}
-          style={{
-            padding: "16px 18px",
-            background: open ? "rgba(0,112,192,0.08)" : "rgba(0,112,192,0.03)",
-            cursor: "pointer",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            transition: "background 0.2s",
-            position: "relative",
-            zIndex: 1
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-            <div style={{ width: 5, height: 26, background: accentColor, borderRadius: 3, boxShadow: "0 2px 4px rgba(0,0,0,0.1)" }} />
-            <h3 style={{
-              fontFamily: "var(--font-head)",
-              fontSize: 16,
-              color: "var(--text1)",
-              margin: 0,
-              letterSpacing: "0.6px",
-              fontWeight: 600
-            }}>
-              {title}
-            </h3>
-          </div>
-          <div style={{
-            fontSize: 18,
-            color: "var(--gold)",
-            transition: "transform 0.3s",
-            transform: open ? "rotate(180deg)" : "rotate(0)",
-            filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.1))"
+      {/* Заголовок */}
+      <div
+        onClick={() => setOpen(!open)}
+        style={{
+          position: "relative",
+          zIndex: 1,
+          padding: "16px 18px",
+          background: open ? "rgba(0,112,192,0.08)" : "rgba(0,112,192,0.03)",
+          cursor: "pointer",          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          borderBottom: "1px solid rgba(0,112,192,0.15)",
+          transition: "background 0.2s"
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          <div style={{ width: 5, height: 26, background: accentColor, borderRadius: 3, boxShadow: "0 2px 4px rgba(0,0,0,0.1)" }} />
+          <h3 style={{
+            fontFamily: "var(--font-head)",
+            fontSize: 16,
+            color: "var(--text1)",
+            margin: 0,
+            letterSpacing: "0.6px",
+            fontWeight: 600
           }}>
-            ▼
-          </div>
+            {title}
+          </h3>
         </div>
-        {open && (
-          <div style={{
-            padding: "18px 18px",
-            borderTop: "1px solid rgba(0,112,192,0.15)",
-            background: "rgba(255,255,255,0.92)",
-            position: "relative",
-            zIndex: 1
-          }}>
-            {children}
-          </div>
-        )}
+        <div style={{
+          fontSize: 18,
+          color: "var(--gold)",
+          transition: "transform 0.3s",
+          transform: open ? "rotate(180deg)" : "rotate(0)",
+          filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.1))"
+        }}>
+          ▼
+        </div>
       </div>
-    </>
+
+      {/* Контент */}
+      {open && (
+        <div style={{
+          position: "relative",
+          zIndex: 1,
+          padding: "18px",
+          borderTop: "1px solid rgba(0,112,192,0.15)",
+          background: "rgba(255,255,255,0.92)"
+        }}>
+          {children}
+        </div>
+      )}
+    </div>
   );
 }
 
 // ─── ОСНОВНОЙ КОМПОНЕНТ ───
 export function ProfileSection() {
-  const { profile, setProfile, notify } = useApp();
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const { profile, setProfile, notify } = useApp();  const [isRefreshing, setIsRefreshing] = useState(false);
 
   if (!profile) return <div style={{ padding: 40, textAlign: "center", color: "var(--text2)" }}>Загрузка профиля...</div>;
 
@@ -145,7 +125,8 @@ export function ProfileSection() {
     setIsRefreshing(true);
     setTimeout(() => {
       setIsRefreshing(false);
-      notify?.("✅ Данные обновлены");    }, 800);
+      notify?.("✅ Данные обновлены");
+    }, 800);
   };
 
   const handleReset = () => {
@@ -158,29 +139,15 @@ export function ProfileSection() {
   return (
     <div className="page" style={{ paddingBottom: 100 }}>
       
-      {/* 1. АВАТАР ВЫНЕСЕН: квадратный, технический стиль, ~20% меньше */}
-      <div style={{ display: "flex", justifyContent: "center", marginBottom: 22 }}>
+      {/* 1. АВАТАР: увеличен, пропорционально, без рамки и сетки */}
+      <div style={{ display: "flex", justifyContent: "center", marginBottom: 28 }}>
         <div style={{
-          width: 110,
-          height: 110,
-          borderRadius: "8px",
-          overflow: "hidden",
-          border: "2px solid var(--blue)",
-          boxShadow: "0 4px 14px rgba(0,112,192,0.18), inset 0 0 0 1px rgba(255,255,255,0.5)",
-          background: "rgba(0,112,192,0.04)",
+          width: 180,
+          height: 180,
           display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          position: "relative"
+          alignItems: "center",          justifyContent: "center"
         }}>
-          <div style={{
-            position: "absolute",
-            inset: 0,
-            backgroundImage: "linear-gradient(rgba(0,112,192,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(0,112,192,0.08) 1px, transparent 1px)",
-            backgroundSize: "10px 10px",
-            zIndex: 0
-          }} />
-          {isMale ? <MaleAvatar size={110} /> : <FemaleAvatar size={110} />}
+          {isMale ? <MaleAvatar size={180} /> : <FemaleAvatar size={180} />}
         </div>
       </div>
 
@@ -193,32 +160,20 @@ export function ProfileSection() {
         borderRadius: 12,
         background: "linear-gradient(145deg, #ffffff 0%, #f8f4e8 100%)",
         boxShadow: "0 4px 16px rgba(0,112,192,0.12), inset 0 1px 0 rgba(255,255,255,0.7)",
-        border: "1.5px solid rgba(0,112,192,0.25)",
-        position: "relative"      }}>
-        <div style={{
-          position: "absolute",
-          inset: 0,
-          backgroundImage: "linear-gradient(rgba(0,112,192,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(0,112,192,0.06) 1px, transparent 1px)",
-          backgroundSize: "14px 14px",
-          pointerEvents: "none",
-          opacity: 0.5,
-          borderRadius: 12
-        }} />
-        
+        border: "1.5px solid rgba(0,112,192,0.25)"
+      }}>
         <h1 style={{
           fontFamily: "var(--font-head)",
           fontSize: 26,
           color: "var(--text1)",
           margin: "0 0 12px 0",
           letterSpacing: "1.5px",
-          fontWeight: 600,
-          position: "relative",
-          zIndex: 1
+          fontWeight: 600
         }}>
           {profile.name || "Пользователь"}
         </h1>
         
-        <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap", marginBottom: 16, position: "relative", zIndex: 1 }}>
+        <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap", marginBottom: 16 }}>
           <span className="badge bgr" style={{ fontSize: 13, padding: "5px 12px", fontWeight: 500 }}>🎂 {age ?? "—"} лет</span>
           {profile.chronotype && (
             <span className="badge bt" style={{ fontSize: 13, padding: "5px 12px", fontWeight: 500 }}>⏱ {profile.chronotype}</span>
@@ -237,13 +192,11 @@ export function ProfileSection() {
           borderRadius: 10,
           borderLeft: "4px solid var(--gold)",
           textAlign: "left",
-          position: "relative",
-          zIndex: 1,
           fontWeight: 450
         }}>
-          <strong style={{ color: "var(--gold-dark)" }}>Профиль:</strong>{" "}
-          {insights.zodiac || "—"} ({insights.zodiacElement || "Воздух"}) ·{" "}
-          {insights.eastern || "—"} ({insights.easternElement || "Вода"}) ·{" "}          Градус: <strong style={{ color: "var(--gold)" }}>{destiny.degree}°</strong>
+          <strong style={{ color: "var(--gold-dark)" }}>Профиль:</strong>{" "}          {insights.zodiac || "—"} ({insights.zodiacElement || "Воздух"}) ·{" "}
+          {insights.eastern || "—"} ({insights.easternElement || "Вода"}) ·{" "}
+          Градус: <strong style={{ color: "var(--gold)" }}>{destiny.degree}°</strong>
         </div>
       </div>
 
@@ -290,9 +243,9 @@ export function ProfileSection() {
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--gold-dark)", letterSpacing: 1.2, marginBottom: 8 }}>◈ КАРМИЧЕСКАЯ ЗАДАЧА</div>
             <p style={{ margin: 0, fontSize: 14 }}>{insights.easternKarma || "Научиться говорить 'нет' без чувства вины"}. Выстраивай границы, не теряя эмпатии.</p>
           </div>
-          <div style={{ padding: 16, background: "rgba(0,112,192,0.07)", borderRadius: 10, borderLeft: "4px solid var(--blue)" }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--blue)", letterSpacing: 1.2, marginBottom: 10 }}>◈ РЕКОМЕНДАЦИИ</div>
-            <ul style={{ margin: 0, paddingLeft: 20, fontSize: 14, lineHeight: 1.9 }}>              <li>Используй спады энергии для восстановления</li>
+          <div style={{ padding: 16, background: "rgba(0,112,192,0.07)", borderRadius: 10, borderLeft: "4px solid var(--blue)" }}>            <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--blue)", letterSpacing: 1.2, marginBottom: 10 }}>◈ РЕКОМЕНДАЦИИ</div>
+            <ul style={{ margin: 0, paddingLeft: 20, fontSize: 14, lineHeight: 1.9 }}>
+              <li>Используй спады энергии для восстановления</li>
               <li>Доверяй интуиции в финансовых вопросах</li>
               <li>Избегай токсичных связей</li>
               <li>Практикуй водные процедуры для баланса</li>
@@ -339,9 +292,9 @@ export function ProfileSection() {
           </div>
           <div style={{ padding: 16, background: "rgba(0,112,192,0.07)", borderRadius: 10, borderLeft: "4px solid var(--blue)" }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--blue)", letterSpacing: 1.2, marginBottom: 10 }}>◈ КАК ИСПОЛЬЗОВАТЬ</div>
-            <ul style={{ margin: 0, paddingLeft: 20, fontSize: 14, lineHeight: 1.9 }}>
-              <li>Синхронизируй расписание с биоритмами — КПД +30–40%</li>
-              <li>Сложные решения — только в пиковые часы</li>              <li>Соблюдай режим сна: {chronoPeaks.sleep?.hours || "22:30–23:30"}</li>
+            <ul style={{ margin: 0, paddingLeft: 20, fontSize: 14, lineHeight: 1.9 }}>              <li>Синхронизируй расписание с биоритмами — КПД +30–40%</li>
+              <li>Сложные решения — только в пиковые часы</li>
+              <li>Соблюдай режим сна: {chronoPeaks.sleep?.hours || "22:30–23:30"}</li>
               {chronoPeaks.meridian_peak && <li>Активный меридиан: {chronoPeaks.meridian_peak}</li>}
             </ul>
           </div>
@@ -368,4 +321,4 @@ export function ProfileSection() {
       </div>
     </div>
   );
-            }
+        }
