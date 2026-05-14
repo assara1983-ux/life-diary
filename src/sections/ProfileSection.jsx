@@ -15,9 +15,9 @@ function ProfileBlock({ title, illustrationSrc, children, accentColor = "var(--b
       {illustrationSrc && (
         <div style={{
           width: "100%",
-          height: 120,
+          height: 130,
           marginBottom: 12,
-          background: "rgba(0,112,192,0.04)",
+          background: "transparent",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -26,20 +26,13 @@ function ProfileBlock({ title, illustrationSrc, children, accentColor = "var(--b
           border: "1px solid rgba(0,112,192,0.15)",
           position: "relative"
         }}>
-          {/* Фоновая сетка */}
-          <div style={{
-            position: "absolute",
-            inset: 0,
-            backgroundImage: "linear-gradient(rgba(0,112,192,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(0,112,192,0.08) 1px, transparent 1px)",
-            backgroundSize: "16px 16px",
-            pointerEvents: "none"
-          }} />
           <img
             src={illustrationSrc}
             alt={title}
             style={{
-              height: 90,
-              objectFit: "contain",
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
               mixBlendMode: "multiply",
               zIndex: 1
             }}
@@ -47,14 +40,14 @@ function ProfileBlock({ title, illustrationSrc, children, accentColor = "var(--b
           />
         </div>
       )}
+
       {/* КАРТОЧКА С КОНТЕНТОМ */}
       <div style={{
         background: "#fff",
         border: "1.5px solid rgba(0,112,192,0.2)",
         borderRadius: 10,
         marginBottom: 24,
-        overflow: "hidden",
-        boxShadow: "0 4px 12px rgba(0,112,192,0.08)"
+        overflow: "hidden",        boxShadow: "0 4px 12px rgba(0,112,192,0.08)"
       }}>
         <div
           onClick={() => setOpen(!open)}
@@ -96,14 +89,14 @@ function ProfileBlock({ title, illustrationSrc, children, accentColor = "var(--b
             background: "rgba(255,255,255,0.9)"
           }}>
             {children}
-          </div>        )}
+          </div>
+        )}
       </div>
     </>
   );
 }
 
-// ─── ОСНОВНОЙ КОМПОНЕНТ ───
-export function ProfileSection() {
+// ─── ОСНОВНОЙ КОМПОНЕНТ ───export function ProfileSection() {
   const { profile, setProfile, notify } = useApp();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -145,14 +138,14 @@ export function ProfileSection() {
         padding: "28px 20px",
         borderLeft: "5px solid var(--blue)",
         marginBottom: 28,
-        borderRadius: 12,        background: "linear-gradient(180deg, #fff 0%, #f8f4e8 100%)"
+        borderRadius: 12,
+        background: "linear-gradient(180deg, #fff 0%, #f8f4e8 100%)"
       }}>
         <div style={{
           width: 140,
           height: 140,
           margin: "0 auto 20px",
-          borderRadius: "50%",
-          overflow: "hidden",
+          borderRadius: "50%",          overflow: "hidden",
           border: "3px solid var(--bg)",
           boxShadow: "0 6px 18px rgba(0,112,192,0.18)",
           background: "#fff",
@@ -161,13 +154,6 @@ export function ProfileSection() {
           justifyContent: "center",
           position: "relative"
         }}>
-          <div style={{
-            position: "absolute",
-            inset: 0,
-            backgroundImage: "linear-gradient(rgba(0,112,192,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(0,112,192,0.08) 1px, transparent 1px)",
-            backgroundSize: "12px 12px",
-            zIndex: 0
-          }} />
           {isMale ? <MaleAvatar size={140} /> : <FemaleAvatar size={140} />}
         </div>
         
@@ -194,7 +180,8 @@ export function ProfileSection() {
         <div style={{
           fontSize: 14,
           color: "var(--text2)",
-          lineHeight: 1.7,          padding: "14px 18px",
+          lineHeight: 1.7,
+          padding: "14px 18px",
           background: "rgba(0,112,192,0.06)",
           borderRadius: 10,
           borderLeft: "4px solid var(--gold)",
@@ -207,8 +194,7 @@ export function ProfileSection() {
       </div>
 
       {/* ЗАПАДНЫЙ ЗОДИАК */}
-      <ProfileBlock title="Западный Зодиак" illustrationSrc={westernImgSrc} accentColor="var(--blue)">
-        <div style={{ fontSize: 14, lineHeight: 1.75, color: "var(--text2)" }}>
+      <ProfileBlock title="Западный Зодиак" illustrationSrc={westernImgSrc} accentColor="var(--blue)">        <div style={{ fontSize: 14, lineHeight: 1.75, color: "var(--text2)" }}>
           <p style={{ marginBottom: 16 }}>
             <strong style={{ color: "var(--blue)", fontSize: 17 }}>{insights.zodiac || "—"}</strong> 
             <span>({insights.zodiacElement || "Воздух"}) под управлением {insights.rulingPlanet || "Меркурия"}. Меридиан: <strong>{meridianInfo.meridian || "—"}</strong> {meridianInfo.emoji}.</span>
@@ -243,7 +229,8 @@ export function ProfileSection() {
           <div style={{ padding: 16, background: "rgba(200,164,90,0.07)", borderRadius: 10, marginBottom: 16, borderLeft: "4px solid var(--gold)" }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--gold-dark)", letterSpacing: 1.2, marginBottom: 8 }}>◈ ЭНЕРГЕТИЧЕСКИЙ ПОРТРЕТ</div>
             <p style={{ margin: 0, fontSize: 14 }}>{insights.easternTraits || "Честность и терпимость"}. Твоя стихия наделяет тебя глубокой интуицией и способностью видеть скрытые мотивы.</p>
-          </div>          <div style={{ padding: 16, background: "rgba(200,164,90,0.05)", borderRadius: 10, marginBottom: 16, borderLeft: "4px solid var(--gold)" }}>
+          </div>
+          <div style={{ padding: 16, background: "rgba(200,164,90,0.05)", borderRadius: 10, marginBottom: 16, borderLeft: "4px solid var(--gold)" }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--gold-dark)", letterSpacing: 1.2, marginBottom: 8 }}>◈ КАРМИЧЕСКАЯ ЗАДАЧА</div>
             <p style={{ margin: 0, fontSize: 14 }}>{insights.easternKarma || "Научиться говорить 'нет' без чувства вины"}. Выстраивай границы, не теряя эмпатии.</p>
           </div>
@@ -256,8 +243,7 @@ export function ProfileSection() {
               <li>Практикуй водные процедуры для баланса</li>
             </ul>
           </div>
-        </div>
-      </ProfileBlock>
+        </div>      </ProfileBlock>
 
       {/* ГРАДУС СУДЬБЫ */}
       <ProfileBlock title="Градус Судьбы" accentColor="var(--gold)">
@@ -292,7 +278,8 @@ export function ProfileSection() {
             </div>
             <div style={{ padding: 16, background: "rgba(139,32,32,0.06)", borderRadius: 10, borderLeft: "4px solid var(--error)" }}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--error)", letterSpacing: 1.2, marginBottom: 8 }}>⚡ ПРОВАЛ ЭНЕРГИИ</div>
-              <p style={{ margin: 0, fontSize: 14 }}>{chronoPeaks.rest?.tip || "Идеально для рутины, звонков, несрочной почты."}</p>            </div>
+              <p style={{ margin: 0, fontSize: 14 }}>{chronoPeaks.rest?.tip || "Идеально для рутины, звонков, несрочной почты."}</p>
+            </div>
           </div>
           <div style={{ padding: 16, background: "rgba(0,112,192,0.06)", borderRadius: 10, borderLeft: "4px solid var(--blue)" }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--blue)", letterSpacing: 1.2, marginBottom: 10 }}>◈ КАК ИСПОЛЬЗОВАТЬ</div>
@@ -305,7 +292,6 @@ export function ProfileSection() {
           </div>
         </div>
       </ProfileBlock>
-
       {/* КНОПКИ УПРАВЛЕНИЯ */}
       <div style={{ display: "flex", gap: 14, marginTop: 32 }}>
         <button
