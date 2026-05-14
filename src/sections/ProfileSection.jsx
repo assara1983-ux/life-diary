@@ -59,8 +59,9 @@ export function ProfileSection() {
 
   if (!profile) return <div style={{ padding: 40, textAlign: "center" }}>Загрузка...</div>;
 
-  const WesternIcon = WesternZodiacIcons[insights.zodiac] || WesternZodiacIcons['Близнецы'];
-  const EasternIcon = EasternZodiacIcons[insights.eastern] || EasternZodiacIcons['Свинья'];
+  // ✅ ИСПРАВЛЕНО: .trim() для совместимости с ключами из profileKnowledge.js
+  const WesternIcon = WesternZodiacIcons[insights.zodiac?.trim()] || WesternZodiacIcons['Близнецы'];
+  const EasternIcon = EasternZodiacIcons[insights.eastern?.trim()] || EasternZodiacIcons['Свинья'];
 
   return (
     <div className="page">
@@ -68,6 +69,7 @@ export function ProfileSection() {
       <div className="card" style={{ borderLeft: "4px solid var(--blue)", marginBottom: 20 }}>
         <div style={{ display: "flex", alignItems: "center", gap: "20px", marginBottom: "20px" }}>
           <div style={{ flexShrink: 0 }}>
+            {/* ✅ ИСПРАВЛЕНО: проверка на "Мужской" вместо "male" */}
             {profile.gender === 'Мужской' ? <MaleAvatar size={80} /> : <FemaleAvatar size={80} />}
           </div>
           <div style={{ flexGrow: 1 }}>
@@ -95,8 +97,8 @@ export function ProfileSection() {
           <div style={{ fontFamily: "var(--font-italic)", fontSize: 12, color: "var(--text3)", marginTop: 8 }}>{insights.destiny?.interpretation}</div>
         </div>
       </div>
-
-      {/* ТАБЫ */}      <div className="tabs" style={{ marginBottom: 20 }}>
+      {/* ТАБЫ */}
+      <div className="tabs" style={{ marginBottom: 20 }}>
         <button className={`tab ${activeTab === "about" ? "on" : ""}`} onClick={() => setActiveTab("about")}>О тебе</button>
         <button className={`tab ${activeTab === "cycles" ? "on" : ""}`} onClick={() => setActiveTab("cycles")}>Циклы</button>
       </div>
@@ -104,7 +106,6 @@ export function ProfileSection() {
       {/* ВКЛАДКА: О ТЕБЕ */}
       {activeTab === "about" && (
         <div>
-          {/* ✅ ИСПРАВЛЕНО: добавлен пробел после InsightCard */}
           <InsightCard
             title="Градус Судьбы"
             icon="🧭"
@@ -144,8 +145,8 @@ export function ProfileSection() {
             <div style={{ fontSize: 18, fontFamily: "var(--font-head)", color: "var(--gold-dark)", marginBottom: 16 }}>🌙 ЛУННЫЙ ЦИКЛ</div>
             <div style={{ fontSize: 14, lineHeight: 1.6, color: "var(--text2)" }}>
               <div style={{ marginBottom: 8 }}><strong>Сейчас:</strong> {moonDay > 25 ? "Завершение лунного месяца" : moonDay > 15 ? "Убывающая Луна" : "Растущая Луна"}</div>
-              <div style={{ marginBottom: 8 }}><strong>Запрет сегодня:</strong> {insights.moonRestriction?.forbidden || "Нет строгих запретов"}</div>
-              <div><strong>Рекомендация:</strong> {moonDay > 25 ? "Завершай начатое." : moonDay > 15 ? "Время очищения." : "Время роста и новых начинаний."}</div>            </div>
+              <div style={{ marginBottom: 8 }}><strong>Запрет сегодня:</strong> {insights.moonRestriction?.forbidden || "Нет строгих запретов"}</div>              <div><strong>Рекомендация:</strong> {moonDay > 25 ? "Завершай начатое." : moonDay > 15 ? "Время очищения." : "Время роста и новых начинаний."}</div>
+            </div>
           </div>
           <div className="card"><LifeCycleSpiral age={age} /></div>
         </div>
