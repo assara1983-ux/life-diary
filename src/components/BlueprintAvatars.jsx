@@ -2,7 +2,7 @@
 import React from 'react';
 
 // ─── МУЖСКОЙ АВАТАР (PNG изображение) ───
-export function MaleAvatar({ size = 80 }) {
+export function MaleAvatar({ size = 120 }) {
   return (
     <img 
       src="/assets/avatars-icons/male-avatar.png" 
@@ -11,14 +11,14 @@ export function MaleAvatar({ size = 80 }) {
       height={size}
       style={{ 
         objectFit: 'contain',
-        filter: "drop-shadow(0 2px 4px rgba(0,112,192,0.2))"
+        filter: "drop-shadow(0 4px 8px rgba(0,112,192,0.2))"
       }}
     />
   );
 }
 
 // ─── ЖЕНСКИЙ АВАТАР (PNG изображение) ───
-export function FemaleAvatar({ size = 80 }) {
+export function FemaleAvatar({ size = 120 }) {
   return (
     <img 
       src="/assets/avatars-icons/female-avatar.png" 
@@ -27,72 +27,42 @@ export function FemaleAvatar({ size = 80 }) {
       height={size}
       style={{ 
         objectFit: 'contain',
-        filter: "drop-shadow(0 2px 4px rgba(200,164,90,0.2))"
+        filter: "drop-shadow(0 4px 8px rgba(200,164,90,0.2))"
       }}
     />
   );
 }
 
 // ─── ЗАПАДНЫЕ ЗНАКИ ЗОДИАКА (PNG изображения) ───
-const zodiacMap = {
-  'Овен': 'zodiac-aries.png',
-  'Телец': 'zodiac-taurus.png',
-  'Близнецы': 'zodiac-gemini.png',
-  'Рак': 'zodiac-cancer.png',
-  'Лев': 'zodiac-leo.png',
-  'Дева': 'zodiac-virgo.png',
-  'Весы': 'zodiac-libra.png',
-  'Скорпион': 'zodiac-scorpio.png',
-  'Стрелец': 'zodiac-sagittarius.png',
-  'Козерог': 'zodiac-capricorn.png',
-  'Водолей': 'zodiac-aquarius.png',
-  'Рыбы': 'zodiac-pisces.png',
-};
-
 export const WesternZodiacIcons = {
-  'Овен': () => <img src="/assets/avatars-icons/zodiac-aries.png" alt="Овен" width="32" height="32" />,
-  'Телец': () => <img src="/assets/avatars-icons/zodiac-taurus.png" alt="Телец" width="32" height="32" />,
-  'Близнецы': () => <img src="/assets/avatars-icons/zodiac-gemini.png" alt="Близнецы" width="32" height="32" />,
-  'Рак': () => <img src="/assets/avatars-icons/zodiac-cancer.png" alt="Рак" width="32" height="32" />,
-  'Лев': () => <img src="/assets/avatars-icons/zodiac-leo.png" alt="Лев" width="32" height="32" />,
-  'Дева': () => <img src="/assets/avatars-icons/zodiac-virgo.png" alt="Дева" width="32" height="32" />,
-  'Весы': () => <img src="/assets/avatars-icons/zodiac-libra.png" alt="Весы" width="32" height="32" />,
-  'Скорпион': () => <img src="/assets/avatars-icons/zodiac-scorpio.png" alt="Скорпион" width="32" height="32" />,
-  'Стрелец': () => <img src="/assets/avatars-icons/zodiac-sagittarius.png" alt="Стрелец" width="32" height="32" />,
-  'Козерог': () => <img src="/assets/avatars-icons/zodiac-capricorn.png" alt="Козерог" width="32" height="32" />,
-  'Водолей': () => <img src="/assets/avatars-icons/zodiac-aquarius.png" alt="Водолей" width="32" height="32" />,
-  'Рыбы': () => <img src="/assets/avatars-icons/zodiac-pisces.png" alt="Рыбы" width="32" height="32" />,
+  'Овен': () => <img src="/assets/avatars-icons/zodiac-aries.png" alt="Овен" width="48" height="48" />,
+  'Телец': () => <img src="/assets/avatars-icons/zodiac-taurus.png" alt="Телец" width="48" height="48" />,
+  'Близнецы': () => <img src="/assets/avatars-icons/zodiac-gemini.png" alt="Близнецы" width="48" height="48" />,
+  'Рак': () => <img src="/assets/avatars-icons/zodiac-cancer.png" alt="Рак" width="48" height="48" />,
+  'Лев': () => <img src="/assets/avatars-icons/zodiac-leo.png" alt="Лев" width="48" height="48" />,
+  'Дева': () => <img src="/assets/avatars-icons/zodiac-virgo.png" alt="Дева" width="48" height="48" />,
+  'Весы': () => <img src="/assets/avatars-icons/zodiac-libra.png" alt="Весы" width="48" height="48" />,
+  'Скорпион': () => <img src="/assets/avatars-icons/zodiac-scorpio.png" alt="Скорпион" width="48" height="48" />,
+  'Стрелец': () => <img src="/assets/avatars-icons/zodiac-sagittarius.png" alt="Стрелец" width="48" height="48" />,
+  'Козерог': () => <img src="/assets/avatars-icons/zodiac-capricorn.png" alt="Козерог" width="48" height="48" />,
+  'Водолей': () => <img src="/assets/avatars-icons/zodiac-aquarius.png" alt="Водолей" width="48" height="48" />,
+  'Рыбы': () => <img src="/assets/avatars-icons/zodiac-pisces.png" alt="Рыбы" width="48" height="48" />,
 };
 
 // ─── ВОСТОЧНЫЕ ЗНАКИ (PNG изображения) ───
-const easternMap = {
-  'Крыса': 'eastern-rat.png',
-  'Бык': 'eastern-ox.png',
-  'Тигр': 'eastern-tiger.png',
-  'Кролик': 'eastern-rabbit.png',
-  'Дракон': 'eastern-dragon.png',
-  'Змея': 'eastern-snake.png',
-  'Лошадь': 'eastern-horse.png',
-  'Коза': 'eastern-goat.png',
-  'Обезьяна': 'eastern-monkey.png',
-  'Петух': 'eastern-rooster.png',
-  'Собака': 'eastern-dog.png',
-  'Свинья': 'eastern-pig.png',
-};
-
 export const EasternZodiacIcons = {
-  'Крыса': () => <img src="/assets/avatars-icons/eastern-rat.png" alt="Крыса" width="32" height="32" />,
-  'Бык': () => <img src="/assets/avatars-icons/eastern-ox.png" alt="Бык" width="32" height="32" />,
-  'Тигр': () => <img src="/assets/avatars-icons/eastern-tiger.png" alt="Тигр" width="32" height="32" />,
-  'Кролик': () => <img src="/assets/avatars-icons/eastern-rabbit.png" alt="Кролик" width="32" height="32" />,
-  'Дракон': () => <img src="/assets/avatars-icons/eastern-dragon.png" alt="Дракон" width="32" height="32" />,
-  'Змея': () => <img src="/assets/avatars-icons/eastern-snake.png" alt="Змея" width="32" height="32" />,
-  'Лошадь': () => <img src="/assets/avatars-icons/eastern-horse.png" alt="Лошадь" width="32" height="32" />,
-  'Коза': () => <img src="/assets/avatars-icons/eastern-goat.png" alt="Коза" width="32" height="32" />,
-  'Обезьяна': () => <img src="/assets/avatars-icons/eastern-monkey.png" alt="Обезьяна" width="32" height="32" />,
-  'Петух': () => <img src="/assets/avatars-icons/eastern-rooster.png" alt="Петух" width="32" height="32" />,
-  'Собака': () => <img src="/assets/avatars-icons/eastern-dog.png" alt="Собака" width="32" height="32" />,
-  'Свинья': () => <img src="/assets/avatars-icons/eastern-pig.png" alt="Свинья" width="32" height="32" />,
+  'Крыса': () => <img src="/assets/avatars-icons/eastern-rat.png" alt="Крыса" width="48" height="48" />,
+  'Бык': () => <img src="/assets/avatars-icons/eastern-ox.png" alt="Бык" width="48" height="48" />,
+  'Тигр': () => <img src="/assets/avatars-icons/eastern-tiger.png" alt="Тигр" width="48" height="48" />,
+  'Кролик': () => <img src="/assets/avatars-icons/eastern-rabbit.png" alt="Кролик" width="48" height="48" />,
+  'Дракон': () => <img src="/assets/avatars-icons/eastern-dragon.png" alt="Дракон" width="48" height="48" />,
+  'Змея': () => <img src="/assets/avatars-icons/eastern-snake.png" alt="Змея" width="48" height="48" />,
+  'Лошадь': () => <img src="/assets/avatars-icons/eastern-horse.png" alt="Лошадь" width="48" height="48" />,
+  'Коза': () => <img src="/assets/avatars-icons/eastern-goat.png" alt="Коза" width="48" height="48" />,
+  'Обезьяна': () => <img src="/assets/avatars-icons/eastern-monkey.png" alt="Обезьяна" width="48" height="48" />,
+  'Петух': () => <img src="/assets/avatars-icons/eastern-rooster.png" alt="Петух" width="48" height="48" />,
+  'Собака': () => <img src="/assets/avatars-icons/eastern-dog.png" alt="Собака" width="48" height="48" />,
+  'Свинья': () => <img src="/assets/avatars-icons/eastern-pig.png" alt="Свинья" width="48" height="48" />,
 };
 
 export default { MaleAvatar, FemaleAvatar, WesternZodiacIcons, EasternZodiacIcons };
