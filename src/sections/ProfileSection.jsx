@@ -3,17 +3,19 @@ import React, { useState } from "react";
 import { useApp } from "../store/AppContext";
 import { getProfileInsights } from "../utils/knowledgeEngine";
 import { getMeridianInfo, getChronotypePeaks } from "../data/profileKnowledge";
-import { MaleAvatar, FemaleAvatar, getWesternZodiacSrc, getEasternZodiacSrc } from "../components/BlueprintAvatars";
+import { MaleAvatar, FemaleAvatar } from "../components/BlueprintAvatars";
 
+// ─── КОМПОНЕНТ: ИЛЛЮСТРАЦИЯ (пропорционально) + КАРТОЧКА ───
 function ProfileBlock({ title, illustrationSrc, children, accentColor = "var(--blue)", defaultOpen = true }) {
   const [open, setOpen] = useState(defaultOpen);
 
   return (
     <>
+      {/* ИЛЛЮСТРАЦИЯ: сетка убрана, растяжение пропорциональное, ничего не обрезается */}
       {illustrationSrc && (
         <div style={{
           width: "100%",
-          height: 130,
+          minHeight: 100,
           marginBottom: 12,
           background: "transparent",
           display: "flex",
@@ -22,23 +24,22 @@ function ProfileBlock({ title, illustrationSrc, children, accentColor = "var(--b
           borderRadius: 8,
           overflow: "hidden",
           border: "1px solid rgba(0,112,192,0.15)",
-          position: "relative"
         }}>
           <img
             src={illustrationSrc}
             alt={title}
             style={{
               width: "100%",
-              height: "100%",
-              objectFit: "cover",
-              mixBlendMode: "multiply",
-              zIndex: 1
+              height: "auto",
+              objectFit: "contain",
+              display: "block",
             }}
             onError={(e) => { e.target.style.display = "none"; }}
           />
         </div>
       )}
 
+      {/* КАРТОЧКА С КОНТЕНТОМ */}
       <div style={{
         background: "#fff",
         border: "1.5px solid rgba(0,112,192,0.2)",
@@ -46,8 +47,8 @@ function ProfileBlock({ title, illustrationSrc, children, accentColor = "var(--b
         marginBottom: 24,
         overflow: "hidden",
         boxShadow: "0 4px 12px rgba(0,112,192,0.08)"
-      }}>
-        <div          onClick={() => setOpen(!open)}
+      }}>        <div
+          onClick={() => setOpen(!open)}
           style={{
             padding: "14px 16px",
             background: open ? "rgba(0,112,192,0.06)" : "rgba(0,112,192,0.02)",
@@ -94,9 +95,10 @@ function ProfileBlock({ title, illustrationSrc, children, accentColor = "var(--b
   );
 }
 
-export function ProfileSection() {
-  const { profile, setProfile, notify } = useApp();
+// ─── ОСНОВНОЙ КОМПОНЕНТ ───
+export function ProfileSection() {  const { profile, setProfile, notify } = useApp();
   const [isRefreshing, setIsRefreshing] = useState(false);
+
   if (!profile) return <div style={{ padding: 40, textAlign: "center", color: "var(--text3)" }}>Загрузка профиля...</div>;
 
   const insights = getProfileInsights(profile);
@@ -105,8 +107,17 @@ export function ProfileSection() {
   const genderStr = String(profile.gender || "").trim();
   const isMale = genderStr.toLowerCase().includes("муж") || genderStr.toLowerCase() === "male";
 
-  const westernImgSrc = getWesternZodiacSrc(insights.zodiac);
-  const easternImgSrc = getEasternZodiacSrc(insights.eastern);
+  // Безопасное определение путей к изображениям
+  const getImgPath = (type, sign) => {
+    if (!sign) return null;
+    const western = { 'Овен':'zodiac-aries.png','Телец':'zodiac-taurus.png','Близнецы':'zodiac-gemini.png','Рак':'zodiac-cancer.png','Лев':'zodiac-leo.png','Дева':'zodiac-virgo.png','Весы':'zodiac-libra.png','Скорпион':'zodiac-scorpio.png','Стрелец':'zodiac-sagittarius.png','Козерог':'zodiac-capricorn.png','Водолей':'zodiac-aquarius.png','Рыбы':'zodiac-pisces.png' };
+    const eastern = { 'Крыса':'eastern-rat.png','Бык':'eastern-ox.png','Тигр':'eastern-tiger.png','Кролик':'eastern-rabbit.png','Дракон':'eastern-dragon.png','Змея':'eastern-snake.png','Лошадь':'eastern-horse.png','Коза':'eastern-goat.png','Обезьяна':'eastern-monkey.png','Петух':'eastern-rooster.png','Собака':'eastern-dog.png','Свинья':'eastern-pig.png' };
+    const map = type === 'western' ? western : eastern;
+    return map[sign.trim()] ? `/assets/avatars-icons/${map[sign.trim()]}` : null;
+  };
+
+  const westernImgSrc = getImgPath('western', insights.zodiac);
+  const easternImgSrc = getImgPath('eastern', insights.eastern);
   const meridianInfo = getMeridianInfo(insights.zodiac);
   const chronoPeaks = getChronotypePeaks(profile.chronotype);
   const destiny = insights.destiny || { degree: 241, interpretation: "Интеграция опыта" };
@@ -129,29 +140,32 @@ export function ProfileSection() {
   return (
     <div className="page" style={{ paddingBottom: 100 }}>
       
-      <div className="card" style={{
-        textAlign: "center",
-        padding: "28px 20px",
-        borderLeft: "5px solid var(--blue)",
-        marginBottom: 28,
-        borderRadius: 12,
-        background: "linear-gradient(180deg, #fff 0%, #f8f4e8 100%)"
-      }}>
+      {/* 1. АВАТАР ВЫНЕСЕН ЗА ПРЕДЕЛЫ КАРТОЧКИ */}
+      <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
         <div style={{
           width: 140,
           height: 140,
-          margin: "0 auto 20px",
-          borderRadius: "50%",
-          overflow: "hidden",
+          borderRadius: "50%",          overflow: "hidden",
           border: "3px solid var(--bg)",
           boxShadow: "0 6px 18px rgba(0,112,192,0.18)",
-          background: "#fff",          display: "flex",
+          background: "#fff",
+          display: "flex",
           alignItems: "center",
           justifyContent: "center"
         }}>
           {isMale ? <MaleAvatar size={140} /> : <FemaleAvatar size={140} />}
         </div>
-        
+      </div>
+
+      {/* 2. КАРТОЧКА С ДАННЫМИ (без аватара) */}
+      <div className="card" style={{
+        textAlign: "center",
+        padding: "20px",
+        borderLeft: "5px solid var(--blue)",
+        marginBottom: 28,
+        borderRadius: 12,
+        background: "linear-gradient(180deg, #fff 0%, #f8f4e8 100%)"
+      }}>
         <h1 style={{
           fontFamily: "var(--font-head)",
           fontSize: 26,
@@ -180,8 +194,7 @@ export function ProfileSection() {
           background: "rgba(0,112,192,0.06)",
           borderRadius: 10,
           borderLeft: "4px solid var(--gold)",
-          textAlign: "left"
-        }}>
+          textAlign: "left"        }}>
           <strong style={{ color: "var(--gold-dark)" }}>Профиль:</strong>{" "}
           {insights.zodiac || "—"} ({insights.zodiacElement || "Воздух"}) ·{" "}
           {insights.eastern || "—"} ({insights.easternElement || "Вода"}) ·{" "}
@@ -189,12 +202,14 @@ export function ProfileSection() {
         </div>
       </div>
 
+      {/* 3. ЗАПАДНЫЙ ЗОДИАК */}
       <ProfileBlock title="Западный Зодиак" illustrationSrc={westernImgSrc} accentColor="var(--blue)">
         <div style={{ fontSize: 14, lineHeight: 1.75, color: "var(--text2)" }}>
           <p style={{ marginBottom: 16 }}>
             <strong style={{ color: "var(--blue)", fontSize: 17 }}>{insights.zodiac || "—"}</strong>{" "}
             <span>({insights.zodiacElement || "Воздух"}) под управлением {insights.rulingPlanet || "Меркурия"}.{" "}
-            Меридиан: <strong>{meridianInfo.meridian || "—"}</strong> {meridianInfo.emoji}.</span>          </p>
+            Меридиан: <strong>{meridianInfo.meridian || "—"}</strong> {meridianInfo.emoji}.</span>
+          </p>
           <div style={{ padding: 16, background: "rgba(45,106,79,0.07)", borderRadius: 10, marginBottom: 16, borderLeft: "4px solid var(--success)" }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--success)", letterSpacing: 1.2, marginBottom: 8 }}>◈ СИЛЬНЫЕ СТОРОНЫ</div>
             <p style={{ margin: 0, fontSize: 14 }}>{insights.zodiacStrengths || "Адаптивность, интеллект, коммуникация"}</p>
@@ -215,6 +230,7 @@ export function ProfileSection() {
         </div>
       </ProfileBlock>
 
+      {/* 4. ВОСТОЧНЫЙ ЗНАК */}
       <ProfileBlock title="Восточный Знак" illustrationSrc={easternImgSrc} accentColor="var(--gold)">
         <div style={{ fontSize: 14, lineHeight: 1.75, color: "var(--text2)" }}>
           <p style={{ marginBottom: 16 }}>
@@ -227,8 +243,7 @@ export function ProfileSection() {
           </div>
           <div style={{ padding: 16, background: "rgba(200,164,90,0.05)", borderRadius: 10, marginBottom: 16, borderLeft: "4px solid var(--gold)" }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--gold-dark)", letterSpacing: 1.2, marginBottom: 8 }}>◈ КАРМИЧЕСКАЯ ЗАДАЧА</div>
-            <p style={{ margin: 0, fontSize: 14 }}>{insights.easternKarma || "Научиться говорить 'нет' без чувства вины"}. Выстраивай границы, не теряя эмпатии.</p>
-          </div>
+            <p style={{ margin: 0, fontSize: 14 }}>{insights.easternKarma || "Научиться говорить 'нет' без чувства вины"}. Выстраивай границы, не теряя эмпатии.</p>          </div>
           <div style={{ padding: 16, background: "rgba(0,112,192,0.06)", borderRadius: 10, borderLeft: "4px solid var(--blue)" }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--blue)", letterSpacing: 1.2, marginBottom: 10 }}>◈ РЕКОМЕНДАЦИИ</div>
             <ul style={{ margin: 0, paddingLeft: 20, fontSize: 14, lineHeight: 1.9 }}>
@@ -241,9 +256,11 @@ export function ProfileSection() {
         </div>
       </ProfileBlock>
 
+      {/* 5. ГРАДУС СУДЬБЫ */}
       <ProfileBlock title="Градус Судьбы" accentColor="var(--gold)">
         <div style={{ textAlign: "center", padding: "10px 0 18px" }}>
-          <div style={{ fontFamily: "var(--font-head)", fontSize: 40, color: "var(--gold)", fontWeight: 600, letterSpacing: "2.5px" }}>{destiny.degree || 241}°</div>          <div style={{ fontFamily: "var(--font-italic)", fontSize: 16, color: "var(--text2)", marginTop: 8, fontStyle: "italic" }}>{destiny.interpretation || "Интеграция опыта"}</div>
+          <div style={{ fontFamily: "var(--font-head)", fontSize: 40, color: "var(--gold)", fontWeight: 600, letterSpacing: "2.5px" }}>{destiny.degree || 241}°</div>
+          <div style={{ fontFamily: "var(--font-italic)", fontSize: 16, color: "var(--text2)", marginTop: 8, fontStyle: "italic" }}>{destiny.interpretation || "Интеграция опыта"}</div>
         </div>
         <div style={{ fontSize: 14, lineHeight: 1.75, color: "var(--text2)" }}>
           <div style={{ padding: 16, background: "rgba(200,164,90,0.07)", borderRadius: 10, marginBottom: 16, borderLeft: "4px solid var(--gold)" }}>
@@ -261,6 +278,7 @@ export function ProfileSection() {
         </div>
       </ProfileBlock>
 
+      {/* 6. ХРОНО-ТИП */}
       <ProfileBlock title="Хроно-тип" accentColor="var(--blue)">
         <div style={{ fontSize: 14, lineHeight: 1.75, color: "var(--text2)" }}>
           <p style={{ marginBottom: 18 }}><strong style={{ color: "var(--blue)", fontSize: 17 }}>{profile.chronotype || "🕊️ Голубь"}</strong> <span>· Пик: <strong>{chronoPeaks.focus?.hours || "10:00–14:00"}</strong></span></p>
@@ -274,8 +292,7 @@ export function ProfileSection() {
               <p style={{ margin: 0, fontSize: 14 }}>{chronoPeaks.rest?.tip || "Идеально для рутины, звонков, несрочной почты."}</p>
             </div>
           </div>
-          <div style={{ padding: 16, background: "rgba(0,112,192,0.06)", borderRadius: 10, borderLeft: "4px solid var(--blue)" }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--blue)", letterSpacing: 1.2, marginBottom: 10 }}>◈ КАК ИСПОЛЬЗОВАТЬ</div>
+          <div style={{ padding: 16, background: "rgba(0,112,192,0.06)", borderRadius: 10, borderLeft: "4px solid var(--blue)" }}>            <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--blue)", letterSpacing: 1.2, marginBottom: 10 }}>◈ КАК ИСПОЛЬЗОВАТЬ</div>
             <ul style={{ margin: 0, paddingLeft: 20, fontSize: 14, lineHeight: 1.9 }}>
               <li>Синхронизируй расписание с биоритмами — КПД +30–40%</li>
               <li>Сложные решения — только в пиковые часы</li>
@@ -286,13 +303,15 @@ export function ProfileSection() {
         </div>
       </ProfileBlock>
 
+      {/* 7. КНОПКИ УПРАВЛЕНИЯ */}
       <div style={{ display: "flex", gap: 14, marginTop: 32 }}>
         <button
           className="btn btn-primary"
           onClick={handleRefresh}
           disabled={isRefreshing}
           style={{ flex: 1, opacity: isRefreshing ? 0.7 : 1, fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 1.2, padding: "12px 16px", borderRadius: 8 }}
-        >          {isRefreshing ? "⏳ Обновление..." : "🔄 Обновить данные"}
+        >
+          {isRefreshing ? "⏳ Обновление..." : "🔄 Обновить данные"}
         </button>
         <button
           className="btn btn-ghost"
@@ -304,4 +323,4 @@ export function ProfileSection() {
       </div>
     </div>
   );
-}
+                                 }
