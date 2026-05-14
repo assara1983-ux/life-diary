@@ -18,7 +18,6 @@ function InfoCard({ title, icon, children, accentColor = "var(--blue)" }) {
       position: "relative",
       paddingLeft: 0,
     }}>
-      {/* Акцентная линия слева с иконкой */}
       <div style={{
         position: "absolute",
         left: 0,
@@ -42,14 +41,13 @@ function InfoCard({ title, icon, children, accentColor = "var(--blue)" }) {
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          {/* Иконка увеличена на 20% (было 22px → 26px), расположена слева */}
           <span style={{
             fontSize: 26,
             width: 32,
             height: 32,
-            display: "flex",            alignItems: "center",
-            justifyContent: "center",
-            flexShrink: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",            flexShrink: 0,
           }}>
             {icon}
           </span>
@@ -96,25 +94,20 @@ export function ProfileSection() {
   const insights = getProfileInsights(profile);
   const age = profile?.dob ? Math.floor((new Date() - new Date(profile.dob)) / (365.25 * 24 * 60 * 60 * 1000)) : null;
   
-  // Безопасный доступ к иконкам  const WesternIcon = WesternZodiacIcons[insights.zodiac?.trim()] || WesternZodiacIcons['Близнецы'];
+  const WesternIcon = WesternZodiacIcons[insights.zodiac?.trim()] || WesternZodiacIcons['Близнецы'];
   const EasternIcon = EasternZodiacIcons[insights.eastern?.trim()] || EasternZodiacIcons['Свинья'];
-  
-  // Дополнительные данные из базы знаний
-  const meridianInfo = getMeridianInfo(insights.zodiac);
+    const meridianInfo = getMeridianInfo(insights.zodiac);
   const chronoPeaks = getChronotypePeaks(profile.chronotype);
   const destiny = insights.destiny || { degree: 241, interpretation: 'Интеграция опыта' };
 
-  // Обработчик кнопки "Обновить"
   const handleRefresh = () => {
     setIsRefreshing(true);
-    // Имитация обновления данных
     setTimeout(() => {
       setIsRefreshing(false);
       notify?.("✅ Данные обновлены");
     }, 800);
   };
 
-  // Обработчик кнопки "Сброс"
   const handleReset = () => {
     if (window.confirm("Вы уверены? Это удалит ваш профиль и вернет к началу настройки.")) {
       setProfile(null);
@@ -125,14 +118,13 @@ export function ProfileSection() {
   return (
     <div className="page" style={{ paddingBottom: 100 }}>
       
-      {/* 1. ВЕРХНЯЯ КАРТОЧКА: Аватар (центр), Имя, Возраст */}
+      {/* 1. ВЕРХНЯЯ КАРТОЧКА */}
       <div className="card" style={{
         textAlign: "center",
         padding: "24px 20px",
         borderLeft: "5px solid var(--blue)",
         marginBottom: 24,
       }}>
-        {/* Аватар увеличен на 20% (было 75px → 90px), расположен сверху по центру */}
         <div style={{
           width: 90,
           height: 90,
@@ -145,17 +137,17 @@ export function ProfileSection() {
           {profile.gender === 'Мужской' 
             ? <MaleAvatar size={90} /> 
             : <FemaleAvatar size={90} />}
-        </div>        
-        {/* Имя и возраст под аватаром */}
+        </div>
+        
         <h1 style={{
           fontFamily: "var(--font-head)",
           fontSize: 22,
           color: "var(--blue)",
           margin: "0 0 8px 0",
           letterSpacing: "1px",
-        }}>
-          {profile.name || "Пользователь"}
+        }}>          {profile.name || "Пользователь"}
         </h1>
+        
         <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap", marginBottom: 12 }}>
           <span className="badge bgr" style={{ fontSize: 12 }}>🎂 {age ?? "—"} лет</span>
           {profile.chronotype && (
@@ -166,7 +158,6 @@ export function ProfileSection() {
           )}
         </div>
         
-        {/* Краткая сводка */}
         <div style={{
           fontSize: 13,
           color: "var(--text2)",
@@ -183,7 +174,7 @@ export function ProfileSection() {
         </div>
       </div>
 
-      {/* 2. АККОРДЕОН: ЗАПАДНЫЙ ЗОДИАК */}
+      {/* 2. ЗАПАДНЫЙ ЗОДИАК */}
       <InfoCard title="Западный Зодиак" icon={<WesternIcon />} accentColor="var(--blue)">
         <div style={{ fontSize: 14, lineHeight: 1.7, color: "var(--text2)" }}>
           <p style={{ marginBottom: 16 }}>
@@ -192,21 +183,18 @@ export function ProfileSection() {
             Меридиан: <strong>{meridianInfo.meridian || "—"}</strong> {meridianInfo.emoji}.</span>
           </p>
           
-          {/* Сильные стороны */}
           <div style={{ padding: 14, background: "rgba(45,106,79,0.06)", borderRadius: 8, marginBottom: 14, borderLeft: "3px solid var(--success)" }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--success)", letterSpacing: 1, marginBottom: 6 }}>◈ СИЛЬНЫЕ СТОРОНЫ</div>            <p style={{ margin: 0, fontSize: 13 }}>{insights.zodiacStrengths || "Адаптивность, интеллект, коммуникация"}</p>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--success)", letterSpacing: 1, marginBottom: 6 }}>◈ СИЛЬНЫЕ СТОРОНЫ</div>
+            <p style={{ margin: 0, fontSize: 13 }}>{insights.zodiacStrengths || "Адаптивность, интеллект, коммуникация"}</p>
           </div>
           
-          {/* Слабые зоны */}
           <div style={{ padding: 14, background: "rgba(139,32,32,0.05)", borderRadius: 8, marginBottom: 14, borderLeft: "3px solid var(--error)" }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--error)", letterSpacing: 1, marginBottom: 6 }}>◈ УЯЗВИМЫЕ ЗОНЫ</div>
             <p style={{ margin: 0, fontSize: 13 }}>{insights.zodiacWeaknesses || "Лёгкие, нервная система, плечи"}</p>
           </div>
           
-          {/* Как использовать */}
           <div style={{ padding: 14, background: "rgba(0,112,192,0.05)", borderRadius: 8, borderLeft: "3px solid var(--blue)" }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--blue)", letterSpacing: 1, marginBottom: 6 }}>◈ КАК ИСПОЛЬЗОВАТЬ</div>
-            <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13, lineHeight: 1.8 }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--blue)", letterSpacing: 1, marginBottom: 6 }}>◈ КАК ИСПОЛЬЗОВАТЬ</div>            <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13, lineHeight: 1.8 }}>
               <li>Планируй важные дела на утро (пик {chronoPeaks.focus?.hours || "10:00–14:00"})</li>
               <li>Избегай многозадачности — фокусируйся на одном деле за раз</li>
               <li>Дыхательные практики укрепляют твои слабые зоны (лёгкие/нервы)</li>
@@ -216,7 +204,7 @@ export function ProfileSection() {
         </div>
       </InfoCard>
 
-      {/* 3. АККОРДЕОН: ВОСТОЧНЫЙ ЗНАК */}
+      {/* 3. ВОСТОЧНЫЙ ЗНАК */}
       <InfoCard title="Восточный Знак" icon={<EasternIcon />} accentColor="var(--gold)">
         <div style={{ fontSize: 14, lineHeight: 1.7, color: "var(--text2)" }}>
           <p style={{ marginBottom: 16 }}>
@@ -227,7 +215,7 @@ export function ProfileSection() {
           <div style={{ padding: 14, background: "rgba(200,164,90,0.06)", borderRadius: 8, marginBottom: 14, borderLeft: "3px solid var(--gold)" }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--gold-dark)", letterSpacing: 1, marginBottom: 6 }}>◈ ЭНЕРГЕТИЧЕСКИЙ ПОРТРЕТ</div>
             <p style={{ margin: 0, fontSize: 13 }}>
-              {insights.easternTraits || "Честность и терпимость"}. Ты обладаешь глубокой интуицией и способностью видеть скрытые мотивы людей. 
+              {insights.easternTraits || "Честность и терпимость"}. Ты обладаешь глубокой интуицией. 
               Твоя стихия ({insights.easternElement}) наделяет тебя
               {insights.easternElement === 'Вода' ? ' гибкостью, мудростью и адаптивностью' : 
                insights.easternElement === 'Дерево' ? ' ростом, творчеством и упорством' :
@@ -241,9 +229,10 @@ export function ProfileSection() {
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--gold-dark)", letterSpacing: 1, marginBottom: 6 }}>◈ КАРМИЧЕСКАЯ ЗАДАЧА</div>
             <p style={{ margin: 0, fontSize: 13 }}>
               {insights.easternKarma || "Научиться говорить 'нет' без чувства вины"}. 
-              Твой рост связан с умением выстраивать границы, не теряя эмпатии. Доверяй интуиции в финансовых и карьерных решениях.
+              Твой рост связан с умением выстраивать границы. Доверяй интуиции в финансовых решениях.
             </p>
-          </div>          
+          </div>
+          
           <div style={{ padding: 14, background: "rgba(0,112,192,0.05)", borderRadius: 8, borderLeft: "3px solid var(--blue)" }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--blue)", letterSpacing: 1, marginBottom: 6 }}>◈ РЕКОМЕНДАЦИИ</div>
             <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13, lineHeight: 1.8 }}>
@@ -255,8 +244,7 @@ export function ProfileSection() {
           </div>
         </div>
       </InfoCard>
-
-      {/* 4. АККОРДЕОН: ГРАДУС СУДЬБЫ */}
+      {/* 4. ГРАДУС СУДЬБЫ */}
       <InfoCard title="Градус Судьбы" icon="🧭" accentColor="var(--gold)">
         <div style={{ textAlign: "center", padding: "8px 0 16px" }}>
           <div style={{
@@ -283,16 +271,17 @@ export function ProfileSection() {
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--gold-dark)", letterSpacing: 1, marginBottom: 6 }}>◈ ЗОНА РАЗВИТИЯ</div>
             <p style={{ margin: 0 }}>
               Твой градус {destiny.degree}° указывает на текущую фазу жизненного цикла. 
-              {destiny.degree < 120 ? ' Ты в зоне активного созидания и инициации новых проектов. Твоя сила — в смелости начинать.' :
-               destiny.degree < 240 ? ' Ты в зоне структурирования и профессионального роста. Закрепляй опыт, строй системы.' :
-               ' Ты в зоне интеграции и мудрости. Твоя суперсила — видеть суть, передавать опыт, наставлять.'}
+              {destiny.degree < 120 ? ' Ты в зоне активного созидания. Твоя сила — в смелости начинать.' :
+               destiny.degree < 240 ? ' Ты в зоне структурирования и роста. Закрепляй опыт, строй системы.' :
+               ' Ты в зоне интеграции и мудрости. Твоя суперсила — видеть суть, передавать опыт.'}
             </p>
           </div>
           
           <div style={{ padding: 14, background: "rgba(0,112,192,0.05)", borderRadius: 8, borderLeft: "3px solid var(--blue)" }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--blue)", letterSpacing: 1, marginBottom: 6 }}>◈ КАК ИСПОЛЬЗОВАТЬ</div>
             <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13, lineHeight: 1.8 }}>
-              <li>Доверяй интуиции, но проверяй фактами</li>              <li>Каждое утро спрашивай: «Какой урок я могу извлечь сегодня?»</li>
+              <li>Доверяй интуиции, но проверяй фактами</li>
+              <li>Каждое утро спрашивай: «Какой урок я могу извлечь сегодня?»</li>
               <li>Веди дневник наблюдений — это усиливает твой градус</li>
               <li>Избегай рутины, которая не несёт смысла</li>
             </ul>
@@ -300,24 +289,20 @@ export function ProfileSection() {
         </div>
       </InfoCard>
 
-      {/* 5. АККОРДЕОН: ХРОНО-ТИП */}
+      {/* 5. ХРОНО-ТИП */}
       <InfoCard title="Хроно-тип" icon="🦉" accentColor="var(--blue)">
         <div style={{ fontSize: 14, lineHeight: 1.7, color: "var(--text2)" }}>
-          <p style={{ marginBottom: 16 }}>
-            <strong style={{ color: "var(--blue)", fontSize: 16 }}>{profile.chronotype || "🕊️ Голубь"}</strong>
+          <p style={{ marginBottom: 16 }}>            <strong style={{ color: "var(--blue)", fontSize: 16 }}>{profile.chronotype || "🕊️ Голубь"}</strong>
             <span> · Пик: <strong>{chronoPeaks.focus?.hours || "10:00–14:00"}</strong></span>
           </p>
           
           <div style={{ display: "grid", gap: 12, marginBottom: 16 }}>
-            {/* Пик концентрации */}
             <div style={{ padding: 14, background: "rgba(45,106,79,0.06)", borderRadius: 8, borderLeft: "3px solid var(--success)" }}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--success)", letterSpacing: 1, marginBottom: 6 }}>🧠 ПИК КОНЦЕНТРАЦИИ</div>
               <p style={{ margin: 0, fontSize: 13 }}>
                 {chronoPeaks.focus?.tip || "Самые сложные задачи — в это время. Мозг работает на максимуме."}
               </p>
             </div>
-            
-            {/* Провал энергии */}
             <div style={{ padding: 14, background: "rgba(139,32,32,0.05)", borderRadius: 8, borderLeft: "3px solid var(--error)" }}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--error)", letterSpacing: 1, marginBottom: 6 }}>⚡ ПРОВАЛ ЭНЕРГИИ</div>
               <p style={{ margin: 0, fontSize: 13 }}>
@@ -333,7 +318,7 @@ export function ProfileSection() {
               <li>Сложные решения — только в пиковые часы</li>
               <li>Провалы энергии — для делегирования и рутины</li>
               <li>Соблюдай режим сна: {chronoPeaks.sleep?.hours || "22:30–23:30"} — критично для восстановления</li>
-              <li>{chronoPeaks.meridian_peak ? `Активный меридиан: ${chronoPeaks.meridian_peak}` : ''}</li>
+              {chronoPeaks.meridian_peak && <li>Активный меридиан: {chronoPeaks.meridian_peak}</li>}
             </ul>
           </div>
         </div>
@@ -341,7 +326,8 @@ export function ProfileSection() {
 
       {/* 6. КНОПКИ УПРАВЛЕНИЯ */}
       <div style={{ display: "flex", gap: 12, marginTop: 30 }}>
-        <button          className="btn btn-primary"
+        <button
+          className="btn btn-primary"
           onClick={handleRefresh}
           disabled={isRefreshing}
           style={{ flex: 1, opacity: isRefreshing ? 0.7 : 1, fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 1 }}
@@ -355,10 +341,8 @@ export function ProfileSection() {
           style={{ flex: 1, borderColor: "rgba(139,32,32,0.3)", color: "var(--error)", fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 1 }}
         >
           🗑️ Сброс профиля
-        </button>
-      </div>
+        </button>      </div>
 
     </div>
   );
-      }  );
 }
