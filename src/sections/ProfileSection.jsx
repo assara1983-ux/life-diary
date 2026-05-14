@@ -5,83 +5,98 @@ import { getProfileInsights } from "../utils/knowledgeEngine";
 import { getMeridianInfo, getChronotypePeaks } from "../data/profileKnowledge";
 import { MaleAvatar, FemaleAvatar, WesternZodiacIcons, EasternZodiacIcons } from "../components/BlueprintAvatars";
 
-// ─── КОМПОНЕНТ ИНФО-КАРТОЧКИ (Blueprint Style) ───
-function InfoCard({ title, icon, children, accentColor = "var(--blue)" }) {
+// ─── КОМПОНЕНТ: ИКОНКА + КАРТОЧКА (Blueprint Style) ───
+function IconCard({ icon, iconSize = 60, title, children, accentColor = "var(--blue)" }) {
   const [open, setOpen] = useState(true);
+  
   return (
-    <div style={{
-      background: "#fff",
-      border: "1.5px solid rgba(0,112,192,0.2)",
-      borderRadius: 8,
-      marginBottom: 16,
-      overflow: "hidden",
-      position: "relative",
-      paddingLeft: 0,
-    }}>
-      <div style={{
-        position: "absolute",
-        left: 0,
-        top: 0,
-        bottom: 0,
-        width: "3px",
-        background: accentColor,
-      }} />
-      
-      <div
-        onClick={() => setOpen(!open)}
-        style={{
-          padding: "14px 16px 14px 24px",
-          background: open ? "rgba(0,112,192,0.06)" : "rgba(0,112,192,0.02)",
-          cursor: "pointer",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          transition: "background 0.2s",
-          borderLeft: "none",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <span style={{
-            fontSize: 26,
-            width: 32,
-            height: 32,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",            flexShrink: 0,
-          }}>
-            {icon}
-          </span>
-          <h3 style={{
-            fontFamily: "var(--font-head)",
-            fontSize: 15,
-            color: "var(--blue)",
-            margin: 0,
-            letterSpacing: "0.5px",
-          }}>
-            {title}
-          </h3>
-        </div>
+    <div style={{ marginBottom: 28 }}>
+      {/* Иконка ВЫНЕСЕНА над карточкой, центрирована */}
+      <div style={{ 
+        display: "flex", 
+        justifyContent: "center", 
+        marginBottom: 14 
+      }}>
         <div style={{
-          fontSize: 16,
-          color: "var(--gold)",
-          transition: "transform 0.3s",
-          transform: open ? "rotate(180deg)" : "rotate(0)",
+          width: iconSize,
+          height: iconSize,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "rgba(255,255,255,0.9)",
+          borderRadius: "50%",
+          border: `2.5px solid ${accentColor}`,
+          boxShadow: `0 6px 16px ${accentColor}25`,
+          padding: 4,
         }}>
-          ▼
+          {icon}
         </div>
       </div>
       
-      {open && (
+      {/* Карточка с акцентной линией слева */}
+      <div style={{
+        background: "#fff",
+        border: "1.5px solid rgba(0,112,192,0.2)",
+        borderRadius: 10,
+        overflow: "hidden",
+        position: "relative",
+        boxShadow: "0 3px 10px rgba(0,112,192,0.08)",
+      }}>
+        {/* Акцентная линия */}
         <div style={{
-          padding: "16px 16px 16px 24px",
-          borderTop: "1px solid rgba(0,112,192,0.1)",
-          background: "rgba(255,255,255,0.8)",
-        }}>
-          {children}
+          position: "absolute",
+          left: 0,
+          top: 0,
+          bottom: 0,          width: "4px",
+          background: accentColor,
+        }} />
+        
+        {/* Заголовок карточки */}
+        <div
+          onClick={() => setOpen(!open)}
+          style={{
+            padding: "16px 16px 16px 22px",
+            background: open ? "rgba(0,112,192,0.07)" : "rgba(0,112,192,0.03)",
+            cursor: "pointer",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            transition: "background 0.2s",
+            borderLeft: "none",
+          }}
+        >
+          <h3 style={{
+            fontFamily: "var(--font-head)",
+            fontSize: 16,
+            color: "var(--blue)",
+            margin: 0,
+            letterSpacing: "0.5px",
+            paddingLeft: 10,
+          }}>
+            {title}
+          </h3>
+          <div style={{
+            fontSize: 18,
+            color: "var(--gold)",
+            transition: "transform 0.3s",
+            transform: open ? "rotate(180deg)" : "rotate(0)",
+          }}>
+            ▼
+          </div>
         </div>
-      )}
-    </div>
-  );
+        
+        {/* Контент */}
+        {open && (
+          <div style={{
+            padding: "18px 18px 18px 22px",
+            borderTop: "1px solid rgba(0,112,192,0.12)",
+            background: "rgba(255,255,255,0.85)",
+          }}>
+            {children}
+          </div>
+        )}
+      </div>
+    </div>  );
 }
 
 // ─── ОСНОВНОЙ КОМПОНЕНТ ───
@@ -94,12 +109,16 @@ export function ProfileSection() {
   const insights = getProfileInsights(profile);
   const age = profile?.dob ? Math.floor((new Date() - new Date(profile.dob)) / (365.25 * 24 * 60 * 60 * 1000)) : null;
   
+  // Безопасный доступ к иконкам
   const WesternIcon = WesternZodiacIcons[insights.zodiac?.trim()] || WesternZodiacIcons['Близнецы'];
   const EasternIcon = EasternZodiacIcons[insights.eastern?.trim()] || EasternZodiacIcons['Свинья'];
-    const meridianInfo = getMeridianInfo(insights.zodiac);
+  
+  // Дополнительные данные из базы знаний
+  const meridianInfo = getMeridianInfo(insights.zodiac);
   const chronoPeaks = getChronotypePeaks(profile.chronotype);
   const destiny = insights.destiny || { degree: 241, interpretation: 'Интеграция опыта' };
 
+  // Обработчики
   const handleRefresh = () => {
     setIsRefreshing(true);
     setTimeout(() => {
@@ -118,83 +137,94 @@ export function ProfileSection() {
   return (
     <div className="page" style={{ paddingBottom: 100 }}>
       
-      {/* 1. ВЕРХНЯЯ КАРТОЧКА */}
+      {/* 1. ШАПКА: Аватар (центр, увеличен), Имя, Возраст */}
       <div className="card" style={{
         textAlign: "center",
-        padding: "24px 20px",
+        padding: "26px 22px",
         borderLeft: "5px solid var(--blue)",
-        marginBottom: 24,
+        marginBottom: 28,
+        borderRadius: 12,
       }}>
-        <div style={{
-          width: 90,
-          height: 90,
-          margin: "0 auto 16px",
+        {/* Аватар увеличен на 30%: 90px → 120px, расположен сверху по центру */}        <div style={{
+          width: 120,
+          height: 120,
+          margin: "0 auto 18px",
           borderRadius: "50%",
           overflow: "hidden",
-          border: "2px solid var(--bg)",
-          boxShadow: "0 4px 12px rgba(0,112,192,0.15)",
+          border: "3px solid var(--bg)",
+          boxShadow: "0 6px 18px rgba(0,112,192,0.18)",
+          background: "#fff",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
         }}>
           {profile.gender === 'Мужской' 
-            ? <MaleAvatar size={90} /> 
-            : <FemaleAvatar size={90} />}
+            ? <MaleAvatar size={120} /> 
+            : <FemaleAvatar size={120} />}
         </div>
         
+        {/* Имя и возраст под аватаром */}
         <h1 style={{
           fontFamily: "var(--font-head)",
-          fontSize: 22,
+          fontSize: 24,
           color: "var(--blue)",
-          margin: "0 0 8px 0",
-          letterSpacing: "1px",
-        }}>          {profile.name || "Пользователь"}
+          margin: "0 0 10px 0",
+          letterSpacing: "1.5px",
+        }}>
+          {profile.name || "Пользователь"}
         </h1>
         
-        <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap", marginBottom: 12 }}>
-          <span className="badge bgr" style={{ fontSize: 12 }}>🎂 {age ?? "—"} лет</span>
+        <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap", marginBottom: 14 }}>
+          <span className="badge bgr" style={{ fontSize: 13, padding: "4px 10px" }}>🎂 {age ?? "—"} лет</span>
           {profile.chronotype && (
-            <span className="badge bt" style={{ fontSize: 12 }}>⏱ {profile.chronotype}</span>
+            <span className="badge bt" style={{ fontSize: 13, padding: "4px 10px" }}>⏱ {profile.chronotype}</span>
           )}
           {insights.zodiac && (
-            <span className="badge bm" style={{ fontSize: 12 }}>♈ {insights.zodiac}</span>
+            <span className="badge bm" style={{ fontSize: 13, padding: "4px 10px" }}>♈ {insights.zodiac}</span>
           )}
         </div>
         
+        {/* Краткая сводка */}
         <div style={{
-          fontSize: 13,
+          fontSize: 14,
           color: "var(--text2)",
-          lineHeight: 1.6,
-          padding: "12px 16px",
-          background: "rgba(0,112,192,0.05)",
-          borderRadius: 8,
-          borderLeft: "3px solid var(--gold)",
+          lineHeight: 1.7,
+          padding: "14px 18px",
+          background: "rgba(0,112,192,0.06)",
+          borderRadius: 10,
+          borderLeft: "4px solid var(--gold)",
           textAlign: "left",
-        }}>
-          <strong style={{ color: "var(--gold-dark)" }}>Ваш профиль:</strong> {insights.zodiac || "—"} ({insights.zodiacElement || "Воздух"}) · 
+        }}>          <strong style={{ color: "var(--gold-dark)" }}>Ваш профиль:</strong> {insights.zodiac || "—"} ({insights.zodiacElement || "Воздух"}) · 
           {insights.eastern || "—"} ({insights.easternElement || "Вода"}) · 
           Градус судьбы: <strong style={{ color: "var(--gold)" }}>{destiny.degree}°</strong>
         </div>
       </div>
 
       {/* 2. ЗАПАДНЫЙ ЗОДИАК */}
-      <InfoCard title="Западный Зодиак" icon={<WesternIcon />} accentColor="var(--blue)">
-        <div style={{ fontSize: 14, lineHeight: 1.7, color: "var(--text2)" }}>
-          <p style={{ marginBottom: 16 }}>
-            <strong style={{ color: "var(--blue)", fontSize: 16 }}>{insights.zodiac || "—"}</strong> 
+      <IconCard icon={<WesternIcon />} iconSize={60} title="Западный Зодиак" accentColor="var(--blue)">
+        <div style={{ fontSize: 14, lineHeight: 1.75, color: "var(--text2)" }}>
+          <p style={{ marginBottom: 18 }}>
+            <strong style={{ color: "var(--blue)", fontSize: 17 }}>{insights.zodiac || "—"}</strong> 
             <span> ({insights.zodiacElement || "Воздух"}) под управлением {insights.rulingPlanet || "Меркурия"}. 
             Меридиан: <strong>{meridianInfo.meridian || "—"}</strong> {meridianInfo.emoji}.</span>
           </p>
           
-          <div style={{ padding: 14, background: "rgba(45,106,79,0.06)", borderRadius: 8, marginBottom: 14, borderLeft: "3px solid var(--success)" }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--success)", letterSpacing: 1, marginBottom: 6 }}>◈ СИЛЬНЫЕ СТОРОНЫ</div>
-            <p style={{ margin: 0, fontSize: 13 }}>{insights.zodiacStrengths || "Адаптивность, интеллект, коммуникация"}</p>
+          {/* Сильные стороны */}
+          <div style={{ padding: 16, background: "rgba(45,106,79,0.07)", borderRadius: 10, marginBottom: 16, borderLeft: "4px solid var(--success)" }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--success)", letterSpacing: 1.2, marginBottom: 8 }}>◈ СИЛЬНЫЕ СТОРОНЫ</div>
+            <p style={{ margin: 0, fontSize: 14 }}>{insights.zodiacStrengths || "Адаптивность, интеллект, коммуникация"}</p>
           </div>
           
-          <div style={{ padding: 14, background: "rgba(139,32,32,0.05)", borderRadius: 8, marginBottom: 14, borderLeft: "3px solid var(--error)" }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--error)", letterSpacing: 1, marginBottom: 6 }}>◈ УЯЗВИМЫЕ ЗОНЫ</div>
-            <p style={{ margin: 0, fontSize: 13 }}>{insights.zodiacWeaknesses || "Лёгкие, нервная система, плечи"}</p>
+          {/* Слабые зоны */}
+          <div style={{ padding: 16, background: "rgba(139,32,32,0.06)", borderRadius: 10, marginBottom: 16, borderLeft: "4px solid var(--error)" }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--error)", letterSpacing: 1.2, marginBottom: 8 }}>◈ УЯЗВИМЫЕ ЗОНЫ</div>
+            <p style={{ margin: 0, fontSize: 14 }}>{insights.zodiacWeaknesses || "Лёгкие, нервная система, плечи"}</p>
           </div>
           
-          <div style={{ padding: 14, background: "rgba(0,112,192,0.05)", borderRadius: 8, borderLeft: "3px solid var(--blue)" }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--blue)", letterSpacing: 1, marginBottom: 6 }}>◈ КАК ИСПОЛЬЗОВАТЬ</div>            <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13, lineHeight: 1.8 }}>
+          {/* Как использовать */}
+          <div style={{ padding: 16, background: "rgba(0,112,192,0.06)", borderRadius: 10, borderLeft: "4px solid var(--blue)" }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--blue)", letterSpacing: 1.2, marginBottom: 10 }}>◈ КАК ИСПОЛЬЗОВАТЬ</div>
+            <ul style={{ margin: 0, paddingLeft: 20, fontSize: 14, lineHeight: 1.9 }}>
               <li>Планируй важные дела на утро (пик {chronoPeaks.focus?.hours || "10:00–14:00"})</li>
               <li>Избегай многозадачности — фокусируйся на одном деле за раз</li>
               <li>Дыхательные практики укрепляют твои слабые зоны (лёгкие/нервы)</li>
@@ -202,19 +232,18 @@ export function ProfileSection() {
             </ul>
           </div>
         </div>
-      </InfoCard>
+      </IconCard>
 
       {/* 3. ВОСТОЧНЫЙ ЗНАК */}
-      <InfoCard title="Восточный Знак" icon={<EasternIcon />} accentColor="var(--gold)">
-        <div style={{ fontSize: 14, lineHeight: 1.7, color: "var(--text2)" }}>
-          <p style={{ marginBottom: 16 }}>
-            <strong style={{ color: "var(--gold-dark)", fontSize: 16 }}>{insights.eastern || "—"}</strong> 
+      <IconCard icon={<EasternIcon />} iconSize={60} title="Восточный Знак" accentColor="var(--gold)">
+        <div style={{ fontSize: 14, lineHeight: 1.75, color: "var(--text2)" }}>
+          <p style={{ marginBottom: 18 }}>
+            <strong style={{ color: "var(--gold-dark)", fontSize: 17 }}>{insights.eastern || "—"}</strong> 
             <span> ({insights.easternElement || "Вода"}).</span>
           </p>
           
-          <div style={{ padding: 14, background: "rgba(200,164,90,0.06)", borderRadius: 8, marginBottom: 14, borderLeft: "3px solid var(--gold)" }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--gold-dark)", letterSpacing: 1, marginBottom: 6 }}>◈ ЭНЕРГЕТИЧЕСКИЙ ПОРТРЕТ</div>
-            <p style={{ margin: 0, fontSize: 13 }}>
+          <div style={{ padding: 16, background: "rgba(200,164,90,0.07)", borderRadius: 10, marginBottom: 16, borderLeft: "4px solid var(--gold)" }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--gold-dark)", letterSpacing: 1.2, marginBottom: 8 }}>◈ ЭНЕРГЕТИЧЕСКИЙ ПОРТРЕТ</div>            <p style={{ margin: 0, fontSize: 14 }}>
               {insights.easternTraits || "Честность и терпимость"}. Ты обладаешь глубокой интуицией. 
               Твоя стихия ({insights.easternElement}) наделяет тебя
               {insights.easternElement === 'Вода' ? ' гибкостью, мудростью и адаптивностью' : 
@@ -225,17 +254,17 @@ export function ProfileSection() {
             </p>
           </div>
           
-          <div style={{ padding: 14, background: "rgba(200,164,90,0.04)", borderRadius: 8, marginBottom: 14, borderLeft: "3px solid var(--gold)" }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--gold-dark)", letterSpacing: 1, marginBottom: 6 }}>◈ КАРМИЧЕСКАЯ ЗАДАЧА</div>
-            <p style={{ margin: 0, fontSize: 13 }}>
+          <div style={{ padding: 16, background: "rgba(200,164,90,0.05)", borderRadius: 10, marginBottom: 16, borderLeft: "4px solid var(--gold)" }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--gold-dark)", letterSpacing: 1.2, marginBottom: 8 }}>◈ КАРМИЧЕСКАЯ ЗАДАЧА</div>
+            <p style={{ margin: 0, fontSize: 14 }}>
               {insights.easternKarma || "Научиться говорить 'нет' без чувства вины"}. 
               Твой рост связан с умением выстраивать границы. Доверяй интуиции в финансовых решениях.
             </p>
           </div>
           
-          <div style={{ padding: 14, background: "rgba(0,112,192,0.05)", borderRadius: 8, borderLeft: "3px solid var(--blue)" }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--blue)", letterSpacing: 1, marginBottom: 6 }}>◈ РЕКОМЕНДАЦИИ</div>
-            <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13, lineHeight: 1.8 }}>
+          <div style={{ padding: 16, background: "rgba(0,112,192,0.06)", borderRadius: 10, borderLeft: "4px solid var(--blue)" }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--blue)", letterSpacing: 1.2, marginBottom: 10 }}>◈ РЕКОМЕНДАЦИИ</div>
+            <ul style={{ margin: 0, paddingLeft: 20, fontSize: 14, lineHeight: 1.9 }}>
               <li>Используй периоды спада энергии для восстановления, а не борьбы</li>
               <li>Доверяй интуиции в финансовых вопросах — она у тебя сильна</li>
               <li>Избегай токсичных связей — ты впитываешь чужую энергию</li>
@@ -243,32 +272,32 @@ export function ProfileSection() {
             </ul>
           </div>
         </div>
-      </InfoCard>
+      </IconCard>
+
       {/* 4. ГРАДУС СУДЬБЫ */}
-      <InfoCard title="Градус Судьбы" icon="🧭" accentColor="var(--gold)">
-        <div style={{ textAlign: "center", padding: "8px 0 16px" }}>
+      <IconCard icon="🧭" iconSize={60} title="Градус Судьбы" accentColor="var(--gold)">
+        <div style={{ textAlign: "center", padding: "10px 0 18px" }}>
           <div style={{
             fontFamily: "var(--font-head)",
-            fontSize: 36,
+            fontSize: 40,
             color: "var(--gold)",
             fontWeight: 600,
-            letterSpacing: "2px",
+            letterSpacing: "2.5px",
           }}>
             {destiny.degree || 241}°
           </div>
           <div style={{
             fontFamily: "var(--font-italic)",
-            fontSize: 15,
+            fontSize: 16,
             color: "var(--text2)",
-            marginTop: 6,
+            marginTop: 8,
             fontStyle: "italic",
-          }}>
-            {destiny.interpretation || "Интеграция опыта"}
+          }}>            {destiny.interpretation || "Интеграция опыта"}
           </div>
         </div>
-        <div style={{ fontSize: 14, lineHeight: 1.7, color: "var(--text2)" }}>
-          <div style={{ padding: 14, background: "rgba(200,164,90,0.05)", borderRadius: 8, marginBottom: 14, borderLeft: "3px solid var(--gold)" }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--gold-dark)", letterSpacing: 1, marginBottom: 6 }}>◈ ЗОНА РАЗВИТИЯ</div>
+        <div style={{ fontSize: 14, lineHeight: 1.75, color: "var(--text2)" }}>
+          <div style={{ padding: 16, background: "rgba(200,164,90,0.07)", borderRadius: 10, marginBottom: 16, borderLeft: "4px solid var(--gold)" }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--gold-dark)", letterSpacing: 1.2, marginBottom: 8 }}>◈ ЗОНА РАЗВИТИЯ</div>
             <p style={{ margin: 0 }}>
               Твой градус {destiny.degree}° указывает на текущую фазу жизненного цикла. 
               {destiny.degree < 120 ? ' Ты в зоне активного созидания. Твоя сила — в смелости начинать.' :
@@ -277,9 +306,9 @@ export function ProfileSection() {
             </p>
           </div>
           
-          <div style={{ padding: 14, background: "rgba(0,112,192,0.05)", borderRadius: 8, borderLeft: "3px solid var(--blue)" }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--blue)", letterSpacing: 1, marginBottom: 6 }}>◈ КАК ИСПОЛЬЗОВАТЬ</div>
-            <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13, lineHeight: 1.8 }}>
+          <div style={{ padding: 16, background: "rgba(0,112,192,0.06)", borderRadius: 10, borderLeft: "4px solid var(--blue)" }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--blue)", letterSpacing: 1.2, marginBottom: 10 }}>◈ КАК ИСПОЛЬЗОВАТЬ</div>
+            <ul style={{ margin: 0, paddingLeft: 20, fontSize: 14, lineHeight: 1.9 }}>
               <li>Доверяй интуиции, но проверяй фактами</li>
               <li>Каждое утро спрашивай: «Какой урок я могу извлечь сегодня?»</li>
               <li>Веди дневник наблюдений — это усиливает твой градус</li>
@@ -287,33 +316,33 @@ export function ProfileSection() {
             </ul>
           </div>
         </div>
-      </InfoCard>
+      </IconCard>
 
       {/* 5. ХРОНО-ТИП */}
-      <InfoCard title="Хроно-тип" icon="🦉" accentColor="var(--blue)">
-        <div style={{ fontSize: 14, lineHeight: 1.7, color: "var(--text2)" }}>
-          <p style={{ marginBottom: 16 }}>            <strong style={{ color: "var(--blue)", fontSize: 16 }}>{profile.chronotype || "🕊️ Голубь"}</strong>
+      <IconCard icon="🦉" iconSize={60} title="Хроно-тип" accentColor="var(--blue)">
+        <div style={{ fontSize: 14, lineHeight: 1.75, color: "var(--text2)" }}>
+          <p style={{ marginBottom: 18 }}>
+            <strong style={{ color: "var(--blue)", fontSize: 17 }}>{profile.chronotype || "🕊️ Голубь"}</strong>
             <span> · Пик: <strong>{chronoPeaks.focus?.hours || "10:00–14:00"}</strong></span>
           </p>
           
-          <div style={{ display: "grid", gap: 12, marginBottom: 16 }}>
-            <div style={{ padding: 14, background: "rgba(45,106,79,0.06)", borderRadius: 8, borderLeft: "3px solid var(--success)" }}>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--success)", letterSpacing: 1, marginBottom: 6 }}>🧠 ПИК КОНЦЕНТРАЦИИ</div>
-              <p style={{ margin: 0, fontSize: 13 }}>
+          <div style={{ display: "grid", gap: 14, marginBottom: 18 }}>
+            <div style={{ padding: 16, background: "rgba(45,106,79,0.07)", borderRadius: 10, borderLeft: "4px solid var(--success)" }}>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--success)", letterSpacing: 1.2, marginBottom: 8 }}>🧠 ПИК КОНЦЕНТРАЦИИ</div>
+              <p style={{ margin: 0, fontSize: 14 }}>
                 {chronoPeaks.focus?.tip || "Самые сложные задачи — в это время. Мозг работает на максимуме."}
               </p>
             </div>
-            <div style={{ padding: 14, background: "rgba(139,32,32,0.05)", borderRadius: 8, borderLeft: "3px solid var(--error)" }}>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--error)", letterSpacing: 1, marginBottom: 6 }}>⚡ ПРОВАЛ ЭНЕРГИИ</div>
-              <p style={{ margin: 0, fontSize: 13 }}>
+            <div style={{ padding: 16, background: "rgba(139,32,32,0.06)", borderRadius: 10, borderLeft: "4px solid var(--error)" }}>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--error)", letterSpacing: 1.2, marginBottom: 8 }}>⚡ ПРОВАЛ ЭНЕРГИИ</div>
+              <p style={{ margin: 0, fontSize: 14 }}>
                 {chronoPeaks.rest?.tip || "Идеально для рутины, звонков, несрочной почты. Не планируй важных решений."}
               </p>
             </div>
           </div>
           
-          <div style={{ padding: 14, background: "rgba(0,112,192,0.05)", borderRadius: 8, borderLeft: "3px solid var(--blue)" }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--blue)", letterSpacing: 1, marginBottom: 6 }}>◈ КАК ИСПОЛЬЗОВАТЬ</div>
-            <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13, lineHeight: 1.8 }}>
+          <div style={{ padding: 16, background: "rgba(0,112,192,0.06)", borderRadius: 10, borderLeft: "4px solid var(--blue)" }}>            <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--blue)", letterSpacing: 1.2, marginBottom: 10 }}>◈ КАК ИСПОЛЬЗОВАТЬ</div>
+            <ul style={{ margin: 0, paddingLeft: 20, fontSize: 14, lineHeight: 1.9 }}>
               <li>Синхронизируй расписание с биоритмами — это повысит КПД на 30–40%</li>
               <li>Сложные решения — только в пиковые часы</li>
               <li>Провалы энергии — для делегирования и рутины</li>
@@ -322,15 +351,15 @@ export function ProfileSection() {
             </ul>
           </div>
         </div>
-      </InfoCard>
+      </IconCard>
 
       {/* 6. КНОПКИ УПРАВЛЕНИЯ */}
-      <div style={{ display: "flex", gap: 12, marginTop: 30 }}>
+      <div style={{ display: "flex", gap: 14, marginTop: 32 }}>
         <button
           className="btn btn-primary"
           onClick={handleRefresh}
           disabled={isRefreshing}
-          style={{ flex: 1, opacity: isRefreshing ? 0.7 : 1, fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 1 }}
+          style={{ flex: 1, opacity: isRefreshing ? 0.7 : 1, fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 1.2, padding: "12px 16px", borderRadius: 8 }}
         >
           {isRefreshing ? "⏳ Обновление..." : "🔄 Обновить данные"}
         </button>
@@ -338,11 +367,12 @@ export function ProfileSection() {
         <button
           className="btn btn-ghost"
           onClick={handleReset}
-          style={{ flex: 1, borderColor: "rgba(139,32,32,0.3)", color: "var(--error)", fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 1 }}
+          style={{ flex: 1, borderColor: "rgba(139,32,32,0.4)", color: "var(--error)", fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 1.2, padding: "12px 16px", borderRadius: 8 }}
         >
           🗑️ Сброс профиля
-        </button>      </div>
+        </button>
+      </div>
 
     </div>
   );
-}
+    }
