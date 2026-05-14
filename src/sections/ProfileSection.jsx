@@ -42,13 +42,15 @@ function ProfileBlock({ title, illustrationSrc, children, accentColor = "var(--b
     <>
       <div style={{
         position: "relative",
-        background: "linear-gradient(145deg, #ffffff 0%, #f8f4e8 100%)",
-        border: "1.5px solid rgba(0,112,192,0.25)",
+        background: "rgba(255, 255, 255, 0.12)", // Практически прозрачный
+        backdropFilter: "blur(8px)",
+        WebkitBackdropFilter: "blur(8px)",
+        border: "1.5px solid rgba(0,112,192,0.3)",
         borderRadius: 12,
-        marginBottom: 24,
-        overflow: "hidden",
-        boxShadow: "0 4px 16px rgba(0,112,192,0.12)"      }}>
-        {/* Фоновая иллюстрация на всю карточку */}
+        marginBottom: 24,        overflow: "hidden",
+        boxShadow: "0 6px 20px rgba(0,112,192,0.12)"
+      }}>
+        {/* Фоновая иллюстрация: линии выделены сильнее */}
         {illustrationSrc && (
           <img
             src={illustrationSrc}
@@ -59,8 +61,8 @@ function ProfileBlock({ title, illustrationSrc, children, accentColor = "var(--b
               width: "100%",
               height: "100%",
               objectFit: "cover",
-              opacity: 0.07,
-              filter: "grayscale(100%) contrast(110%)",
+              opacity: 0.38,
+              filter: "grayscale(100%) contrast(160%) brightness(95%)",
               mixBlendMode: "multiply",
               zIndex: 0,
               pointerEvents: "none"
@@ -75,17 +77,17 @@ function ProfileBlock({ title, illustrationSrc, children, accentColor = "var(--b
             position: "relative",
             zIndex: 1,
             padding: "16px 20px",
-            background: open ? "rgba(0,112,192,0.08)" : "rgba(0,112,192,0.03)",
+            background: open ? "rgba(255,255,255,0.75)" : "rgba(255,255,255,0.55)",
             cursor: "pointer",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            borderBottom: "1px solid rgba(0,112,192,0.15)",
+            borderBottom: "1px solid rgba(0,112,192,0.2)",
             transition: "background 0.2s"
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-            <div style={{ width: 5, height: 26, background: accentColor, borderRadius: 3, boxShadow: "0 2px 4px rgba(0,0,0,0.1)" }} />
+            <div style={{ width: 5, height: 26, background: accentColor, borderRadius: 3, boxShadow: "0 2px 4px rgba(0,0,0,0.15)" }} />
             <h3 style={{
               fontFamily: "var(--font-head)",
               fontSize: 16,
@@ -94,14 +96,14 @@ function ProfileBlock({ title, illustrationSrc, children, accentColor = "var(--b
               letterSpacing: "0.6px",
               fontWeight: 600
             }}>
-              {title}
-            </h3>
-          </div>          <div style={{
+              {title}            </h3>
+          </div>
+          <div style={{
             fontSize: 18,
             color: "var(--gold)",
             transition: "transform 0.3s",
             transform: open ? "rotate(180deg)" : "rotate(0)",
-            filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.1))"
+            filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.15))"
           }}>
             ▼
           </div>
@@ -113,8 +115,8 @@ function ProfileBlock({ title, illustrationSrc, children, accentColor = "var(--b
             position: "relative",
             zIndex: 1,
             padding: "20px",
-            borderTop: "1px solid rgba(0,112,192,0.15)",
-            background: "rgba(255,255,255,0.92)"
+            borderTop: "1px solid rgba(0,112,192,0.2)",
+            background: "rgba(255,255,255,0.7)"
           }}>
             {children}
           </div>
@@ -143,9 +145,9 @@ export function ProfileSection() {
   const destiny = insights.destiny || { degree: 241, interpretation: "Интеграция опыта" };
 
   const handleRefresh = () => {
-    setIsRefreshing(true);
-    setTimeout(() => { setIsRefreshing(false); notify?.("✅ Данные обновлены"); }, 800);
+    setIsRefreshing(true);    setTimeout(() => { setIsRefreshing(false); notify?.("✅ Данные обновлены"); }, 800);
   };
+
   const handleReset = () => {
     if (window.confirm("Вы уверены? Это удалит ваш профиль и вернет к началу настройки.")) {
       setProfile(null);
@@ -173,7 +175,7 @@ export function ProfileSection() {
         {isMale ? <MaleAvatar size={380} /> : <FemaleAvatar size={380} />}
       </div>
 
-      {/* 2. КАРТОЧКА ПРОФИЛЯ (поверх аватара) */}
+      {/* 2. КАРТОЧКА ПРОФИЛЯ (поверх аватара, прозрачная) */}
       <div className="card" style={{
         position: "relative",
         zIndex: 1,
@@ -182,19 +184,22 @@ export function ProfileSection() {
         borderLeft: "5px solid var(--blue)",
         marginBottom: 32,
         borderRadius: 12,
-        background: "rgba(255,255,255,0.92)",
-        boxShadow: "0 6px 20px rgba(0,112,192,0.12)"
+        background: "rgba(255,255,255,0.12)",
+        backdropFilter: "blur(8px)",
+        WebkitBackdropFilter: "blur(8px)",
+        boxShadow: "0 6px 20px rgba(0,112,192,0.12)",
+        border: "1.5px solid rgba(0,112,192,0.3)"
       }}>
         <h1 style={{
           fontFamily: "var(--font-head)",
           fontSize: 28,
           color: "var(--text1)",
-          margin: "0 0 12px 0",
-          letterSpacing: "1.5px",
+          margin: "0 0 12px 0",          letterSpacing: "1.5px",
           fontWeight: 600
         }}>
           {profile.name || "Пользователь"}
         </h1>
+
         <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap", marginBottom: 18 }}>
           <span className="badge bgr" style={{ fontSize: 13, padding: "5px 12px", fontWeight: 500 }}>🎂 {age ?? "—"} лет</span>
           {profile.chronotype && (
@@ -238,12 +243,12 @@ export function ProfileSection() {
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--error)", letterSpacing: 1.2, marginBottom: 8 }}>◈ УЯЗВИМЫЕ ЗОНЫ</div>
             <p style={{ margin: 0, fontSize: 14 }}>{insights.zodiacWeaknesses || "Лёгкие, бронхи, плечи, нервная система"}</p>
           </div>
-          <div style={{ padding: 16, background: "rgba(0,112,192,0.07)", borderRadius: 10, borderLeft: "4px solid var(--blue)" }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--blue)", letterSpacing: 1.2, marginBottom: 10 }}>◈ КАК ИСПОЛЬЗОВАТЬ</div>
+          <div style={{ padding: 16, background: "rgba(0,112,192,0.07)", borderRadius: 10, borderLeft: "4px solid var(--blue)" }}>            <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--blue)", letterSpacing: 1.2, marginBottom: 10 }}>◈ КАК ИСПОЛЬЗОВАТЬ</div>
             <ul style={{ margin: 0, paddingLeft: 20, fontSize: 14, lineHeight: 1.9 }}>
               <li>Планируй важные дела на утро</li>
               <li>Избегай многозадачности — фокусируйся на одном деле за раз</li>
-              <li>Дыхательные практики укрепляют слабые зоны</li>            </ul>
+              <li>Дыхательные практики укрепляют слабые зоны</li>
+            </ul>
           </div>
         </div>
       </ProfileBlock>
@@ -287,12 +292,12 @@ export function ProfileSection() {
           </div>
           <div style={{ padding: 16, background: "rgba(0,112,192,0.07)", borderRadius: 10, borderLeft: "4px solid var(--blue)" }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--blue)", letterSpacing: 1.2, marginBottom: 10 }}>◈ КАК ИСПОЛЬЗОВАТЬ</div>
-            <ul style={{ margin: 0, paddingLeft: 20, fontSize: 14, lineHeight: 1.9 }}>
-              <li>Доверяй интуиции, проверяй фактами</li>
+            <ul style={{ margin: 0, paddingLeft: 20, fontSize: 14, lineHeight: 1.9 }}>              <li>Доверяй интуиции, проверяй фактами</li>
               <li>Каждое утро спрашивай: «Какой урок я могу извлечь сегодня?»</li>
               <li>Веди дневник наблюдений</li>
             </ul>
-          </div>        </div>
+          </div>
+        </div>
       </ProfileBlock>
 
       {/* 6. ХРОНО-ТИП */}
