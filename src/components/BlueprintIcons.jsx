@@ -1,20 +1,20 @@
 // src/components/BlueprintIcons.jsx
 import React from 'react';
 
-// ─── МЕРИДИАННЫЕ ЧАСЫ (Meridian Clock) ───
+// ─── МЕРИДИАННЫЕ ЧАСЫ ───
 export const MeridianClock = ({ activeMeridian, size = 200 }) => {
   const meridians = [
     { name: 'Лёгкие', time: '3-5' },
-    { name: 'Тол. Кишечник', time: '5-7' },
+    { name: 'Толстый кишечник', time: '5-7' },
     { name: 'Желудок', time: '7-9' },
     { name: 'Селезёнка', time: '9-11' },
     { name: 'Сердце', time: '11-13' },
-    { name: 'Тон. Кишечник', time: '13-15' },
-    { name: 'Мочевой', time: '15-17' },
+    { name: 'Тонкий кишечник', time: '13-15' },
+    { name: 'Мочевой пузырь', time: '15-17' },
     { name: 'Почки', time: '17-19' },
     { name: 'Перикард', time: '19-21' },
-    { name: '3 Обогревателя', time: '21-23' },
-    { name: 'Желчный', time: '23-1' },
+    { name: 'Три обогревателя', time: '21-23' },
+    { name: 'Желчный пузырь', time: '23-1' },
     { name: 'Печень', time: '1-3' }
   ];
 
@@ -23,9 +23,9 @@ export const MeridianClock = ({ activeMeridian, size = 200 }) => {
       <svg width={size} height={size} viewBox="0 0 200 200">
         {/* Фоновая сетка */}
         <defs>
-            <pattern id="clockGrid" width="10" height="10" patternUnits="userSpaceOnUse">
-                <path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(0,112,192,0.05)" strokeWidth="0.5"/>
-            </pattern>
+          <pattern id="clockGrid" width="10" height="10" patternUnits="userSpaceOnUse">
+            <path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(0,112,192,0.05)" strokeWidth="0.5"/>
+          </pattern>
         </defs>
         <circle cx="100" cy="100" r="95" fill="url(#clockGrid)"/>
 
