@@ -2,7 +2,6 @@
 import React from 'react';
 
 // ─── МУЖСКОЙ АВАТАР (Blueprint Style) ───
-// Обновлен: добавлен геометрический стиль, лунные фазы, спираль
 export function MaleAvatar({ size = 80 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 100 100" style={{ filter: "drop-shadow(0 2px 4px rgba(0,112,192,0.15))" }}>
@@ -14,10 +13,6 @@ export function MaleAvatar({ size = 80 }) {
       
       {/* Фон с сеткой */}
       <circle cx="50" cy="50" r="48" fill="url(#mGrid)" stroke="rgba(0,112,192,0.2)" strokeWidth="0.5"/>
-      
-      {/* Вспомогательные линии и геометрия */}
-      <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(0,112,192,0.1)" strokeWidth="0.5" strokeDasharray="2 2"/>
-      <path d="M 20 20 L 80 20 L 80 80 L 20 80 Z" fill="none" stroke="rgba(0,112,192,0.1)" strokeWidth="0.5"/>
       
       {/* Силуэт профиля (мужской) */}
       <path d="M 45 30 Q 40 30 38 40 Q 35 50 40 60 Q 42 65 45 68 Q 48 70 50 68 Q 52 70 55 68 Q 58 65 60 60 Q 65 50 62 40 Q 60 30 55 30" 
@@ -42,18 +37,17 @@ export function MaleAvatar({ size = 80 }) {
 }
 
 // ─── ЖЕНСКИЙ АВАТАР (Blueprint Style) ───
-// Обновлен: добавлен лотос, луны, более изящный профиль
 export function FemaleAvatar({ size = 80 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 100 100" style={{ filter: "drop-shadow(0 2px 4px rgba(200,164,90,0.15))" }}>
       <defs>
-        <pattern id="fGrid" width="5" height="5" patternUnits="userSpaceOnUse">          <path d="M 5 0 L 0 0 0 5" fill="none" stroke="rgba(200,164,90,0.05)" strokeWidth="0.5"/>
+        <pattern id="fGrid" width="5" height="5" patternUnits="userSpaceOnUse">
+          <path d="M 5 0 L 0 0 0 5" fill="none" stroke="rgba(200,164,90,0.05)" strokeWidth="0.5"/>
         </pattern>
       </defs>
       
       {/* Фон */}
-      <circle cx="50" cy="50" r="48" fill="url(#fGrid)" stroke="rgba(200,164,90,0.2)" strokeWidth="0.5"/>
-      
+      <circle cx="50" cy="50" r="48" fill="url(#fGrid)" stroke="rgba(200,164,90,0.2)" strokeWidth="0.5"/>      
       {/* Силуэт профиля (женский) */}
       <path d="M 42 35 Q 38 45 40 55 Q 42 65 45 68 Q 48 70 50 68 Q 52 70 55 68 Q 58 65 60 55 Q 62 45 58 35" 
             fill="none" stroke="var(--gold)" strokeWidth="1.5" strokeLinecap="round"/>
@@ -83,167 +77,125 @@ export function FemaleAvatar({ size = 80 }) {
 }
 
 // ─── ЗАПАДНЫЕ ЗНАКИ ЗОДИАКА (12 знаков) ───
-// Обновлены все 12 знаков, включая 4 недостающих
 export const WesternZodiacIcons = {
   'Овен': () => (
     <svg viewBox="0 0 40 40" width="32" height="32">
-      {/* Рога */}
-      <path d="M 12 25 Q 10 15 15 10 Q 20 5 25 10 Q 30 15 28 25" fill="none" stroke="var(--blue)" strokeWidth="1.5" strokeLinecap="round"/>
-      {/* Голова */}
-      <path d="M 15 25 Q 20 30 25 25" fill="none" stroke="var(--blue)" strokeWidth="1.2"/>
-      {/* Спираль */}
-      <path d="M 20 15 Q 25 20 20 25" fill="none" stroke="var(--gold)" strokeWidth="0.8"/>
-      <circle cx="20" cy="20" r="16" fill="none" stroke="rgba(0,112,192,0.1)" strokeWidth="0.5" strokeDasharray="2 2"/>
+      <path d="M 8 28 Q 12 18 20 20 Q 28 18 32 28" fill="none" stroke="var(--blue)" strokeWidth="2" strokeLinecap="round"/>
+      <path d="M 10 26 Q 14 12 20 14 Q 26 12 30 26" fill="none" stroke="var(--blue)" strokeWidth="1.5" strokeLinecap="round"/>
+      <circle cx="20" cy="20" r="18" fill="none" stroke="rgba(0,112,192,0.2)" strokeWidth="0.5" strokeDasharray="2 2"/>
     </svg>
   ),
-  'Телец': () => (    <svg viewBox="0 0 40 40" width="32" height="32">
-      {/* Рога */}
-      <path d="M 10 15 L 15 20 M 30 15 L 25 20" stroke="var(--blue)" strokeWidth="1.5" strokeLinecap="round"/>
-      {/* Морда */}
-      <path d="M 15 20 Q 20 25 25 20" fill="none" stroke="var(--blue)" strokeWidth="1.2"/>
-      <circle cx="17" cy="22" r="1.5" fill="var(--blue)"/>
-      <circle cx="23" cy="22" r="1.5" fill="var(--blue)"/>
-      {/* Геометрия */}
-      <circle cx="20" cy="20" r="14" fill="none" stroke="rgba(0,112,192,0.1)" strokeWidth="0.5"/>
+  'Телец': () => (
+    <svg viewBox="0 0 40 40" width="32" height="32">
+      <circle cx="20" cy="22" r="10" fill="none" stroke="var(--blue)" strokeWidth="2"/>
+      <path d="M 10 14 L 6 8 M 30 14 L 34 8" stroke="var(--blue)" strokeWidth="2" strokeLinecap="round"/>
+      <path d="M 8 28 Q 20 34 32 28" fill="none" stroke="var(--blue)" strokeWidth="1.5"/>
     </svg>
   ),
   'Близнецы': () => (
     <svg viewBox="0 0 40 40" width="32" height="32">
-      {/* Две фигуры */}
-      <line x1="12" y1="10" x2="12" y2="30" stroke="var(--blue)" strokeWidth="1.5"/>
-      <line x1="28" y1="10" x2="28" y2="30" stroke="var(--blue)" strokeWidth="1.5"/>
-      {/* Связь */}
-      <path d="M 12 20 Q 20 25 28 20" fill="none" stroke="var(--gold)" strokeWidth="0.8"/>
-      {/* Головы */}
-      <circle cx="12" cy="12" r="2" fill="var(--blue)"/>
-      <circle cx="28" cy="12" r="2" fill="var(--blue)"/>
+      <line x1="12" y1="8" x2="12" y2="32" stroke="var(--blue)" strokeWidth="2" strokeLinecap="round"/>
+      <line x1="28" y1="8" x2="28" y2="32" stroke="var(--blue)" strokeWidth="2" strokeLinecap="round"/>
+      <line x1="12" y1="16" x2="28" y2="16" stroke="var(--blue)" strokeWidth="1.5"/>      <line x1="12" y1="24" x2="28" y2="24" stroke="var(--blue)" strokeWidth="1.5"/>
     </svg>
   ),
   'Рак': () => (
     <svg viewBox="0 0 40 40" width="32" height="32">
-      {/* Клешни */}
-      <path d="M 8 15 L 12 20 L 8 25" fill="none" stroke="var(--blue)" strokeWidth="1.5"/>
-      <path d="M 32 15 L 28 20 L 32 25" fill="none" stroke="var(--blue)" strokeWidth="1.5"/>
-      {/* Панцирь */}
-      <path d="M 12 20 Q 20 30 28 20" fill="none" stroke="var(--blue)" strokeWidth="1.2"/>
-      {/* Спираль */}
-      <path d="M 20 25 Q 25 20 20 15" fill="none" stroke="var(--gold)" strokeWidth="0.8"/>
+      <path d="M 6 12 Q 2 16 6 20" fill="none" stroke="var(--blue)" strokeWidth="2" strokeLinecap="round"/>
+      <path d="M 34 12 Q 38 16 34 20" fill="none" stroke="var(--blue)" strokeWidth="2" strokeLinecap="round"/>
+      <circle cx="14" cy="16" r="4" fill="none" stroke="var(--blue)" strokeWidth="1.5"/>
+      <circle cx="26" cy="16" r="4" fill="none" stroke="var(--blue)" strokeWidth="1.5"/>
+      <path d="M 14 20 Q 20 28 26 20" fill="none" stroke="var(--blue)" strokeWidth="1.5"/>
     </svg>
   ),
   'Лев': () => (
     <svg viewBox="0 0 40 40" width="32" height="32">
-      {/* Грива */}
-      <path d="M 20 10 Q 10 15 10 25 Q 15 30 20 30 Q 25 30 30 25 Q 30 15 20 10" fill="none" stroke="var(--blue)" strokeWidth="1.2"/>
-      {/* Морда */}
-      <circle cx="20" cy="22" r="6" fill="none" stroke="var(--gold)" strokeWidth="1"/>
-      <circle cx="17" cy="20" r="1" fill="var(--gold)"/>
-      <circle cx="23" cy="20" r="1" fill="var(--gold)"/>
-      <path d="M 18 25 Q 20 27 22 25" fill="none" stroke="var(--gold)" strokeWidth="0.8"/>
+      <circle cx="20" cy="20" r="8" fill="none" stroke="var(--blue)" strokeWidth="2"/>
+      <path d="M 20 8 L 22 12 M 20 8 L 18 12 M 28 20 L 32 18 M 28 20 L 32 22 M 20 32 L 18 28 M 20 32 L 22 28 M 12 20 L 8 18 M 12 20 L 8 22" stroke="var(--blue)" strokeWidth="1.5" strokeLinecap="round"/>
     </svg>
   ),
   'Дева': () => (
     <svg viewBox="0 0 40 40" width="32" height="32">
-      {/* Две фигуры с колосом */}
-      <line x1="15" y1="10" x2="15" y2="30" stroke="var(--blue)" strokeWidth="1.5"/>
-      <line x1="25" y1="10" x2="25" y2="30" stroke="var(--blue)" strokeWidth="1.5"/>      <path d="M 15 15 L 20 15 M 25 15 L 20 15" stroke="var(--gold)" strokeWidth="0.8"/>
-      {/* Колос */}
-      <path d="M 20 15 L 20 5 M 18 10 L 20 12 L 22 10" stroke="var(--gold)" strokeWidth="0.8"/>
+      <line x1="20" y1="8" x2="20" y2="32" stroke="var(--blue)" strokeWidth="2" strokeLinecap="round"/>
+      <path d="M 14 14 Q 20 10 26 14" fill="none" stroke="var(--blue)" strokeWidth="1.5"/>
+      <path d="M 16 20 L 20 18 L 24 20" fill="none" stroke="var(--blue)" strokeWidth="1.5"/>
+      <path d="M 14 26 Q 20 30 26 26" fill="none" stroke="var(--blue)" strokeWidth="1.5"/>
     </svg>
   ),
   'Весы': () => (
     <svg viewBox="0 0 40 40" width="32" height="32">
-      {/* Основание */}
-      <path d="M 15 30 L 25 30 L 20 10 Z" fill="none" stroke="var(--blue)" strokeWidth="1.2"/>
-      {/* Перекладина */}
-      <line x1="8" y1="15" x2="32" y2="15" stroke="var(--blue)" strokeWidth="1.5"/>
-      {/* Чашки */}
-      <path d="M 8 15 Q 5 25 12 25 M 32 15 Q 35 25 28 25" fill="none" stroke="var(--gold)" strokeWidth="1"/>
+      <line x1="20" y1="6" x2="20" y2="34" stroke="var(--blue)" strokeWidth="1.5"/>
+      <line x1="12" y1="12" x2="28" y2="12" stroke="var(--blue)" strokeWidth="1.5"/>
+      <path d="M 10 12 L 10 22 Q 10 26 14 26 L 18 26" fill="none" stroke="var(--blue)" strokeWidth="1.5"/>
+      <path d="M 30 12 L 30 22 Q 30 26 26 26 L 22 26" fill="none" stroke="var(--blue)" strokeWidth="1.5"/>
     </svg>
   ),
   'Скорпион': () => (
     <svg viewBox="0 0 40 40" width="32" height="32">
-      {/* Тело */}
-      <path d="M 10 20 Q 20 10 30 20 Q 35 25 30 30" fill="none" stroke="var(--blue)" strokeWidth="1.5" strokeLinecap="round"/>
-      {/* Жало */}
-      <path d="M 30 30 L 25 25 L 30 20" fill="none" stroke="var(--gold)" strokeWidth="1"/>
-      {/* Клешни */}
-      <path d="M 10 20 L 5 15 L 10 10" fill="none" stroke="var(--blue)" strokeWidth="1.2"/>
+      <path d="M 10 20 Q 14 14 20 14 Q 26 14 30 20" fill="none" stroke="var(--blue)" strokeWidth="2" strokeLinecap="round"/>
+      <path d="M 30 20 Q 34 26 30 32" fill="none" stroke="var(--blue)" strokeWidth="1.5" strokeLinecap="round"/>
+      <line x1="20" y1="14" x2="20" y2="26" stroke="var(--blue)" strokeWidth="1.5"/>
+      <path d="M 16 20 L 20 24 L 24 20" fill="none" stroke="var(--blue)" strokeWidth="1.5"/>
     </svg>
   ),
   'Стрелец': () => (
     <svg viewBox="0 0 40 40" width="32" height="32">
-      {/* Лук */}
-      <path d="M 10 30 Q 15 20 30 10" fill="none" stroke="var(--blue)" strokeWidth="1.5" strokeLinecap="round"/>
-      {/* Стрела */}
-      <line x1="10" y1="30" x2="30" y2="10" stroke="var(--gold)" strokeWidth="1"/>
-      {/* Оперение */}
-      <path d="M 12 28 L 10 30 L 8 28" stroke="var(--gold)" strokeWidth="0.8"/>
-      {/* Звезда */}
-      <path d="M 30 10 L 32 5 L 28 8 L 35 8 L 31 5 Z" fill="var(--gold)" opacity="0.5"/>
+      <line x1="8" y1="32" x2="32" y2="8" stroke="var(--blue)" strokeWidth="2" strokeLinecap="round"/>
+      <path d="M 24 8 L 32 8 L 32 16" fill="none" stroke="var(--blue)" strokeWidth="1.5" strokeLinecap="round"/>
+      <circle cx="32" cy="8" r="2" fill="var(--blue)"/>
     </svg>
   ),
-  'Козерог': () => (
+  'Козерог': () => (    <svg viewBox="0 0 40 40" width="32" height="32">
+      <path d="M 10 12 Q 14 8 18 12 Q 22 16 26 12 Q 30 8 34 12" fill="none" stroke="var(--blue)" strokeWidth="1.5" strokeLinecap="round"/>
+      <path d="M 10 12 Q 6 20 10 28 Q 14 32 20 28 Q 26 24 30 28" fill="none" stroke="var(--blue)" strokeWidth="2" strokeLinecap="round"/>
+    </svg>
+  ),
+  'Водолей': () => (
     <svg viewBox="0 0 40 40" width="32" height="32">
-      {/* Голова козла */}
-      <path d="M 15 15 Q 20 10 25 15 Q 30 20 25 25 Q 20 30 15 25 Q 10 20 15 15" fill="none" stroke="var(--blue)" strokeWidth="1.2"/>
-      {/* Рога */}
-      <path d="M 15 15 L 10 5 M 25 15 L 30 5" stroke="var(--blue)" strokeWidth="1.5" strokeLinecap="round"/>
-      {/* Рыбий хвост */}
-      <path d="M 15 25 Q 20 35 25 25" fill="none" stroke="var(--gold)" strokeWidth="1"/>
-      {/* Гора */}
-      <path d="M 5 30 L 20 15 L 35 30" fill="none" stroke="rgba(0,112,192,0.2)" strokeWidth="0.5"/>
-    </svg>
-  ),
-  'Водолей': () => (    <svg viewBox="0 0 40 40" width="32" height="32">
-      {/* Волны */}
-      <path d="M 5 15 Q 10 10 15 15 T 25 15 T 35 15" fill="none" stroke="var(--blue)" strokeWidth="1.5"/>
-      <path d="M 5 25 Q 10 20 15 25 T 25 25 T 35 25" fill="none" stroke="var(--blue)" strokeWidth="1.5"/>
-      {/* Кувшин */}
-      <path d="M 25 10 Q 30 15 25 20 Q 20 25 25 30" fill="none" stroke="var(--gold)" strokeWidth="1"/>
+      <path d="M 8 16 Q 14 12 20 16 Q 26 20 32 16" fill="none" stroke="var(--blue)" strokeWidth="2" strokeLinecap="round"/>
+      <path d="M 8 24 Q 14 20 20 24 Q 26 28 32 24" fill="none" stroke="var(--blue)" strokeWidth="2" strokeLinecap="round"/>
     </svg>
   ),
   'Рыбы': () => (
     <svg viewBox="0 0 40 40" width="32" height="32">
-      {/* Две рыбы */}
-      <path d="M 5 20 Q 10 10 20 20 Q 10 30 5 20" fill="none" stroke="var(--blue)" strokeWidth="1.2"/>
-      <path d="M 35 20 Q 30 10 20 20 Q 30 30 35 20" fill="none" stroke="var(--blue)" strokeWidth="1.2"/>
-      {/* Нить */}
-      <line x1="20" y1="10" x2="20" y2="30" stroke="var(--gold)" strokeWidth="0.8"/>
+      <path d="M 10 12 Q 6 20 10 28" fill="none" stroke="var(--blue)" strokeWidth="2" strokeLinecap="round"/>
+      <path d="M 30 12 Q 34 20 30 28" fill="none" stroke="var(--blue)" strokeWidth="2" strokeLinecap="round"/>
+      <line x1="10" y1="20" x2="30" y2="20" stroke="var(--blue)" strokeWidth="1.5" strokeDasharray="3 2"/>
     </svg>
   )
 };
 
 // ─── ВОСТОЧНЫЕ ЗНАКИ (12 животных) ───
-// Оставлены как есть, так как новые рисунки не присылались, но можно добавить геометрию
 export const EasternZodiacIcons = {
   'Крыса': () => (
     <svg viewBox="0 0 40 40" width="32" height="32">
       <circle cx="20" cy="22" r="8" fill="none" stroke="var(--gold)" strokeWidth="1.5"/>
-      <path d="M 12 22 Q 8 20 6 22" fill="none" stroke="var(--gold)" strokeWidth="1"/>
-      <path d="M 28 22 Q 32 20 34 22" fill="none" stroke="var(--gold)" strokeWidth="1"/>
-      <circle cx="17" cy="20" r="1" fill="var(--gold)"/>
-      <circle cx="23" cy="20" r="1" fill="var(--gold)"/>
+      <circle cx="14" cy="18" r="2" fill="var(--gold)"/>
+      <circle cx="26" cy="18" r="2" fill="var(--gold)"/>
+      <path d="M 20 14 L 20 10 M 18 12 L 22 12" stroke="var(--gold)" strokeWidth="1"/>
+      <path d="M 12 22 Q 6 24 6 28" stroke="var(--gold)" strokeWidth="1.5" strokeLinecap="round"/>
+      <path d="M 28 22 Q 34 24 34 28" stroke="var(--gold)" strokeWidth="1.5" strokeLinecap="round"/>
     </svg>
   ),
   'Бык': () => (
     <svg viewBox="0 0 40 40" width="32" height="32">
-      <ellipse cx="20" cy="22" rx="9" ry="7" fill="none" stroke="var(--gold)" strokeWidth="1.5"/>
-      <path d="M 13 18 L 10 12 M 27 18 L 30 12" stroke="var(--gold)" strokeWidth="1.5" strokeLinecap="round"/>
-      <circle cx="17" cy="21" r="1.5" fill="var(--gold)"/>
-      <circle cx="23" cy="21" r="1.5" fill="var(--gold)"/>
+      <ellipse cx="20" cy="24" rx="10" ry="8" fill="none" stroke="var(--gold)" strokeWidth="1.5"/>
+      <path d="M 12 18 L 8 12 M 28 18 L 32 12" stroke="var(--gold)" strokeWidth="2" strokeLinecap="round"/>
+      <circle cx="16" cy="22" r="2" fill="var(--gold)"/>
+      <circle cx="24" cy="22" r="2" fill="var(--gold)"/>
     </svg>
   ),
   'Тигр': () => (
     <svg viewBox="0 0 40 40" width="32" height="32">
       <circle cx="20" cy="22" r="9" fill="none" stroke="var(--gold)" strokeWidth="1.5"/>
-      <path d="M 12 16 L 10 10 M 20 14 L 20 8 M 28 16 L 30 10" stroke="var(--gold)" strokeWidth="1.5" strokeLinecap="round"/>
-      <path d="M 14 22 L 12 24 M 26 22 L 28 24" stroke="var(--gold)" strokeWidth="1"/>
-      <circle cx="17" cy="21" r="1" fill="var(--gold)"/>
-      <circle cx="23" cy="21" r="1" fill="var(--gold)"/>
+      <path d="M 14 16 L 12 10 M 20 14 L 20 8 M 26 16 L 28 10" stroke="var(--gold)" strokeWidth="1.5" strokeLinecap="round"/>
+      <path d="M 12 20 L 16 22 L 12 24 M 28 20 L 24 22 L 28 24" stroke="var(--gold)" strokeWidth="1.5" strokeLinecap="round"/>
+      <circle cx="16" cy="22" r="1.5" fill="var(--gold)"/>
+      <circle cx="24" cy="22" r="1.5" fill="var(--gold)"/>
     </svg>
   ),
-  'Кролик': () => (
-    <svg viewBox="0 0 40 40" width="32" height="32">      <ellipse cx="20" cy="24" rx="8" ry="7" fill="none" stroke="var(--gold)" strokeWidth="1.5"/>
+  'Кролик': () => (    <svg viewBox="0 0 40 40" width="32" height="32">
+      <ellipse cx="20" cy="24" rx="8" ry="7" fill="none" stroke="var(--gold)" strokeWidth="1.5"/>
       <ellipse cx="16" cy="14" rx="2" ry="6" fill="none" stroke="var(--gold)" strokeWidth="1.5"/>
       <ellipse cx="24" cy="14" rx="2" ry="6" fill="none" stroke="var(--gold)" strokeWidth="1.5"/>
       <circle cx="17" cy="23" r="1.5" fill="var(--gold)"/>
@@ -254,9 +206,9 @@ export const EasternZodiacIcons = {
     <svg viewBox="0 0 40 40" width="32" height="32">
       <path d="M 10 24 Q 14 18 20 20 Q 26 18 30 24" fill="none" stroke="var(--gold)" strokeWidth="1.5"/>
       <path d="M 12 16 Q 16 12 20 14 Q 24 12 28 16" fill="none" stroke="var(--gold)" strokeWidth="1.5"/>
+      <path d="M 20 14 L 20 8 M 18 10 L 22 10" stroke="var(--gold)" strokeWidth="1"/>
       <circle cx="17" cy="22" r="1.5" fill="var(--gold)"/>
       <circle cx="23" cy="22" r="1.5" fill="var(--gold)"/>
-      <path d="M 20 14 L 20 8 M 18 10 L 22 10" stroke="var(--gold)" strokeWidth="1"/>
     </svg>
   ),
   'Змея': () => (
@@ -265,6 +217,7 @@ export const EasternZodiacIcons = {
       <circle cx="20" cy="18" r="4" fill="none" stroke="var(--gold)" strokeWidth="1.5"/>
       <circle cx="18" cy="17" r="1" fill="var(--gold)"/>
       <circle cx="22" cy="17" r="1" fill="var(--gold)"/>
+      <path d="M 20 20 L 20 22" stroke="var(--gold)" strokeWidth="1"/>
     </svg>
   ),
   'Лошадь': () => (
@@ -281,6 +234,7 @@ export const EasternZodiacIcons = {
       <path d="M 14 18 Q 12 14 14 12 M 26 18 Q 28 14 26 12" stroke="var(--gold)" strokeWidth="1.5" strokeLinecap="round"/>
       <circle cx="17" cy="23" r="1.5" fill="var(--gold)"/>
       <circle cx="23" cy="23" r="1.5" fill="var(--gold)"/>
+      <path d="M 16 28 Q 20 30 24 28" stroke="var(--gold)" strokeWidth="1" strokeLinecap="round"/>
     </svg>
   ),
   'Обезьяна': () => (
@@ -289,10 +243,11 @@ export const EasternZodiacIcons = {
       <path d="M 12 20 Q 8 18 8 22 Q 8 26 12 24" stroke="var(--gold)" strokeWidth="1.5" fill="none"/>
       <path d="M 28 20 Q 32 18 32 22 Q 32 26 28 24" stroke="var(--gold)" strokeWidth="1.5" fill="none"/>
       <circle cx="17" cy="21" r="1.5" fill="var(--gold)"/>
-      <circle cx="23" cy="21" r="1.5" fill="var(--gold)"/>
+      <circle cx="23" cy="21" r="1.5" fill="var(--gold)"/>      <path d="M 18 26 Q 20 28 22 26" stroke="var(--gold)" strokeWidth="1" strokeLinecap="round"/>
     </svg>
   ),
-  'Петух': () => (    <svg viewBox="0 0 40 40" width="32" height="32">
+  'Петух': () => (
+    <svg viewBox="0 0 40 40" width="32" height="32">
       <circle cx="22" cy="24" r="7" fill="none" stroke="var(--gold)" strokeWidth="1.5"/>
       <path d="M 16 18 L 14 12 L 18 14 L 20 10 L 22 16" stroke="var(--gold)" strokeWidth="1.5" fill="none"/>
       <circle cx="24" cy="22" r="1.5" fill="var(--gold)"/>
