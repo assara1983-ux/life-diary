@@ -31,6 +31,7 @@ function BlueprintCard({ title, illustrationSrc, accentColor = "var(--blue)", ch
           position: "relative",
           borderBottom: "1px solid rgba(0,112,192,0.15)"
         }}>
+          {/* Фоновая сетка на шапке для стиля */}
           <div style={{
             position: "absolute",
             inset: 0,
@@ -44,10 +45,12 @@ function BlueprintCard({ title, illustrationSrc, accentColor = "var(--blue)", ch
               height: 90,
               objectFit: "contain",
               opacity: 0.9,
-              filter: "drop-shadow(0 2px 4px rgba(0,112,192,0.15))",
-              zIndex: 1
+              // ✅ ГЛАВНОЕ ИСПРАВЛЕНИЕ: multiply делает белый фон прозрачным
+              mixBlendMode: "multiply", 
+              filter: "drop-shadow(0 2px 4px rgba(0,112,192,0.15))",              zIndex: 1
             }}
-            onError={(e) => { e.target.style.display = "none"; }}          />
+            onError={(e) => { e.target.style.display = "none"; }}
+          />
         </div>
       )}
 
@@ -93,10 +96,10 @@ function BlueprintCard({ title, illustrationSrc, accentColor = "var(--blue)", ch
         <div style={{
           padding: "18px 16px",
           borderTop: "1px solid rgba(0,112,192,0.1)",
-          background: "rgba(255,255,255,0.9)"
-        }}>
+          background: "rgba(255,255,255,0.9)"        }}>
           {children}
-        </div>      )}
+        </div>
+      )}
     </div>
   );
 }
@@ -142,10 +145,10 @@ export function ProfileSection() {
     }
   };
 
-  return (
-    <div className="page" style={{ paddingBottom: 100 }}>
+  return (    <div className="page" style={{ paddingBottom: 100 }}>
       {/* 1. ШАПКА ПРОФИЛЯ */}
-      <div className="card" style={{        textAlign: "center",
+      <div className="card" style={{
+        textAlign: "center",
         padding: "28px 20px",
         borderLeft: "5px solid var(--blue)",
         marginBottom: 28,
@@ -191,9 +194,9 @@ export function ProfileSection() {
             <span className="badge bt" style={{ fontSize: 13, padding: "5px 12px" }}>⏱ {profile.chronotype}</span>
           )}
           {insights.zodiac && (
-            <span className="badge bm" style={{ fontSize: 13, padding: "5px 12px" }}>♈ {insights.zodiac}</span>
-          )}
+            <span className="badge bm" style={{ fontSize: 13, padding: "5px 12px" }}>♈ {insights.zodiac}</span>          )}
         </div>
+
         <div style={{
           fontSize: 14,
           color: "var(--text2)",
@@ -240,10 +243,10 @@ export function ProfileSection() {
       </BlueprintCard>
 
       {/* 3. ВОСТОЧНЫЙ ЗНАК */}
-      <BlueprintCard title="Восточный Знак" illustrationSrc={easternImgSrc} accentColor="var(--gold)">
-        <div style={{ fontSize: 14, lineHeight: 1.75, color: "var(--text2)" }}>
+      <BlueprintCard title="Восточный Знак" illustrationSrc={easternImgSrc} accentColor="var(--gold)">        <div style={{ fontSize: 14, lineHeight: 1.75, color: "var(--text2)" }}>
           <p style={{ marginBottom: 18 }}>
-            <strong style={{ color: "var(--gold-dark)", fontSize: 17 }}>{insights.eastern || "—"}</strong>{" "}            <span>({insights.easternElement || "Вода"}).</span>
+            <strong style={{ color: "var(--gold-dark)", fontSize: 17 }}>{insights.eastern || "—"}</strong>{" "}
+            <span>({insights.easternElement || "Вода"}).</span>
           </p>
           <div style={{ padding: 16, background: "rgba(200,164,90,0.07)", borderRadius: 10, marginBottom: 16, borderLeft: "4px solid var(--gold)" }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--gold-dark)", letterSpacing: 1.2, marginBottom: 8 }}>◈ ЭНЕРГЕТИЧЕСКИЙ ПОРТРЕТ</div>
@@ -289,10 +292,10 @@ export function ProfileSection() {
           </div>
           <div style={{ padding: 16, background: "rgba(0,112,192,0.06)", borderRadius: 10, borderLeft: "4px solid var(--blue)" }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--blue)", letterSpacing: 1.2, marginBottom: 10 }}>◈ КАК ИСПОЛЬЗОВАТЬ</div>
-            <ul style={{ margin: 0, paddingLeft: 20, fontSize: 14, lineHeight: 1.9 }}>
-              <li>Доверяй интуиции, проверяй фактами</li>
+            <ul style={{ margin: 0, paddingLeft: 20, fontSize: 14, lineHeight: 1.9 }}>              <li>Доверяй интуиции, проверяй фактами</li>
               <li>Каждое утро спрашивай: «Какой урок я могу извлечь сегодня?»</li>
-              <li>Веди дневник наблюдений</li>            </ul>
+              <li>Веди дневник наблюдений</li>
+            </ul>
           </div>
         </div>
       </BlueprintCard>
@@ -338,11 +341,11 @@ export function ProfileSection() {
         </button>
         <button
           className="btn btn-ghost"
-          onClick={handleReset}
-          style={{ flex: 1, borderColor: "rgba(139,32,32,0.4)", color: "var(--error)", fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 1.2, padding: "12px 16px", borderRadius: 8 }}
+          onClick={handleReset}          style={{ flex: 1, borderColor: "rgba(139,32,32,0.4)", color: "var(--error)", fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 1.2, padding: "12px 16px", borderRadius: 8 }}
         >
-          🗑️ Сброс профиля        </button>
+          🗑️ Сброс профиля
+        </button>
       </div>
     </div>
   );
-}
+                                                                                                   }
