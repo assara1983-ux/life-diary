@@ -1,162 +1,202 @@
 // src/sections/ProfileSection.jsx
 import React, { useState } from "react";
 import { useApp } from "../store/AppContext";
-import { getProfileInsights, getMoonDay, getCurrentMeridian } from "../utils/knowledgeEngine";
-// ─── ИМПОРТ ГРАФИЧЕСКИХ КОМПОНЕНТОВ ───
-import { MaleAvatar, FemaleAvatar } from "../components/BlueprintAvatars";
-import { WesternZodiacIcons, EasternZodiacIcons } from "../components/BlueprintAvatars";
-import { MeridianClock, LifeCycleSpiral } from "../components/BlueprintIcons";
+import { getProfileInsights } from "../utils/knowledgeEngine";
+import { MaleAvatar, FemaleAvatar, WesternZodiacIcons, EasternZodiacIcons } from "../components/BlueprintAvatars";
 
-// ─── ВСПОМОГАТЕЛЬНЫЕ КОМПОНЕНТЫ ───
+// ─── КОМПОНЕНТ АККОРДЕОНА (Blueprint Style) ───
 function Accordion({ title, icon, children, defaultOpen = false }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div style={{ background: "#fff", border: "1.5px solid rgba(0,112,192,0.2)", borderRadius: 8, marginBottom: 16, overflow: "hidden" }}>
-      <div onClick={() => setOpen(!open)} style={{ padding: "16px", background: "rgba(0,112,192,0.05)", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+    <div style={{ 
+      background: "#fff", 
+      border: "1.5px solid rgba(0,112,192,0.2)", 
+      borderRadius: 8, 
+      marginBottom: 14, 
+      overflow: "hidden",
+      boxShadow: "0 2px 6px rgba(0,112,192,0.05)"
+    }}>
+      <div 
+        onClick={() => setOpen(!open)} 
+        style={{ 
+          padding: "14px 16px", 
+          background: open ? "rgba(0,112,192,0.06)" : "rgba(0,112,192,0.02)", 
+          cursor: "pointer", 
+          display: "flex", 
+          justifyContent: "space-between", 
+          alignItems: "center",
+          transition: "background 0.2s"
+        }}
+      >
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <span style={{ fontSize: 24 }}>{icon}</span>
-          <h3 style={{ fontFamily: "var(--font-head)", fontSize: 16, color: "var(--blue)", margin: 0 }}>{title}</h3>
+          {/* Иконка зодиака или эмодзи */}
+          <span style={{ fontSize: 22, width: 28, textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center" }}>{icon}</span>
+          <h3 style={{ fontFamily: "var(--font-head)", fontSize: 15, color: "var(--blue)", margin: 0, letterSpacing: "0.5px" }}>
+            {title}
+          </h3>
         </div>
-        <div style={{ fontSize: 20, color: "var(--gold)", transition: "transform 0.3s", transform: open ? "rotate(180deg)" : "rotate(0)" }}>▼</div>
+        <div style={{ fontSize: 16, color: "var(--gold)", transition: "transform 0.3s", transform: open ? "rotate(180deg)" : "rotate(0)" }}>▼</div>
       </div>
-      {open && <div style={{ padding: "16px", borderTop: "1px solid rgba(0,112,192,0.1)" }}>{children}</div>}
-    </div>
-  );
-}
-
-function InsightCard({ title, icon, meaning, impact, action }) {
-  return (
-    <div style={{ background: "rgba(200,164,90,0.05)", border: "1.5px solid rgba(200,164,90,0.2)", borderRadius: 8, padding: 16, marginBottom: 16 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-        <span style={{ fontSize: 24 }}>{icon}</span>
-        <h3 style={{ fontFamily: "var(--font-head)", fontSize: 16, color: "var(--gold-dark)", margin: 0 }}>{title}</h3>
-      </div>
-      <div style={{ fontSize: 14, lineHeight: 1.6, marginBottom: 12 }}>{meaning}</div>
-      <div style={{ padding: 12, background: "rgba(255,255,255,0.6)", borderRadius: 6, borderLeft: "3px solid var(--gold)", marginBottom: 12 }}>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--gold-dark)", letterSpacing: 1, marginBottom: 4 }}>◈ ЧТО ЭТО ЗНАЧИТ ДЛЯ ТЕБЯ</div>
-        <div style={{ fontSize: 13, lineHeight: 1.5, color: "var(--text2)" }}>{impact}</div>
-      </div>
-      {action && (
-        <div style={{ padding: 10, background: "rgba(255,255,255,0.4)", borderRadius: 6, fontSize: 12, color: "var(--text2)", display: "flex", alignItems: "flex-start", gap: 8 }}>
-          <span style={{ fontSize: 16 }}>💡</span>
-          <div>
-            <strong style={{ display: "block", marginBottom: 4, color: "var(--gold-dark)" }}>Как использовать:</strong>
-            {action}
-          </div>
+      {open && (
+        <div style={{ padding: "16px", borderTop: "1px solid rgba(0,112,192,0.1)", background: "rgba(255,255,255,0.8)" }}>
+          {children}
         </div>
       )}
     </div>
   );
 }
+
 // ─── ОСНОВНОЙ КОМПОНЕНТ ───
-export function ProfileSection() {
-  const { profile } = useApp();
-  const [activeTab, setActiveTab] = useState("about");
+export function ProfileSection() {  const { profile, setProfile, notify } = useApp();
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  if (!profile) return <div style={{ padding: 40, textAlign: "center", color: "var(--text3)" }}>Загрузка профиля...</div>;
+
   const insights = getProfileInsights(profile);
-  const meridian = getCurrentMeridian();
-  const moonDay = getMoonDay();
   const age = profile?.dob ? Math.floor((new Date() - new Date(profile.dob)) / (365.25 * 24 * 60 * 60 * 1000)) : null;
-
-  if (!profile) return <div style={{ padding: 40, textAlign: "center" }}>Загрузка...</div>;
-
-  // ✅ ИСПРАВЛЕНО: .trim() для совместимости с ключами из profileKnowledge.js
+  
+  // Безопасный доступ к иконкам
   const WesternIcon = WesternZodiacIcons[insights.zodiac?.trim()] || WesternZodiacIcons['Близнецы'];
   const EasternIcon = EasternZodiacIcons[insights.eastern?.trim()] || EasternZodiacIcons['Свинья'];
 
+  // Обработчик кнопки "Обновить"
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    // Имитация обновления данных
+    setTimeout(() => {
+      setIsRefreshing(false);
+      notify?.("✅ Данные обновлены");
+    }, 800);
+  };
+
+  // Обработчик кнопки "Сброс"
+  const handleReset = () => {
+    if (window.confirm("Вы уверены? Это удалит ваш профиль и вернет к началу настройки.")) {
+      setProfile(null);
+      notify?.("🗑️ Профиль сброшен");
+    }
+  };
+
   return (
-    <div className="page">
-      {/* ШАПКА */}
-      <div className="card" style={{ borderLeft: "4px solid var(--blue)", marginBottom: 20 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "20px", marginBottom: "20px" }}>
-          <div style={{ flexShrink: 0 }}>
-            {/* ✅ ИСПРАВЛЕНО: проверка на "Мужской" вместо "male" */}
-            {profile.gender === 'Мужской' ? <MaleAvatar size={120} /> : <FemaleAvatar size={120} />}
-          </div>
-          <div style={{ flexGrow: 1 }}>
-            <h1 style={{ fontFamily: "var(--font-head)", fontSize: 24, color: "var(--blue)", margin: 0 }}>{profile.name}</h1>
-            <div style={{ fontFamily: "var(--font-italic)", fontSize: 13, color: "var(--text3)", fontStyle: "italic", marginBottom: 12 }}>{profile.fullName}</div>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <span className="badge bgr">🎂 {age} лет</span>
-              <span className="badge bt">{profile.chronotype}</span>
-            </div>
-          </div>
+    <div className="page" style={{ paddingBottom: 100 }}>
+      
+      {/* 1. ВЕРХНЯЯ КАРТОЧКА: Аватар, Имя, Возраст */}
+      <div className="card" style={{ display: "flex", alignItems: "center", gap: "18px", marginBottom: 24, borderLeft: "5px solid var(--blue)", padding: "20px" }}>
+        <div style={{ flexShrink: 0, width: 75, height: 75, borderRadius: "50%", overflow: "hidden", border: "2px solid var(--bg)", boxShadow: "0 4px 12px rgba(0,112,192,0.15)" }}>
+           {profile.gender === 'Мужской' 
+             ? <MaleAvatar size={75} /> 
+             : <FemaleAvatar size={75} />}
         </div>
-        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "30px", marginTop: "16px", borderTop: "1px solid var(--line)", paddingTop: "16px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <WesternIcon />
-            <div><div style={{ fontSize: 9, color: "var(--text3)", fontFamily: "var(--font-mono)" }}>ЗАПАДНЫЙ</div><div style={{ fontSize: 14, fontWeight: 600, color: "var(--blue)" }}>{insights.zodiac}</div></div>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <EasternIcon />
-            <div><div style={{ fontSize: 9, color: "var(--text3)", fontFamily: "var(--font-mono)" }}>ВОСТОЧНЫЙ</div><div style={{ fontSize: 14, fontWeight: 600, color: "var(--gold)" }}>{insights.eastern}</div></div>
-          </div>
-        </div>
-        <div style={{ textAlign: "center", marginTop: "20px", padding: "16px", background: "rgba(200,164,90,0.05)", borderRadius: 8 }}>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--text3)", letterSpacing: 1.5, marginBottom: 4 }}>ГРАДУС СУДЬБЫ</div>
-          <div style={{ fontFamily: "var(--font-head)", fontSize: 32, color: "var(--gold)", fontWeight: 600 }}>{insights.destiny?.degree || 241}°</div>
-          <div style={{ fontFamily: "var(--font-italic)", fontSize: 12, color: "var(--text3)", marginTop: 8 }}>{insights.destiny?.interpretation}</div>
-        </div>
-      </div>
-      {/* ТАБЫ */}
-      <div className="tabs" style={{ marginBottom: 20 }}>
-        <button className={`tab ${activeTab === "about" ? "on" : ""}`} onClick={() => setActiveTab("about")}>О тебе</button>
-        <button className={`tab ${activeTab === "cycles" ? "on" : ""}`} onClick={() => setActiveTab("cycles")}>Циклы</button>
+        <div style={{ flexGrow: 1 }}>
+          <h1 style={{ fontFamily: "var(--font-head)", fontSize: 22, color: "var(--blue)", margin: "0 0 6px 0", letterSpacing: "1px" }}>
+            {profile.name || "Пользователь"}
+          </h1>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+            <span className="badge bgr" style={{ fontSize: 11 }}>🎂 {age ?? "—"} лет</span>
+            {profile.chronotype && (
+              <span className="badge bt" style={{ fontSize: 11 }}>⏱ {profile.chronotype}</span>
+            )}
+          </div>        </div>
       </div>
 
-      {/* ВКЛАДКА: О ТЕБЕ */}
-      {activeTab === "about" && (
-        <div>
-          <InsightCard
-            title="Градус Судьбы"
-            icon="🧭"
-            meaning={`Твой градус ${insights.destiny?.degree || 241}° находится в зоне "${insights.destiny?.interpretation || "Интеграция опыта"}".`}
-            impact="Ты прошла большой путь накопления опыта. Сейчас твоя суперсила — видеть суть вещей, которую другие не замечают."
-            action="Каждое утро спрашивай себя: 'Какой урок я могу извлечь из сегодняшнего дня?'"
-          />
-          <Accordion title="Астрологический портрет" icon="♈" defaultOpen={true}>
-            <div style={{ fontSize: 14, lineHeight: 1.6, marginBottom: 12 }}><strong>{insights.zodiac}</strong> ({insights.zodiacElement || "Воздух"}) под управлением {insights.rulingPlanet || "Меркурия"}.</div>
-            <div style={{ padding: 12, background: "rgba(0,112,192,0.05)", borderRadius: 6, borderLeft: "3px solid var(--blue)", marginBottom: 12 }}>
-              <div style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--blue)", marginBottom: 4 }}>◈ ЧТО ЭТО ЗНАЧИТ ДЛЯ ТЕБЯ</div>
-              <div style={{ fontSize: 13, lineHeight: 1.5, color: "var(--text2)" }}>Твоя стихия наделяет тебя адаптивностью. Слабые зоны — {insights.zodiacWeaknesses || "лёгкие и нервная система"}.</div>
-            </div>
-            <div style={{ padding: 10, background: "rgba(255,255,255,0.4)", borderRadius: 6, fontSize: 12, color: "var(--text2)" }}>
-              <strong style={{ color: "var(--blue)", display: "block", marginBottom: 4 }}>💡 Как использовать:</strong>
-              Планируй важные дела на утро. Избегай многозадачности.
-            </div>
-          </Accordion>
-          <Accordion title="Восточный знак" icon="🐗">
-            <div style={{ fontSize: 14, lineHeight: 1.6, marginBottom: 12 }}><strong>{insights.eastern}</strong> ({insights.easternElement || "Вода"}).</div>
-            <div style={{ fontSize: 13, lineHeight: 1.5, color: "var(--text2)" }}>{insights.eastern} наделяет тебя {insights.easternTraits || "честностью и терпимостью"}. Задача — {insights.easternKarma || "научиться говорить 'нет'"}.</div>
-          </Accordion>
-          <Accordion title="Хроно-тип" icon="🦉">
-            <div style={{ fontSize: 14, lineHeight: 1.6, marginBottom: 12 }}><strong>{profile.chronotype || "🕊️ Голубь"}</strong></div>
-            <div style={{ fontSize: 13, lineHeight: 1.5, color: "var(--text2)" }}>
-              {profile.chronotype?.includes("Сова") ? "Пик продуктивности вечером. Утро — для рутины." : "Пик активности в первой половине дня. Вечером энергия падает."}
-            </div>
-          </Accordion>
-        </div>
-      )}
-
-      {/* ВКЛАДКА: ЦИКЛЫ */}
-      {activeTab === "cycles" && (
-        <div>
-          <div className="card" style={{ marginBottom: 20 }}><MeridianClock activeMeridian={meridian.name} /></div>
-          <div className="card" style={{ marginBottom: 20 }}>
-            <div style={{ fontSize: 18, fontFamily: "var(--font-head)", color: "var(--gold-dark)", marginBottom: 16 }}>🌙 ЛУННЫЙ ЦИКЛ</div>
-            <div style={{ fontSize: 14, lineHeight: 1.6, color: "var(--text2)" }}>
-              <div style={{ marginBottom: 8 }}><strong>Сейчас:</strong> {moonDay > 25 ? "Завершение лунного месяца" : moonDay > 15 ? "Убывающая Луна" : "Растущая Луна"}</div>
-              <div style={{ marginBottom: 8 }}><strong>Запрет сегодня:</strong> {insights.moonRestriction?.forbidden || "Нет строгих запретов"}</div>              <div><strong>Рекомендация:</strong> {moonDay > 25 ? "Завершай начатое." : moonDay > 15 ? "Время очищения." : "Время роста и новых начинаний."}</div>
-            </div>
+      {/* 2. АККОРДЕОН: ЗАПАДНЫЙ ЗОДИАК */}
+      <Accordion title="Западный Зодиак" icon={<WesternIcon />} defaultOpen={false}>
+        <div style={{ fontSize: 14, lineHeight: 1.6, color: "var(--text2)" }}>
+          <div style={{ marginBottom: 12 }}>
+            <strong style={{ color: "var(--blue)", fontSize: 16 }}>{insights.zodiac || "—"}</strong> 
+            <span style={{ opacity: 0.8 }}> ({insights.zodiacElement || "Воздух"}) под управлением {insights.rulingPlanet || "Меркурия"}.</span>
           </div>
-          <div className="card"><LifeCycleSpiral age={age} /></div>
+          
+          <div style={{ padding: 12, background: "rgba(0,112,192,0.05)", borderRadius: 6, borderLeft: "3px solid var(--blue)", marginBottom: 12 }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--blue)", letterSpacing: 1, marginBottom: 6 }}>◈ ЧТО ЭТО ЗНАЧИТ ДЛЯ ТЕБЯ</div>
+            <p style={{ margin: 0 }}>
+              Твоя стихия наделяет тебя интеллектуальной гибкостью и адаптивностью. 
+              Ты лучше всего чувствуешь себя в среде, где есть обмен информацией. 
+              Слабые зоны — {insights.zodiacWeaknesses || "нервная система и лёгкие"}.
+            </p>
+          </div>
+          
+          <div style={{ fontSize: 13, color: "var(--text3)", fontStyle: "italic" }}>
+            💡 <strong>Совет:</strong> Планируй важные дела на утро. Избегай многозадачности.
+          </div>
         </div>
-      )}
+      </Accordion>
 
-      {/* КНОПКИ */}
-      <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
-        <button className="btn btn-primary" style={{ flex: 1, fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 1 }}>✎ РЕДАКТИРОВАТЬ</button>
-        <button className="btn btn-ghost" style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 1 }}>📊 АНАЛИЗ</button>
+      {/* 3. АККОРДЕОН: ВОСТОЧНЫЙ ЗНАК */}
+      <Accordion title="Восточный Знак" icon={<EasternIcon />} defaultOpen={false}>
+        <div style={{ fontSize: 14, lineHeight: 1.6, color: "var(--text2)" }}>
+           <div style={{ marginBottom: 12 }}>
+            <strong style={{ color: "var(--gold-dark)", fontSize: 16 }}>{insights.eastern || "—"}</strong> 
+            <span style={{ opacity: 0.8 }}> ({insights.easternElement || "Вода"}).</span>
+          </div>
+
+          <div style={{ padding: 12, background: "rgba(200,164,90,0.05)", borderRadius: 6, borderLeft: "3px solid var(--gold)", marginBottom: 12 }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--gold-dark)", letterSpacing: 1, marginBottom: 6 }}>◈ ЭНЕРГЕТИЧЕСКИЙ ПОРТРЕТ</div>
+            <p style={{ margin: 0 }}>
+              {insights.easternTraits || "Честность и терпимость"}. 
+              Твоя кармическая задача — {insights.easternKarma || "научиться говорить 'нет'"} 
+              в ситуациях, которые отнимают твою энергию.
+            </p>
+          </div>
+        </div>
+      </Accordion>
+
+      {/* 4. АККОРДЕОН: ГРАДУС СУДЬБЫ */}
+      <Accordion title="Градус Судьбы" icon="🧭" defaultOpen={false}>
+        <div style={{ textAlign: "center", padding: "8px 0 16px" }}>
+          <div style={{ fontFamily: "var(--font-head)", fontSize: 32, color: "var(--gold)", fontWeight: 600, letterSpacing: "1px" }}>
+            {insights.destiny?.degree || 241}°          </div>
+          <div style={{ fontFamily: "var(--font-italic)", fontSize: 14, color: "var(--text2)", marginTop: 4 }}>
+            {insights.destiny?.interpretation || "Интеграция опыта"}
+          </div>
+        </div>
+        <div style={{ fontSize: 13, lineHeight: 1.6, color: "var(--text2)", padding: 14, background: "rgba(200,164,90,0.05)", borderRadius: 6 }}>
+          <strong style={{ display: "block", marginBottom: 6, color: "var(--gold-dark)" }}>◈ ЗОНА РАЗВИТИЯ:</strong>
+          Твой градус указывает на текущую фазу жизненного цикла. 
+          Сейчас ты в зоне структурирования знаний. Главный совет: доверяй интуиции, но проверяй фактами.
+        </div>
+      </Accordion>
+
+      {/* 5. АККОРДЕОН: ХРОНО-ТИП */}
+      <Accordion title="Хроно-тип" icon="🦉" defaultOpen={false}>
+        <div style={{ fontSize: 14, lineHeight: 1.6, color: "var(--text2)" }}>
+          <strong style={{ color: "var(--blue)", fontSize: 16 }}>{profile.chronotype || "🕊️ Голубь"}</strong>
+          
+          <div style={{ marginTop: 12, padding: 12, background: "rgba(0,112,192,0.05)", borderRadius: 6, fontSize: 13 }}>
+            {profile.chronotype?.includes("Сова") ? (
+              <>
+                <p style={{ margin: "0 0 8px" }}>🌙 <strong>Пик продуктивности:</strong> Вечер (16:00 – 22:00).</p>
+                <p style={{ margin: 0 }}>Творческие задачи лучше откладывать на вторую половину дня. Утро оставь для рутины и лёгких дел.</p>
+              </>
+            ) : (
+              <>
+                <p style={{ margin: "0 0 8px" }}>☀️ <strong>Пик продуктивности:</strong> Утро (08:00 – 14:00).</p>
+                <p style={{ margin: 0 }}>Вечером энергия падает. Не планируй важные решения на время после 18:00.</p>
+              </>
+            )}
+          </div>
+        </div>
+      </Accordion>
+
+      {/* 6. КНОПКИ УПРАВЛЕНИЯ */}
+      <div style={{ display: "flex", gap: 12, marginTop: 30 }}>
+        <button 
+          className="btn btn-primary" 
+          onClick={handleRefresh} 
+          disabled={isRefreshing}
+          style={{ flex: 1, opacity: isRefreshing ? 0.7 : 1 }}
+        >
+          {isRefreshing ? "⏳ Обновление..." : "🔄 Обновить данные"}
+        </button>
+        
+        <button 
+          className="btn btn-ghost" 
+          onClick={handleReset} 
+          style={{ flex: 1, borderColor: "rgba(139,32,32,0.3)", color: "var(--error)" }}
+        >
+          🗑️ Сброс профиля        </button>
       </div>
+
     </div>
   );
-}
+                                 }
