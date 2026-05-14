@@ -5,7 +5,7 @@ import { getProfileInsights } from "../utils/knowledgeEngine";
 import { getMeridianInfo, getChronotypePeaks } from "../data/profileKnowledge";
 import { MaleAvatar, FemaleAvatar, WesternZodiacIcons, EasternZodiacIcons } from "../components/BlueprintAvatars";
 
-// ─── КОМПОНЕНТ: ГОРИЗОНТАЛЬНАЯ КАРТОЧКА (Иконка слева + контент справа) ───
+// ─── КОМПОНЕНТ: ИКОНКА + КАРТОЧКА (горизонтальная раскладка) ───
 function IconCardRow({ icon, iconSize = 120, title, children, accentColor = "var(--blue)" }) {
   const [open, setOpen] = useState(true);
   
@@ -16,7 +16,7 @@ function IconCardRow({ icon, iconSize = 120, title, children, accentColor = "var
       marginBottom: 28,
       alignItems: "flex-start",
     }}>
-      {/* Иконка ВЫНЕСЕНА влево, без контура, 120px */}
+      {/* Иконка слева, 120px, без контура */}
       <div style={{
         width: iconSize,
         height: iconSize,
@@ -38,7 +38,7 @@ function IconCardRow({ icon, iconSize = 120, title, children, accentColor = "var
         position: "relative",
         boxShadow: "0 3px 10px rgba(0,112,192,0.08)",
       }}>
-        {/* Акцентная линия слева */}
+        {/* Акцентная линия */}
         <div style={{
           position: "absolute",
           left: 0,
@@ -47,7 +47,7 @@ function IconCardRow({ icon, iconSize = 120, title, children, accentColor = "var
           width: "4px",
           background: accentColor,
         }} />
-                {/* Заголовок карточки */}
+                {/* Заголовок */}
         <div
           onClick={() => setOpen(!open)}
           style={{
@@ -130,7 +130,7 @@ function IconCardRow({ icon, iconSize = 120, title, children, accentColor = "var
   return (
     <div className="page" style={{ paddingBottom: 100 }}>
       
-      {/* 1. ШАПКА ПРОФИЛЯ: Аватар слева (без контура) + Карточка справа */}
+      {/* 1. ШАПКА: Аватар слева (120px, без контура) + Карточка справа */}
       <div style={{
         display: "flex",
         gap: 20,
