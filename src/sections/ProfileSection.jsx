@@ -12,8 +12,8 @@ function IconCardRow({ icon, iconSize = 120, title, children, accentColor = "var
   return (
     <div style={{ 
       display: "flex", 
-      gap: 16, 
-      marginBottom: 28,
+      gap: 20, 
+      marginBottom: 32,
       alignItems: "flex-start",
     }}>
       {/* Иконка слева, 120px, без контура */}
@@ -130,12 +130,12 @@ function IconCardRow({ icon, iconSize = 120, title, children, accentColor = "var
   return (
     <div className="page" style={{ paddingBottom: 100 }}>
       
-      {/* 1. ШАПКА: Аватар слева (120px, без контура) + Карточка справа */}
+      {/* 1. ШАПКА ПРОФИЛЯ: Аватар слева (120px, без контура) + Карточка справа */}
       <div style={{
         display: "flex",
-        gap: 20,
-        marginBottom: 28,
-        alignItems: "center",
+        gap: 24,
+        marginBottom: 32,
+        alignItems: "flex-start",
       }}>
         {/* Аватар 120px, слева, без контура */}
         <div style={{
@@ -153,7 +153,7 @@ function IconCardRow({ icon, iconSize = 120, title, children, accentColor = "var
         {/* Карточка с данными */}
         <div className="card" style={{
           flex: 1,
-          padding: "22px 20px",
+          padding: "24px 22px",
           borderLeft: "5px solid var(--blue)",
           borderRadius: 12,
         }}>
@@ -161,13 +161,13 @@ function IconCardRow({ icon, iconSize = 120, title, children, accentColor = "var
             fontFamily: "var(--font-head)",
             fontSize: 24,
             color: "var(--blue)",
-            margin: "0 0 10px 0",
+            margin: "0 0 12px 0",
             letterSpacing: "1.5px",
           }}>
             {profile.name || "Пользователь"}
           </h1>
           
-          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 14 }}>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 16 }}>
             <span className="badge bgr" style={{ fontSize: 13, padding: "4px 10px" }}>🎂 {age ?? "—"} лет</span>
             {profile.chronotype && (
               <span className="badge bt" style={{ fontSize: 13, padding: "4px 10px" }}>⏱ {profile.chronotype}</span>
@@ -181,7 +181,7 @@ function IconCardRow({ icon, iconSize = 120, title, children, accentColor = "var
             fontSize: 14,
             color: "var(--text2)",
             lineHeight: 1.7,
-            padding: "12px 16px",
+            padding: "14px 18px",
             background: "rgba(0,112,192,0.06)",
             borderRadius: 10,
             borderLeft: "4px solid var(--gold)",
@@ -364,4 +364,4 @@ function IconCardRow({ icon, iconSize = 120, title, children, accentColor = "var
 
     </div>
   );
-}
+      }
