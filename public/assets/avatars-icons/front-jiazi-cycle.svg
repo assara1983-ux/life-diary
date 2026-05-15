@@ -1,37 +1,88 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 200" width="100%" height="100%">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240" width="100%" height="100%">
   <defs>
     <style>
-      @keyframes pulse { 0%,100%{opacity:.6;transform:scale(1)} 50%{opacity:1;transform:scale(1.15)} }
-      @keyframes flow { 0%{stroke-dashoffset:0} 100%{stroke-dashoffset:-240} }
-      @keyframes spin { 0%{transform:rotate(0)} 100%{transform:rotate(360)} }
-      .grid { stroke:rgba(0,112,192,.06); stroke-width:.5; }
-      .wave { fill:none; stroke:#0070c0; stroke-width:1.5; stroke-linecap:round; }
-      .flow { stroke:#c8a45a; stroke-width:1; stroke-dasharray:6 4; animation:flow 3.5s linear infinite; }
-      .node { fill:#c8a45a; }
-      .active { fill:#0070c0; animation:pulse 2.5s ease-in-out infinite; }
-      .ring { animation:spin 14s linear infinite; transform-origin:center; }
-      .tech { stroke:rgba(0,112,192,.25); stroke-width:.5; }
+      @keyframes flow-fwd { 0% { stroke-dashoffset: 0; } 100% { stroke-dashoffset: -180; } }
+      @keyframes flow-bwd { 0% { stroke-dashoffset: 0; } 100% { stroke-dashoffset: 180; } }
+      @keyframes spin-slow { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+      @keyframes pulse-dot { 0%,100% { opacity: .5; r: 3.5; } 50% { opacity: 1; r: 5; } }
+      @keyframes fade-label { 0%,100% { opacity: .7; } 50% { opacity: 1; } }
+      
+      .grid { stroke: rgba(0,112,192,.06); stroke-width: .5; }
+      .axis { stroke: rgba(0,112,192,.15); stroke-width: 1; stroke-dasharray: 4 4; }
+      .helix { transform-origin: 200px 110px; animation: spin-slow 28s linear infinite; }
+      
+      .strand { fill: none; stroke-width: 2.2; stroke-linecap: round; }
+      .flow-1 { animation: flow-fwd 2.8s linear infinite; }
+      .flow-2 { animation: flow-bwd 3.2s linear infinite; }
+      .flow-3 { animation: flow-fwd 3.6s linear infinite; }
+      
+      .node { animation: pulse-dot 2.4s ease-in-out infinite; }
+      .label { font-family: monospace; font-size: 9px; fill: #5c4a30; letter-spacing: .5px; animation: fade-label 3s ease-in-out infinite; }
+      .title { font-family: monospace; font-size: 9px; fill: #5c4a30; letter-spacing: 1.2px; }
+      
+      /* Цвета сфер */
+      .health    { stroke: #2d6a4f; }
+      .career    { stroke: #0070c0; }
+      .relations { stroke: #c8a45a; }
+      .spirit    { stroke: #5c4a30; }
+      .finance   { stroke: #8c7a5a; }
     </style>
   </defs>
+
+  <!-- Фон и сетка -->
   <rect width="100%" height="100%" fill="#f5f0e1"/>
   <g class="grid">
-    <line x1="0" y1="50" x2="400" y2="50"/><line x1="0" y1="100" x2="400" y2="100"/><line x1="0" y1="150" x2="400" y2="150"/>
-    <line x1="100" y1="0" x2="100" y2="200"/><line x1="200" y1="0" x2="200" y2="200"/><line x1="300" y1="0" x2="300" y2="200"/>
+    <line x1="0" y1="60" x2="400" y2="60"/><line x1="0" y1="110" x2="400" y2="110"/><line x1="0" y1="160" x2="400" y2="160"/>
+    <line x1="100" y1="0" x2="100" y2="240"/><line x1="200" y1="0" x2="200" y2="240"/><line x1="300" y1="0" x2="300" y2="240"/>
   </g>
-  <path class="wave" d="M 20 100 Q 60 40 100 100 T 180 100 T 260 100 T 340 100 T 400 100"/>
-  <path class="flow" d="M 20 100 Q 60 40 100 100 T 180 100 T 260 100 T 340 100 T 400 100"/>
-  <circle cx="20" cy="100" r="3" class="node"/><circle cx="60" cy="60" r="3" class="node"/>
-  <circle cx="100" cy="100" r="3" class="node"/><circle cx="140" cy="140" r="3" class="node"/>
-  <circle cx="180" cy="100" r="4" class="active"/>
-  <circle cx="180" cy="100" r="10" fill="none" stroke="#0070c0" stroke-width="1" stroke-dasharray="2 2" style="animation:pulse 2.5s ease-in-out infinite"/>
-  <circle cx="220" cy="60" r="3" class="node"/><circle cx="260" cy="100" r="3" class="node"/>
-  <circle cx="300" cy="140" r="3" class="node"/><circle cx="340" cy="100" r="3" class="node"/>
-  <circle cx="380" cy="60" r="3" class="node"/>
-  <g transform="translate(200,100)" class="ring">
-    <circle r="38" fill="none" stroke="rgba(0,112,192,.15)" stroke-width=".5"/>
-    <polygon points="0,-38 32.9,19 -32.9,19" fill="none" stroke="rgba(200,164,90,.35)" stroke-width=".5"/>
-    <polygon points="0,38 -32.9,-19 32.9,-19" fill="none" stroke="rgba(200,164,90,.35)" stroke-width=".5"/>
+
+  <!-- Центральная ось -->
+  <line x1="30" y1="110" x2="370" y2="110" class="axis"/>
+
+  <!-- Вращающаяся ДНК-спираль из 5 линий -->
+  <g class="helix">
+    <!-- Здоровье -->
+    <path class="strand health" d="M 40 110 C 80 40, 120 40, 160 110 S 240 180, 280 110 S 360 40, 370 110" />
+    <path class="strand health flow-1" d="M 40 110 C 80 40, 120 40, 160 110 S 240 180, 280 110 S 360 40, 370 110" stroke-dasharray="6 14" />
+    
+    <!-- Карьера -->
+    <path class="strand career" d="M 40 85 C 80 15, 120 15, 160 85 S 240 155, 280 85 S 360 15, 370 85" />
+    <path class="strand career flow-2" d="M 40 85 C 80 15, 120 15, 160 85 S 240 155, 280 85 S 360 15, 370 85" stroke-dasharray="8 12" />
+    
+    <!-- Отношения -->
+    <path class="strand relations" d="M 40 60 C 80 -10, 120 -10, 160 60 S 240 130, 280 60 S 360 -10, 370 60" />
+    <path class="strand relations flow-3" d="M 40 60 C 80 -10, 120 -10, 160 60 S 240 130, 280 60 S 360 -10, 370 60" stroke-dasharray="5 16" />
+    
+    <!-- Духовность -->
+    <path class="strand spirit" d="M 40 135 C 80 205, 120 205, 160 135 S 240 65, 280 135 S 360 205, 370 135" />
+    <path class="strand spirit flow-1" d="M 40 135 C 80 205, 120 205, 160 135 S 240 65, 280 135 S 360 205, 370 135" stroke-dasharray="7 13" />
+    
+    <!-- Финансы -->
+    <path class="strand finance" d="M 40 160 C 80 230, 120 230, 160 160 S 240 90, 280 160 S 360 230, 370 160" />
+    <path class="strand finance flow-2" d="M 40 160 C 80 230, 120 230, 160 160 S 240 90, 280 160 S 360 230, 370 160" stroke-dasharray="9 11" />
+
+    <!-- Пульсирующие узлы на пиках -->
+    <circle cx="80" cy="40" r="4" fill="#f5f0e1" class="node" stroke="#2d6a4f"/>
+    <circle cx="160" cy="110" r="4" fill="#f5f0e1" class="node" stroke="#0070c0"/>
+    <circle cx="240" cy="180" r="4" fill="#f5f0e1" class="node" stroke="#c8a45a"/>
+    <circle cx="80" cy="15" r="3.5" fill="#f5f0e1" class="node" stroke="#5c4a30"/>
+    <circle cx="280" cy="85" r="3.5" fill="#f5f0e1" class="node" stroke="#8c7a5a"/>
   </g>
-  <path d="M 168 88 L 192 88 L 192 112 L 168 112 Z" fill="none" stroke="rgba(0,112,192,.3)" stroke-width=".5"/>
-  <text x="200" y="188" text-anchor="middle" font-family="monospace" font-size="9" fill="#5c4a30" letter-spacing="1">ЦЯЦЗЫ: 12 СТАДИЙ ЦИ</text>
+
+  <!-- Подписи сфер (слева и справа) -->
+  <text x="22" y="42" class="label" text-anchor="end">ЗДОРОВЬЕ</text>
+  <text x="22" y="87" class="label" text-anchor="end">КАРЬЕРА</text>
+  <text x="22" y="62" class="label" text-anchor="end">ОТНОШЕНИЯ</text>
+  <text x="22" y="137" class="label" text-anchor="end">ДУХОВНОСТЬ</text>
+  <text x="22" y="162" class="label" text-anchor="end">ФИНАНСЫ</text>
+
+  <!-- Подписи справа (зеркально) -->
+  <text x="378" y="42" class="label" text-anchor="start">ЗДОРОВЬЕ</text>
+  <text x="378" y="87" class="label" text-anchor="start">КАРЬЕРА</text>
+  <text x="378" y="62" class="label" text-anchor="start">ОТНОШЕНИЯ</text>
+  <text x="378" y="137" class="label" text-anchor="start">ДУХОВНОСТЬ</text>
+  <text x="378" y="162" class="label" text-anchor="start">ФИНАНСЫ</text>
+
+  <!-- Заголовок -->
+  <text x="200" y="232" class="title" text-anchor="middle">ЦЯЦЗЫ: 5 СФЕР ЦИ • ДНК-ЦИКЛ</text>
 </svg>
