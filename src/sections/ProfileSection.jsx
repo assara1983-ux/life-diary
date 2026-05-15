@@ -1,5 +1,5 @@
 // src/sections/ProfileSection.jsx
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState } from "react";
 import { useApp } from "../store/AppContext";
 import { getProfileInsights } from "../utils/knowledgeEngine";
 import { getMeridianInfo, getChronotypePeaks } from "../data/profileKnowledge";
@@ -7,18 +7,18 @@ import { MaleAvatar, FemaleAvatar } from "../components/BlueprintAvatars";
 
 // ─── БАЗА ДАННЫХ ЦЯЦЗЫ (12 СТАДИЙ) ───
 const JIAZI_STAGES = [
-  { name: 'Рождение', spheres: { health: 'Иммунитет, конституция', career: 'Обучение, адаптация', relations: 'Семья, корни', spirit: 'Поиск смысла', finance: 'Накопление' }, tips: 'Закладка фундамента. Избегай перегрузок.' },
-  { name: 'Купание', spheres: { health: 'Нервная система, адаптация', career: 'Поиск пути', relations: 'Первые связи', spirit: 'Духовный выбор', finance: 'Зависимость → самостоятельность' }, tips: 'Формирование реакций. Учитесь говорить "нет".' },
-  { name: 'Облачение', spheres: { health: 'Гормоны, кожа', career: 'Карьерный старт', relations: 'Партнёрство', spirit: 'Самоидентификация', finance: 'Первые доходы' }, tips: 'Публичный выход. Формируйте имидж осознанно.' },
-  { name: 'Взросление', spheres: { health: 'Энергия, выносливость', career: 'Проф. рост', relations: 'Стабильные союзы', spirit: 'Философия жизни', finance: 'Инвестиции' }, tips: 'Стабилизация. Долгосрочные проекты приносят плоды.' },
-  { name: 'Расцвет', spheres: { health: 'Пик тонуса', career: 'Лидерство', relations: 'Глубокие связи', spirit: 'Духовный авторитет', finance: 'Капитал' }, tips: 'Пик сил. Реализуй главные цели, но береги нервную систему.' },
-  { name: 'Старение', spheres: { health: 'Восстановление', career: 'Наставничество', relations: 'Передача опыта', spirit: 'Интеграция', finance: 'Сохранение' }, tips: 'Переход. Мудрость важнее скорости.' },
-  { name: 'Болезнь', spheres: { health: 'Терапия, баланс', career: 'Смена формата', relations: 'Качество связей', spirit: 'Очищение', finance: 'Оптимизация' }, tips: 'Пересмотр приоритетов. Профилактика критична.' },
-  { name: 'Смерть', spheres: { health: 'Глубокая терапия', career: 'Уход с позиций', relations: 'Прощение', spirit: 'Принятие', finance: 'Распределение' }, tips: 'Завершение цикла. Отпускай старое.' },
-  { name: 'Хранилище', spheres: { health: 'Покой, медитация', career: 'Творчество в тени', relations: 'Тихие связи', spirit: 'Внутренний диалог', finance: 'Пассив' }, tips: 'Сохранение Ци. Накапливай ресурсы для нового цикла.' },
-  { name: 'Отдых', spheres: { health: 'Регенерация', career: 'Перерыв', relations: 'Одиночество', spirit: 'Медитация', finance: 'Экономия' }, tips: 'Полное восстановление. Не форсируй события.' },
-  { name: 'Зачатие', spheres: { health: 'Подготовка', career: 'Идеи', relations: 'Новые знакомства', spirit: 'Намерение', finance: 'Планирование' }, tips: 'Скрытый росток. Задавай вектор будущего цикла.' },
-  { name: 'Созревание', spheres: { health: 'Активация', career: 'Запуск', relations: 'Переговоры', spirit: 'Фокус', finance: 'Стартовый капитал' }, tips: 'Подготовка к новому рождению. Действуй решительно.' }
+  { name: 'Рождение', spheres: { health: 'Иммунитет', career: 'Обучение', relations: 'Семья', spirit: 'Смысл', finance: 'Накопление' }, tips: 'Закладка фундамента.' },
+  { name: 'Купание', spheres: { health: 'Нервы', career: 'Поиск пути', relations: 'Связи', spirit: 'Выбор', finance: 'Самостоятельность' }, tips: 'Формирование реакций.' },
+  { name: 'Облачение', spheres: { health: 'Гормоны', career: 'Старт', relations: 'Партнёрство', spirit: 'Имидж', finance: 'Доходы' }, tips: 'Публичный выход.' },
+  { name: 'Взросление', spheres: { health: 'Энергия', career: 'Рост', relations: 'Союзы', spirit: 'Философия', finance: 'Инвестиции' }, tips: 'Стабилизация.' },
+  { name: 'Расцвет', spheres: { health: 'Пик', career: 'Лидерство', relations: 'Связи', spirit: 'Авторитет', finance: 'Капитал' }, tips: 'Максимум сил.' },
+  { name: 'Старение', spheres: { health: 'Восстановление', career: 'Мудрость', relations: 'Опыт', spirit: 'Интеграция', finance: 'Сохранение' }, tips: 'Переход.' },
+  { name: 'Болезнь', spheres: { health: 'Баланс', career: 'Формат', relations: 'Качество', spirit: 'Очищение', finance: 'Оптимизация' }, tips: 'Пересмотр.' },
+  { name: 'Смерть', spheres: { health: 'Терапия', career: 'Уход', relations: 'Прощение', spirit: 'Принятие', finance: 'Распределение' }, tips: 'Отпускание.' },
+  { name: 'Хранилище', spheres: { health: 'Покой', career: 'Тень', relations: 'Тишина', spirit: 'Диалог', finance: 'Пассив' }, tips: 'Сохранение Ци.' },
+  { name: 'Отдых', spheres: { health: 'Регенерация', career: 'Перерыв', relations: 'Одни', spirit: 'Медитация', finance: 'Экономия' }, tips: 'Восстановление.' },
+  { name: 'Зачатие', spheres: { health: 'Подготовка', career: 'Идеи', relations: 'Знакомства', spirit: 'Намерение', finance: 'План' }, tips: 'Новый росток.' },
+  { name: 'Созревание', spheres: { health: 'Активация', career: 'Запуск', relations: 'Переговоры', spirit: 'Фокус', finance: 'Капитал' }, tips: 'Новое рождение.' }
 ];
 
 // ─── НАДЁЖНАЯ ФУНКЦИЯ ПОЛУЧЕНИЯ ПУТИ К ИЛЛЮСТРАЦИИ ───
@@ -27,7 +27,9 @@ const getFrontImage = (category, value) => {
   const raw = String(value).trim().toLowerCase();
   if (category === 'chrono') {
     const map = { 'жаворонок': 'front-chrono-lark.png', 'голубь': 'front-chrono-pigeon.png', 'сова': 'front-chrono-owl.png' };
-    for (const [k, v] of Object.entries(map)) { if (raw.includes(k)) return `/assets/avatars-icons/${v}`; }
+    for (const [k, v] of Object.entries(map)) {
+      if (raw.includes(k)) return `/assets/avatars-icons/${v}`;
+    }
     return '/assets/avatars-icons/front-chrono-pigeon.png';
   }
   if (category === 'destiny') return '/assets/avatars-icons/front-destiny.png';
@@ -45,9 +47,9 @@ function ProfileTabs({ activeTab, setActiveTab }) {
   return (
     <div style={{ display: "flex", gap: 2, marginBottom: 24, background: "rgba(0,112,192,0.06)", borderRadius: 8, padding: 4, border: "1px solid var(--line)" }}>
       {tabs.map(tab => (
-        <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
-          flex: 1, padding: "10px 0", border: "none", borderRadius: 6, cursor: "pointer",
-          fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 1,          background: activeTab === tab.id ? "var(--blue)" : "transparent",
+        <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{          flex: 1, padding: "10px 0", border: "none", borderRadius: 6, cursor: "pointer",
+          fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 1,
+          background: activeTab === tab.id ? "var(--blue)" : "transparent",
           color: activeTab === tab.id ? "#fff" : "var(--text2)",
           transition: "all 0.2s", boxShadow: activeTab === tab.id ? "0 2px 6px rgba(0,112,192,0.2)" : "none"
         }}>
@@ -94,9 +96,9 @@ function FlipCardBlock({ title, frontImage, accentColor = "var(--blue)", childre
     </div>
   );
 }
-
 // ─── ОСНОВНОЙ КОМПОНЕНТ ───
-export function ProfileSection() {  const { profile, setProfile, notify } = useApp();
+export function ProfileSection() {
+  const { profile, setProfile, notify } = useApp();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState('main');
 
@@ -111,8 +113,10 @@ export function ProfileSection() {  const { profile, setProfile, notify } = useA
   const chronoPeaks = getChronotypePeaks(profile.chronotype);
   const destiny = insights.destiny || { degree: 241, interpretation: "Интеграция опыта" };
 
-  const currentJiaziStage = JIAZI_STAGES[Math.floor((age % 60) / 5) % 12];
-  const nextJiaziStage = JIAZI_STAGES[(Math.floor((age % 60) / 5) + 1) % 12];
+  // Безопасный расчёт стадии Цзяцзы
+  const currentJiaziIndex = age ? Math.floor((age % 60) / 5) % 12 : 0;
+  const currentJiaziStage = JIAZI_STAGES[currentJiaziIndex];
+  const nextJiaziStage = JIAZI_STAGES[(currentJiaziIndex + 1) % 12];
 
   const handleRefresh = () => { setIsRefreshing(true); setTimeout(() => { setIsRefreshing(false); notify?.("✅ Данные обновлены"); }, 800); };
   const handleReset = () => { if (window.confirm("Вы уверены? Это удалит ваш профиль и вернет к началу настройки.")) { setProfile(null); notify?.("🗑️ Профиль сброшен"); } };
@@ -141,11 +145,11 @@ export function ProfileSection() {  const { profile, setProfile, notify } = useA
           </FlipCardBlock>
 
           <FlipCardBlock title="Западный Зодиак" frontImage={getFrontImage("western", insights.zodiac)} accentColor="var(--blue)">
-            <div style={{ fontSize: 14, lineHeight: 1.75, color: "var(--text2)" }}>
-              <p style={{ marginBottom: 12, fontWeight: 500 }}><strong style={{ color: "var(--blue)", fontSize: 16 }}>{insights.zodiac || "—"}</strong> <span>({insights.zodiacElement || "Воздух"}) под управлением {insights.rulingPlanet || "Меркурия"}.</span></p>
+            <div style={{ fontSize: 14, lineHeight: 1.75, color: "var(--text2)" }}>              <p style={{ marginBottom: 12, fontWeight: 500 }}><strong style={{ color: "var(--blue)", fontSize: 16 }}>{insights.zodiac || "—"}</strong> <span>({insights.zodiacElement || "Воздух"}) под управлением {insights.rulingPlanet || "Меркурия"}.</span></p>
               <InnerAccordion title="Сильные стороны" defaultOpen={true}>{insights.zodiacStrengths || "Коммуникация, адаптивность, интеллект"}</InnerAccordion>
               <InnerAccordion title="Уязвимые зоны">{insights.zodiacWeaknesses || "Лёгкие, бронхи, плечи, нервная система"}</InnerAccordion>
-              <InnerAccordion title="Как использовать">                <ul style={{ margin: "0 0 0 18px", lineHeight: 1.7 }}>
+              <InnerAccordion title="Как использовать">
+                <ul style={{ margin: "0 0 0 18px", lineHeight: 1.7 }}>
                   <li>Планируй важные дела на {chronoPeaks.focus?.hours || "утро"}</li>
                   <li>Избегай многозадачности</li>
                   <li>Дыхательные практики укрепляют слабые зоны</li>
@@ -190,11 +194,11 @@ export function ProfileSection() {  const { profile, setProfile, notify } = useA
                 <div style={{ padding: 12, background: "rgba(45,106,79,0.08)", borderRadius: 8, borderLeft: "3px solid var(--success)" }}>
                   <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--success)", letterSpacing: 1, marginBottom: 6 }}>🧠 ПИК КОНЦЕНТРАЦИИ</div>
                   <p style={{ margin: 0, fontSize: 13 }}>{chronoPeaks.focus?.tip || "Самые сложные задачи — в это время."}</p>
-                </div>
-                <div style={{ padding: 12, background: "rgba(139,32,32,0.06)", borderRadius: 8, borderLeft: "3px solid var(--error)" }}>
+                </div>                <div style={{ padding: 12, background: "rgba(139,32,32,0.06)", borderRadius: 8, borderLeft: "3px solid var(--error)" }}>
                   <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--error)", letterSpacing: 1, marginBottom: 6 }}>⚡ ПРОВАЛ ЭНЕРГИИ</div>
                   <p style={{ margin: 0, fontSize: 13 }}>Идеально для рутины и делегирования.</p>
-                </div>              </div>
+                </div>
+              </div>
               <InnerAccordion title="Как использовать" defaultOpen={true}>
                 <ul style={{ margin: "0 0 0 18px", lineHeight: 1.7 }}>
                   <li>Синхронизируй расписание с биоритмами — КПД +30–40%</li>
@@ -239,11 +243,11 @@ export function ProfileSection() {  const { profile, setProfile, notify } = useA
               </InnerAccordion>
             </div>
           </div>
-
           {/* 2. ВЕДИЧЕСКИЙ КАЛЕНДАРЬ */}
           <div style={{ background: "rgba(0,112,192,0.03)", borderRadius: 10, padding: 18, marginBottom: 24, border: "1px solid var(--line)" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, paddingBottom: 10, borderBottom: "1px solid var(--line)" }}>
-              <div style={{ width: 4, height: 24, background: "var(--gold)", borderRadius: 2 }} />              <h3 style={{ fontFamily: "var(--font-head)", fontSize: 16, color: "var(--gold-dark)", margin: 0, letterSpacing: 1 }}>☀️ Ведический календарь</h3>
+              <div style={{ width: 4, height: 24, background: "var(--gold)", borderRadius: 2 }} />
+              <h3 style={{ fontFamily: "var(--font-head)", fontSize: 16, color: "var(--gold-dark)", margin: 0, letterSpacing: 1 }}>☀️ Ведический календарь</h3>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 14 }}>
               <div style={{ padding: 14, background: "#fff", borderRadius: 8, borderLeft: "3px solid var(--success)" }}>
@@ -278,7 +282,8 @@ export function ProfileSection() {  const { profile, setProfile, notify } = useA
               <div style={{ display: "grid", gap: 10 }}>
                 <div><strong style={{ color: "var(--blue)" }}>Цзяцзы:</strong> Возраст редуцируется по модулю 60 → определяется стадия (0–5, 5–10… 55–60 лет). Каждая стадия задаёт вектор Ци для 5 сфер.</div>
                 <div><strong style={{ color: "var(--gold-dark)" }}>Ведический календарь:</strong> Определяется сезонный фон (Ян/Инь Ци), лунные ограничения по декадам, конфликт дней с месяцем, благоприятные/неблагоприятные часы.</div>
-                <div><strong style={{ color: "var(--success)" }}>Рао (Йоги/Мараки):** Управители 1,5,9 домов → благотворные; 3,6,11 → злотворные; 2,8,12 → пагубно-нейтральные. Мараки (2+7) показывают зоны риска.</div>
+                {/* ИСПРАВЛЕНИЕ: Добавлен закрывающий тег </strong> и убраны ** */}
+                <div><strong style={{ color: "var(--success)" }}>Рао (Йоги/Мараки):</strong> Управители 1,5,9 домов → благотворные; 3,6,11 → злотворные; 2,8,12 → пагубно-нейтральные. Мараки (2+7) показывают зоны риска.</div>
               </div>
             </InnerAccordion>
             <InnerAccordion title="Синхронизация циклов для вашего профиля">
@@ -287,12 +292,12 @@ export function ProfileSection() {  const { profile, setProfile, notify } = useA
               <p>Пересечение показывает: благоприятно действовать в пиковые часы биоритмов, избегать агрессивной терапии в лунные запрещённые декады, использовать период для {insights.zodiacStrengths ? 'развития сильных зон' : 'укрепления базы'}.</p>
             </InnerAccordion>
             <InnerAccordion title="Практические рекомендации по применению">
-              <ul style={{ margin: "0 0 0 18px", lineHeight: 1.8 }}>
-                <li>Планируйте важные решения на часы, совпадающие с пиком вашей энергии и благоприятными звёздами часа</li>
+              <ul style={{ margin: "0 0 0 18px", lineHeight: 1.8 }}>                <li>Планируйте важные решения на часы, совпадающие с пиком вашей энергии и благоприятными звёздами часа</li>
                 <li>В стадии {currentJiaziStage.name} фокусируйтесь на {currentJiaziStage.spheres.career || 'развитии'} и {currentJiaziStage.spheres.health || 'здоровье'}</li>
                 <li>Избегайте курсов лечения в дни угасания Ци и разделителей сезонной энергии</li>
                 <li>Для умиротворения мараковых периодов: чтение стотр 108×, благотворительность, осознанное питание</li>
-                <li>Отслеживайте конфликт дней с месячным знаком → в эти дни не начинайте нового</li>              </ul>
+                <li>Отслеживайте конфликт дней с месячным знаком → в эти дни не начинайте нового</li>
+              </ul>
             </InnerAccordion>
             <InnerAccordion title="Зоны внимания и профилактики">
               <p style={{ marginBottom: 8 }}>Учитывая знак {insights.zodiac || '—'} и лунные узлы, особое внимание уделите: {meridianInfo.tip || 'регулярности питания и режиму'}. В сезоны перехода (равноденствия/солнцестояния) проводится мягкая коррекция Ци.</p>
@@ -312,4 +317,4 @@ export function ProfileSection() {  const { profile, setProfile, notify } = useA
       </div>
     </div>
   );
-                                                                                   }
+            }
