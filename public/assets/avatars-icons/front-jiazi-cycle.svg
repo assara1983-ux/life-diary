@@ -1,48 +1,37 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 200" width="100%" height="100%">
   <defs>
     <style>
-      @keyframes pulse { 0%,100%{opacity:0.6;transform:scale(1)} 50%{opacity:1;transform:scale(1.15)} }
-      @keyframes flow { 0%{stroke-dashoffset:0} 100%{stroke-dashoffset:-200} }
-      .grid { stroke:rgba(0,112,192,0.06); stroke-width:0.5; }
-      .wave { fill:none; stroke:var(--blue, #0070c0); stroke-width:2; stroke-linecap:round; }
-      .node { fill:var(--gold, #c8a45a); }
-      .marker { fill:var(--blue, #0070c0); }
-      .flow-path { stroke:var(--gold, #c8a45a); stroke-width:1.5; stroke-dasharray:8 6; animation:flow 4s linear infinite; }
+      @keyframes pulse { 0%,100%{opacity:.6;transform:scale(1)} 50%{opacity:1;transform:scale(1.15)} }
+      @keyframes flow { 0%{stroke-dashoffset:0} 100%{stroke-dashoffset:-240} }
+      @keyframes spin { 0%{transform:rotate(0)} 100%{transform:rotate(360)} }
+      .grid { stroke:rgba(0,112,192,.06); stroke-width:.5; }
+      .wave { fill:none; stroke:#0070c0; stroke-width:1.5; stroke-linecap:round; }
+      .flow { stroke:#c8a45a; stroke-width:1; stroke-dasharray:6 4; animation:flow 3.5s linear infinite; }
+      .node { fill:#c8a45a; }
+      .active { fill:#0070c0; animation:pulse 2.5s ease-in-out infinite; }
+      .ring { animation:spin 14s linear infinite; transform-origin:center; }
+      .tech { stroke:rgba(0,112,192,.25); stroke-width:.5; }
     </style>
   </defs>
-  
-  <!-- Сетка -->
+  <rect width="100%" height="100%" fill="#f5f0e1"/>
   <g class="grid">
-    <line x1="0" y1="40" x2="400" y2="40"/>
-    <line x1="0" y1="80" x2="400" y2="80"/>
-    <line x1="0" y1="120" x2="400" y2="120"/>
-    <line x1="0" y1="160" x2="400" y2="160"/>
-    <line x1="80" y1="0" x2="80" y2="200"/>
-    <line x1="160" y1="0" x2="160" y2="200"/>
-    <line x1="240" y1="0" x2="240" y2="200"/>
-    <line x1="320" y1="0" x2="320" y2="200"/>
+    <line x1="0" y1="50" x2="400" y2="50"/><line x1="0" y1="100" x2="400" y2="100"/><line x1="0" y1="150" x2="400" y2="150"/>
+    <line x1="100" y1="0" x2="100" y2="200"/><line x1="200" y1="0" x2="200" y2="200"/><line x1="300" y1="0" x2="300" y2="200"/>
   </g>
-
-  <!-- Волна жизненного цикла -->
   <path class="wave" d="M 20 100 Q 60 40 100 100 T 180 100 T 260 100 T 340 100 T 400 100"/>
-  <path class="flow-path" d="M 20 100 Q 60 40 100 100 T 180 100 T 260 100 T 340 100 T 400 100"/>
-
-  <!-- Узлы стадий -->
-  <circle cx="20" cy="100" r="3" class="node"/>
-  <circle cx="60" cy="60" r="3" class="node"/>
-  <circle cx="100" cy="100" r="3" class="node"/>
-  <circle cx="140" cy="140" r="3" class="node"/>
-  <circle cx="180" cy="100" r="3" class="node"/>
-  <circle cx="220" cy="60" r="3" class="node"/>
-  <circle cx="260" cy="100" r="3" class="node"/>
-  <circle cx="300" cy="140" r="3" class="node"/>
-  <circle cx="340" cy="100" r="3" class="node"/>
+  <path class="flow" d="M 20 100 Q 60 40 100 100 T 180 100 T 260 100 T 340 100 T 400 100"/>
+  <circle cx="20" cy="100" r="3" class="node"/><circle cx="60" cy="60" r="3" class="node"/>
+  <circle cx="100" cy="100" r="3" class="node"/><circle cx="140" cy="140" r="3" class="node"/>
+  <circle cx="180" cy="100" r="4" class="active"/>
+  <circle cx="180" cy="100" r="10" fill="none" stroke="#0070c0" stroke-width="1" stroke-dasharray="2 2" style="animation:pulse 2.5s ease-in-out infinite"/>
+  <circle cx="220" cy="60" r="3" class="node"/><circle cx="260" cy="100" r="3" class="node"/>
+  <circle cx="300" cy="140" r="3" class="node"/><circle cx="340" cy="100" r="3" class="node"/>
   <circle cx="380" cy="60" r="3" class="node"/>
-
-  <!-- Текущая позиция (пульсирует) -->
-  <circle cx="180" cy="100" r="5" class="marker" style="animation:pulse 2s ease-in-out infinite"/>
-  <circle cx="180" cy="100" r="12" fill="none" stroke="var(--blue, #0070c0)" stroke-width="1" stroke-dasharray="3 2" style="animation:pulse 2s ease-in-out infinite"/>
-
-  <!-- Подписи -->
-  <text x="180" y="185" text-anchor="middle" font-family="monospace" font-size="9" fill="var(--text2, #5c4a30)" letter-spacing="1">ЦЯЦЗЫ: ЦИКЛ 12 СТАДИЙ</text>
+  <g transform="translate(200,100)" class="ring">
+    <circle r="38" fill="none" stroke="rgba(0,112,192,.15)" stroke-width=".5"/>
+    <polygon points="0,-38 32.9,19 -32.9,19" fill="none" stroke="rgba(200,164,90,.35)" stroke-width=".5"/>
+    <polygon points="0,38 -32.9,-19 32.9,-19" fill="none" stroke="rgba(200,164,90,.35)" stroke-width=".5"/>
+  </g>
+  <path d="M 168 88 L 192 88 L 192 112 L 168 112 Z" fill="none" stroke="rgba(0,112,192,.3)" stroke-width=".5"/>
+  <text x="200" y="188" text-anchor="middle" font-family="monospace" font-size="9" fill="#5c4a30" letter-spacing="1">ЦЯЦЗЫ: 12 СТАДИЙ ЦИ</text>
 </svg>
