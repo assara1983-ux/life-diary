@@ -1,40 +1,42 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" width="100%" height="100%">
   <defs>
     <style>
-      @keyframes spin { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
-      @keyframes spin-reverse { 0%{transform:rotate(0deg)} 100%{transform:rotate(-360deg)} }
-      @keyframes pulse-core { 0%,100%{opacity:0.7;transform:scale(1)} 50%{opacity:1;transform:scale(1.1)} }
-      .ring { fill:none; stroke:var(--gold, #c8a45a); stroke-width:1; }
-      .ring-blue { fill:none; stroke:var(--blue, #0070c0); stroke-width:1.2; }
-      .orbit { fill:var(--gold, #c8a45a); }
-      .core { fill:var(--blue, #0070c0); animation:pulse-core 3s ease-in-out infinite; }
-      .spin-cw { animation:spin 24s linear infinite; transform-origin:center; }
-      .spin-ccw { animation:spin-reverse 36s linear infinite; transform-origin:center; }
+      @keyframes spin { 0%{transform:rotate(0)} 100%{transform:rotate(360)} }
+      @keyframes spin-rev { 0%{transform:rotate(0)} 100%{transform:rotate(-360)} }
+      @keyframes pulse-core { 0%,100%{opacity:.7;transform:scale(1)} 50%{opacity:1;transform:scale(1.08)} }
+      .grid { stroke:rgba(0,112,192,.06); stroke-width:.5; }
+      .ring { fill:none; stroke:#c8a45a; stroke-width:.8; }
+      .ring-blue { fill:none; stroke:#0070c0; stroke-width:1; }
+      .orbit { fill:#c8a45a; }
+      .core { fill:#0070c0; animation:pulse-core 3s ease-in-out infinite; }
+      .cw { animation:spin 22s linear infinite; transform-origin:center; }
+      .ccw { animation:spin-rev 30s linear infinite; transform-origin:center; }
+      .tech { stroke:rgba(0,112,192,.2); stroke-width:.5; }
     </style>
   </defs>
-
-  <!-- Кендры (квадрат/крест) -->
-  <g class="ring spin-cw">
-    <circle cx="150" cy="150" r="110"/>
-    <rect x="40" y="40" width="220" height="220" rx="4"/>
+  <rect width="100%" height="100%" fill="#f5f0e1"/>
+  <g class="grid">
+    <line x1="150" y1="0" x2="150" y2="300"/><line x1="0" y1="150" x2="300" y2="150"/>
+    <line x1="40" y1="40" x2="260" y2="260"/><line x1="260" y1="40" x2="40" y2="260"/>
   </g>
-
-  <!-- Триконы (треугольники) -->
-  <g class="ring-blue spin-ccw">
-    <polygon points="150,30 250,230 50,230"/>
-    <polygon points="150,270 50,70 250,70"/>
+  <g class="cw">
+    <circle cx="150" cy="150" r="110" class="ring"/>
+    <rect x="40" y="40" width="220" height="220" rx="4" class="ring"/>
   </g>
-
-  <!-- Орбиты планет -->
-  <circle cx="150" cy="150" r="80" fill="none" stroke="var(--text3, #8c7a5a)" stroke-width="0.5" stroke-dasharray="4 4"/>
-  <circle class="orbit spin-cw" style="animation-duration:12s" cx="150" cy="70" r="3"/>
-  <circle class="orbit spin-ccw" style="animation-duration:18s" cx="210" cy="190" r="2.5"/>
-  <circle class="orbit spin-cw" style="animation-duration:20s" cx="90" cy="210" r="3"/>
-
-  <!-- Ядро -->
+  <g class="ccw">
+    <polygon points="150,30 250,230 50,230" class="ring-blue"/>
+    <polygon points="150,270 50,70 250,70" class="ring-blue"/>
+  </g>
+  <circle cx="150" cy="150" r="85" fill="none" stroke="rgba(0,112,192,.15)" stroke-width=".5" stroke-dasharray="4 4"/>
+  <circle class="orbit cw" style="animation-duration:15s" cx="150" cy="65" r="3"/>
+  <circle class="orbit ccw" style="animation-duration:20s" cx="215" cy="195" r="2.5"/>
+  <circle class="orbit cw" style="animation-duration:24s" cx="85" cy="205" r="3"/>
   <circle cx="150" cy="150" r="8" class="core"/>
-  <circle cx="150" cy="150" r="14" fill="none" stroke="var(--gold, #c8a45a)" stroke-width="1.5"/>
-
-  <!-- Подпись -->
-  <text x="150" y="280" text-anchor="middle" font-family="monospace" font-size="9" fill="var(--text2, #5c4a30)" letter-spacing="1">ВЕДИЧЕСКИЙ ФОКУС: КЕНДРЫ • ТРИКОНЫ</text>
+  <circle cx="150" cy="150" r="14" fill="none" stroke="#c8a45a" stroke-width="1.5"/>
+  <g transform="translate(150,150)">
+    <circle r="125" fill="none" stroke="rgba(0,112,192,.1)" stroke-width=".5"/>
+    <path d="M0,-125 L0,125 M-125,0 L125,0" class="tech"/>
+    <circle r="22" fill="none" stroke="rgba(200,164,90,.25)" stroke-width=".5" stroke-dasharray="2 2"/>
+  </g>
+  <text x="150" y="285" text-anchor="middle" font-family="monospace" font-size="9" fill="#5c4a30" letter-spacing="1">КЕНДРЫ • ТРИКОНЫ • ПЛАНЕТЫ</text>
 </svg>
