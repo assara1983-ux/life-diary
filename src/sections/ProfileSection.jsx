@@ -5,12 +5,12 @@ import { getProfileInsights } from "../utils/knowledgeEngine";
 import { getMeridianInfo, getChronotypePeaks } from "../data/profileKnowledge";
 import { MaleAvatar, FemaleAvatar } from "../components/BlueprintAvatars";
 
-// ─── НАДЁЖНАЯ ФУНКЦИЯ ПОЛУЧЕНИЯ ПУТИ К ИЛЛЮСТРАЦИИ ───
+// ─── 1. НАДЕЖНАЯ ФУНКЦИЯ ПОЛУЧЕНИЯ ПУТИ К ИЛЛЮСТРАЦИИ ───
 const getFrontImage = (category, value) => {
-  if (!value) return null;
-  const raw = String(value).trim();
+  if (!value && category !== 'destiny') return null;
+  const raw = String(value).trim().toLowerCase();
 
-  // 1. Хроно-тип: ищем подстроку, игнорируем эмодзи и дополнительный текст
+  // 1. Хроно-тип: ищем подстроку (работает даже с эмодзи "🦉 Сова")
   if (category === 'chrono') {
     const chronoMap = {
       'жаворонок': 'front-chrono-lark.png',
@@ -18,7 +18,7 @@ const getFrontImage = (category, value) => {
       'сова': 'front-chrono-owl.png'
     };
     for (const [key, file] of Object.entries(chronoMap)) {
-      if (raw.toLowerCase().includes(key)) return `/assets/avatars-icons/${file}`;
+      if (raw.includes(key)) return `/assets/avatars-icons/${file}`;
     }
     // Фолбэк, если тип не распознан
     return `/assets/avatars-icons/front-chrono-pigeon.png`;
@@ -43,12 +43,11 @@ const getFrontImage = (category, value) => {
     }
   };
   const list = paths[category];
-  const key = raw.toLowerCase();
-  if (list && list[key]) return `/assets/avatars-icons/${list[key]}`;
+  if (list && list[raw]) return `/assets/avatars-icons/${list[raw]}`;
   
-  return null;
+  return null; // Если ничего не нашли
 };
-// ─── ВНУТРЕННИЙ АККОРДЕОН ───
+// ─── 2. ВНУТРЕННИЙ АККОРДЕОН ───
 function InnerAccordion({ title, children, defaultOpen = false }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
@@ -69,7 +68,7 @@ function InnerAccordion({ title, children, defaultOpen = false }) {
   );
 }
 
-// ─── ПЕРЕВОРАЧИВАЮЩАЯСЯ КАРТОЧКА ───
+// ─── 3. ПЕРЕВОРАЧИВАЮЩАЯСЯ КАРТОЧКА ───
 function FlipCardBlock({ title, frontImage, accentColor = "var(--blue)", children, minHeight = 340 }) {
   const [flipped, setFlipped] = useState(false);
 
@@ -95,11 +94,25 @@ function FlipCardBlock({ title, frontImage, accentColor = "var(--blue)", childre
               src={frontImage}
               alt={title}
               style={{ maxHeight: "70%", maxWidth: "90%", objectFit: "contain", filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.15))" }}
-              onError={(e) => { e.target.style.display = "none"; }}
-            />          ) : (
-            <div style={{ width: "80%", height: "60%", background: "rgba(0,112,192,0.05)", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text3)", fontSize: 12 }}>
-              Иллюстрация
-            </div>
+              // Отладка: если картинка битая, скрываем её, но логический фолбэк ниже обработает это
+              onError={(e) => { 
+                console.log(`Ошибка загрузки: ${frontImage}`);                 e.target.style.display = "none"; 
+              }}
+            />
+          ) : (
+             // Отладочная заглушка: покажет название файла, который код пытался найти
+             <div style={{ 
+               width: "80%", height: "60%", background: "rgba(0,112,192,0.05)", borderRadius: 8, 
+               display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", 
+               color: "var(--text3)", fontSize: 11, padding: "10px", textAlign: "center" 
+             }}>
+               <div style={{ fontWeight: "bold", marginBottom: 4 }}>Файл не найден</div>
+               <div style={{ fontFamily: "monospace", opacity: 0.8 }}>
+                 {category === 'destiny' ? 'front-destiny.png' : 
+                  category === 'chrono' ? 'front-chrono-*.png' : 
+                  `front-${category}-${value?.toLowerCase()}.png`}
+               </div>
+             </div>
           )}
           <div style={{ marginTop: 14, fontFamily: "var(--font-head)", fontSize: 15, color: "var(--blue)", letterSpacing: "1px", fontWeight: 500 }}>{title}</div>
           <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 4, fontFamily: "var(--font-mono)" }}>Нажмите для деталей</div>
@@ -115,6 +128,7 @@ function FlipCardBlock({ title, frontImage, accentColor = "var(--blue)", childre
             <div style={{ width: 4, height: 24, background: accentColor, borderRadius: 2, boxShadow: "0 2px 4px rgba(0,0,0,0.1)" }} />
             <h3 style={{ fontFamily: "var(--font-head)", fontSize: 15, color: "var(--blue)", margin: 0, letterSpacing: "0.6px", fontWeight: 600 }}>{title}</h3>
           </div>
+          {/* Прокручиваемый контейнер для контента */}
           <div style={{ overflowY: "auto", flex: 1, maxHeight: "65vh", fontSize: 14, lineHeight: 1.7, color: "var(--text2)", paddingRight: 4 }}>
             {children}
           </div>
@@ -124,15 +138,14 @@ function FlipCardBlock({ title, frontImage, accentColor = "var(--blue)", childre
   );
 }
 
-// ─── ОСНОВНОЙ КОМПОНЕНТ ───
+// ─── 4. ОСНОВНОЙ КОМПОНЕНТ ───
 export function ProfileSection() {
   const { profile, setProfile, notify } = useApp();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   if (!profile) return <div style={{ padding: 40, textAlign: "center", color: "var(--text2)" }}>Загрузка профиля...</div>;
 
-  const insights = getProfileInsights(profile);
-  const age = profile?.dob ? Math.floor((new Date() - new Date(profile.dob)) / (365.25 * 24 * 60 * 60 * 1000)) : null;
+  const insights = getProfileInsights(profile);  const age = profile?.dob ? Math.floor((new Date() - new Date(profile.dob)) / (365.25 * 24 * 60 * 60 * 1000)) : null;
   const genderStr = String(profile.gender || "").trim();
   const isMale = genderStr.toLowerCase().includes("муж") || genderStr.toLowerCase() === "male";
 
@@ -140,12 +153,18 @@ export function ProfileSection() {
   const chronoPeaks = getChronotypePeaks(profile.chronotype);
   const destiny = insights.destiny || { degree: 241, interpretation: "Интеграция опыта" };
 
+  // Пути к иллюстрациям
+  const avatarFrontImage = isMale 
+    ? '/assets/avatars-icons/male-avatar.png' 
+    : '/assets/avatars-icons/female-avatar.png';
+
   const handleRefresh = () => {
     setIsRefreshing(true);
     setTimeout(() => { setIsRefreshing(false); notify?.("✅ Данные обновлены"); }, 800);
   };
 
-  const handleReset = () => {    if (window.confirm("Вы уверены? Это удалит ваш профиль и вернет к началу настройки.")) {
+  const handleReset = () => {
+    if (window.confirm("Вы уверены? Это удалит ваш профиль и вернет к началу настройки.")) {
       setProfile(null);
       notify?.("🗑️ Профиль сброшен");
     }
@@ -155,11 +174,13 @@ export function ProfileSection() {
     <div className="page" style={{ paddingBottom: 100 }}>
 
       {/* 1. АВАТАР → ПЕРЕВОРАЧИВАЕТСЯ В ПРОФИЛЬ */}
-      <FlipCardBlock title="Профиль" frontImage={null} accentColor="var(--blue)" minHeight={360}>
+      <FlipCardBlock 
+        title="Профиль" 
+        frontImage={avatarFrontImage} 
+        accentColor="var(--blue)" 
+        minHeight={360} // Высота достаточна для аватара
+      >
         <div style={{ textAlign: "center", marginTop: 10, marginBottom: 16 }}>
-          <div style={{ width: 100, height: 100, margin: "0 auto 12px", borderRadius: "50%", overflow: "hidden", border: "2px solid var(--bg)", boxShadow: "0 4px 12px rgba(0,112,192,0.15)", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            {isMale ? <MaleAvatar size={100} /> : <FemaleAvatar size={100} />}
-          </div>
           <h2 style={{ fontFamily: "var(--font-head)", fontSize: 22, color: "var(--text1)", margin: "0 0 8px 0", letterSpacing: "1.2px", fontWeight: 600 }}>
             {profile.name || "Пользователь"}
           </h2>
@@ -173,8 +194,7 @@ export function ProfileSection() {
           </div>
         </div>
         <InnerAccordion title="Данные аккаунта" defaultOpen={true}>
-          <div>ФИО: {profile.fullName || "—"}<br/>Дата рождения: {profile.dob || "—"}<br/>Пол: {profile.gender || "—"}<br/>Хроно-тип: {profile.chronotype || "—"}</div>
-        </InnerAccordion>
+          <div>ФИО: {profile.fullName || "—"}<br/>Дата рождения: {profile.dob || "—"}<br/>Пол: {profile.gender || "—"}<br/>Хроно-тип: {profile.chronotype || "—"}</div>        </InnerAccordion>
       </FlipCardBlock>
 
       {/* 2. ЗАПАДНЫЙ ЗОДИАК */}
@@ -194,7 +214,8 @@ export function ProfileSection() {
             <ul style={{ margin: "0 0 0 18px", lineHeight: 1.7 }}>
               <li>Планируй важные дела на {chronoPeaks.focus?.hours || "утро"}</li>
               <li>Избегай многозадачности — фокусируйся на одном деле за раз</li>
-              <li>Дыхательные практики укрепляют слабые зоны</li>              <li>{meridianInfo.tip || "Регулярность питания и режим критичны"}</li>
+              <li>Дыхательные практики укрепляют слабые зоны</li>
+              <li>{meridianInfo.tip || "Регулярность питания и режим критичны"}</li>
             </ul>
           </InnerAccordion>
         </div>
@@ -222,7 +243,6 @@ export function ProfileSection() {
           </InnerAccordion>
         </div>
       </FlipCardBlock>
-
       {/* 4. ГРАДУС СУДЬБЫ */}
       <FlipCardBlock title="Градус Судьбы" frontImage={getFrontImage("destiny")} accentColor="var(--gold)">
         <div style={{ textAlign: "center", padding: "8px 0 16px" }}>
@@ -243,7 +263,8 @@ export function ProfileSection() {
 
       {/* 5. ХРОНО-ТИП */}
       <FlipCardBlock title="Хроно-тип" frontImage={getFrontImage("chrono", profile.chronotype)} accentColor="var(--blue)">
-        <div style={{ fontSize: 14, lineHeight: 1.75, color: "var(--text2)" }}>          <p style={{ marginBottom: 14, fontWeight: 500 }}><strong style={{ color: "var(--blue)", fontSize: 16 }}>{profile.chronotype || "🕊️ Голубь"}</strong></p>
+        <div style={{ fontSize: 14, lineHeight: 1.75, color: "var(--text2)" }}>
+          <p style={{ marginBottom: 14, fontWeight: 500 }}><strong style={{ color: "var(--blue)", fontSize: 16 }}>{profile.chronotype || "🕊️ Голубь"}</strong></p>
           <div style={{ display: "grid", gap: 10, marginBottom: 14 }}>
             <div style={{ padding: 12, background: "rgba(45,106,79,0.08)", borderRadius: 8, borderLeft: "3px solid var(--success)" }}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--success)", letterSpacing: 1, marginBottom: 6 }}>🧠 ПИК КОНЦЕНТРАЦИИ</div>
@@ -271,8 +292,7 @@ export function ProfileSection() {
           className="btn btn-primary"
           onClick={handleRefresh}
           disabled={isRefreshing}
-          style={{ flex: 1, opacity: isRefreshing ? 0.7 : 1, fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 1.2, padding: "12px 16px", borderRadius: 8 }}
-        >
+          style={{ flex: 1, opacity: isRefreshing ? 0.7 : 1, fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 1.2, padding: "12px 16px", borderRadius: 8 }}        >
           {isRefreshing ? "⏳ Обновление..." : "🔄 Обновить данные"}
         </button>
         <button
