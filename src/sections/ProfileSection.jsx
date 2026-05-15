@@ -1,53 +1,30 @@
 // src/sections/ProfileSection.jsx
-import React, { useState, useMemo, useCallback, useEffect } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useApp } from "../store/AppContext";
 import { getProfileInsights } from "../utils/knowledgeEngine";
 import { getMeridianInfo, getChronotypePeaks } from "../data/profileKnowledge";
 import { MaleAvatar, FemaleAvatar } from "../components/BlueprintAvatars";
 
-// ─── ДАННЫЕ ИЗ БАЗЫ ЗНАНИЙ (ЦИКЛ ЦЯЦЗЫ & ВЕДИЧЕСКИЙ КАЛЕНДАРЬ) ───
+// ─── БАЗА ДАННЫХ ЦЯЦЗЫ (12 СТАДИЙ) ───
 const JIAZI_STAGES = [
-  { name: 'Рождение', spheres: { health: 'Иммунитет, конституция', career: 'Обучение, адаптация', relations: 'Семья, корни', spirit: 'Поиск смысла', finance: 'Накопление' }, tips: 'Закладка фундамента. Избегай перегрузок.' },
-  { name: 'Купание', spheres: { health: 'Нервная система, адаптация', career: 'Поиск пути', relations: 'Первые связи', spirit: 'Духовный выбор', finance: 'Зависимость → самостоятельность' }, tips: 'Формирование реакций. Учитесь говорить "нет".' },
-  { name: 'Облачение', spheres: { health: 'Гормоны, кожа', career: 'Карьерный старт', relations: 'Партнёрство', spirit: 'Самоидентификация', finance: 'Первые доходы' }, tips: 'Публичный выход. Формируйте имидж осознанно.' },
-  { name: 'Взросление', spheres: { health: 'Энергия, выносливость', career: 'Проф. рост', relations: 'Стабильные союзы', spirit: 'Философия жизни', finance: 'Инвестиции' }, tips: 'Стабилизация. Долгосрочные проекты приносят плоды.' },
-  { name: 'Расцвет', spheres: { health: 'Пик тонуса', career: 'Лидерство', relations: 'Глубокие связи', spirit: 'Духовный авторитет', finance: 'Капитал' }, tips: 'Пик сил. Реализуйте главные цели, но берегите нервную систему.' },
-  { name: 'Старение', spheres: { health: 'Восстановление', career: 'Наставничество', relations: 'Передача опыта', spirit: 'Интеграция', finance: 'Сохранение' }, tips: 'Переход. Мудрость важнее скорости.' },
-  { name: 'Болезнь', spheres: { health: 'Терапия, баланс', career: 'Смена формата', relations: 'Качество связей', spirit: 'Очищение', finance: 'Оптимизация' }, tips: 'Пересмотр приоритетов. Профилактика критична.' },
-  { name: 'Смерть', spheres: { health: 'Глубокая терапия', career: 'Уход с позиций', relations: 'Прощение', spirit: 'Принятие', finance: 'Распределение' }, tips: 'Завершение цикла. Отпускайте старое.' },
-  { name: 'Хранилище', spheres: { health: 'Покой, медитация', career: 'Творчество в тени', relations: 'Тихие связи', spirit: 'Внутренний диалог', finance: 'Пассив' }, tips: 'Сохранение Ци. Накапливайте ресурсы для нового цикла.' },
-  { name: 'Отдых', spheres: { health: 'Регенерация', career: 'Перерыв', relations: 'Одиночество', spirit: 'Медитация', finance: 'Экономия' }, tips: 'Полное восстановление. Не форсируйте события.' },
-  { name: 'Зачатие', spheres: { health: 'Подготовка', career: 'Идеи', relations: 'Новые знакомства', spirit: 'Намерение', finance: 'Планирование' }, tips: 'Скрытый росток. Задавайте вектор будущего цикла.' },
-  { name: 'Созревание', spheres: { health: 'Активация', career: 'Запуск', relations: 'Переговоры', spirit: 'Фокус', finance: 'Стартовый капитал' }, tips: 'Подготовка к новому рождению. Действуйте решительно.' }
+  { name: 'Рождение', spheres: { health: 'Иммунитет', career: 'Обучение', relations: 'Семья', spirit: 'Смысл', finance: 'Накопление' }, tips: 'Закладка фундамента.' },
+  { name: 'Купание', spheres: { health: 'Нервы', career: 'Поиск пути', relations: 'Связи', spirit: 'Выбор', finance: 'Самостоятельность' }, tips: 'Формирование реакций.' },
+  { name: 'Облачение', spheres: { health: 'Гормоны', career: 'Старт', relations: 'Партнёрство', spirit: 'Имидж', finance: 'Доходы' }, tips: 'Публичный выход.' },
+  { name: 'Взросление', spheres: { health: 'Энергия', career: 'Рост', relations: 'Союзы', spirit: 'Философия', finance: 'Инвестиции' }, tips: 'Стабилизация.' },
+  { name: 'Расцвет', spheres: { health: 'Пик', career: 'Лидерство', relations: 'Связи', spirit: 'Авторитет', finance: 'Капитал' }, tips: 'Максимум сил.' },
+  { name: 'Старение', spheres: { health: 'Восстановление', career: 'Мудрость', relations: 'Опыт', spirit: 'Интеграция', finance: 'Сохранение' }, tips: 'Переход.' },
+  { name: 'Болезнь', spheres: { health: 'Баланс', career: 'Формат', relations: 'Качество', spirit: 'Очищение', finance: 'Оптимизация' }, tips: 'Пересмотр.' },
+  { name: 'Смерть', spheres: { health: 'Терапия', career: 'Уход', relations: 'Прощение', spirit: 'Принятие', finance: 'Распределение' }, tips: 'Отпускание.' },
+  { name: 'Хранилище', spheres: { health: 'Покой', career: 'Тень', relations: 'Тишина', spirit: 'Диалог', finance: 'Пассив' }, tips: 'Сохранение Ци.' },
+  { name: 'Отдых', spheres: { health: 'Регенерация', career: 'Перерыв', relations: 'Одни', spirit: 'Медитация', finance: 'Экономия' }, tips: 'Восстановление.' },
+  { name: 'Зачатие', spheres: { health: 'Подготовка', career: 'Идеи', relations: 'Знакомства', spirit: 'Намерение', finance: 'План' }, tips: 'Новый росток.' },
+  { name: 'Созревание', spheres: { health: 'Активация', career: 'Запуск', relations: 'Переговоры', spirit: 'Фокус', finance: 'Капитал' }, tips: 'Новое рождение.' }
 ];
-
-const VEDIC_SEASONS = [
-  { name: 'Начало весны', qi: 'Ян растёт, Инь убывает', health: 'Иммунитет борется с холодом', tips: 'Устраняйте ветер и холод. Лёгкие и печень в фокусе.' },
-  { name: 'Весеннее равноденствие', qi: 'Ян = Инь, мягкая погода', health: 'Болезни активируются', tips: 'Устраняйте патогены. Не перегружайте ЖКТ.' },
-  { name: 'Начало лета', qi: 'Ян парит, бурный рост', health: 'Болезни поднимаются на поверхность', tips: 'Рассеивайте Ци. Потогонные и лёгкие практики.' },
-  { name: 'Летнее солнцестояние', qi: 'Огонь, жар, зной', health: 'Жар, истощение Инь', tips: 'Очищение, укрепление Инь. Берегите сердце и сосуды.' },
-  { name: 'Начало осени', qi: 'Ян спускается вниз', health: 'Заболевания наполовину внутри', tips: 'Гармонизация Инь-Ян. Укрепляйте селезёнку.' },
-  { name: 'Осеннее равноденствие', qi: 'Инь нарастает, прохладно', health: 'Ян ослабевает', tips: 'Тонизация, питание Ян. Берегите почки и спину.' },
-  { name: 'Начало зимы', qi: 'Ян собирается внутри', health: 'Болезни уходят внутрь', tips: 'Внутренняя гармонизация. Умеренное питание.' },
-  { name: 'Зимнее солнцестояние', qi: 'Инь расцветает, холод макс.', health: 'Цзан-органы под угрозой', tips: 'Согревание, прижигание. Не переохлаждайтесь.' }
-];
-
-// ─── ГЕНЕРАЦИЯ ДАННЫХ ПО ГОДАМ ───
-const generateYearInsights = (year, dob) => {
-  const jiaziStage = JIAZI_STAGES[(year % 60) % 12];
-  const vedicSeason = VEDIC_SEASONS[Math.floor((year * 12) / 12) % 8];
-  return {
-    year,
-    jiazi: jiaziStage,
-    vedic: vedicSeason,
-    warnings: year % 5 === 0 ? 'Переходная фаза. Осторожность в планах.' : year % 7 === 0 ? 'Кармическая проверка. Анализируйте прошлое.' : 'Стабильный период. Действуйте последовательно.',
-    recommendations: `Акцент на ${Object.values(jiaziStage.spheres).join(', ')}. Сезон: ${vedicSeason.qi}. ${vedicSeason.tips}`
-  };
-};
 
 // ─── ВКЛАДКИ ───
 function ProfileTabs({ activeTab, setActiveTab }) {
-  const tabs = [    { id: 'main', label: 'ОСНОВНОЙ' },
+  const tabs = [
+    { id: 'main', label: 'ОСНОВНОЙ' },
     { id: 'deep', label: 'ГЛУБОКИЙ АНАЛИЗ' },
     { id: 'jiazi', label: 'ЖИЗНЕННЫЙ ЦИКЛ' },
     { id: 'vedic', label: 'ВЕДИЧЕСКИЙ КАЛЕНДАРЬ' }
@@ -69,9 +46,8 @@ function ProfileTabs({ activeTab, setActiveTab }) {
   );
 }
 
-// ─── ВНУТРЕННИЙ АККОРДЕОН ───
-function InnerAccordion({ title, children, defaultOpen = false }) {
-  const [open, setOpen] = useState(defaultOpen);
+// ─── АККОРДЕОН ───
+function InnerAccordion({ title, children, defaultOpen = false }) {  const [open, setOpen] = useState(defaultOpen);
   return (
     <div style={{ marginBottom: 10, background: "rgba(0,112,192,0.04)", borderRadius: 8, border: "1px solid rgba(0,112,192,0.15)" }}>
       <div onClick={(e) => { e.stopPropagation(); setOpen(!open); }} style={{ padding: "10px 12px", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", userSelect: "none" }}>
@@ -83,7 +59,7 @@ function InnerAccordion({ title, children, defaultOpen = false }) {
   );
 }
 
-// ─── ПЕРЕВОРАЧИВАЮЩАЯСЯ КАРТОЧКА ───
+// ─── КАРТОЧКА ───
 function FlipCardBlock({ title, frontImage, accentColor = "var(--blue)", children, minHeight = 340 }) {
   const [flipped, setFlipped] = useState(false);
   return (
@@ -96,7 +72,8 @@ function FlipCardBlock({ title, frontImage, accentColor = "var(--blue)", childre
         </div>
         <div style={{ position: "absolute", inset: 0, backfaceVisibility: "hidden", transform: "rotateY(180deg) translateZ(0)", borderRadius: 12, overflow: "hidden", background: "rgba(255,255,255,0.98)", border: "1.5px solid rgba(0,112,192,0.25)", boxShadow: "0 4px 16px rgba(0,112,192,0.12)", padding: 18, display: "flex", flexDirection: "column" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, paddingBottom: 12, borderBottom: "1px solid var(--line)" }}>
-            <div style={{ width: 4, height: 24, background: accentColor, borderRadius: 2, boxShadow: "0 2px 4px rgba(0,0,0,0.1)" }} />            <h3 style={{ fontFamily: "var(--font-head)", fontSize: 15, color: "var(--blue)", margin: 0, letterSpacing: "0.6px", fontWeight: 600 }}>{title}</h3>
+            <div style={{ width: 4, height: 24, background: accentColor, borderRadius: 2, boxShadow: "0 2px 4px rgba(0,0,0,0.1)" }} />
+            <h3 style={{ fontFamily: "var(--font-head)", fontSize: 15, color: "var(--blue)", margin: 0, letterSpacing: "0.6px", fontWeight: 600 }}>{title}</h3>
           </div>
           <div style={{ overflowY: "auto", flex: 1, maxHeight: "65vh", fontSize: 14, lineHeight: 1.7, color: "var(--text2)", paddingRight: 4 }}>{children}</div>
         </div>
@@ -105,8 +82,8 @@ function FlipCardBlock({ title, frontImage, accentColor = "var(--blue)", childre
   );
 }
 
-// ─── МОДАЛЬНОЕ ОКНО ГОДА ───
-function YearModal({ yearData, onClose, isVedic }) {
+// ─── МОДАЛЬНОЕ ОКНО ───
+function YearModal({ yearData, onClose }) {
   useEffect(() => {
     const handleEsc = (e) => e.key === 'Escape' && onClose();
     window.addEventListener('keydown', handleEsc);
@@ -119,8 +96,7 @@ function YearModal({ yearData, onClose, isVedic }) {
         width: "90%", maxWidth: 600, maxHeight: "80vh", overflowY: "auto",
         background: "rgba(255,255,255,0.96)", borderRadius: 12, padding: 24,
         border: "1.5px solid rgba(0,112,192,0.25)", boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
-        position: "relative"
-      }}>
+        position: "relative"      }}>
         <button onClick={onClose} style={{ position: "absolute", top: 12, right: 12, background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "var(--text3)" }}>✕</button>
         <h2 style={{ fontFamily: "var(--font-head)", fontSize: 22, color: "var(--blue)", margin: "0 0 16px 0", letterSpacing: "1px" }}>Год {yearData.year}</h2>
         
@@ -145,7 +121,8 @@ function YearModal({ yearData, onClose, isVedic }) {
     </div>
   );
 }
-// ─── ТРАЙМЛАЙН С ФОНОВЫМ SVG ───
+
+// ─── ТАЙМЛАЙН ЦЯЦЗЫ ───
 function CycleTimeline({ dob, isVedic, onYearSelect }) {
   const age = dob ? Math.floor((new Date() - new Date(dob)) / (365.25 * 24 * 60 * 60 * 1000)) : 0;
   const currentYear = Math.min(age, 100);
@@ -153,10 +130,11 @@ function CycleTimeline({ dob, isVedic, onYearSelect }) {
 
   return (
     <div style={{ position: "relative", padding: "20px 0", overflow: "hidden", borderRadius: 12, background: "rgba(255,255,255,0.8)", border: "1px solid var(--line)" }}>
-      {/* ФОНОВЫЙ SVG-ЧЕРТЕЖ */}
+      {/* ИСПРАВЛЕННЫЙ SVG С ФОНОВЫМ SVG */}
       <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none", opacity: 0.6 }} viewBox="0 0 800 200" preserveAspectRatio="xMidYMid meet">
         <defs>
-          <style>@keyframes flow-bg { 0%{stroke-dashoffset:0} 100%{stroke-dashoffset:-40} }</style>
+          {/* ИСПРАВЛЕНИЕ: Обертка в шаблонную строку для корректного парсинга JSX */}
+          <style>{"@keyframes flow-bg { 0%{stroke-dashoffset:0} 100%{stroke-dashoffset:-40} }"}</style>
         </defs>
         <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
           <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(0,112,192,0.08)" strokeWidth="0.5"/>
@@ -167,15 +145,14 @@ function CycleTimeline({ dob, isVedic, onYearSelect }) {
         <path d="M 0 100 Q 100 40 200 100 T 400 100 T 600 100 T 800 100" fill="none" stroke="var(--gold)" strokeWidth="1.5" strokeDasharray="8 4" style={{ animation: "flow-bg 6s linear infinite" }}/>
       </svg>
 
-      <div style={{ position: "relative", zIndex: 1, display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-        <h3 style={{ fontFamily: "var(--font-head)", fontSize: 16, color: "var(--blue)", margin: 0, letterSpacing: 1 }}>{isVedic ? 'Ведический календарь: годовые циклы' : 'Жизненный цикл Цзяцзы: 0–100 лет'}</h3>
+      <div style={{ position: "relative", zIndex: 1, display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>        <h3 style={{ fontFamily: "var(--font-head)", fontSize: 16, color: "var(--blue)", margin: 0, letterSpacing: 1 }}>{isVedic ? 'Ведический календарь: годовые циклы' : 'Жизненный цикл Цзяцзы: 0–100 лет'}</h3>
         <span className="badge bgr" style={{ fontSize: 11, padding: "4px 10px" }}>Текущий: {currentYear} лет</span>
       </div>
 
       <div style={{ overflowX: "auto", paddingBottom: 8, position: "relative", zIndex: 1 }}>
         <div style={{ display: "flex", minWidth: "800px", gap: 0, position: "relative" }}>
           <div style={{ position: "absolute", top: "50%", left: 0, right: 0, height: 2, background: "var(--line)", transform: "translateY(-50%)" }} />
-          {years.map((y, i) => {
+          {years.map((y) => {
             const isActive = y === currentYear;
             const isPast = y < currentYear;
             return (
@@ -194,7 +171,8 @@ function CycleTimeline({ dob, isVedic, onYearSelect }) {
         </div>
       </div>
       <p style={{ fontSize: 11, color: "var(--text3)", textAlign: "center", marginTop: 12, fontFamily: "var(--font-mono)" }}>Нажмите на любой год для детализации</p>
-    </div>  );
+    </div>
+  );
 }
 
 // ─── ОСНОВНОЙ КОМПОНЕНТ ───
@@ -216,8 +194,16 @@ export function ProfileSection() {
   const destiny = insights.destiny || { degree: 241, interpretation: "Интеграция опыта" };
 
   const handleRefresh = () => { setIsRefreshing(true); setTimeout(() => { setIsRefreshing(false); notify?.("✅ Данные обновлены"); }, 800); };
-  const handleReset = () => { if (window.confirm("Вы уверены? Это удалит ваш профиль и вернет к началу настройки.")) { setProfile(null); notify?.("🗑️ Профиль сброшен"); } };
-  const handleYearSelect = (y) => setSelectedYear(generateYearInsights(y, profile.dob));
+  const handleReset = () => { if (window.confirm("Вы уверены? Это удалит ваш профиль и вернет к началу настройки.")) { setProfile(null); notify?.("🗑️ Профиль сброшен"); } };  const handleYearSelect = (y) => {
+    // Простая логика для модального окна (можно заменить на данные из базы)
+    setSelectedYear({
+      year: y,
+      jiazi: JIAZI_STAGES[Math.floor((y % 60) / 5)],
+      vedic: { name: 'Год интеграции', qi: 'Баланс', health: 'Общее', tips: 'Наблюдайте' },
+      warnings: 'Переходная фаза. Осторожность в планах.',
+      recommendations: 'Акцент на текущие приоритеты.'
+    });
+  };
 
   return (
     <div className="page" style={{ paddingBottom: 100 }}>
@@ -243,7 +229,8 @@ export function ProfileSection() {
           </FlipCardBlock>
 
           <FlipCardBlock title="Западный Зодиак" frontImage={null} accentColor="var(--blue)">
-            <div style={{ fontSize: 14, lineHeight: 1.75, color: "var(--text2)" }}>              <p style={{ marginBottom: 12, fontWeight: 500 }}><strong style={{ color: "var(--blue)", fontSize: 16 }}>{insights.zodiac || "—"}</strong> <span>({insights.zodiacElement || "Воздух"}) под управлением {insights.rulingPlanet || "Меркурия"}.</span></p>
+            <div style={{ fontSize: 14, lineHeight: 1.75, color: "var(--text2)" }}>
+              <p style={{ marginBottom: 12, fontWeight: 500 }}><strong style={{ color: "var(--blue)", fontSize: 16 }}>{insights.zodiac || "—"}</strong> <span>({insights.zodiacElement || "Воздух"}) под управлением {insights.rulingPlanet || "Меркурия"}.</span></p>
               <InnerAccordion title="Сильные стороны" defaultOpen={true}>{insights.zodiacStrengths || "Коммуникация, адаптивность, интеллект"}</InnerAccordion>
               <InnerAccordion title="Уязвимые зоны">{insights.zodiacWeaknesses || "Лёгкие, бронхи, плечи, нервная система"}</InnerAccordion>
               <InnerAccordion title="Как использовать">
@@ -256,8 +243,7 @@ export function ProfileSection() {
             </div>
           </FlipCardBlock>
 
-          <FlipCardBlock title="Восточный Знак" frontImage={null} accentColor="var(--gold)">
-            <div style={{ fontSize: 14, lineHeight: 1.75, color: "var(--text2)" }}>
+          <FlipCardBlock title="Восточный Знак" frontImage={null} accentColor="var(--gold)">            <div style={{ fontSize: 14, lineHeight: 1.75, color: "var(--text2)" }}>
               <p style={{ marginBottom: 12, fontWeight: 500 }}><strong style={{ color: "var(--gold-dark)", fontSize: 16 }}>{insights.eastern || "—"}</strong> <span>({insights.easternElement || "Вода"}).</span></p>
               <InnerAccordion title="Энергетический портрет" defaultOpen={true}>{insights.easternTraits || "Честность и терпимость"}. Твоя стихия наделяет тебя глубокой интуицией.</InnerAccordion>
               <InnerAccordion title="Кармическая задача">{insights.easternKarma || "Научиться говорить 'нет' без чувства вины"}. Выстраивай границы, не теряя эмпатии.</InnerAccordion>
@@ -292,7 +278,8 @@ export function ProfileSection() {
                 <div style={{ padding: 12, background: "rgba(45,106,79,0.08)", borderRadius: 8, borderLeft: "3px solid var(--success)" }}>
                   <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--success)", letterSpacing: 1, marginBottom: 6 }}>🧠 ПИК КОНЦЕНТРАЦИИ</div>
                   <p style={{ margin: 0, fontSize: 13 }}>{chronoPeaks.focus?.tip || "Самые сложные задачи — в это время."}</p>
-                </div>                <div style={{ padding: 12, background: "rgba(139,32,32,0.06)", borderRadius: 8, borderLeft: "3px solid var(--error)" }}>
+                </div>
+                <div style={{ padding: 12, background: "rgba(139,32,32,0.06)", borderRadius: 8, borderLeft: "3px solid var(--error)" }}>
                   <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--error)", letterSpacing: 1, marginBottom: 6 }}>⚡ ПРОВАЛ ЭНЕРГИИ</div>
                   <p style={{ margin: 0, fontSize: 13 }}>Идеально для рутины и делегирования.</p>
                 </div>
@@ -305,8 +292,7 @@ export function ProfileSection() {
                 </ul>
               </InnerAccordion>
             </div>
-          </FlipCardBlock>
-        </>
+          </FlipCardBlock>        </>
       )}
 
       {activeTab === 'deep' && (
@@ -341,7 +327,8 @@ export function ProfileSection() {
               </div>
             </InnerAccordion>
           </div>
-          <div style={{ background: "rgba(0,112,192,0.03)", borderRadius: 10, padding: 16, border: "1px solid var(--line)", position: "relative" }}>            <div style={{ height: 120, marginBottom: 16, borderRadius: 8, overflow: "hidden", position: "relative", background: "rgba(255,255,255,0.5)" }}>
+          <div style={{ background: "rgba(0,112,192,0.03)", borderRadius: 10, padding: 16, border: "1px solid var(--line)", position: "relative" }}>
+            <div style={{ height: 120, marginBottom: 16, borderRadius: 8, overflow: "hidden", position: "relative", background: "rgba(255,255,255,0.5)" }}>
               <img src="/assets/avatars-icons/front-vedic-focus.svg" alt="Ведический фокус" style={{ width: "100%", height: "100%", objectFit: "contain", opacity: 0.9 }} onError={(e) => e.target.style.display = "none" } />
             </div>
             <h3 style={{ fontFamily: "var(--font-head)", fontSize: 16, color: "var(--blue)", margin: "0 0 12px 0", letterSpacing: 1 }}>Ведический Паспорт</h3>
@@ -355,7 +342,6 @@ export function ProfileSection() {
       {activeTab === 'jiazi' && (
         <CycleTimeline dob={profile.dob} isVedic={false} onYearSelect={handleYearSelect} />
       )}
-
       {activeTab === 'vedic' && (
         <CycleTimeline dob={profile.dob} isVedic={true} onYearSelect={handleYearSelect} />
       )}
@@ -372,4 +358,4 @@ export function ProfileSection() {
       {selectedYear && <YearModal yearData={selectedYear} onClose={() => setSelectedYear(null)} />}
     </div>
   );
-        }
+                        }
