@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" width="100%" height="100%">
+  <defs>
+    <style>
+      @keyframes spin { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
+      @keyframes spin-reverse { 0%{transform:rotate(0deg)} 100%{transform:rotate(-360deg)} }
+      @keyframes pulse-core { 0%,100%{opacity:0.7;transform:scale(1)} 50%{opacity:1;transform:scale(1.1)} }
+      .ring { fill:none; stroke:var(--gold, #c8a45a); stroke-width:1; }
+      .ring-blue { fill:none; stroke:var(--blue, #0070c0); stroke-width:1.2; }
+      .orbit { fill:var(--gold, #c8a45a); }
+      .core { fill:var(--blue, #0070c0); animation:pulse-core 3s ease-in-out infinite; }
+      .spin-cw { animation:spin 24s linear infinite; transform-origin:center; }
+      .spin-ccw { animation:spin-reverse 36s linear infinite; transform-origin:center; }
+    </style>
+  </defs>
+
+  <!-- Кендры (квадрат/крест) -->
+  <g class="ring spin-cw">
+    <circle cx="150" cy="150" r="110"/>
+    <rect x="40" y="40" width="220" height="220" rx="4"/>
+  </g>
+
+  <!-- Триконы (треугольники) -->
+  <g class="ring-blue spin-ccw">
+    <polygon points="150,30 250,230 50,230"/>
+    <polygon points="150,270 50,70 250,70"/>
+  </g>
+
+  <!-- Орбиты планет -->
+  <circle cx="150" cy="150" r="80" fill="none" stroke="var(--text3, #8c7a5a)" stroke-width="0.5" stroke-dasharray="4 4"/>
+  <circle class="orbit spin-cw" style="animation-duration:12s" cx="150" cy="70" r="3"/>
+  <circle class="orbit spin-ccw" style="animation-duration:18s" cx="210" cy="190" r="2.5"/>
+  <circle class="orbit spin-cw" style="animation-duration:20s" cx="90" cy="210" r="3"/>
+
+  <!-- Ядро -->
+  <circle cx="150" cy="150" r="8" class="core"/>
+  <circle cx="150" cy="150" r="14" fill="none" stroke="var(--gold, #c8a45a)" stroke-width="1.5"/>
+
+  <!-- Подпись -->
+  <text x="150" y="280" text-anchor="middle" font-family="monospace" font-size="9" fill="var(--text2, #5c4a30)" letter-spacing="1">ВЕДИЧЕСКИЙ ФОКУС: КЕНДРЫ • ТРИКОНЫ</text>
+</svg>
