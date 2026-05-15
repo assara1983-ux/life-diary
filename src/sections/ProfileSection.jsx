@@ -21,12 +21,33 @@ const JIAZI_STAGES = [
   { name: 'Созревание', spheres: { health: 'Активация', career: 'Запуск', relations: 'Переговоры', spirit: 'Фокус', finance: 'Капитал' }, tips: 'Новое рождение.' }
 ];
 
+// ─── НАДЁЖНАЯ ФУНКЦИЯ ПОЛУЧЕНИЯ ПУТИ К ИЛЛЮСТРАЦИИ ───
+const getFrontImage = (category, value) => {
+  if (!value && category !== 'destiny') return null;
+  const raw = String(value).trim().toLowerCase();
+
+  if (category === 'chrono') {
+    const map = { 'жаворонок': 'front-chrono-lark.png', 'голубь': 'front-chrono-pigeon.png', 'сова': 'front-chrono-owl.png' };
+    for (const [k, v] of Object.entries(map)) {
+      if (raw.includes(k)) return `/assets/avatars-icons/${v}`;
+    }
+    return '/assets/avatars-icons/front-chrono-pigeon.png';
+  }
+  if (category === 'destiny') return '/assets/avatars-icons/front-destiny.png';
+
+  const paths = {
+    western: { 'овен':'front-zodiac-aries.png','телец':'front-zodiac-taurus.png','близнецы':'front-zodiac-gemini.png','рак':'front-zodiac-cancer.png','лев':'front-zodiac-leo.png','дева':'front-zodiac-virgo.png','весы':'front-zodiac-libra.png','скорпион':'front-zodiac-scorpio.png','стрелец':'front-zodiac-sagittarius.png','козерог':'front-zodiac-capricorn.png','водолей':'front-zodiac-aquarius.png','рыбы':'front-zodiac-pisces.png' },
+    eastern: { 'крыса':'front-eastern-rat.png','бык':'front-eastern-ox.png','тигр':'front-eastern-tiger.png','кролик':'front-eastern-rabbit.png','дракон':'front-eastern-dragon.png','змея':'front-eastern-snake.png','лошадь':'front-eastern-horse.png','коза':'front-eastern-goat.png','обезьяна':'front-eastern-monkey.png','петух':'front-eastern-rooster.png','собака':'front-eastern-dog.png','свинья':'front-eastern-pig.png' }
+  };
+  const list = paths[category];
+  return list?.[raw] ? `/assets/avatars-icons/${list[raw]}` : null;
+};
+
 // ─── ВКЛАДКИ ───
 function ProfileTabs({ activeTab, setActiveTab }) {
   const tabs = [
     { id: 'main', label: 'ОСНОВНОЙ' },
-    { id: 'deep', label: 'ГЛУБОКИЙ АНАЛИЗ' },
-    { id: 'jiazi', label: 'ЖИЗНЕННЫЙ ЦИКЛ' },
+    { id: 'deep', label: 'ГЛУБОКИЙ АНАЛИЗ' },    { id: 'jiazi', label: 'ЖИЗНЕННЫЙ ЦИКЛ' },
     { id: 'vedic', label: 'ВЕДИЧЕСКИЙ КАЛЕНДАРЬ' }
   ];
   return (
@@ -47,7 +68,8 @@ function ProfileTabs({ activeTab, setActiveTab }) {
 }
 
 // ─── АККОРДЕОН ───
-function InnerAccordion({ title, children, defaultOpen = false }) {  const [open, setOpen] = useState(defaultOpen);
+function InnerAccordion({ title, children, defaultOpen = false }) {
+  const [open, setOpen] = useState(defaultOpen);
   return (
     <div style={{ marginBottom: 10, background: "rgba(0,112,192,0.04)", borderRadius: 8, border: "1px solid rgba(0,112,192,0.15)" }}>
       <div onClick={(e) => { e.stopPropagation(); setOpen(!open); }} style={{ padding: "10px 12px", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", userSelect: "none" }}>
@@ -66,12 +88,15 @@ function FlipCardBlock({ title, frontImage, accentColor = "var(--blue)", childre
     <div style={{ perspective: "1200px", marginBottom: 28 }}>
       <div onClick={() => setFlipped(!flipped)} style={{ position: "relative", width: "100%", minHeight, transformStyle: "preserve-3d", transition: "transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1)", transform: flipped ? "rotateY(180deg)" : "none", cursor: "pointer", borderRadius: 12 }}>
         <div style={{ position: "absolute", inset: 0, backfaceVisibility: "hidden", borderRadius: 12, overflow: "hidden", background: "linear-gradient(135deg, #f8f4e8 0%, #e8d8c0 100%)", border: "2px solid var(--gold)", boxShadow: "0 6px 20px rgba(0,0,0,0.12)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", transform: "translateZ(0)" }}>
-          {frontImage ? <img src={frontImage} alt={title} style={{ maxHeight: "70%", maxWidth: "90%", objectFit: "contain", filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.15))" }} onError={(e) => e.target.style.display = "none" } /> : <div style={{ width: "80%", height: "60%", background: "rgba(0,112,192,0.05)", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text3)", fontSize: 12 }}>Иллюстрация</div>}
+          {frontImage ? (
+            <img src={frontImage} alt={title} style={{ maxHeight: "70%", maxWidth: "90%", objectFit: "contain", filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.15))" }} onError={(e) => e.target.style.display = "none" } />
+          ) : (
+            <div style={{ width: "80%", height: "60%", background: "rgba(0,112,192,0.05)", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text3)", fontSize: 12 }}>Иллюстрация</div>
+          )}
           <div style={{ marginTop: 14, fontFamily: "var(--font-head)", fontSize: 15, color: "var(--blue)", letterSpacing: "1px", fontWeight: 500 }}>{title}</div>
           <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 4, fontFamily: "var(--font-mono)" }}>Нажмите для деталей</div>
         </div>
-        <div style={{ position: "absolute", inset: 0, backfaceVisibility: "hidden", transform: "rotateY(180deg) translateZ(0)", borderRadius: 12, overflow: "hidden", background: "rgba(255,255,255,0.98)", border: "1.5px solid rgba(0,112,192,0.25)", boxShadow: "0 4px 16px rgba(0,112,192,0.12)", padding: 18, display: "flex", flexDirection: "column" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, paddingBottom: 12, borderBottom: "1px solid var(--line)" }}>
+        <div style={{ position: "absolute", inset: 0, backfaceVisibility: "hidden", transform: "rotateY(180deg) translateZ(0)", borderRadius: 12, overflow: "hidden", background: "rgba(255,255,255,0.98)", border: "1.5px solid rgba(0,112,192,0.25)", boxShadow: "0 4px 16px rgba(0,112,192,0.12)", padding: 18, display: "flex", flexDirection: "column" }}>          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, paddingBottom: 12, borderBottom: "1px solid var(--line)" }}>
             <div style={{ width: 4, height: 24, background: accentColor, borderRadius: 2, boxShadow: "0 2px 4px rgba(0,0,0,0.1)" }} />
             <h3 style={{ fontFamily: "var(--font-head)", fontSize: 15, color: "var(--blue)", margin: 0, letterSpacing: "0.6px", fontWeight: 600 }}>{title}</h3>
           </div>
@@ -96,7 +121,8 @@ function YearModal({ yearData, onClose }) {
         width: "90%", maxWidth: 600, maxHeight: "80vh", overflowY: "auto",
         background: "rgba(255,255,255,0.96)", borderRadius: 12, padding: 24,
         border: "1.5px solid rgba(0,112,192,0.25)", boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
-        position: "relative"      }}>
+        position: "relative"
+      }}>
         <button onClick={onClose} style={{ position: "absolute", top: 12, right: 12, background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "var(--text3)" }}>✕</button>
         <h2 style={{ fontFamily: "var(--font-head)", fontSize: 22, color: "var(--blue)", margin: "0 0 16px 0", letterSpacing: "1px" }}>Год {yearData.year}</h2>
         
@@ -119,10 +145,9 @@ function YearModal({ yearData, onClose }) {
         </InnerAccordion>
       </div>
     </div>
-  );
-}
+  );}
 
-// ─── ТАЙМЛАЙН ЦЯЦЗЫ ───
+// ─── ТАЙМЛАЙН ЦЯЦЗЫ / ВЕДИЧЕСКИЙ ───
 function CycleTimeline({ dob, isVedic, onYearSelect }) {
   const age = dob ? Math.floor((new Date() - new Date(dob)) / (365.25 * 24 * 60 * 60 * 1000)) : 0;
   const currentYear = Math.min(age, 100);
@@ -130,10 +155,8 @@ function CycleTimeline({ dob, isVedic, onYearSelect }) {
 
   return (
     <div style={{ position: "relative", padding: "20px 0", overflow: "hidden", borderRadius: 12, background: "rgba(255,255,255,0.8)", border: "1px solid var(--line)" }}>
-      {/* ИСПРАВЛЕННЫЙ SVG С ФОНОВЫМ SVG */}
       <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none", opacity: 0.6 }} viewBox="0 0 800 200" preserveAspectRatio="xMidYMid meet">
         <defs>
-          {/* ИСПРАВЛЕНИЕ: Обертка в шаблонную строку для корректного парсинга JSX */}
           <style>{"@keyframes flow-bg { 0%{stroke-dashoffset:0} 100%{stroke-dashoffset:-40} }"}</style>
         </defs>
         <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
@@ -145,7 +168,8 @@ function CycleTimeline({ dob, isVedic, onYearSelect }) {
         <path d="M 0 100 Q 100 40 200 100 T 400 100 T 600 100 T 800 100" fill="none" stroke="var(--gold)" strokeWidth="1.5" strokeDasharray="8 4" style={{ animation: "flow-bg 6s linear infinite" }}/>
       </svg>
 
-      <div style={{ position: "relative", zIndex: 1, display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>        <h3 style={{ fontFamily: "var(--font-head)", fontSize: 16, color: "var(--blue)", margin: 0, letterSpacing: 1 }}>{isVedic ? 'Ведический календарь: годовые циклы' : 'Жизненный цикл Цзяцзы: 0–100 лет'}</h3>
+      <div style={{ position: "relative", zIndex: 1, display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+        <h3 style={{ fontFamily: "var(--font-head)", fontSize: 16, color: "var(--blue)", margin: 0, letterSpacing: 1 }}>{isVedic ? 'Ведический календарь: годовые циклы' : 'Жизненный цикл Цзяцзы: 0–100 лет'}</h3>
         <span className="badge bgr" style={{ fontSize: 11, padding: "4px 10px" }}>Текущий: {currentYear} лет</span>
       </div>
 
@@ -170,8 +194,7 @@ function CycleTimeline({ dob, isVedic, onYearSelect }) {
           })}
         </div>
       </div>
-      <p style={{ fontSize: 11, color: "var(--text3)", textAlign: "center", marginTop: 12, fontFamily: "var(--font-mono)" }}>Нажмите на любой год для детализации</p>
-    </div>
+      <p style={{ fontSize: 11, color: "var(--text3)", textAlign: "center", marginTop: 12, fontFamily: "var(--font-mono)" }}>Нажмите на любой год для детализации</p>    </div>
   );
 }
 
@@ -194,14 +217,14 @@ export function ProfileSection() {
   const destiny = insights.destiny || { degree: 241, interpretation: "Интеграция опыта" };
 
   const handleRefresh = () => { setIsRefreshing(true); setTimeout(() => { setIsRefreshing(false); notify?.("✅ Данные обновлены"); }, 800); };
-  const handleReset = () => { if (window.confirm("Вы уверены? Это удалит ваш профиль и вернет к началу настройки.")) { setProfile(null); notify?.("🗑️ Профиль сброшен"); } };  const handleYearSelect = (y) => {
-    // Простая логика для модального окна (можно заменить на данные из базы)
+  const handleReset = () => { if (window.confirm("Вы уверены? Это удалит ваш профиль и вернет к началу настройки.")) { setProfile(null); notify?.("🗑️ Профиль сброшен"); } };
+  const handleYearSelect = (y) => {
     setSelectedYear({
       year: y,
       jiazi: JIAZI_STAGES[Math.floor((y % 60) / 5)],
-      vedic: { name: 'Год интеграции', qi: 'Баланс', health: 'Общее', tips: 'Наблюдайте' },
+      vedic: { name: 'Год интеграции', qi: 'Баланс Инь-Ян', health: 'Общее укрепление', tips: 'Наблюдайте за циклами' },
       warnings: 'Переходная фаза. Осторожность в планах.',
-      recommendations: 'Акцент на текущие приоритеты.'
+      recommendations: 'Акцент на текущие приоритеты и восстановление.'
     });
   };
 
@@ -209,6 +232,7 @@ export function ProfileSection() {
     <div className="page" style={{ paddingBottom: 100 }}>
       <ProfileTabs activeTab={activeTab} setActiveTab={setActiveTab} />
 
+      {/* ВКЛАДКА: ОСНОВНОЙ */}
       {activeTab === 'main' && (
         <>
           <FlipCardBlock title="Профиль" frontImage={isMale ? '/assets/avatars-icons/male-avatar.png' : '/assets/avatars-icons/female-avatar.png'} accentColor="var(--blue)" minHeight={360}>
@@ -219,8 +243,7 @@ export function ProfileSection() {
                 {profile.chronotype && <span className="badge bt" style={{ fontSize: 12, padding: "4px 10px" }}>⏱ {profile.chronotype}</span>}
                 {insights.zodiac && <span className="badge bm" style={{ fontSize: 12, padding: "4px 10px" }}>♈ {insights.zodiac}</span>}
               </div>
-              <div style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.6, padding: "12px 14px", background: "rgba(0,112,192,0.05)", borderRadius: 8, borderLeft: "3px solid var(--gold)", textAlign: "left" }}>
-                <strong style={{ color: "var(--gold-dark)" }}>Сводка:</strong> {insights.zodiac || "—"} ({insights.zodiacElement || "Воздух"}) · {insights.eastern || "—"} ({insights.easternElement || "Вода"}) · Градус: <strong style={{ color: "var(--gold)" }}>{destiny.degree}°</strong>
+              <div style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.6, padding: "12px 14px", background: "rgba(0,112,192,0.05)", borderRadius: 8, borderLeft: "3px solid var(--gold)", textAlign: "left" }}>                <strong style={{ color: "var(--gold-dark)" }}>Сводка:</strong> {insights.zodiac || "—"} ({insights.zodiacElement || "Воздух"}) · {insights.eastern || "—"} ({insights.easternElement || "Вода"}) · Градус: <strong style={{ color: "var(--gold)" }}>{destiny.degree}°</strong>
               </div>
             </div>
             <InnerAccordion title="Данные аккаунта" defaultOpen={true}>
@@ -228,7 +251,7 @@ export function ProfileSection() {
             </InnerAccordion>
           </FlipCardBlock>
 
-          <FlipCardBlock title="Западный Зодиак" frontImage={null} accentColor="var(--blue)">
+          <FlipCardBlock title="Западный Зодиак" frontImage={getFrontImage("western", insights.zodiac)} accentColor="var(--blue)">
             <div style={{ fontSize: 14, lineHeight: 1.75, color: "var(--text2)" }}>
               <p style={{ marginBottom: 12, fontWeight: 500 }}><strong style={{ color: "var(--blue)", fontSize: 16 }}>{insights.zodiac || "—"}</strong> <span>({insights.zodiacElement || "Воздух"}) под управлением {insights.rulingPlanet || "Меркурия"}.</span></p>
               <InnerAccordion title="Сильные стороны" defaultOpen={true}>{insights.zodiacStrengths || "Коммуникация, адаптивность, интеллект"}</InnerAccordion>
@@ -243,7 +266,8 @@ export function ProfileSection() {
             </div>
           </FlipCardBlock>
 
-          <FlipCardBlock title="Восточный Знак" frontImage={null} accentColor="var(--gold)">            <div style={{ fontSize: 14, lineHeight: 1.75, color: "var(--text2)" }}>
+          <FlipCardBlock title="Восточный Знак" frontImage={getFrontImage("eastern", insights.eastern)} accentColor="var(--gold)">
+            <div style={{ fontSize: 14, lineHeight: 1.75, color: "var(--text2)" }}>
               <p style={{ marginBottom: 12, fontWeight: 500 }}><strong style={{ color: "var(--gold-dark)", fontSize: 16 }}>{insights.eastern || "—"}</strong> <span>({insights.easternElement || "Вода"}).</span></p>
               <InnerAccordion title="Энергетический портрет" defaultOpen={true}>{insights.easternTraits || "Честность и терпимость"}. Твоя стихия наделяет тебя глубокой интуицией.</InnerAccordion>
               <InnerAccordion title="Кармическая задача">{insights.easternKarma || "Научиться говорить 'нет' без чувства вины"}. Выстраивай границы, не теряя эмпатии.</InnerAccordion>
@@ -257,7 +281,7 @@ export function ProfileSection() {
             </div>
           </FlipCardBlock>
 
-          <FlipCardBlock title="Градус Судьбы" frontImage={null} accentColor="var(--gold)">
+          <FlipCardBlock title="Градус Судьбы" frontImage={getFrontImage("destiny")} accentColor="var(--gold)">
             <div style={{ textAlign: "center", padding: "8px 0 16px" }}>
               <div style={{ fontFamily: "var(--font-head)", fontSize: 38, color: "var(--gold)", fontWeight: 600, letterSpacing: "2.5px" }}>{destiny.degree || 241}°</div>
               <div style={{ fontFamily: "var(--font-italic)", fontSize: 15, color: "var(--text2)", marginTop: 6, fontStyle: "italic" }}>{destiny.interpretation || "Интеграция опыта"}</div>
@@ -268,10 +292,9 @@ export function ProfileSection() {
                 <li>Доверяй интуиции, проверяй фактами</li>
                 <li>Веди дневник наблюдений</li>
               </ul>
-            </InnerAccordion>
-          </FlipCardBlock>
+            </InnerAccordion>          </FlipCardBlock>
 
-          <FlipCardBlock title="Хроно-тип" frontImage={null} accentColor="var(--blue)">
+          <FlipCardBlock title="Хроно-тип" frontImage={getFrontImage("chrono", profile.chronotype)} accentColor="var(--blue)">
             <div style={{ fontSize: 14, lineHeight: 1.75, color: "var(--text2)" }}>
               <p style={{ marginBottom: 14, fontWeight: 500 }}><strong style={{ color: "var(--blue)", fontSize: 16 }}>{profile.chronotype || "🕊️ Голубь"}</strong></p>
               <div style={{ display: "grid", gap: 10, marginBottom: 14 }}>
@@ -292,32 +315,17 @@ export function ProfileSection() {
                 </ul>
               </InnerAccordion>
             </div>
-          </FlipCardBlock>        </>
+          </FlipCardBlock>
+        </>
       )}
 
+      {/* ВКЛАДКА: ГЛУБОКИЙ АНАЛИЗ */}
       {activeTab === 'deep' && (
         <>
-          <div style={{ background: "rgba(0,112,192,0.03)", borderRadius: 10, padding: 16, marginBottom: 24, border: "1px solid var(--line)", position: "relative" }}>
-            <div style={{ height: 120, marginBottom: 16, borderRadius: 8, overflow: "hidden", position: "relative", background: "rgba(255,255,255,0.5)" }}>
-              <img src="/assets/avatars-icons/front-jiazi-cycle.svg" alt="Цикл Цзяцзы" style={{ width: "100%", height: "100%", objectFit: "contain", opacity: 0.9 }} onError={(e) => e.target.style.display = "none" } />
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-              <h3 style={{ fontFamily: "var(--font-head)", fontSize: 14, color: "var(--blue)", margin: 0, letterSpacing: 1 }}>Цикл Цзяцзы: 12 стадий жизни</h3>
-              <span className="badge bgr" style={{ fontSize: 10, padding: "3px 8px" }}>Текущая: {JIAZI_STAGES[0].name}</span>
-            </div>
-            <div style={{ overflowX: "auto", marginBottom: 16, paddingBottom: 4 }}>
-              <div style={{ display: "flex", minWidth: "600px", gap: 4, position: "relative" }}>
-                <div style={{ position: "absolute", top: "50%", left: 0, right: 0, height: 2, background: "var(--line)", transform: "translateY(-50%)" }} />
-                {JIAZI_STAGES.map((s, i) => (
-                  <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", cursor: "pointer", zIndex: 1 }}>
-                    <div style={{ width: 12, height: 12, borderRadius: "50%", background: i === 0 ? "var(--gold)" : "var(--blue)", border: "2px solid var(--blue)", transition: "all 0.2s" }} />
-                    <div style={{ fontSize: 9, color: "var(--text3)", marginTop: 6, fontFamily: "var(--font-mono)" }}>{i * 5}–{i * 5 + 5}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <InnerAccordion title="Детали стадии" defaultOpen={true}>
-              <p style={{ fontStyle: "italic" }}>{JIAZI_STAGES[0].desc}</p>
+          <div style={{ background: "rgba(0,112,192,0.03)", borderRadius: 10, padding: 16, marginBottom: 24, border: "1px solid var(--line)" }}>
+            <h3 style={{ fontFamily: "var(--font-head)", fontSize: 14, color: "var(--blue)", margin: "0 0 12px 0", letterSpacing: 1 }}>Цикл Цзяцзы: 12 стадий жизни</h3>
+            <InnerAccordion title="Текущая стадия" defaultOpen={true}>
+              <p style={{ fontStyle: "italic" }}>{JIAZI_STAGES[0].tips}</p>
               <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
                 {Object.entries(JIAZI_STAGES[0].spheres).map(([key, val]) => (
                   <div key={key} style={{ display: "flex", gap: 8, fontSize: 12 }}>
@@ -327,21 +335,20 @@ export function ProfileSection() {
               </div>
             </InnerAccordion>
           </div>
-          <div style={{ background: "rgba(0,112,192,0.03)", borderRadius: 10, padding: 16, border: "1px solid var(--line)", position: "relative" }}>
-            <div style={{ height: 120, marginBottom: 16, borderRadius: 8, overflow: "hidden", position: "relative", background: "rgba(255,255,255,0.5)" }}>
-              <img src="/assets/avatars-icons/front-vedic-focus.svg" alt="Ведический фокус" style={{ width: "100%", height: "100%", objectFit: "contain", opacity: 0.9 }} onError={(e) => e.target.style.display = "none" } />
-            </div>
+          <div style={{ background: "rgba(0,112,192,0.03)", borderRadius: 10, padding: 16, border: "1px solid var(--line)" }}>
             <h3 style={{ fontFamily: "var(--font-head)", fontSize: 16, color: "var(--blue)", margin: "0 0 12px 0", letterSpacing: 1 }}>Ведический Паспорт</h3>
             <InnerAccordion title="Раджайоги (Возвышение)" defaultOpen={true}>Комбинации управителей Кендр и Трикун. Потенциал успеха через соединение или аспект.</InnerAccordion>
             <InnerAccordion title="Планетарный фокус">Дружеские планеты: {insights.zodiac === 'Близнецы' ? 'Меркурий, Венера, Сатурн' : '—'}. Развивайте их сферы.</InnerAccordion>
             <InnerAccordion title="Кармические вызовы (Мараки)">Управители 2 и 7 домов. Практика: Мритьюнджая-мантра 108×, благотворительность.</InnerAccordion>
           </div>
-        </>
-      )}
+        </>      )}
 
+      {/* ВКЛАДКА: ЖИЗНЕННЫЙ ЦИКЛ */}
       {activeTab === 'jiazi' && (
         <CycleTimeline dob={profile.dob} isVedic={false} onYearSelect={handleYearSelect} />
       )}
+
+      {/* ВКЛАДКА: ВЕДИЧЕСКИЙ КАЛЕНДАРЬ */}
       {activeTab === 'vedic' && (
         <CycleTimeline dob={profile.dob} isVedic={true} onYearSelect={handleYearSelect} />
       )}
@@ -358,4 +365,4 @@ export function ProfileSection() {
       {selectedYear && <YearModal yearData={selectedYear} onClose={() => setSelectedYear(null)} />}
     </div>
   );
-                        }
+                    }
