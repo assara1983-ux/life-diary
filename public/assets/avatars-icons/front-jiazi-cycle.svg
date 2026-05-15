@@ -1,26 +1,36 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240" width="100%" height="100%">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 240" width="100%" height="100%">
   <defs>
     <style>
-      @keyframes flow-fwd { 0% { stroke-dashoffset: 0; } 100% { stroke-dashoffset: -180; } }
-      @keyframes flow-bwd { 0% { stroke-dashoffset: 0; } 100% { stroke-dashoffset: 180; } }
-      @keyframes spin-slow { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-      @keyframes pulse-dot { 0%,100% { opacity: .5; r: 3.5; } 50% { opacity: 1; r: 5; } }
-      @keyframes fade-label { 0%,100% { opacity: .7; } 50% { opacity: 1; } }
-      
+      @keyframes twist-h {
+        0%, 100% { transform: rotateY(0deg) skewX(0deg); }
+        25% { transform: rotateY(90deg) skewX(4deg); }
+        50% { transform: rotateY(180deg) skewX(0deg); }
+        75% { transform: rotateY(270deg) skewX(-4deg); }
+      }
+      @keyframes flow-dash {
+        0% { stroke-dashoffset: 0; }
+        100% { stroke-dashoffset: -24; }
+      }
+      @keyframes pulse-mark {
+        0%, 100% { opacity: 0.6; transform: scale(1); }
+        50% { opacity: 1; transform: scale(1.15); }
+      }
       .grid { stroke: rgba(0,112,192,.06); stroke-width: .5; }
-      .axis { stroke: rgba(0,112,192,.15); stroke-width: 1; stroke-dasharray: 4 4; }
-      .helix { transform-origin: 200px 110px; animation: spin-slow 28s linear infinite; }
-      
-      .strand { fill: none; stroke-width: 2.2; stroke-linecap: round; }
-      .flow-1 { animation: flow-fwd 2.8s linear infinite; }
-      .flow-2 { animation: flow-bwd 3.2s linear infinite; }
-      .flow-3 { animation: flow-fwd 3.6s linear infinite; }
-      
-      .node { animation: pulse-dot 2.4s ease-in-out infinite; }
-      .label { font-family: monospace; font-size: 9px; fill: #5c4a30; letter-spacing: .5px; animation: fade-label 3s ease-in-out infinite; }
+      .axis { stroke: rgba(0,112,192,.12); stroke-width: 1; stroke-dasharray: 5 4; }
+      .helix {
+        transform-origin: 210px 110px;
+        animation: twist-h 26s linear infinite;
+        transform-style: preserve-3d;
+      }
+      .strand { fill: none; stroke-width: 2; stroke-linecap: round; }
+      .flow { animation: flow-dash 3.2s linear infinite; }
+      .flow-rev { animation: flow-dash 3.8s linear infinite reverse; }
+      .mark { animation: pulse-mark 2.8s ease-in-out infinite; }
+      .conn { stroke: rgba(0,112,192,.2); stroke-width: 1; stroke-dasharray: 2 2; }
+      .label { font-family: monospace; font-size: 8px; fill: #5c4a30; letter-spacing: .5px; }
+      .phase { font-family: monospace; font-size: 7.5px; fill: #8c7a5a; font-weight: 600; }
       .title { font-family: monospace; font-size: 9px; fill: #5c4a30; letter-spacing: 1.2px; }
-      
-      /* Цвета сфер */
+
       .health    { stroke: #2d6a4f; }
       .career    { stroke: #0070c0; }
       .relations { stroke: #c8a45a; }
@@ -32,57 +42,58 @@
   <!-- Фон и сетка -->
   <rect width="100%" height="100%" fill="#f5f0e1"/>
   <g class="grid">
-    <line x1="0" y1="60" x2="400" y2="60"/><line x1="0" y1="110" x2="400" y2="110"/><line x1="0" y1="160" x2="400" y2="160"/>
-    <line x1="100" y1="0" x2="100" y2="240"/><line x1="200" y1="0" x2="200" y2="240"/><line x1="300" y1="0" x2="300" y2="240"/>
+    <line x1="0" y1="60" x2="420" y2="60"/><line x1="0" y1="110" x2="420" y2="110"/><line x1="0" y1="160" x2="420" y2="160"/>
+    <line x1="100" y1="0" x2="100" y2="240"/><line x1="210" y1="0" x2="210" y2="240"/><line x1="320" y1="0" x2="320" y2="240"/>
   </g>
 
-  <!-- Центральная ось -->
-  <line x1="30" y1="110" x2="370" y2="110" class="axis"/>
-
-  <!-- Вращающаяся ДНК-спираль из 5 линий -->
-  <g class="helix">
+  <!-- Горизонтальная ось цикла -->
+  <line x1="40" y1="110" x2="380" y2="110" class="axis"/>
+  <!-- Вращающийся горизонтальный геликс -->
+  <g class="helix" style="perspective: 700px;">
+    
     <!-- Здоровье -->
-    <path class="strand health" d="M 40 110 C 80 40, 120 40, 160 110 S 240 180, 280 110 S 360 40, 370 110" />
-    <path class="strand health flow-1" d="M 40 110 C 80 40, 120 40, 160 110 S 240 180, 280 110 S 360 40, 370 110" stroke-dasharray="6 14" />
-    
-    <!-- Карьера -->
-    <path class="strand career" d="M 40 85 C 80 15, 120 15, 160 85 S 240 155, 280 85 S 360 15, 370 85" />
-    <path class="strand career flow-2" d="M 40 85 C 80 15, 120 15, 160 85 S 240 155, 280 85 S 360 15, 370 85" stroke-dasharray="8 12" />
-    
-    <!-- Отношения -->
-    <path class="strand relations" d="M 40 60 C 80 -10, 120 -10, 160 60 S 240 130, 280 60 S 360 -10, 370 60" />
-    <path class="strand relations flow-3" d="M 40 60 C 80 -10, 120 -10, 160 60 S 240 130, 280 60 S 360 -10, 370 60" stroke-dasharray="5 16" />
-    
-    <!-- Духовность -->
-    <path class="strand spirit" d="M 40 135 C 80 205, 120 205, 160 135 S 240 65, 280 135 S 360 205, 370 135" />
-    <path class="strand spirit flow-1" d="M 40 135 C 80 205, 120 205, 160 135 S 240 65, 280 135 S 360 205, 370 135" stroke-dasharray="7 13" />
-    
-    <!-- Финансы -->
-    <path class="strand finance" d="M 40 160 C 80 230, 120 230, 160 160 S 240 90, 280 160 S 360 230, 370 160" />
-    <path class="strand finance flow-2" d="M 40 160 C 80 230, 120 230, 160 160 S 240 90, 280 160 S 360 230, 370 160" stroke-dasharray="9 11" />
+    <path class="strand health" d="M 50 105 C 110 45 150 145 210 105 C 270 65 310 145 370 105"/>
+    <path class="strand health flow" d="M 50 105 C 110 45 150 145 210 105 C 270 65 310 145 370 105" stroke-dasharray="5 16"/>
+    <circle cx="150" cy="95" r="4.5" fill="#f5f0e1" stroke="#2d6a4f" class="mark"/>
+    <line x1="150" y1="95" x2="150" y2="75" class="conn"/>
+    <text x="150" y="70" class="phase" text-anchor="middle">25–30 лет</text>
 
-    <!-- Пульсирующие узлы на пиках -->
-    <circle cx="80" cy="40" r="4" fill="#f5f0e1" class="node" stroke="#2d6a4f"/>
-    <circle cx="160" cy="110" r="4" fill="#f5f0e1" class="node" stroke="#0070c0"/>
-    <circle cx="240" cy="180" r="4" fill="#f5f0e1" class="node" stroke="#c8a45a"/>
-    <circle cx="80" cy="15" r="3.5" fill="#f5f0e1" class="node" stroke="#5c4a30"/>
-    <circle cx="280" cy="85" r="3.5" fill="#f5f0e1" class="node" stroke="#8c7a5a"/>
+    <!-- Карьера -->
+    <path class="strand career" d="M 50 115 C 110 165 150 85 210 115 C 270 165 310 85 370 115"/>
+    <path class="strand career flow-rev" d="M 50 115 C 110 165 150 85 210 115 C 270 165 310 85 370 115" stroke-dasharray="6 15"/>
+    <circle cx="210" cy="125" r="4.5" fill="#f5f0e1" stroke="#0070c0" class="mark"/>
+    <line x1="210" y1="125" x2="210" y2="145" class="conn"/>
+    <text x="210" y="158" class="phase" text-anchor="middle">35–40 лет</text>
+
+    <!-- Отношения -->
+    <path class="strand relations" d="M 50 95 C 110 35 150 135 210 95 C 270 55 310 135 370 95"/>
+    <path class="strand relations flow" d="M 50 95 C 110 35 150 135 210 95 C 270 55 310 135 370 95" stroke-dasharray="7 14"/>
+    <circle cx="270" cy="85" r="4.5" fill="#f5f0e1" stroke="#c8a45a" class="mark"/>
+    <line x1="270" y1="85" x2="270" y2="65" class="conn"/>
+    <text x="270" y="60" class="phase" text-anchor="middle">45–50 лет</text>
+
+    <!-- Духовность -->
+    <path class="strand spirit" d="M 50 125 C 110 185 150 105 210 125 C 270 185 310 105 370 125"/>
+    <path class="strand spirit flow-rev" d="M 50 125 C 110 185 150 105 210 125 C 270 185 310 105 370 125" stroke-dasharray="8 13"/>
+    <circle cx="310" cy="135" r="4.5" fill="#f5f0e1" stroke="#5c4a30" class="mark"/>
+    <line x1="310" y1="135" x2="310" y2="155" class="conn"/>
+    <text x="310" y="168" class="phase" text-anchor="middle">55–60 лет</text>
+
+    <!-- Финансы -->
+    <path class="strand finance" d="M 50 85 C 110 25 150 125 210 85 C 270 45 310 125 370 85"/>
+    <path class="strand finance flow" d="M 50 85 C 110 25 150 125 210 85 C 270 45 310 125 370 85" stroke-dasharray="9 12"/>
+    <circle cx="100" cy="75" r="4.5" fill="#f5f0e1" stroke="#8c7a5a" class="mark"/>
+    <line x1="100" y1="75" x2="100" y2="55" class="conn"/>
+    <text x="100" y="50" class="phase" text-anchor="middle">20–25 лет</text>
+
   </g>
 
-  <!-- Подписи сфер (слева и справа) -->
-  <text x="22" y="42" class="label" text-anchor="end">ЗДОРОВЬЕ</text>
-  <text x="22" y="87" class="label" text-anchor="end">КАРЬЕРА</text>
-  <text x="22" y="62" class="label" text-anchor="end">ОТНОШЕНИЯ</text>
-  <text x="22" y="137" class="label" text-anchor="end">ДУХОВНОСТЬ</text>
-  <text x="22" y="162" class="label" text-anchor="end">ФИНАНСЫ</text>
-
-  <!-- Подписи справа (зеркально) -->
-  <text x="378" y="42" class="label" text-anchor="start">ЗДОРОВЬЕ</text>
-  <text x="378" y="87" class="label" text-anchor="start">КАРЬЕРА</text>
-  <text x="378" y="62" class="label" text-anchor="start">ОТНОШЕНИЯ</text>
-  <text x="378" y="137" class="label" text-anchor="start">ДУХОВНОСТЬ</text>
-  <text x="378" y="162" class="label" text-anchor="start">ФИНАНСЫ</text>
+  <!-- Подписи сфер (левая панель) -->
+  <text x="32" y="107" class="label" text-anchor="end">ЗДОРОВЬЕ</text>
+  <text x="32" y="117" class="label" text-anchor="end">КАРЬЕРА</text>
+  <text x="32" y="97" class="label" text-anchor="end">ОТНОШЕНИЯ</text>
+  <text x="32" y="127" class="label" text-anchor="end">ДУХОВНОСТЬ</text>
+  <text x="32" y="87" class="label" text-anchor="end">ФИНАНСЫ</text>
 
   <!-- Заголовок -->
-  <text x="200" y="232" class="title" text-anchor="middle">ЦЯЦЗЫ: 5 СФЕР ЦИ • ДНК-ЦИКЛ</text>
-</svg>
+  <text x="210" y="228" class="title" text-anchor="middle">ЦЯЦЗЫ: ГОРИЗОНТАЛЬНЫЙ ЦИКЛ • КЛЮЧЕВЫЕ ПЕРИОДЫ</text></svg>
