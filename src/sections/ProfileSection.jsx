@@ -2,16 +2,27 @@
 import React, { useState } from "react";
 import { useApp } from "../store/AppContext";
 import { getProfileInsights } from "../utils/knowledgeEngine";
+import { getMeridianInfo, getChronotypePeaks } from "../data/profileKnowledge";
 import { MaleAvatar, FemaleAvatar } from "../components/BlueprintAvatars";
 
-// ─── ПУТИ К ИЛЛЮСТРАЦИЯМ ───
+// ─── ПОЛУЧЕНИЕ ПУТИ К ИЛЛЮСТРАЦИИ ───
 const getFrontImage = (category, value) => {
   if (!value) return null;
   const base = value.trim();
   const paths = {
-    western: { 'Овен':'front-zodiac-aries.png','Телец':'front-zodiac-taurus.png','Близнецы':'front-zodiac-gemini.png','Рак':'front-zodiac-cancer.png','Лев':'front-zodiac-leo.png','Дева':'front-zodiac-virgo.png','Весы':'front-zodiac-libra.png','Скорпион':'front-zodiac-scorpio.png','Стрелец':'front-zodiac-sagittarius.png','Козерог':'front-zodiac-capricorn.png','Водолей':'front-zodiac-aquarius.png','Рыбы':'front-zodiac-pisces.png' },
-    eastern: { 'Крыса':'front-eastern-rat.png','Бык':'front-eastern-ox.png','Тигр':'front-eastern-tiger.png','Кролик':'front-eastern-rabbit.png','Дракон':'front-eastern-dragon.png','Змея':'front-eastern-snake.png','Лошадь':'front-eastern-horse.png','Коза':'front-eastern-goat.png','Обезьяна':'front-eastern-monkey.png','Петух':'front-eastern-rooster.png','Собака':'front-eastern-dog.png','Свинья':'front-eastern-pig.png' },
-    chrono: { 'Жаворонок':'front-chrono-lark.png','Голубь':'front-chrono-pigeon.png','Сова':'front-chrono-owl.png' },
+    western: {
+      'Овен': 'front-zodiac-aries.png', 'Телец': 'front-zodiac-taurus.png', 'Близнецы': 'front-zodiac-gemini.png',
+      'Рак': 'front-zodiac-cancer.png', 'Лев': 'front-zodiac-leo.png', 'Дева': 'front-zodiac-virgo.png',
+      'Весы': 'front-zodiac-libra.png', 'Скорпион': 'front-zodiac-scorpio.png', 'Стрелец': 'front-zodiac-sagittarius.png',
+      'Козерог': 'front-zodiac-capricorn.png', 'Водолей': 'front-zodiac-aquarius.png', 'Рыбы': 'front-zodiac-pisces.png'
+    },
+    eastern: {
+      'Крыса': 'front-eastern-rat.png', 'Бык': 'front-eastern-ox.png', 'Тигр': 'front-eastern-tiger.png',
+      'Кролик': 'front-eastern-rabbit.png', 'Дракон': 'front-eastern-dragon.png', 'Змея': 'front-eastern-snake.png',
+      'Лошадь': 'front-eastern-horse.png', 'Коза': 'front-eastern-goat.png', 'Обезьяна': 'front-eastern-monkey.png',
+      'Петух': 'front-eastern-rooster.png', 'Собака': 'front-eastern-dog.png', 'Свинья': 'front-eastern-pig.png'
+    },
+    chrono: { 'Жаворонок': 'front-chrono-lark.png', 'Голубь': 'front-chrono-pigeon.png', 'Сова': 'front-chrono-owl.png' },
     destiny: 'front-destiny.png'
   };
   const list = paths[category];
@@ -25,7 +36,10 @@ function InnerAccordion({ title, children, defaultOpen = false }) {
   return (
     <div style={{ marginBottom: 10, background: "rgba(0,112,192,0.04)", borderRadius: 8, border: "1px solid rgba(0,112,192,0.15)" }}>
       <div
-        onClick={(e) => { e.stopPropagation(); setOpen(!open); }}
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen(!open);
+        }}
         style={{ padding: "10px 12px", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", userSelect: "none" }}
       >
         <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--blue)", letterSpacing: 0.5 }}>{title}</span>
@@ -33,8 +47,7 @@ function InnerAccordion({ title, children, defaultOpen = false }) {
       </div>
       {open && (
         <div style={{ padding: "0 12px 12px", fontSize: 13, lineHeight: 1.6, color: "var(--text2)" }}>
-          {children}
-        </div>
+          {children}        </div>
       )}
     </div>
   );
@@ -47,7 +60,8 @@ function FlipCardBlock({ title, frontImage, accentColor = "var(--blue)", childre
   return (
     <div style={{ perspective: "1200px", marginBottom: 28 }}>
       <div
-        onClick={() => setFlipped(!flipped)}        style={{
+        onClick={() => setFlipped(!flipped)}
+        style={{
           position: "relative",
           width: "100%",
           minHeight: minHeight,
@@ -55,7 +69,7 @@ function FlipCardBlock({ title, frontImage, accentColor = "var(--blue)", childre
           transition: "transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1)",
           transform: flipped ? "rotateY(180deg)" : "none",
           cursor: "pointer",
-          borderRadius: 12,
+          borderRadius: 12
         }}
       >
         {/* ЛИЦЕВАЯ СТОРОНА */}
@@ -82,7 +96,6 @@ function FlipCardBlock({ title, frontImage, accentColor = "var(--blue)", childre
           <div style={{ marginTop: 14, fontFamily: "var(--font-head)", fontSize: 15, color: "var(--blue)", letterSpacing: "1px", fontWeight: 500 }}>{title}</div>
           <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 4, fontFamily: "var(--font-mono)" }}>Нажмите для деталей</div>
         </div>
-
         {/* ОБРАТНАЯ СТОРОНА */}
         <div style={{
           position: "absolute", inset: 0, backfaceVisibility: "hidden",
@@ -96,7 +109,8 @@ function FlipCardBlock({ title, frontImage, accentColor = "var(--blue)", childre
             <div style={{ width: 4, height: 24, background: accentColor, borderRadius: 2, boxShadow: "0 2px 4px rgba(0,0,0,0.1)" }} />
             <h3 style={{ fontFamily: "var(--font-head)", fontSize: 15, color: "var(--blue)", margin: 0, letterSpacing: "0.6px", fontWeight: 600 }}>{title}</h3>
           </div>
-          <div style={{ overflowY: "auto", flex: 1, maxHeight: "65vh", fontSize: 14, lineHeight: 1.7, color: "var(--text2)", paddingRight: 4 }}>            {children}
+          <div style={{ overflowY: "auto", flex: 1, maxHeight: "65vh", fontSize: 14, lineHeight: 1.7, color: "var(--text2)", paddingRight: 4 }}>
+            {children}
           </div>
         </div>
       </div>
@@ -116,8 +130,8 @@ export function ProfileSection() {
   const genderStr = String(profile.gender || "").trim();
   const isMale = genderStr.toLowerCase().includes("муж") || genderStr.toLowerCase() === "male";
 
-  const meridianInfo = insights.meridian || { name: "—", tip: "" };
-  const chronoData = insights.chronoData || { peak: "10:00–14:00", advice: "Пик активности в первой половине дня" };
+  const meridianInfo = getMeridianInfo(insights.zodiac);
+  const chronoPeaks = getChronotypePeaks(profile.chronotype);
   const destiny = insights.destiny || { degree: 241, interpretation: "Интеграция опыта" };
 
   const handleRefresh = () => {
@@ -131,7 +145,6 @@ export function ProfileSection() {
       notify?.("🗑️ Профиль сброшен");
     }
   };
-
   return (
     <div className="page" style={{ paddingBottom: 100 }}>
 
@@ -145,7 +158,8 @@ export function ProfileSection() {
             {profile.name || "Пользователь"}
           </h2>
           <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap", marginBottom: 12 }}>
-            <span className="badge bgr" style={{ fontSize: 12, padding: "4px 10px" }}>🎂 {age ?? "—"} лет</span>            {profile.chronotype && <span className="badge bt" style={{ fontSize: 12, padding: "4px 10px" }}>⏱ {profile.chronotype}</span>}
+            <span className="badge bgr" style={{ fontSize: 12, padding: "4px 10px" }}>🎂 {age ?? "—"} лет</span>
+            {profile.chronotype && <span className="badge bt" style={{ fontSize: 12, padding: "4px 10px" }}>⏱ {profile.chronotype}</span>}
             {insights.zodiac && <span className="badge bm" style={{ fontSize: 12, padding: "4px 10px" }}>♈ {insights.zodiac}</span>}
           </div>
           <div style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.6, padding: "12px 14px", background: "rgba(0,112,192,0.05)", borderRadius: 8, borderLeft: "3px solid var(--gold)", textAlign: "left" }}>
@@ -172,7 +186,7 @@ export function ProfileSection() {
           </InnerAccordion>
           <InnerAccordion title="Как использовать">
             <ul style={{ margin: "0 0 0 18px", lineHeight: 1.7 }}>
-              <li>Планируй важные дела на {chronoData.peak || "утро"}</li>
+              <li>Планируй важные дела на {chronoPeaks.focus?.hours || "утро"}</li>
               <li>Избегай многозадачности — фокусируйся на одном деле за раз</li>
               <li>Дыхательные практики укрепляют слабые зоны</li>
               <li>{meridianInfo.tip || "Регулярность питания и режим критичны"}</li>
@@ -180,7 +194,6 @@ export function ProfileSection() {
           </InnerAccordion>
         </div>
       </FlipCardBlock>
-
       {/* 3. ВОСТОЧНЫЙ ЗНАК */}
       <FlipCardBlock title="Восточный Знак" frontImage={getFrontImage("eastern", insights.eastern)} accentColor="var(--gold)">
         <div style={{ fontSize: 14, lineHeight: 1.75, color: "var(--text2)" }}>
@@ -194,11 +207,11 @@ export function ProfileSection() {
           <InnerAccordion title="Кармическая задача">
             {insights.easternKarma || "Научиться говорить 'нет' без чувства вины"}. Выстраивай границы, не теряя эмпатии.
           </InnerAccordion>
-          <InnerAccordion title="Рекомендации">            <ul style={{ margin: "0 0 0 18px", lineHeight: 1.7 }}>
+          <InnerAccordion title="Рекомендации">
+            <ul style={{ margin: "0 0 0 18px", lineHeight: 1.7 }}>
               <li>Используй спады энергии для восстановления</li>
               <li>Доверяй интуиции в финансовых вопросах</li>
               <li>Избегай токсичных связей</li>
-              <li>Практикуй водные процедуры для баланса</li>
             </ul>
           </InnerAccordion>
         </div>
@@ -218,7 +231,6 @@ export function ProfileSection() {
             <li>Доверяй интуиции, проверяй фактами</li>
             <li>Каждое утро спрашивай: «Какой урок я могу извлечь сегодня?»</li>
             <li>Веди дневник наблюдений</li>
-            <li>Избегай рутины, которая не несёт смысла</li>
           </ul>
         </InnerAccordion>
       </FlipCardBlock>
@@ -230,9 +242,8 @@ export function ProfileSection() {
           <div style={{ display: "grid", gap: 10, marginBottom: 14 }}>
             <div style={{ padding: 12, background: "rgba(45,106,79,0.08)", borderRadius: 8, borderLeft: "3px solid var(--success)" }}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--success)", letterSpacing: 1, marginBottom: 6 }}>🧠 ПИК КОНЦЕНТРАЦИИ</div>
-              <p style={{ margin: 0, fontSize: 13 }}>{chronoData.peak ? `С ${chronoData.peak.split("–")[0]}` : "Утро/День"}. Самые сложные задачи — в это время.</p>
-            </div>
-            <div style={{ padding: 12, background: "rgba(139,32,32,0.06)", borderRadius: 8, borderLeft: "3px solid var(--error)" }}>
+              <p style={{ margin: 0, fontSize: 13 }}>{chronoPeaks.focus?.tip || "Самые сложные задачи — в это время."}</p>
+            </div>            <div style={{ padding: 12, background: "rgba(139,32,32,0.06)", borderRadius: 8, borderLeft: "3px solid var(--error)" }}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--error)", letterSpacing: 1, marginBottom: 6 }}>⚡ ПРОВАЛ ЭНЕРГИИ</div>
               <p style={{ margin: 0, fontSize: 13 }}>Идеально для рутины, звонков, делегирования. Не планируй важных решений.</p>
             </div>
@@ -241,9 +252,10 @@ export function ProfileSection() {
             <ul style={{ margin: "0 0 0 18px", lineHeight: 1.7 }}>
               <li>Синхронизируй расписание с биоритмами — КПД +30–40%</li>
               <li>Сложные решения — только в пиковые часы</li>
-              <li>Соблюдай режим сна и восстановления</li>
-              <li>{chronoData.advice || "Умеренность и баланс — ключ к силе"}</li>
-            </ul>          </InnerAccordion>
+              <li>Соблюдай режим сна: {chronoPeaks.sleep?.hours || "22:30–23:30"}</li>
+              {chronoPeaks.meridian_peak && <li>Активный меридиан: {chronoPeaks.meridian_peak}</li>}
+            </ul>
+          </InnerAccordion>
         </div>
       </FlipCardBlock>
 
@@ -267,4 +279,4 @@ export function ProfileSection() {
       </div>
     </div>
   );
-                                                                                }
+}
