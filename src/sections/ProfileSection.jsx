@@ -2,127 +2,79 @@
 import React, { useState } from "react";
 import { useApp } from "../store/AppContext";
 import { getProfileInsights } from "../utils/knowledgeEngine";
+import { getMeridianInfo, getChronotypePeaks } from "../data/profileKnowledge";
 import { MaleAvatar, FemaleAvatar } from "../components/BlueprintAvatars";
 
-// ─── ТОЧНЫЕ ПУТИ К ИЛЛЮСТРАЦИЯМ ───
-const ZODIAC_IMG = {
-  'Овен': '/assets/avatars-icons/zodiac-aries.png',
-  'Телец': '/assets/avatars-icons/zodiac-taurus.png',
-  'Близнецы': '/assets/avatars-icons/zodiac-gemini.png',
-  'Рак': '/assets/avatars-icons/zodiac-cancer.png',
-  'Лев': '/assets/avatars-icons/zodiac-leo.png',
-  'Дева': '/assets/avatars-icons/zodiac-virgo.png',
-  'Весы': '/assets/avatars-icons/zodiac-libra.png',
-  'Скорпион': '/assets/avatars-icons/zodiac-scorpio.png',
-  'Стрелец': '/assets/avatars-icons/zodiac-sagittarius.png',
-  'Козерог': '/assets/avatars-icons/zodiac-capricorn.png',
-  'Водолей': '/assets/avatars-icons/zodiac-aquarius.png',
-  'Рыбы': '/assets/avatars-icons/zodiac-pisces.png'
-};
-const EASTERN_IMG = {
-  'Крыса': '/assets/avatars-icons/eastern-rat.png',
-  'Бык': '/assets/avatars-icons/eastern-ox.png',
-  'Тигр': '/assets/avatars-icons/eastern-tiger.png',
-  'Кролик': '/assets/avatars-icons/eastern-rabbit.png',
-  'Дракон': '/assets/avatars-icons/eastern-dragon.png',
-  'Змея': '/assets/avatars-icons/eastern-snake.png',
-  'Лошадь': '/assets/avatars-icons/eastern-horse.png',
-  'Коза': '/assets/avatars-icons/eastern-goat.png',
-  'Обезьяна': '/assets/avatars-icons/eastern-monkey.png',
-  'Петух': '/assets/avatars-icons/eastern-rooster.png',
-  'Собака': '/assets/avatars-icons/eastern-dog.png',
-  'Свинья': '/assets/avatars-icons/eastern-pig.png'
+// ─── ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ: ПОЛУЧЕНИЕ ПУТИ К ИЛЛЮСТРАЦИИ ───
+const getFrontImage = (category, value) => {
+  if (!value) return null;
+  const base = value.trim();
+  const paths = {
+    western: { 'Овен':'front-zodiac-aries.png','Телец':'front-zodiac-taurus.png','Близнецы':'front-zodiac-gemini.png','Рак':'front-zodiac-cancer.png','Лев':'front-zodiac-leo.png','Дева':'front-zodiac-virgo.png','Весы':'front-zodiac-libra.png','Скорпион':'front-zodiac-scorpio.png','Стрелец':'front-zodiac-sagittarius.png','Козерог':'front-zodiac-capricorn.png','Водолей':'front-zodiac-aquarius.png','Рыбы':'front-zodiac-pisces.png' },
+    eastern: { 'Крыса':'front-eastern-rat.png','Бык':'front-eastern-ox.png','Тигр':'front-eastern-tiger.png','Кролик':'front-eastern-rabbit.png','Дракон':'front-eastern-dragon.png','Змея':'front-eastern-snake.png','Лошадь':'front-eastern-horse.png','Коза':'front-eastern-goat.png','Обезьяна':'front-eastern-monkey.png','Петух':'front-eastern-rooster.png','Собака':'front-eastern-dog.png','Свинья':'front-eastern-pig.png' },
+    chrono: { 'Жаворонок':'front-chrono-lark.png','Голубь':'front-chrono-pigeon.png','Сова':'front-chrono-owl.png' },
+    destiny: 'front-destiny.png'
+  };
+  const list = paths[category];
+  if (typeof list === 'string') return `/assets/avatars-icons/${list}`;
+  return list?.[base] ? `/assets/avatars-icons/${list[base]}` : null;
 };
 
-// ─── КОМПОНЕНТ: КАРТОЧКА С ФОНОВОЙ ИЛЛЮСТРАЦИЕЙ ───
-function ProfileBlock({ title, illustrationSrc, children, accentColor = "var(--blue)" }) {
-  const [open, setOpen] = useState(true);
+// ─── КОМПОНЕНТ: ИНТЕРАКТИВНАЯ ПЕРЕВОРАЧИВАЮЩАЯСЯ КАРТОЧКА ───
+function FlipCardBlock({ title, frontImage, accentColor = "var(--blue)", children }) {
+  const [flipped, setFlipped] = useState(false);
 
   return (
-    <>
-      <div style={{
-        position: "relative",
-        background: "rgba(255, 255, 255, 0.12)", // Практически прозрачный
-        backdropFilter: "blur(8px)",
-        WebkitBackdropFilter: "blur(8px)",
-        border: "1.5px solid rgba(0,112,192,0.3)",
-        borderRadius: 12,
-        marginBottom: 24,        overflow: "hidden",
-        boxShadow: "0 6px 20px rgba(0,112,192,0.12)"
-      }}>
-        {/* Фоновая иллюстрация: линии выделены сильнее */}
-        {illustrationSrc && (
-          <img
-            src={illustrationSrc}
-            alt=""
-            style={{
-              position: "absolute",
-              inset: 0,
-              width: "100%",
-              height: "100%",
-              objectFit: "cover",
-              opacity: 0.38,
-              filter: "grayscale(100%) contrast(160%) brightness(95%)",
-              mixBlendMode: "multiply",
-              zIndex: 0,
-              pointerEvents: "none"
-            }}
-          />
-        )}
-
-        {/* Заголовок */}
-        <div
-          onClick={() => setOpen(!open)}
-          style={{
-            position: "relative",
-            zIndex: 1,
-            padding: "16px 20px",
-            background: open ? "rgba(255,255,255,0.75)" : "rgba(255,255,255,0.55)",
-            cursor: "pointer",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            borderBottom: "1px solid rgba(0,112,192,0.2)",
-            transition: "background 0.2s"
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-            <div style={{ width: 5, height: 26, background: accentColor, borderRadius: 3, boxShadow: "0 2px 4px rgba(0,0,0,0.15)" }} />
-            <h3 style={{
-              fontFamily: "var(--font-head)",
-              fontSize: 16,
-              color: "var(--text1)",
-              margin: 0,
-              letterSpacing: "0.6px",
-              fontWeight: 600
-            }}>
-              {title}            </h3>
-          </div>
-          <div style={{
-            fontSize: 18,
-            color: "var(--gold)",
-            transition: "transform 0.3s",
-            transform: open ? "rotate(180deg)" : "rotate(0)",
-            filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.15))"
-          }}>
-            ▼
-          </div>
+    <div style={{ perspective: "1000px", marginBottom: 28 }}>
+      <div
+        onClick={() => setFlipped(!flipped)}
+        style={{
+          position: "relative",
+          width: "100%",
+          minHeight: 300,
+          transformStyle: "preserve-3d",
+          transition: "transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1)",
+          transform: flipped ? "rotateY(180deg)" : "none",
+          cursor: "pointer",
+          borderRadius: 12
+        }}
+      >
+        {/* ЛИЦЕВАЯ СТОРОНА */}
+        <div style={{
+          position: "absolute", inset: 0, backfaceVisibility: "hidden",
+          borderRadius: 12, overflow: "hidden",
+          background: "linear-gradient(135deg, #f8f4e8 0%, #e8d8c0 100%)",
+          border: "2px solid var(--gold)", boxShadow: "0 6px 20px rgba(0,0,0,0.12)",
+          display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+          transform: "translateZ(0)"
+        }}>          {frontImage ? (
+            <img src={frontImage} alt={title} style={{ maxHeight: "75%", maxWidth: "90%", objectFit: "contain", filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.15))" }} onError={(e) => e.target.style.display = "none"} />
+          ) : (
+            <div style={{ width: "80%", height: "60%", background: "rgba(0,112,192,0.05)", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text3)", fontSize: 12 }}>Иллюстрация не загружена</div>
+          )}
+          <div style={{ marginTop: 12, fontFamily: "var(--font-head)", fontSize: 15, color: "var(--blue)", letterSpacing: "1px", fontWeight: 500 }}>{title}</div>
+          <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 4, fontFamily: "var(--font-mono)" }}>Нажмите, чтобы развернуть</div>
         </div>
 
-        {/* Контент */}
-        {open && (
-          <div style={{
-            position: "relative",
-            zIndex: 1,
-            padding: "20px",
-            borderTop: "1px solid rgba(0,112,192,0.2)",
-            background: "rgba(255,255,255,0.7)"
-          }}>
+        {/* ОБРАТНАЯ СТОРОНА */}
+        <div style={{
+          position: "absolute", inset: 0, backfaceVisibility: "hidden",
+          transform: "rotateY(180deg) translateZ(0)",
+          borderRadius: 12, overflow: "hidden",
+          background: "rgba(255,255,255,0.96)", border: "1.5px solid rgba(0,112,192,0.25)",
+          boxShadow: "0 4px 16px rgba(0,112,192,0.12)", padding: 20,
+          display: "flex", flexDirection: "column"
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16, paddingBottom: 12, borderBottom: "1px solid var(--line)" }}>
+            <div style={{ width: 4, height: 24, background: accentColor, borderRadius: 2, boxShadow: "0 2px 4px rgba(0,0,0,0.1)" }} />
+            <h3 style={{ fontFamily: "var(--font-head)", fontSize: 16, color: "var(--blue)", margin: 0, letterSpacing: "0.6px", fontWeight: 600 }}>{title}</h3>
+          </div>
+          <div style={{ overflowY: "auto", flex: 1, fontSize: 14, lineHeight: 1.7, color: "var(--text2)" }}>
             {children}
           </div>
-        )}
+        </div>
       </div>
-    </>
+    </div>
   );
 }
 
@@ -139,9 +91,8 @@ export function ProfileSection() {
   const genderStr = String(profile.gender || "").trim();
   const isMale = genderStr.toLowerCase().includes("муж") || genderStr.toLowerCase() === "male";
 
-  const westernBg = ZODIAC_IMG[insights.zodiac?.trim()] || null;
-  const easternBg = EASTERN_IMG[insights.eastern?.trim()] || null;
-
+  const meridianInfo = getMeridianInfo(insights.zodiac);
+  const chronoPeaks = getChronotypePeaks(profile.chronotype);
   const destiny = insights.destiny || { degree: 241, interpretation: "Интеграция опыта" };
 
   const handleRefresh = () => {
@@ -156,70 +107,38 @@ export function ProfileSection() {
   };
 
   return (
-    <div className="page" style={{ position: "relative", paddingBottom: 100 }}>
+    <div className="page" style={{ paddingBottom: 100 }}>
       
-      {/* 1. ФОНОВЫЙ АВАТАР (покрывает верх страницы и карточку) */}
-      <div style={{
-        position: "absolute",
-        top: -100,
-        left: "50%",
-        transform: "translateX(-50%)",
-        width: 380,
-        height: 380,
-        zIndex: 0,
-        pointerEvents: "none",
-        overflow: "hidden",
-        borderRadius: "50%",
-        filter: "drop-shadow(0 8px 24px rgba(0,112,192,0.15))"
-      }}>
-        {isMale ? <MaleAvatar size={380} /> : <FemaleAvatar size={380} />}
+      {/* 1. АВАТАР (центрирован, без изменений) */}
+      <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
+        <div style={{
+          width: 140, height: 140, borderRadius: "50%", overflow: "hidden",
+          border: "2px solid var(--bg)", boxShadow: "0 6px 20px rgba(0,112,192,0.15), inset 0 0 0 3px rgba(255,255,255,0.6)",
+          background: "#fff", display: "flex", alignItems: "center", justifyContent: "center"
+        }}>
+          {isMale ? <MaleAvatar size={140} /> : <FemaleAvatar size={140} />}
+        </div>
       </div>
 
-      {/* 2. КАРТОЧКА ПРОФИЛЯ (поверх аватара, прозрачная) */}
+      {/* 2. КАРТОЧКА ПРОФИЛЯ (спущена под аватар) */}
       <div className="card" style={{
-        position: "relative",
-        zIndex: 1,
-        textAlign: "center",
-        padding: "24px 20px",
-        borderLeft: "5px solid var(--blue)",
-        marginBottom: 32,
-        borderRadius: 12,
-        background: "rgba(255,255,255,0.12)",
-        backdropFilter: "blur(8px)",
-        WebkitBackdropFilter: "blur(8px)",
-        boxShadow: "0 6px 20px rgba(0,112,192,0.12)",
-        border: "1.5px solid rgba(0,112,192,0.3)"
+        textAlign: "center", padding: "20px 18px", borderLeft: "5px solid var(--blue)",
+        marginBottom: 28, borderRadius: 12, background: "linear-gradient(145deg, #ffffff 0%, #f8f4e8 100%)",
+        boxShadow: "0 4px 16px rgba(0,112,192,0.12), inset 0 1px 0 rgba(255,255,255,0.7)",
+        border: "1.5px solid rgba(0,112,192,0.25)"
       }}>
-        <h1 style={{
-          fontFamily: "var(--font-head)",
-          fontSize: 28,
-          color: "var(--text1)",
-          margin: "0 0 12px 0",          letterSpacing: "1.5px",
-          fontWeight: 600
-        }}>
+        <h1 style={{ fontFamily: "var(--font-head)", fontSize: 26, color: "var(--text1)", margin: "0 0 12px 0", letterSpacing: "1.5px", fontWeight: 600 }}>
           {profile.name || "Пользователь"}
         </h1>
-
-        <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap", marginBottom: 18 }}>
+        <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap", marginBottom: 16 }}>
           <span className="badge bgr" style={{ fontSize: 13, padding: "5px 12px", fontWeight: 500 }}>🎂 {age ?? "—"} лет</span>
-          {profile.chronotype && (
-            <span className="badge bt" style={{ fontSize: 13, padding: "5px 12px", fontWeight: 500 }}>⏱ {profile.chronotype}</span>
-          )}
-          {insights.zodiac && (
-            <span className="badge bm" style={{ fontSize: 13, padding: "5px 12px", fontWeight: 500 }}>♈ {insights.zodiac}</span>
-          )}
+          {profile.chronotype && <span className="badge bt" style={{ fontSize: 13, padding: "5px 12px", fontWeight: 500 }}>⏱ {profile.chronotype}</span>}
+          {insights.zodiac && <span className="badge bm" style={{ fontSize: 13, padding: "5px 12px", fontWeight: 500 }}>♈ {insights.zodiac}</span>}
         </div>
-
         <div style={{
-          fontSize: 14,
-          color: "var(--text2)",
-          lineHeight: 1.7,
-          padding: "14px 18px",
-          background: "rgba(0,112,192,0.06)",
-          borderRadius: 10,
-          borderLeft: "4px solid var(--gold)",
-          textAlign: "left",
-          fontWeight: 450
+          fontSize: 14, color: "var(--text2)", lineHeight: 1.7, padding: "14px 18px",
+          background: "rgba(0,112,192,0.06)", borderRadius: 10, borderLeft: "4px solid var(--gold)",
+          textAlign: "left", fontWeight: 450
         }}>
           <strong style={{ color: "var(--gold-dark)" }}>Профиль:</strong>{" "}
           {insights.zodiac || "—"} ({insights.zodiacElement || "Воздух"}) ·{" "}
@@ -227,9 +146,8 @@ export function ProfileSection() {
           Градус: <strong style={{ color: "var(--gold)" }}>{destiny.degree}°</strong>
         </div>
       </div>
-
       {/* 3. ЗАПАДНЫЙ ЗОДИАК */}
-      <ProfileBlock title="Западный Зодиак" illustrationSrc={westernBg} accentColor="var(--blue)">
+      <FlipCardBlock title="Западный Зодиак" frontImage={getFrontImage("western", insights.zodiac)} accentColor="var(--blue)">
         <div style={{ fontSize: 14, lineHeight: 1.75, color: "var(--text2)" }}>
           <p style={{ marginBottom: 16, fontWeight: 500 }}>
             <strong style={{ color: "var(--blue)", fontSize: 17 }}>{insights.zodiac || "—"}</strong>{" "}
@@ -243,18 +161,20 @@ export function ProfileSection() {
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--error)", letterSpacing: 1.2, marginBottom: 8 }}>◈ УЯЗВИМЫЕ ЗОНЫ</div>
             <p style={{ margin: 0, fontSize: 14 }}>{insights.zodiacWeaknesses || "Лёгкие, бронхи, плечи, нервная система"}</p>
           </div>
-          <div style={{ padding: 16, background: "rgba(0,112,192,0.07)", borderRadius: 10, borderLeft: "4px solid var(--blue)" }}>            <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--blue)", letterSpacing: 1.2, marginBottom: 10 }}>◈ КАК ИСПОЛЬЗОВАТЬ</div>
+          <div style={{ padding: 16, background: "rgba(0,112,192,0.07)", borderRadius: 10, borderLeft: "4px solid var(--blue)" }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--blue)", letterSpacing: 1.2, marginBottom: 10 }}>◈ КАК ИСПОЛЬЗОВАТЬ</div>
             <ul style={{ margin: 0, paddingLeft: 20, fontSize: 14, lineHeight: 1.9 }}>
-              <li>Планируй важные дела на утро</li>
+              <li>Планируй важные дела на утро (пик {chronoPeaks.focus?.hours || "10:00–14:00"})</li>
               <li>Избегай многозадачности — фокусируйся на одном деле за раз</li>
               <li>Дыхательные практики укрепляют слабые зоны</li>
+              <li>{meridianInfo.tip || "Регулярность питания и режим критичны"}</li>
             </ul>
           </div>
         </div>
-      </ProfileBlock>
+      </FlipCardBlock>
 
       {/* 4. ВОСТОЧНЫЙ ЗНАК */}
-      <ProfileBlock title="Восточный Знак" illustrationSrc={easternBg} accentColor="var(--gold)">
+      <FlipCardBlock title="Восточный Знак" frontImage={getFrontImage("eastern", insights.eastern)} accentColor="var(--gold)">
         <div style={{ fontSize: 14, lineHeight: 1.75, color: "var(--text2)" }}>
           <p style={{ marginBottom: 16, fontWeight: 500 }}>
             <strong style={{ color: "var(--gold-dark)", fontSize: 17 }}>{insights.eastern || "—"}</strong>{" "}
@@ -262,7 +182,7 @@ export function ProfileSection() {
           </p>
           <div style={{ padding: 16, background: "rgba(200,164,90,0.08)", borderRadius: 10, marginBottom: 16, borderLeft: "4px solid var(--gold)" }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--gold-dark)", letterSpacing: 1.2, marginBottom: 8 }}>◈ ЭНЕРГЕТИЧЕСКИЙ ПОРТРЕТ</div>
-            <p style={{ margin: 0, fontSize: 14 }}>{insights.easternTraits || "Честность и терпимость"}. Твоя стихия наделяет тебя глубокой интуицией.</p>
+            <p style={{ margin: 0, fontSize: 14 }}>{insights.easternTraits || "Честность и терпимость"}. Твоя стихия наделяет тебя глубокой интуицией и способностью видеть скрытые мотивы.</p>
           </div>
           <div style={{ padding: 16, background: "rgba(200,164,90,0.06)", borderRadius: 10, marginBottom: 16, borderLeft: "4px solid var(--gold)" }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--gold-dark)", letterSpacing: 1.2, marginBottom: 8 }}>◈ КАРМИЧЕСКАЯ ЗАДАЧА</div>
@@ -274,13 +194,12 @@ export function ProfileSection() {
               <li>Используй спады энергии для восстановления</li>
               <li>Доверяй интуиции в финансовых вопросах</li>
               <li>Избегай токсичных связей</li>
-            </ul>
-          </div>
+            </ul>          </div>
         </div>
-      </ProfileBlock>
+      </FlipCardBlock>
 
       {/* 5. ГРАДУС СУДЬБЫ */}
-      <ProfileBlock title="Градус Судьбы" accentColor="var(--gold)">
+      <FlipCardBlock title="Градус Судьбы" frontImage={getFrontImage("destiny")} accentColor="var(--gold)">
         <div style={{ textAlign: "center", padding: "10px 0 18px" }}>
           <div style={{ fontFamily: "var(--font-head)", fontSize: 40, color: "var(--gold)", fontWeight: 600, letterSpacing: "2.5px" }}>{destiny.degree || 241}°</div>
           <div style={{ fontFamily: "var(--font-italic)", fontSize: 16, color: "var(--text2)", marginTop: 8, fontStyle: "italic" }}>{destiny.interpretation || "Интеграция опыта"}</div>
@@ -292,28 +211,39 @@ export function ProfileSection() {
           </div>
           <div style={{ padding: 16, background: "rgba(0,112,192,0.07)", borderRadius: 10, borderLeft: "4px solid var(--blue)" }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--blue)", letterSpacing: 1.2, marginBottom: 10 }}>◈ КАК ИСПОЛЬЗОВАТЬ</div>
-            <ul style={{ margin: 0, paddingLeft: 20, fontSize: 14, lineHeight: 1.9 }}>              <li>Доверяй интуиции, проверяй фактами</li>
+            <ul style={{ margin: 0, paddingLeft: 20, fontSize: 14, lineHeight: 1.9 }}>
+              <li>Доверяй интуиции, проверяй фактами</li>
               <li>Каждое утро спрашивай: «Какой урок я могу извлечь сегодня?»</li>
               <li>Веди дневник наблюдений</li>
             </ul>
           </div>
         </div>
-      </ProfileBlock>
+      </FlipCardBlock>
 
       {/* 6. ХРОНО-ТИП */}
-      <ProfileBlock title="Хроно-тип" accentColor="var(--blue)">
+      <FlipCardBlock title="Хроно-тип" frontImage={getFrontImage("chrono", profile.chronotype)} accentColor="var(--blue)">
         <div style={{ fontSize: 14, lineHeight: 1.75, color: "var(--text2)" }}>
           <p style={{ marginBottom: 18, fontWeight: 500 }}><strong style={{ color: "var(--blue)", fontSize: 17 }}>{profile.chronotype || "🕊️ Голубь"}</strong></p>
+          <div style={{ display: "grid", gap: 14, marginBottom: 18 }}>
+            <div style={{ padding: 16, background: "rgba(45,106,79,0.08)", borderRadius: 10, borderLeft: "4px solid var(--success)" }}>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--success)", letterSpacing: 1.2, marginBottom: 8 }}>🧠 ПИК КОНЦЕНТРАЦИИ</div>
+              <p style={{ margin: 0, fontSize: 14 }}>{chronoPeaks.focus?.tip || "Самые сложные задачи — в это время. Мозг работает на максимуме."}</p>
+            </div>
+            <div style={{ padding: 16, background: "rgba(139,32,32,0.06)", borderRadius: 10, borderLeft: "4px solid var(--error)" }}>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--error)", letterSpacing: 1.2, marginBottom: 8 }}>⚡ ПРОВАЛ ЭНЕРГИИ</div>
+              <p style={{ margin: 0, fontSize: 14 }}>{chronoPeaks.rest?.tip || "Идеально для рутины, звонков, несрочной почты."}</p>
+            </div>
+          </div>
           <div style={{ padding: 16, background: "rgba(0,112,192,0.07)", borderRadius: 10, borderLeft: "4px solid var(--blue)" }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--blue)", letterSpacing: 1.2, marginBottom: 10 }}>◈ КАК ИСПОЛЬЗОВАТЬ</div>
             <ul style={{ margin: 0, paddingLeft: 20, fontSize: 14, lineHeight: 1.9 }}>
-              <li>Синхронизируй расписание с биоритмами</li>
+              <li>Синхронизируй расписание с биоритмами — КПД +30–40%</li>
               <li>Сложные решения — только в пиковые часы</li>
-              <li>Провалы энергии — для делегирования и рутины</li>
+              <li>Соблюдай режим сна: {chronoPeaks.sleep?.hours || "22:30–23:30"}</li>
+              {chronoPeaks.meridian_peak && <li>Активный меридиан: {chronoPeaks.meridian_peak}</li>}
             </ul>
           </div>
-        </div>
-      </ProfileBlock>
+        </div>      </FlipCardBlock>
 
       {/* 7. КНОПКИ УПРАВЛЕНИЯ */}
       <div style={{ display: "flex", gap: 14, marginTop: 32 }}>
