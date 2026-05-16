@@ -1,4 +1,3 @@
-// src/sections/HealthSection.jsx
 import React, { useState, useMemo } from "react";
 import { useApp } from "../store/AppContext";
 import { calculateHealthProfile, getTimeRecommendation } from "../utils/healthCalculator";
@@ -27,11 +26,11 @@ export function HealthSection() {
   const [modalContent, setModalContent] = useState(null);
 
   const healthData = useMemo(() => calculateHealthProfile(profile), [profile]);
-  const timeData = useMemo(() => getTimeRecommendation(), []);
+  const timeData = useMemo(() => getTimeRecommendation(profile), [profile]);
   const currentActiveOrganId = MERIDIAN_TO_ID[timeData.currentMeridian.name] || null;
 
   const handleAnatomyClick = (data) => {
-    const source = data.type === 'organ' ? ANATOMY_DATA[data.id] : ANATOMY_DATA[data.id];
+    const source = ANATOMY_DATA[data.id];
     if (source) setModalContent(source);
   };
 
@@ -47,8 +46,8 @@ export function HealthSection() {
         .h-card:hover { transform: translateY(-2px); box-shadow: 0 6px 0 rgba(0,112,192,0.15); }
         .h-card h3 { font-family: var(--font-head); color: var(--blue); margin: 0 0 8px 0; font-size: 14px; }
         .h-card p { margin: 0; font-size: 13px; line-height: 1.4; color: #444; }
-        .h-badge { display: inline-block; font-size: 10px; background: var(--blue); color: #fff; padding: 2px 6px; border-radius: 2px; margin-top: 8px; font-family: var(--font-mono); }        .h-badge.warning { background: #d32f2f; }
-        .section-title { font-family: var(--font-head); color: var(--text-main); border-bottom: 2px solid var(--blue); padding-bottom: 5px; margin-bottom: 15px; font-size: 18px; }
+        .h-badge { display: inline-block; font-size: 10px; background: var(--blue); color: #fff; padding: 2px 6px; border-radius: 2px; margin-top: 8px; font-family: var(--font-mono); }
+        .h-badge.warning { background: #d32f2f; }        .section-title { font-family: var(--font-head); color: var(--text-main); border-bottom: 2px solid var(--blue); padding-bottom: 5px; margin-bottom: 15px; font-size: 18px; }
         .active-organ-info { background: rgba(0,112,192,0.05); padding: 10px; border-left: 3px solid var(--blue); margin-bottom: 15px; font-family: var(--font-mono); font-size: 12px; }
       `}</style>
 
@@ -96,8 +95,8 @@ export function HealthSection() {
               {healthData.stress > 7 && (
                 <div className="h-card" style={{borderColor:'#d32f2f'}} onClick={() => setModalContent(BREATHING_TECHNIQUES.wilunas)}>
                   <h3 style={{color:'#d32f2f'}}>Экстренный сброс</h3><p>Рыдающее дыхание.</p><span className="h-badge warning">Стресс {'>'} 7</span>
-                </div>              )}
-            </div>
+                </div>
+              )}            </div>
           </div>
         )}
 
