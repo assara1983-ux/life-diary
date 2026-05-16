@@ -38,23 +38,42 @@ function useStorageState(key, defaultValue) {
   return [value, setValue];
 }
 
+const DEFAULT_SECTIONS = [
+  { id: "today", emoji: "☀️", name: "Сегодня", vis: true },
+  { id: "schedule", emoji: "🗓️", name: "Расписание", vis: true },
+  { id: "work", emoji: "💼", name: "Работа", vis: true },
+  { id: "home", emoji: "🏡", name: "Дом", vis: true },
+  { id: "shopping", emoji: "🛒", name: "Покупки", vis: true },
+  { id: "pets", emoji: "🐾", name: "Питомцы", vis: true },
+  { id: "car", emoji: "🚗", name: "Авто", vis: true },
+  { id: "health", emoji: "🫁", name: "Здоровье", vis: true },
+  { id: "beauty", emoji: "✨", name: "Уход", vis: true },  { id: "hobbies", emoji: "🎨", name: "Хобби", vis: true },
+  { id: "goals", emoji: "🎯", name: "Мои цели", vis: true },
+  { id: "travel", emoji: "✈️", name: "Поездки", vis: true },
+  { id: "journal", emoji: "📖", name: "Журнал", vis: true },
+  { id: "profile", emoji: "👤", name: "Профиль", vis: true },
+];
+
 export function AppProvider({ children }) {
   const [profile, setProfile] = useStorageState('ld_pf_v3', null);
-  const [sections, setSections] = useStorageState('ld_sec_v3', [
-    { id: "today", emoji: "☀️", name: "Сегодня", vis: true },
-    { id: "schedule", emoji: "🗓️", name: "Расписание", vis: true },
-    { id: "work", emoji: "💼", name: "Работа", vis: true },
-    { id: "home", emoji: "🏡", name: "Дом", vis: true },
-    { id: "shopping", emoji: "🛒", name: "Покупки", vis: true },
-    { id: "pets", emoji: "🐾", name: "Питомцы", vis: true },
-    { id: "car", emoji: "🚗", name: "Авто", vis: true },    { id: "health", emoji: "🫁", name: "Здоровье", vis: true },
-    { id: "beauty", emoji: "✨", name: "Уход", vis: true },
-    { id: "hobbies", emoji: "🎨", name: "Хобби", vis: true },
-    { id: "goals", emoji: "🎯", name: "Мои цели", vis: true },
-    { id: "travel", emoji: "✈️", name: "Поездки", vis: true },
-    { id: "journal", emoji: "📖", name: "Журнал", vis: true },
-    { id: "profile", emoji: "👤", name: "Профиль", vis: true },
-  ]);
+  const [sections, setSections] = useStorageState('ld_sec_v3', DEFAULT_SECTIONS);
+
+  // ═══ АВТО-МИГРАЦИЯ РАЗДЕЛОВ ═══
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('ld_sec_v3');
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      const cleaned = parsed.filter(s => s.id !== 'mental' && s.id !== 'health_mental');
+      const hasHealth = cleaned.some(s => s.id === 'health');
+      if (!hasHealth) cleaned.push({ id: "health", emoji: "🫁", name: "Здоровье", vis: true });
+      if (cleaned.length !== parsed.length || !hasHealth) {
+        localStorage.setItem('ld_sec_v3', JSON.stringify(cleaned));
+        setSections(cleaned);
+      }
+    } catch (e) { console.error('Migration error:', e); }
+  }, []);
+
   const [tasks, setTasks] = useStorageState('ld_tasks_v3', []);
   const [journal, setJournal] = useStorageState('ld_journal_v3', {});
   const [shopList, setShopList] = useStorageState('ld_shop_v3', []);
@@ -77,8 +96,7 @@ export function AppProvider({ children }) {
   const [aiNotes, setAiNotes] = useStorageState('ld_ai_notes', []);
   const [aiJournal, setAiJournal] = useStorageState('ld_ai_journal', []);
   const [workOpenWeek, setWorkOpenWeek] = useStorageState('ld_work_open_week', true);
-  const [workOpenUpcoming, setWorkOpenUpcoming] = useStorageState('ld_work_open_upcoming', true);
-  const [workOpenGroups, setWorkOpenGroups] = useStorageState('ld_work_open_groups', true);
+  const [workOpenUpcoming, setWorkOpenUpcoming] = useStorageState('ld_work_open_upcoming', true);  const [workOpenGroups, setWorkOpenGroups] = useStorageState('ld_work_open_groups', true);
   const [workOpenTasks, setWorkOpenTasks] = useStorageState('ld_work_open_tasks', true);
   const [workOpenAdvice, setWorkOpenAdvice] = useStorageState('ld_work_open_advice', true);
   const [shopAdvice, setShopAdvice] = useStorageState('ld_shop_advice', true);
@@ -96,7 +114,8 @@ export function AppProvider({ children }) {
   const [journalHistory, setJournalHistory] = useStorageState('ld_journal_history', true);
   const [carAdvice, setCarAdvice] = useStorageState('ld_car_advice', true);
   const [carTasks, setCarTasks] = useStorageState('ld_car_tasks', true);
-  const [beautyProcs, setBeautyProcs] = useStorageState('ld_beauty_procs', {});  const [beautyTopics, setBeautyTopics] = useStorageState('ld_beauty_topics', []);
+  const [beautyProcs, setBeautyProcs] = useStorageState('ld_beauty_procs', {});
+  const [beautyTopics, setBeautyTopics] = useStorageState('ld_beauty_topics', []);
   const [beautyProcsOpen, setBeautyProcsOpen] = useStorageState('ld_beauty_procs_open', true);
   const [beautyTodayOpen, setBeautyTodayOpen] = useStorageState('ld_beauty_today_open', true);
   const [beautyChooseOpen, setBeautyChooseOpen] = useStorageState('ld_beauty_choose_open', true);
@@ -109,19 +128,14 @@ export function AppProvider({ children }) {
     setTimeout(() => setToastMsg(''), 2500);
   }, []);
 
-  const addWorkTool = (toolData) => {
-    setWorkTools(prev => [...prev, { id: 'tool-' + Date.now(), ...toolData, steps: toolData.steps || [], createdAt: new Date().toISOString() }]);
-  };
+  const addWorkTool = (toolData) => setWorkTools(prev => [...prev, { id: 'tool-' + Date.now(), ...toolData, steps: toolData.steps || [], createdAt: new Date().toISOString() }]);
   const deleteWorkTool = (toolId) => setWorkTools(prev => prev.filter(t => t.id !== toolId));
-  const updateWorkToolStep = (toolId, stepIndex, completed) => {
-    setWorkTools(prev => prev.map(tool => {
-      if (tool.id !== toolId) return tool;
-      const newSteps = [...tool.steps];
-      const current = newSteps[stepIndex];
-      newSteps[stepIndex] = { text: typeof current === 'string' ? current : current.text, completed: Boolean(completed) };
-      return { ...tool, steps: newSteps };
-    }));
-  };
+  const updateWorkToolStep = (toolId, stepIndex, completed) => setWorkTools(prev => prev.map(tool => {
+    if (tool.id !== toolId) return tool;
+    const newSteps = [...tool.steps];
+    newSteps[stepIndex] = { text: typeof newSteps[stepIndex] === 'string' ? newSteps[stepIndex] : newSteps[stepIndex].text, completed: Boolean(completed) };
+    return { ...tool, steps: newSteps };
+  }));
   const addCustomGroup = (name) => setCustomReportGroups(prev => [...prev, { id: 'g-' + Date.now(), name, reports: [] }]);
   const deleteGroup = (groupId) => setCustomReportGroups(prev => prev.filter(g => g.id !== groupId));
   const addCustomReport = (groupId, reportData) => setCustomReportGroups(prev => prev.map(g => g.id === groupId ? { ...g, reports: [...g.reports, { id: 'r-' + Date.now(), ...reportData }] } : g));
@@ -131,8 +145,7 @@ export function AppProvider({ children }) {
   const allCatalogReports = useMemo(() => [...KGD_CATALOG, ...BNS_CATALOG], []);
   useEffect(() => {
     const today = new Date(); today.setHours(0, 0, 0, 0);
-    const todayStr = today.toISOString().split('T')[0];
-    const warningDate = new Date(today); warningDate.setDate(today.getDate() + 7);
+    const todayStr = today.toISOString().split('T')[0];    const warningDate = new Date(today); warningDate.setDate(today.getDate() + 7);
     const warningDateStr = warningDate.toISOString().split('T')[0];
     setTasks(prev => {
       const newTasks = [...prev];
@@ -145,7 +158,8 @@ export function AppProvider({ children }) {
           if (deadlineStr >= todayStr && deadlineStr <= warningDateStr) {
             const taskId = `report-task-${reportId}-${deadlineStr}`;
             if (!existingIds.has(taskId)) {
-              newTasks.push({ id: taskId, type: 'report', source: 'catalog', reportId, title: `📋 ${reportData.name}`, section: 'work', deadline: deadlineStr, priority: 'h', notes: `Срок: ${deadlineStr}`, doneDate: null, createdAt: new Date().toISOString() });              changed = true;
+              newTasks.push({ id: taskId, type: 'report', source: 'catalog', reportId, title: `📋 ${reportData.name}`, section: 'work', deadline: deadlineStr, priority: 'h', notes: `Срок: ${deadlineStr}`, doneDate: null, createdAt: new Date().toISOString() });
+              changed = true;
             }
           }
         });
@@ -180,8 +194,7 @@ export function AppProvider({ children }) {
     mentalRecoveryPlan, setMentalRecoveryPlan, customPractices, setCustomPractices,
     aiNotes, setAiNotes, aiJournal, setAiJournal,
     workOpenWeek, setWorkOpenWeek, workOpenUpcoming, setWorkOpenUpcoming, workOpenGroups, setWorkOpenGroups,
-    workOpenTasks, setWorkOpenTasks, workOpenAdvice, setWorkOpenAdvice,
-    shopAdvice, setShopAdvice, shopListOpen, setShopListOpen,
+    workOpenTasks, setWorkOpenTasks, workOpenAdvice, setWorkOpenAdvice,    shopAdvice, setShopAdvice, shopListOpen, setShopListOpen,
     petsAdvice, setPetsAdvice, petsFeed, setPetsFeed, petsCare, setPetsCare,
     homeAdvice, setHomeAdvice, homeTasks, setHomeTasks,
     hobbyAdvice, setHobbyAdvice, hobbyList, setHobbyList,
@@ -194,6 +207,7 @@ export function AppProvider({ children }) {
     healthAdvice, setHealthAdvice, healthHabits, setHealthHabits,
     notify, toastMsg,
   };
+
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }
 
