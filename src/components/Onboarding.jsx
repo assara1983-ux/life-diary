@@ -135,70 +135,72 @@ export function Onboarding() {
         .ob-bg { position: absolute; inset: 0; background: url('/assets/onboarding-blueprint.png') center/cover no-repeat; opacity: 0.12; mix-blend-mode: multiply; filter: blur(1px) grayscale(20%) sepia(15%); pointer-events: none; z-index: 0; }
         
         /* ─── CARD ─── */
-        .ob-card { position: relative; z-index: 1; width: 100%; max-width: 720px; background: rgba(255,255,255,0.96); border: 1.5px solid rgba(0,112,192,0.25); border-radius: 16px; padding: clamp(32px, 6vw, 56px); box-shadow: 0 12px 40px rgba(0,112,192,0.12); display: flex; flex-direction: column; gap: clamp(20px, 4vw, 32px); }
+        .ob-card { position: relative; z-index: 1; width: 100%; max-width: 720px; background: rgba(255,255,255,0.96); border: 1.5px solid rgba(0,112,192,0.25); border-radius: 16px; padding: clamp(40px, 6vw, 64px); box-shadow: 0 12px 40px rgba(0,112,192,0.12); display: flex; flex-direction: column; gap: clamp(24px, 4vw, 36px); }
         
         /* ─── PROGRESS ─── */
         .ob-progress { width: 100%; }
-        .ob-phase-label { font-family: 'JetBrains Mono', monospace; font-size: clamp(11px, 1.8vw, 13px); color: #0070c0; letter-spacing: 1.5px; margin-bottom: 8px; text-transform: uppercase; }
-        .ob-bar-track { width: 100%; height: 8px; background: rgba(0,112,192,0.08); border-radius: 6px; overflow: hidden; }
+        .ob-phase-label { font-family: 'JetBrains Mono', monospace; font-size: clamp(14px, 2vw, 16px); color: #0070c0; letter-spacing: 1.5px; margin-bottom: 10px; text-transform: uppercase; font-weight: 600; }
+        .ob-bar-track { width: 100%; height: 10px; background: rgba(0,112,192,0.08); border-radius: 6px; overflow: hidden; }
         .ob-bar-fill { height: 100%; background: linear-gradient(90deg, #0070c0, #c8a45a); transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1); border-radius: 6px; }
-        .ob-phase-markers { display: flex; justify-content: space-between; margin-top: 10px; padding: 0 4px; }
-        .ob-marker { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #8c7a5a; opacity: 0.6; transition: all 0.3s; }
+        .ob-phase-markers { display: flex; justify-content: space-between; margin-top: 14px; padding: 0 4px; }
+        .ob-marker { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #8c7a5a; opacity: 0.6; transition: all 0.3s; font-weight: 500; }
         .ob-marker.active { color: #0070c0; font-weight: 700; opacity: 1; transform: scale(1.15); }
-        /* ─── HEADER ─── */
-        .ob-header { text-align: center; display: flex; flex-direction: column; align-items: center; gap: clamp(16px, 3vw, 24px); }
-        .ob-title { font-family: 'Cinzel', serif; font-size: clamp(2rem, 5.5vw, 2.6rem); color: #2c241b; margin: 0; line-height: 1.2; font-weight: 600; }
-        .ob-sub { font-family: 'Cormorant Infant', serif; font-size: clamp(1.2rem, 3.5vw, 1.7rem); color: #5c4a30; margin: 0; max-width: 95%; line-height: 1.6; font-weight: 400; }
+        /* ─── HEADER ── */
+        .ob-header { text-align: center; display: flex; flex-direction: column; align-items: center; gap: clamp(20px, 4vw, 32px); }
+        .ob-title { font-family: 'Cinzel', serif; font-size: clamp(2.2rem, 6.5vw, 3.2rem); color: #2c241b; margin: 0; line-height: 1.2; font-weight: 600; }
+        .ob-sub { font-family: 'Cormorant Infant', serif; font-size: clamp(1.4rem, 4vw, 2rem); color: #5c4a30; margin: 0; max-width: 95%; line-height: 1.5; font-weight: 500; }
 
         /* ─── ICON WRAP (Для шагов кроме welcome) ─── */
-        .ob-icon-wrap { width: clamp(56px, 9vw, 72px); height: clamp(56px, 9vw, 72px); background: rgba(0,112,192,0.06); border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 1.5px solid rgba(0,112,192,0.2); overflow: hidden; flex-shrink: 0; }
+        .ob-icon-wrap { width: clamp(64px, 10vw, 80px); height: clamp(64px, 10vw, 80px); background: rgba(0,112,192,0.06); border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 1.5px solid rgba(0,112,192,0.2); overflow: hidden; flex-shrink: 0; }
         .ob-icon-wrap svg { width: 60%; height: 60%; color: #0070c0; }
         
         /* ─── WELCOME IMAGE (Без круга, натуральные пропорции) ─── */
         .ob-welcome-img {
-          width: clamp(320px, 65vw, 520px);
+          width: clamp(340px, 70vw, 560px);
           height: auto;
           object-fit: contain;
           display: block;
-          filter: drop-shadow(0 6px 15px rgba(0,112,192,0.15));
+          filter: drop-shadow(0 8px 20px rgba(0,112,192,0.15));
         }
 
         /* ─── BODY & FORMS ─── */
-        .ob-body { display: flex; flex-direction: column; gap: clamp(16px, 3vw, 24px); min-height: 180px; }
-        .fld { display: flex; flex-direction: column; gap: 8px; }
-        .fld label { font-family: 'Cinzel', serif; font-size: clamp(12px, 1.8vw, 14px); color: #0070c0; letter-spacing: 0.5px; }
-        .fld input, .fld select, .fld textarea { padding: 12px 14px; border: 1.5px solid rgba(0,112,192,0.2); border-radius: 8px; background: #f9f7f2; font-family: 'Crimson Pro', serif; font-size: 16px; color: #2c241b; transition: border 0.2s, box-shadow 0.2s; }
-        .fld input:focus, .fld select:focus, .fld textarea:focus { outline: none; border-color: #0070c0; box-shadow: 0 0 0 3px rgba(0,112,192,0.12); background: #fff; }
-        .fld-hint { font-size: 13px; color: #8c7a5a; font-style: italic; }
-        .fld-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+        .ob-body { display: flex; flex-direction: column; gap: clamp(20px, 3.5vw, 28px); min-height: 180px; }
+        .fld { display: flex; flex-direction: column; gap: 10px; }
+        .fld label { font-family: 'Cinzel', serif; font-size: clamp(16px, 2.2vw, 18px); color: #0070c0; letter-spacing: 0.5px; font-weight: 600; }
+        .fld input, .fld select, .fld textarea { padding: 14px 16px; border: 1.5px solid rgba(0,112,192,0.2); border-radius: 10px; background: #f9f7f2; font-family: 'Crimson Pro', serif; font-size: 19px; color: #2c241b; transition: border 0.2s, box-shadow 0.2s; }
+        .fld input:focus, .fld select:focus, .fld textarea:focus { outline: none; border-color: #0070c0; box-shadow: 0 0 0 4px rgba(0,112,192,0.12); background: #fff; }
+        .fld-hint { font-size: 15px; color: #8c7a5a; font-style: italic; margin-top: 4px; }
+        .fld-row { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
         
-        .chips { display: flex; flex-wrap: wrap; gap: 8px; }
-        .chip { padding: 8px 14px; border: 1.5px solid rgba(0,112,192,0.2); border-radius: 20px; font-size: 14px; color: #5c4a30; cursor: pointer; transition: all 0.2s; background: transparent; user-select: none; }
+        .chips { display: flex; flex-wrap: wrap; gap: 10px; }
+        .chip { padding: 10px 16px; border: 1.5px solid rgba(0,112,192,0.2); border-radius: 24px; font-size: 16px; color: #5c4a30; cursor: pointer; transition: all 0.2s; background: transparent; user-select: none; font-family: 'Crimson Pro', serif; font-weight: 500; }
         .chip:hover { background: rgba(0,112,192,0.05); }
-        .chip.on { background: #0070c0; color: #fff; border-color: #0070c0; box-shadow: 0 3px 8px rgba(0,112,192,0.25); }
+        .chip.on { background: #0070c0; color: #fff; border-color: #0070c0; box-shadow: 0 4px 10px rgba(0,112,192,0.25); font-size: 16px; }
 
-        .calc-preview { background: rgba(0,112,192,0.04); border: 1px dashed rgba(0,112,192,0.25); border-radius: 10px; padding: 14px; margin-top: 10px; }
-        .calc-row { display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; }
+        .calc-preview { background: rgba(0,112,192,0.04); border: 1px dashed rgba(0,112,192,0.25); border-radius: 12px; padding: 16px; margin-top: 12px; }
+        .calc-row { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; }
         .calc-item { text-align: center; }
-        .calc-l { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #8c7a5a; letter-spacing: 1px; text-transform: uppercase; }
-        .calc-v { font-family: 'Cinzel', serif; font-size: 16px; color: #2c241b; margin-top: 6px; }
+        .calc-l { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #8c7a5a; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; }
+        .calc-v { font-family: 'Cinzel', serif; font-size: 20px; color: #2c241b; margin-top: 4px; }
 
         /* ─── FOOTER ─── */
-        .ob-foot { display: flex; justify-content: space-between; align-items: center; padding-top: 16px; border-top: 1.5px solid rgba(0,112,192,0.1); }
-        .btn { padding: 12px 24px; border-radius: 10px; font-family: 'Cinzel', serif; font-size: 15px; cursor: pointer; transition: all 0.2s; border: 1.5px solid rgba(0,112,192,0.25); background: transparent; color: #0070c0; }
+        .ob-foot { display: flex; justify-content: space-between; align-items: center; padding-top: 24px; border-top: 1.5px solid rgba(0,112,192,0.1); }
+        .btn { padding: 16px 32px; border-radius: 12px; font-family: 'Cinzel', serif; font-size: 18px; font-weight: 600; cursor: pointer; transition: all 0.2s; border: 1.5px solid rgba(0,112,192,0.25); background: transparent; color: #0070c0; }
         .btn-primary { background: #0070c0; color: #fff; border-color: #0070c0; }
-        .btn-primary:hover { background: #005a99; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,112,192,0.3); }
+        .btn-primary:hover { background: #005a99; transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,112,192,0.3); }
         .btn-ghost:hover { background: rgba(0,112,192,0.06); }
-        .btn-sm { padding: 8px 16px; font-size: 13px; }
+        .btn-sm { padding: 10px 20px; font-size: 15px; }
 
         /* ─── MOBILE BREAKPOINT ─── */
         @media (max-width: 600px) {
           .ob-root { padding: 12px; align-items: stretch; }
-          .ob-card { padding: 24px 20px; max-width: 100%; border-radius: 12px; }          .fld-row { grid-template-columns: 1fr; }
+          .ob-card { padding: 28px 24px; max-width: 100%; border-radius: 12px; }          .fld-row { grid-template-columns: 1fr; }
           .ob-marker:not(.active) { display: none; }
-          .ob-sub { font-size: 1.15rem; }
-          .ob-title { font-size: 24px; }
-          .ob-welcome-img { width: 90%; max-width: 360px; }
+          .ob-sub { font-size: 1.4rem; }
+          .ob-title { font-size: 28px; }
+          .ob-welcome-img { width: 92%; max-width: 380px; }
+          .fld input, .fld select, .fld textarea { font-size: 18px; }
+          .chip { font-size: 17px; padding: 12px 18px; }
         }
       `}</style>
 
@@ -238,12 +240,12 @@ export function Onboarding() {
         {/* Body */}
         <div className="ob-body">
           {s.id === "welcome" && (
-            <div style={{ textAlign: "center", padding: "16px 0" }}>
-              <div style={{ fontFamily: "'Cormorant Infant', serif", fontSize: "clamp(16px, 2.5vw, 20px)", color: "#5c4a30", fontStyle: "italic", lineHeight: 1.7 }}>
+            <div style={{ textAlign: "center", padding: "24px 0" }}>
+              <div style={{ fontFamily: "'Cormorant Infant', serif", fontSize: "clamp(18px, 3vw, 24px)", color: "#5c4a30", fontStyle: "italic", lineHeight: 1.7 }}>
                 «Всё записано — ничего не потеряно»
-              </div>
-            </div>
+              </div>            </div>
           )}
+
           {s.id === "basic" && (
             <>
               <div className="fld"><label>Имя</label><input placeholder="Мария" value={d.name || ""} onChange={e => set("name", e.target.value)} /></div>
@@ -254,12 +256,12 @@ export function Onboarding() {
               </div>
               {(d.dob || d.fullName) && (
                 <div className="calc-preview">
-                  <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "#8c7a5a", letterSpacing: 2, marginBottom: 10, textTransform: "uppercase" }}>Рассчитано автоматически</div>
+                  <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "#8c7a5a", letterSpacing: 2, marginBottom: 12, textTransform: "uppercase" }}>Рассчитано автоматически</div>
                   <div className="calc-row">
                     {zodiac && <div className="calc-item"><div className="calc-l">Знак</div><div className="calc-v">{zodiac.emoji} {zodiac.name}</div></div>}
                     {eastern && <div className="calc-item"><div className="calc-l">Восточный</div><div className="calc-v">🐾 {eastern}</div></div>}
                     {age && <div className="calc-item"><div className="calc-l">Возраст</div><div className="calc-v">{age} лет</div></div>}
-                    {degree && <div className="calc-item"><div className="calc-l">Градус</div><div className="calc-v" style={{ color: "#c8a45a", fontSize: 20 }}>{degree}°</div></div>}
+                    {degree && <div className="calc-item"><div className="calc-l">Градус</div><div className="calc-v" style={{ color: "#c8a45a", fontSize: 26 }}>{degree}°</div></div>}
                   </div>
                 </div>
               )}
@@ -290,9 +292,9 @@ export function Onboarding() {
 
           {s.id === "persona2" && (
             <>
-              {[
-                ["Что выбивает из колеи?", "stressors", ["Неопределённость", "Много задач сразу", "Конфликты", "Нехватка времени", "Усталость", "Критика", "Хаос", "Сложные решения", "Шум и суета"], true],
-                ["Как восстанавливаешься?", "recovery", ["Сон и тишина", "Прогулка на природе", "Общение с близкими", "Любимое хобби", "Спорт и движение", "Уход за собой", "Вкусная еда", "Кино / книга", "Музыка", "Медитация", "Горячая ванна", "Время в одиночестве", "Творчество", "Путешествие"], true],              ].map(([label, key, opts, multi]) => (
+              {[                ["Что выбивает из колеи?", "stressors", ["Неопределённость", "Много задач сразу", "Конфликты", "Нехватка времени", "Усталость", "Критика", "Хаос", "Сложные решения", "Шум и суета"], true],
+                ["Как восстанавливаешься?", "recovery", ["Сон и тишина", "Прогулка на природе", "Общение с близкими", "Любимое хобби", "Спорт и движение", "Уход за собой", "Вкусная еда", "Кино / книга", "Музыка", "Медитация", "Горячая ванна", "Время в одиночестве", "Творчество", "Путешествие"], true],
+              ].map(([label, key, opts, multi]) => (
                 <div className="fld" key={key}>
                   <label>{label}</label>
                   <div className="chips">{opts.map(v => <div key={v} className={`chip ${(d[key] || []).includes(v) ? "on" : ""}`} onClick={() => multi ? tog(key, v) : set(key, v)}>{v}</div>)}</div>
@@ -339,9 +341,9 @@ export function Onboarding() {
               </div>
               <div className="fld"><label>Что забирает энергию?</label>
                 <div className="chips">{["Много встреч", "Однообразие", "Дедлайны", "Конфликты", "Переработки", "Скучные задачи", "Неопределённость"].map(v => <div key={v} className={`chip ${(d.workDrain || []).includes(v) ? "on" : ""}`} onClick={() => tog("workDrain", v)}>{v}</div>)}</div>
+              </div>              <div className="fld"><label>Рабочая цель</label>
+                <div className="chips">{["Карьерный рост", "Повышение дохода", "Сменить профессию", "Своё дело", "Работать меньше", "Прокачать навыки", "Стабильность"].map(v => <div key={v} className={`chip ${d.careerGoal === v ? "on" : ""}`} onClick={() => set("careerGoal", v)}>{v}</div>)}</div>
               </div>
-              <div className="fld"><label>Рабочая цель</label>
-                <div className="chips">{["Карьерный рост", "Повышение дохода", "Сменить профессию", "Своё дело", "Работать меньше", "Прокачать навыки", "Стабильность"].map(v => <div key={v} className={`chip ${d.careerGoal === v ? "on" : ""}`} onClick={() => set("careerGoal", v)}>{v}</div>)}</div>              </div>
               <div className="fld"><label>Отчётность</label>
                 <div className="chips">{["Бухгалтер / ИП", "HR / Кадры", "Юрист", "Врач", "Педагог", "Госслужащий", "Нет отчётности"].map(v => <div key={v} className={`chip ${d.profDeadlines === v ? "on" : ""}`} onClick={() => set("profDeadlines", v)}>{v}</div>)}</div>
               </div>
@@ -388,9 +390,9 @@ export function Onboarding() {
                 </div>
               </div>
               <div className="fld"><label>Растения</label>
-                <div className="chips">{["Нет", "1–3", "4–10", "Много"].map(v => <div key={v} className={`chip ${d.plants === v ? "on" : ""}`} onClick={() => set("plants", v)}>{v}</div>)}</div>
-              </div>
-              <div className="fld"><label>Уборка</label>                <div className="chips">{["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"].map(v => <div key={v} className={`chip ${(d.cleanDays || []).includes(v) ? "on" : ""}`} onClick={() => tog("cleanDays", v)}>{v}</div>)}</div>
+                <div className="chips">{["Нет", "1–3", "4–10", "Много"].map(v => <div key={v} className={`chip ${d.plants === v ? "on" : ""}`} onClick={() => set("plants", v)}>{v}</div>)}</div>              </div>
+              <div className="fld"><label>Уборка</label>
+                <div className="chips">{["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"].map(v => <div key={v} className={`chip ${(d.cleanDays || []).includes(v) ? "on" : ""}`} onClick={() => tog("cleanDays", v)}>{v}</div>)}</div>
               </div>
               <div className="fld"><label>Есть автомобиль?</label>
                 <div className="chips">{["Нет", "Да"].map(v => <div key={v} className={`chip ${d.hasCar === v ? "on" : ""}`} onClick={() => set("hasCar", v)}>{v}</div>)}</div>
@@ -407,12 +409,12 @@ export function Onboarding() {
 
           {s.id === "pets" && (
             <>
-              <div className="fld-hint" style={{marginBottom: 10}}>Каждый питомец — это кормление и визиты. Всё попадёт в расписание.</div>
+              <div className="fld-hint" style={{marginBottom: 12, fontSize: 16}}>Каждый питомец — это кормление и визиты. Всё попадёт в расписание.</div>
               {(d.pets || []).map((pet, i) => (
-                <div key={pet.id} style={{ background: "rgba(0,112,192,0.04)", border: "1px solid rgba(0,112,192,0.2)", borderRadius: 10, padding: 14, marginBottom: 12 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
-                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "#0070c0" }}>ПИТОМЕЦ {i + 1}</span>
-                    <button className="btn btn-sm" onClick={() => delPet(pet.id)} style={{padding:"4px 10px", fontSize:13}}>✕</button>
+                <div key={pet.id} style={{ background: "rgba(0,112,192,0.04)", border: "1px solid rgba(0,112,192,0.2)", borderRadius: 12, padding: 16, marginBottom: 14 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
+                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 13, color: "#0070c0" }}>ПИТОМЕЦ {i + 1}</span>
+                    <button className="btn btn-sm" onClick={() => delPet(pet.id)} style={{padding:"6px 12px", fontSize:15}}>✕</button>
                   </div>
                   <div className="fld-row">
                     <div className="fld"><label>Кличка</label><input placeholder="Мурка" value={pet.name} onChange={e => updPet(pet.id, "name", e.target.value)} /></div>
@@ -437,9 +439,9 @@ export function Onboarding() {
               <div className="fld"><label>Физическая активность</label>
                 <div className="chips">{["Не занимаюсь", "Прогулки", "Йога", "Тренажёр", "Бег", "Плавание", "Велосипед", "Цигун"].map(v => <div key={v} className={`chip ${(d.sport || []).includes(v) ? "on" : ""}`} onClick={() => tog("sport", v)}>{v}</div>)}</div>
               </div>
-              <div className="fld"><label>Питание</label>
-                <div className="chips">{["Обычное", "Вегетарианское", "Веганское", "Без глютена", "Кето", "Интервальное", "ПП"].map(v => <div key={v} className={`chip ${d.nutrition === v ? "on" : ""}`} onClick={() => set("nutrition", v)}>{v}</div>)}</div>
-              </div>            </>
+              <div className="fld"><label>Питание</label>                <div className="chips">{["Обычное", "Вегетарианское", "Веганское", "Без глютена", "Кето", "Интервальное", "ПП"].map(v => <div key={v} className={`chip ${d.nutrition === v ? "on" : ""}`} onClick={() => set("nutrition", v)}>{v}</div>)}</div>
+              </div>
+            </>
           )}
 
           {s.id === "tcm" && (
@@ -487,8 +489,8 @@ export function Onboarding() {
               </div>
             </>
           )}
-
-          {s.id === "shopping" && (            <>
+          {s.id === "shopping" && (
+            <>
               <div className="fld"><label>Как часто закупаешься?</label>
                 <div className="chips">{["Каждый день", "2–3 раза в неделю", "Раз в неделю", "Раз в 2 недели", "Онлайн"].map(v => <div key={v} className={`chip ${d.shopFreq === v ? "on" : ""}`} onClick={() => set("shopFreq", v)}>{v}</div>)}</div>
               </div>
@@ -515,12 +517,12 @@ export function Onboarding() {
 
           {s.id === "travel" && (
             <>
-              <div className="fld-hint" style={{marginBottom: 10}}>Добавь куда хочешь поехать — приложение напомнит о подготовке.</div>
+              <div className="fld-hint" style={{marginBottom: 12, fontSize: 16}}>Добавь куда хочешь поехать — приложение напомнит о подготовке.</div>
               {(d.trips || []).map((trip, i) => (
-                <div key={trip.id} style={{ background: "rgba(200,164,90,0.06)", border: "1px solid rgba(200,164,90,0.25)", borderRadius: 10, padding: 14, marginBottom: 12 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
-                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "#c8a45a" }}>ПОЕЗДКА {i + 1}</span>
-                    <button className="btn btn-sm" onClick={() => delTrip(trip.id)} style={{padding:"4px 10px", fontSize:13}}>✕</button>
+                <div key={trip.id} style={{ background: "rgba(200,164,90,0.06)", border: "1px solid rgba(200,164,90,0.25)", borderRadius: 12, padding: 16, marginBottom: 14 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
+                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 13, color: "#c8a45a" }}>ПОЕЗДКА {i + 1}</span>
+                    <button className="btn btn-sm" onClick={() => delTrip(trip.id)} style={{padding:"6px 12px", fontSize:15}}>✕</button>
                   </div>
                   <div className="fld"><label>Куда?</label><input placeholder="Стамбул, Бали..." value={trip.destination} onChange={e => updTrip(trip.id, "destination", e.target.value)} /></div>
                   <div className="fld-row">
@@ -535,9 +537,9 @@ export function Onboarding() {
 
           {s.id === "goals" && (
             <>
-              <div className="fld"><label>Главная цель на 3 месяца</label><textarea placeholder="Наладить режим, похудеть на 5 кг..." value={d.mainGoal || ""} onChange={e => set("mainGoal", e.target.value)} style={{resize:"vertical", minHeight:70}} /></div>
-              <div className="fld"><label>Сферы прогресса</label>
-                <div className="chips">{["Здоровье", "Карьера", "Финансы", "Отношения", "Саморазвитие", "Творчество", "Путешествия", "Духовность", "Семья", "Внешность"].map(v => <div key={v} className={`chip ${(d.goalAreas || []).includes(v) ? "on" : ""}`} onClick={() => tog("goalAreas", v)}>{v}</div>)}</div>              </div>
+              <div className="fld"><label>Главная цель на 3 месяца</label><textarea placeholder="Наладить режим, похудеть на 5 кг..." value={d.mainGoal || ""} onChange={e => set("mainGoal", e.target.value)} style={{resize:"vertical", minHeight:80}} /></div>              <div className="fld"><label>Сферы прогресса</label>
+                <div className="chips">{["Здоровье", "Карьера", "Финансы", "Отношения", "Саморазвитие", "Творчество", "Путешествия", "Духовность", "Семья", "Внешность"].map(v => <div key={v} className={`chip ${(d.goalAreas || []).includes(v) ? "on" : ""}`} onClick={() => tog("goalAreas", v)}>{v}</div>)}</div>
+              </div>
               <div className="fld"><label>Что сдерживает?</label>
                 <div className="chips">{["Нехватка времени", "Нехватка энергии", "Откладываю", "Не знаю с чего начать", "Много отвлекаюсь", "Страх неудачи"].map(v => <div key={v} className={`chip ${(d.goalBlocks || []).includes(v) ? "on" : ""}`} onClick={() => tog("goalBlocks", v)}>{v}</div>)}</div>
               </div>
@@ -545,10 +547,10 @@ export function Onboarding() {
           )}
 
           {s.id === "done" && (
-            <div style={{ textAlign: "center", padding: "20px 0" }}>
-              <div style={{ fontSize: 56, marginBottom: 16 }}>✨</div>
-              {d.name && <div style={{ fontFamily: "'Cormorant Infant', serif", fontSize: "clamp(20px, 4vw, 26px)", color: "#c8a45a", marginBottom: 10 }}>Привет, {d.name.split(" ")[0] || d.name}!</div>}
-              <div style={{ fontFamily: "'Cormorant Infant', serif", fontSize: "clamp(15px, 2.8vw, 18px)", color: "#5c4a30", lineHeight: 1.8, fontStyle: "italic" }}>
+            <div style={{ textAlign: "center", padding: "24px 0" }}>
+              <div style={{ fontSize: 64, marginBottom: 20 }}>✨</div>
+              {d.name && <div style={{ fontFamily: "'Cormorant Infant', serif", fontSize: "clamp(22px, 4.5vw, 30px)", color: "#c8a45a", marginBottom: 12 }}>Привет, {d.name.split(" ")[0] || d.name}!</div>}
+              <div style={{ fontFamily: "'Cormorant Infant', serif", fontSize: "clamp(17px, 3vw, 22px)", color: "#5c4a30", lineHeight: 1.8, fontStyle: "italic" }}>
                 {d.dob && `${getZodiacInline(d.dob).emoji} ${getZodiacInline(d.dob).name} · 🐾 ${getEasternInline(d.dob)}`}
                 {d.fullName && ` · ✦ ${calcDegreeInline(d.fullName)}° судьбы`}
                 <br />Life Diary знает тебя и готов держать всё в голове вместо тебя.
@@ -571,4 +573,4 @@ export function Onboarding() {
       </div>
     </div>
   );
-                    }
+                                                                                                                        }
