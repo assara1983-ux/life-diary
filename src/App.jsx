@@ -1,4 +1,4 @@
-// src/App.jsx
+// src/App.jsx — Blueprint Theme v2
 import { useState, useEffect } from "react";
 import { AppProvider, useApp } from './store/AppContext';
 import { Onboarding } from './components/Onboarding';
