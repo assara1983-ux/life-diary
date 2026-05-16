@@ -1,46 +1,32 @@
 // src/utils/healthCalculator.js
-const ELEMENTS = ["Металл", "Вода", "Дерево", "Огонь", "Земля"];
-
 export function calculateHealthProfile(profile) {
   if (!profile || !profile.dob) return { element: "—", yinyang: "—", stress: 5, uxinPattern: "neutral" };
 
   const dob = new Date(profile.dob);
   const year = dob.getFullYear();
   
-  // 1. Стихия (по циклу 10 лет)
-  const elementIndex = (year - 4) % 10; 
+  const elementIndex = (year - 4) % 10;
   const element = elementIndex < 2 ? "Дерево" : elementIndex < 4 ? "Огонь" : elementIndex < 6 ? "Земля" : elementIndex < 8 ? "Металл" : "Вода";
-
-  // 2. Инь/Ян
   const yinyang = year % 2 === 0 ? "Ян" : "Инь";
-
-  // 3. У-Син паттерн
+  
   const stress = profile.stressLevel || 5;
   let uxinPattern = "equal";
-  
-  // ИСПРАВЛЕНИЕ: & & заменен на &&, убраны лишние пробелы в строках
-  if (stress > 8) uxinPattern = "neutral"; 
+  if (stress > 8) uxinPattern = "neutral";
   if (stress < 3 && profile.coreValue === "giver") uxinPattern = "donor";
   if (stress > 5 && profile.coreValue === "taker") uxinPattern = "vampire";
 
   return {
-    element,
-    yinyang,
-    stress,
-    uxinPattern,
-    chronotype: profile.chronotype || "Ворона", 
-    zodiac: "Весы", 
-    jiaziPhase: "Фаза роста",
-    lunarNodes: "Северный узел"
+    element, yinyang, stress, uxinPattern,
+    chronotype: profile.chronotype || "Ворона",
+    zodiac: "Весы", jiaziPhase: "Фаза роста", lunarNodes: "Северный узел",
+    workTime: "09:00–12:00", restTime: "21:00–23:00"
   };
 }
 
-export function getTimeRecommendation(profile) {
-  const now = new Date();
-  const hours = now.getHours();
-  
+export function getTimeRecommendation() {
+  const hours = new Date().getHours();
   let mIndex = Math.floor(hours / 2);
-  if (mIndex > 11) mIndex = 0; 
+  if (mIndex > 11) mIndex = 0;
 
   const MERIDIANS = [
     { name: "Печень", h: "01-03", desc: "Очищение крови. Сон.", warning: "Будильник выключить." },
