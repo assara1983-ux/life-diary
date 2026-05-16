@@ -1,7 +1,5 @@
-// src/components/MeridianModal.jsx
 import React, { useEffect, useState, useMemo } from "react";
 
-// ─── ВНУТРЕННЯЯ КАРТА ДАННЫХ (синхронизирована с БЗ) ──────────────────────
 const MERIDIAN_DB = {
   gallbladder: { diseases: "Сосуды, иннервация кожи, вестибулярный аппарат, горло, дыхательные пути, ЖКТ.", sound: 3, zone: "side" },
   liver: { diseases: "Печень, желчный пузырь, лимфа, иммунитет, эндокринная система, суставы ног.", sound: 3, zone: "side" },
@@ -28,13 +26,7 @@ const DAOIST_SOUNDS = {
 
 export function MeridianModal({ data, onClose }) {
   const [mounted, setMounted] = useState(false);
-  
-  // Блокировка скролла при открытии
-  useEffect(() => {
-    setMounted(true);
-    document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = ""; };
-  }, []);
+  useEffect(() => { setMounted(true); document.body.style.overflow = "hidden"; return () => { document.body.style.overflow = ""; }; }, []);
 
   const info = useMemo(() => {
     const db = MERIDIAN_DB[data?.id] || MERIDIAN_DB.lungs;
@@ -47,7 +39,8 @@ export function MeridianModal({ data, onClose }) {
   if (!mounted) return null;
 
   return (
-    <div className="mm-overlay" onClick={onClose} role="dialog" aria-modal="true">      <style>{`
+    <div className="mm-overlay" onClick={onClose} role="dialog" aria-modal="true">
+      <style>{`
         .mm-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 16px; animation: mm-fade 0.2s ease-out; }
         .mm-card { background: #fff; border: 1px solid var(--line); border-radius: 12px; max-width: 520px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 12px 40px rgba(0,0,0,0.15); position: relative; }
         .mm-hd { display: flex; align-items: center; gap: 12px; padding: 16px 20px; border-bottom: 1px solid var(--line); background: rgba(0,112,192,0.03); }
@@ -72,59 +65,15 @@ export function MeridianModal({ data, onClose }) {
       <div className="mm-card" onClick={e => e.stopPropagation()}>
         <div className="mm-hd">
           <span className="mm-icon">{info.emoji}</span>
-          <div>
-            <div className="mm-title">{info.name}</div>
-            <div className="mm-meta">{info.time} · {info.element} · {data?.sign || "—"}</div>
-          </div>
+          <div><div className="mm-title">{info.name}</div><div className="mm-meta">{info.time} · {info.element} · {data?.sign || "—"}</div></div>
         </div>
-
         <div className="mm-body">
-          {/* ⚠️ Критическое предупреждение Норбекова */}
-          {(info.isHeart || info.isHead) && (
-            <div className="mm-warn">
-              <p>⛔ ЗАПРЕТ: Дыхание по системе Норбекова НИКОГДА не направлять в область {info.isHeart ? "сердца и головного мозга" : "головного мозга и сердца"}!</p>
-            </div>
-          )}
-
-          {/* 🫁 Уязвимости */}
-          <div className="mm-section">
-            <h4>🔍 Уязвимости & Профилактика</h4>
-            <p>{info.diseases}</p>
-          </div>
-
-          {/* 🔊 Целительный звук */}
-          <div className="mm-section">
-            <h4>🔊 Целительный звук (Даосская система)</h4>
-            <p><strong>{info.sound}</strong> · {info.emotion}</p>
-            <p style={{fontSize:11, color:'var(--text3)', marginTop:4}}>Визуализация: {info.color} · Усилитель: {info.exercise}</p>          </div>
-
-          {/* 🌬️ Алгоритм работы */}
-          <div className="mm-section">
-            <h4>🌬️ Рекомендуемый протокол</h4>
-            <div className="mm-step-list">
-              <div className="mm-step">
-                <div className="mm-step-num">1</div>
-                <div className="mm-step-text"><strong>Сам Чон До:</strong> Вдох 3с → Выдох 6с → Пауза 2с. 3–9 циклов для настройки.</div>
-              </div>
-              <div className="mm-step">
-                <div className="mm-step-num">2</div>
-                <div className="mm-step-text"><strong>Звук:</strong> Произнести на выдохе. Едва слышно, с визуализацией цвета и изгнанием эмоции.</div>
-              </div>
-              <div className="mm-step">
-                <div className="mm-step-num">3</div>
-                <div className="mm-step-text"><strong>Норбеков «около»:</strong> Дышать не В орган, а РЯДОМ с ним. 5–6 циклов. Вдох=прохлада, выдох=тепло.</div>
-              </div>
-              <div className="mm-step">
-                <div className="mm-step-num">4</div>
-                <div className="mm-step-text"><strong>ОМЗ:</strong> Подключить Образ Молодости и Здоровья в районе солнечного сплетения. Удерживать 1–2 мин.</div>
-              </div>
-            </div>
-          </div>
+          {(info.isHeart || info.isHead) && (<div className="mm-warn"><p>⛔ ЗАПРЕТ: Дыхание по системе Норбекова НИКОГДА не направлять в область {info.isHeart ? "сердца и головного мозга" : "головного мозга и сердца"}!</p></div>)}
+          <div className="mm-section"><h4>🔍 Уязвимости & Профилактика</h4><p>{info.diseases}</p></div>
+          <div className="mm-section"><h4>🔊 Целительный звук (Даосская система)</h4><p><strong>{info.sound}</strong> · {info.emotion}</p><p style={{fontSize:11, color:'var(--text3)', marginTop:4}}>Визуализация: {info.color} · Усилитель: {info.exercise}</p></div>
+          <div className="mm-section"><h4>🌬️ Рекомендуемый протокол</h4><div className="mm-step-list"><div className="mm-step"><div className="mm-step-num">1</div><div className="mm-step-text"><strong>Сам Чон До:</strong> Вдох 3с → Выдох 6с → Пауза 2с. 3–9 циклов для настройки.</div></div><div className="mm-step"><div className="mm-step-num">2</div><div className="mm-step-text"><strong>Звук:</strong> Произнести на выдохе. Едва слышно, с визуализацией цвета и изгнанием эмоции.</div></div><div className="mm-step"><div className="mm-step-num">3</div><div className="mm-step-text"><strong>Норбеков «около»:</strong> Дышать не В орган, а РЯДОМ с ним. 5–6 циклов. Вдох=прохлада, выдох=тепло.</div></div><div className="mm-step"><div className="mm-step-num">4</div><div className="mm-step-text"><strong>ОМЗ:</strong> Подключить Образ Молодости и Здоровья в районе солнечного сплетения. Удерживать 1–2 мин.</div></div></div></div>
         </div>
-
-        <div className="mm-footer">
-          <button className="mm-close" onClick={onClose}>Закрыть</button>
-        </div>
+        <div className="mm-footer"><button className="mm-close" onClick={onClose}>Закрыть</button></div>
       </div>
     </div>
   );
