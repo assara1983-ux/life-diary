@@ -1,9 +1,9 @@
 // src/components/Onboarding.jsx
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useApp } from "../store/AppContext";
 
 // ═══════════════════════════════════════════════════════════════
-// 1. INLINE HELPERS (Self-contained to avoid missing imports)
+// 1. INLINE HELPERS (Self-contained)
 // ═══════════════════════════════════════════════════════════════
 function getZodiacInline(dob) {
   if (!dob) return { name: "—", emoji: "⭐" };
@@ -57,7 +57,7 @@ const STEP_ICONS = {
 };
 
 // ══════════════════════════════════════════════════════════════
-// 3. STEP CONFIG (Grouped for Phase Progress)
+// 3. STEP CONFIG (Phased Progress)
 // ═══════════════════════════════════════════════════════════════
 const PHASES = [
   { name: "Профиль", range: [0, 3] },
@@ -107,7 +107,7 @@ export function Onboarding() {
   const addPet = () => set("pets", [...d.pets, { id: Date.now(), name: "", type: "Кошка", breed: "", dob: "", food: "", feedTimes: "2", weightKg: "", notes: "", vacDate: "", parasiteDate: "" }]);
   const updPet = (id, k, v) => set("pets", d.pets.map(p => p.id === id ? { ...p, [k]: v } : p));
   const delPet = id => set("pets", d.pets.filter(p => p.id !== id));
-  const addTrip = () => set("trips", [...d.trips, { id: Date.now(), destination: "", targetDate: "", budget: "", saved: "", stage: " Мечта", notes: "" }]);
+  const addTrip = () => set("trips", [...d.trips, { id: Date.now(), destination: "", targetDate: "", budget: "", saved: "", stage: "💭 Мечта", notes: "" }]);
   const updTrip = (id, k, v) => set("trips", d.trips.map(t => t.id === id ? { ...t, [k]: v } : t));
   const delTrip = id => set("trips", d.trips.filter(t => t.id !== id));
 
@@ -129,72 +129,80 @@ export function Onboarding() {
     <div className="ob-root">
       <style>{`
         /* ─── RESET & BASE ─── */
-        .ob-root { position: relative; min-height: 100vh; width: 100%; display: flex; align-items: center; justify-content: center; padding: clamp(12px, 3vw, 24px); background: var(--bg); overflow-y: auto; }
-        .ob-bg { position: absolute; inset: 0; background: url('/assets/onboarding-blueprint.png') center/cover no-repeat; opacity: 0.08; mix-blend-mode: multiply; pointer-events: none; z-index: 0; }
-        .ob-card { position: relative; z-index: 1; width: 100%; max-width: 640px; background: var(--bg1); border: 1.5px solid var(--line); border-radius: 12px; padding: clamp(20px, 4vw, 40px); box-shadow: 0 8px 32px rgba(0,112,192,0.1); display: flex; flex-direction: column; gap: clamp(16px, 3vw, 24px); }
+        .ob-root { position: relative; min-height: 100vh; width: 100%; display: flex; align-items: center; justify-content: center; padding: clamp(16px, 4vw, 32px); background: #f5f0e1; overflow-y: auto; font-family: 'Crimson Pro', serif; }
         
-        /* ─── PROGRESS (Option B: Phased) ─── */
+        /* ─── BACKGROUND PNG ─── */
+        .ob-bg { position: absolute; inset: 0; background: url('/assets/onboarding-blueprint.png') center/cover no-repeat; opacity: 0.12; mix-blend-mode: multiply; filter: blur(1px) grayscale(20%) sepia(15%); pointer-events: none; z-index: 0; }
+        
+        /* ─── CARD ─── */
+        .ob-card { position: relative; z-index: 1; width: 100%; max-width: 680px; background: rgba(255,255,255,0.96); border: 1.5px solid rgba(0,112,192,0.25); border-radius: 16px; padding: clamp(28px, 6vw, 48px); box-shadow: 0 12px 40px rgba(0,112,192,0.12); display: flex; flex-direction: column; gap: clamp(18px, 3.5vw, 28px); }
+        
+        /* ─── PROGRESS ─── */
         .ob-progress { width: 100%; }
-        .ob-phase-label { font-family: var(--font-mono); font-size: clamp(10px, 1.5vw, 12px); color: var(--blue); letter-spacing: 1.5px; margin-bottom: 6px; text-transform: uppercase; }
-        .ob-bar-track { width: 100%; height: 6px; background: rgba(0,112,192,0.1); border-radius: 4px; overflow: hidden; position: relative; }
-        .ob-bar-fill { height: 100%; background: linear-gradient(90deg, var(--blue), var(--gold)); transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1); border-radius: 4px; }
-        .ob-phase-markers { display: flex; justify-content: space-between; margin-top: 8px; padding: 0 2px; }
-        .ob-marker { font-family: var(--font-mono); font-size: 9px; color: var(--text3); opacity: 0.6; transition: all 0.3s; }
-        .ob-marker.active { color: var(--blue); font-weight: 700; opacity: 1; transform: scale(1.1); }
-
+        .ob-phase-label { font-family: 'JetBrains Mono', monospace; font-size: clamp(11px, 1.8vw, 13px); color: #0070c0; letter-spacing: 1.5px; margin-bottom: 8px; text-transform: uppercase; }
+        .ob-bar-track { width: 100%; height: 8px; background: rgba(0,112,192,0.08); border-radius: 6px; overflow: hidden; }
+        .ob-bar-fill { height: 100%; background: linear-gradient(90deg, #0070c0, #c8a45a); transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1); border-radius: 6px; }
+        .ob-phase-markers { display: flex; justify-content: space-between; margin-top: 10px; padding: 0 4px; }
+        .ob-marker { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #8c7a5a; opacity: 0.6; transition: all 0.3s; }
+        .ob-marker.active { color: #0070c0; font-weight: 700; opacity: 1; transform: scale(1.15); }
         /* ─── HEADER ─── */
-        .ob-header { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 12px; }
-        .ob-icon-wrap { width: clamp(48px, 8vw, 64px); height: clamp(48px, 8vw, 64px); color: var(--blue); background: rgba(0,112,192,0.06); border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 1px solid var(--line); }
-        .ob-icon-wrap svg { width: 60%; height: 60%; }        .ob-title { font-family: var(--font-head); font-size: clamp(1.2rem, 3vw, 1.6rem); color: var(--text1); margin: 0; }
-        .ob-sub { font-family: var(--font-serif); font-size: clamp(0.85rem, 1.8vw, 1rem); color: var(--text2); margin: 0; max-width: 90%; line-height: 1.5; }
+        .ob-header { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+        .ob-icon-wrap { width: clamp(56px, 9vw, 72px); height: clamp(56px, 9vw, 72px); background: rgba(0,112,192,0.06); border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 1.5px solid rgba(0,112,192,0.2); overflow: hidden; flex-shrink: 0; }
+        .ob-icon-wrap svg { width: 60%; height: 60%; color: #0070c0; }
+        .ob-icon-img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+        .ob-title { font-family: 'Cinzel', serif; font-size: clamp(1.5rem, 4.5vw, 2rem); color: #2c241b; margin: 0; line-height: 1.2; }
+        .ob-sub { font-family: 'Cormorant Infant', serif; font-size: clamp(1rem, 2.8vw, 1.25rem); color: #5c4a30; margin: 0; max-width: 90%; line-height: 1.5; }
 
         /* ─── BODY & FORMS ─── */
-        .ob-body { display: flex; flex-direction: column; gap: clamp(14px, 2.5vw, 20px); min-height: 200px; }
-        .fld { display: flex; flex-direction: column; gap: 6px; }
-        .fld label { font-family: var(--font-head); font-size: clamp(11px, 1.5vw, 13px); color: var(--blue); letter-spacing: 0.5px; }
-        .fld input, .fld select, .fld textarea { padding: 10px 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); font-family: var(--font-serif); font-size: 15px; color: var(--text1); transition: border 0.2s; }
-        .fld input:focus, .fld select:focus, .fld textarea:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 2px rgba(0,112,192,0.15); }
-        .fld-hint { font-size: 12px; color: var(--text3); font-style: italic; }
-        .fld-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .ob-body { display: flex; flex-direction: column; gap: clamp(16px, 3vw, 24px); min-height: 180px; }
+        .fld { display: flex; flex-direction: column; gap: 8px; }
+        .fld label { font-family: 'Cinzel', serif; font-size: clamp(12px, 1.8vw, 14px); color: #0070c0; letter-spacing: 0.5px; }
+        .fld input, .fld select, .fld textarea { padding: 12px 14px; border: 1.5px solid rgba(0,112,192,0.2); border-radius: 8px; background: #f9f7f2; font-family: 'Crimson Pro', serif; font-size: 16px; color: #2c241b; transition: border 0.2s, box-shadow 0.2s; }
+        .fld input:focus, .fld select:focus, .fld textarea:focus { outline: none; border-color: #0070c0; box-shadow: 0 0 0 3px rgba(0,112,192,0.12); background: #fff; }
+        .fld-hint { font-size: 13px; color: #8c7a5a; font-style: italic; }
+        .fld-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
         
-        .chips { display: flex; flex-wrap: wrap; gap: 6px; }
-        .chip { padding: 6px 12px; border: 1px solid var(--line); border-radius: 20px; font-size: 13px; color: var(--text2); cursor: pointer; transition: all 0.2s; background: transparent; user-select: none; }
+        .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+        .chip { padding: 8px 14px; border: 1.5px solid rgba(0,112,192,0.2); border-radius: 20px; font-size: 14px; color: #5c4a30; cursor: pointer; transition: all 0.2s; background: transparent; user-select: none; }
         .chip:hover { background: rgba(0,112,192,0.05); }
-        .chip.on { background: var(--blue); color: #fff; border-color: var(--blue); box-shadow: 0 2px 6px rgba(0,112,192,0.2); }
+        .chip.on { background: #0070c0; color: #fff; border-color: #0070c0; box-shadow: 0 3px 8px rgba(0,112,192,0.25); }
 
-        .calc-preview { background: rgba(0,112,192,0.04); border: 1px dashed var(--line); border-radius: 8px; padding: 12px; margin-top: 8px; }
-        .calc-row { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
+        .calc-preview { background: rgba(0,112,192,0.04); border: 1px dashed rgba(0,112,192,0.25); border-radius: 10px; padding: 14px; margin-top: 10px; }
+        .calc-row { display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; }
         .calc-item { text-align: center; }
-        .calc-l { font-family: var(--font-mono); font-size: 9px; color: var(--text3); letter-spacing: 1px; text-transform: uppercase; }
-        .calc-v { font-family: var(--font-head); font-size: 14px; color: var(--text1); margin-top: 4px; }
+        .calc-l { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #8c7a5a; letter-spacing: 1px; text-transform: uppercase; }
+        .calc-v { font-family: 'Cinzel', serif; font-size: 16px; color: #2c241b; margin-top: 6px; }
 
         /* ─── FOOTER ─── */
-        .ob-foot { display: flex; justify-content: space-between; align-items: center; padding-top: 12px; border-top: 1px solid var(--line-s); }
-        .btn { padding: 10px 20px; border-radius: 8px; font-family: var(--font-head); font-size: 14px; cursor: pointer; transition: all 0.2s; border: 1.5px solid var(--line); background: transparent; color: var(--blue); }
-        .btn-primary { background: var(--blue); color: #fff; border-color: var(--blue); }
-        .btn-primary:hover { background: var(--blue-light); transform: translateY(-1px); }
-        .btn-ghost:hover { background: rgba(0,112,192,0.05); }
-        .btn-sm { padding: 6px 12px; font-size: 12px; }
+        .ob-foot { display: flex; justify-content: space-between; align-items: center; padding-top: 16px; border-top: 1.5px solid rgba(0,112,192,0.1); }
+        .btn { padding: 12px 24px; border-radius: 10px; font-family: 'Cinzel', serif; font-size: 15px; cursor: pointer; transition: all 0.2s; border: 1.5px solid rgba(0,112,192,0.25); background: transparent; color: #0070c0; }
+        .btn-primary { background: #0070c0; color: #fff; border-color: #0070c0; }
+        .btn-primary:hover { background: #005a99; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,112,192,0.3); }
+        .btn-ghost:hover { background: rgba(0,112,192,0.06); }
+        .btn-sm { padding: 8px 16px; font-size: 13px; }
 
-        /* ─── MOBILE BREAKPOINT (768px) ─── */
-        @media (max-width: 768px) {
+        /* ─── MOBILE BREAKPOINT ─── */
+        @media (max-width: 600px) {
+          .ob-root { padding: 12px; align-items: stretch; }
+          .ob-card { padding: 24px 20px; max-width: 100%; border-radius: 12px; }
           .fld-row { grid-template-columns: 1fr; }
-          .ob-card { padding: 20px 16px; }
           .ob-marker:not(.active) { display: none; }
+          .ob-sub { font-size: 15px; }
+          .ob-title { font-size: 22px; }
         }
       `}</style>
 
       <div className="ob-bg" />
       <div className="ob-card">
-        {/* Progress */}
-        <div className="ob-progress">
+        {/* Progress */}        <div className="ob-progress">
           <div className="ob-phase-label">Фаза: {currentPhase}</div>
           <div className="ob-bar-track">
             <div className="ob-bar-fill" style={{ width: `${pct}%` }} />
           </div>
           <div className="ob-phase-markers">
-            {PHASES.map((p, i) => (
-              <span key={p.name} className={`ob-marker ${step >= p.range[0] && step <= p.range[1] ? 'active' : ''}`}>                {p.name}
+            {PHASES.map((p) => (
+              <span key={p.name} className={`ob-marker ${step >= p.range[0] && step <= p.range[1] ? 'active' : ''}`}>
+                {p.name}
               </span>
             ))}
           </div>
@@ -202,7 +210,13 @@ export function Onboarding() {
 
         {/* Header */}
         <div className="ob-header">
-          <div className="ob-icon-wrap">{STEP_ICONS[s.id] || STEP_ICONS.welcome}</div>
+          <div className="ob-icon-wrap">
+            {s.id === "welcome" ? (
+              <img src="/assets/onboarding-blueprint.png" alt="Blueprint" className="ob-icon-img" />
+            ) : (
+              STEP_ICONS[s.id] || STEP_ICONS.welcome
+            )}
+          </div>
           <h2 className="ob-title">{s.title}</h2>
           <p className="ob-sub">{s.sub}</p>
         </div>
@@ -210,8 +224,8 @@ export function Onboarding() {
         {/* Body */}
         <div className="ob-body">
           {s.id === "welcome" && (
-            <div style={{ textAlign: "center", padding: "12px 0" }}>
-              <div style={{ fontFamily: "var(--font-italic)", fontSize: "clamp(14px, 2vw, 16px)", color: "var(--text3)", fontStyle: "italic", lineHeight: 1.7 }}>
+            <div style={{ textAlign: "center", padding: "16px 0" }}>
+              <div style={{ fontFamily: "'Cormorant Infant', serif", fontSize: "clamp(15px, 2.5vw, 18px)", color: "#5c4a30", fontStyle: "italic", lineHeight: 1.7 }}>
                 «Всё записано — ничего не потеряно»
               </div>
             </div>
@@ -227,12 +241,11 @@ export function Onboarding() {
               </div>
               {(d.dob || d.fullName) && (
                 <div className="calc-preview">
-                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--text3)", letterSpacing: 2, marginBottom: 8, textTransform: "uppercase" }}>Рассчитано автоматически</div>
+                  <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "#8c7a5a", letterSpacing: 2, marginBottom: 10, textTransform: "uppercase" }}>Рассчитано автоматически</div>
                   <div className="calc-row">
-                    {zodiac && <div className="calc-item"><div className="calc-l">Знак</div><div className="calc-v">{zodiac.emoji} {zodiac.name}</div></div>}
-                    {eastern && <div className="calc-item"><div className="calc-l">Восточный</div><div className="calc-v">🐾 {eastern}</div></div>}
+                    {zodiac && <div className="calc-item"><div className="calc-l">Знак</div><div className="calc-v">{zodiac.emoji} {zodiac.name}</div></div>}                    {eastern && <div className="calc-item"><div className="calc-l">Восточный</div><div className="calc-v">🐾 {eastern}</div></div>}
                     {age && <div className="calc-item"><div className="calc-l">Возраст</div><div className="calc-v">{age} лет</div></div>}
-                    {degree && <div className="calc-item"><div className="calc-l">Градус</div><div className="calc-v" style={{ color: "var(--gold)", fontSize: 18 }}>{degree}°</div></div>}
+                    {degree && <div className="calc-item"><div className="calc-l">Градус</div><div className="calc-v" style={{ color: "#c8a45a", fontSize: 20 }}>{degree}°</div></div>}
                   </div>
                 </div>
               )}
@@ -243,7 +256,8 @@ export function Onboarding() {
             </>
           )}
 
-          {s.id === "persona" && (            <>
+          {s.id === "persona" && (
+            <>
               {[
                 ["Как принимаешь решения?", "decisionStyle", ["Логика и анализ", "Интуиция и чувства", "Советуюсь с другими", "Смотрю на факты", "Долго взвешиваю"]],
                 ["Откуда берёшь энергию?", "energySource", ["Из общения", "Из одиночества", "Из движения", "Из творчества", "Из природы", "Из порядка"]],
@@ -278,8 +292,7 @@ export function Onboarding() {
                 <div className="fld" key={key}>
                   <label>{label}</label>
                   <div className="chips">{opts.map(v => <div key={v} className={`chip ${d[key] === v ? "on" : ""}`} onClick={() => set(key, v)}>{v}</div>)}</div>
-                </div>
-              ))}
+                </div>              ))}
             </>
           )}
 
@@ -292,7 +305,8 @@ export function Onboarding() {
               <div className="fld"><label>Хронотип</label>
                 <div className="chips">{["🌅 Жаворонок", "🕊️ Голубь", "🦉 Сова"].map(v => <div key={v} className={`chip ${d.chronotype === v ? "on" : ""}`} onClick={() => set("chronotype", v)}>{v}</div>)}</div>
               </div>
-              <div className="fld"><label>Минут в день на себя</label>                <div className="chips">{["15", "30", "45", "60", "90+"].map(v => <div key={v} className={`chip ${d.selfTime === v ? "on" : ""}`} onClick={() => set("selfTime", v)}>{v} мин</div>)}</div>
+              <div className="fld"><label>Минут в день на себя</label>
+                <div className="chips">{["15", "30", "45", "60", "90+"].map(v => <div key={v} className={`chip ${d.selfTime === v ? "on" : ""}`} onClick={() => set("selfTime", v)}>{v} мин</div>)}</div>
               </div>
               <div className="fld"><label>Качество сна</label>
                 <div className="chips">{["Отличное", "Хорошее", "Среднее", "Плохое"].map(v => <div key={v} className={`chip ${d.sleepQuality === v ? "on" : ""}`} onClick={() => set("sleepQuality", v)}>{v}</div>)}</div>
@@ -327,8 +341,7 @@ export function Onboarding() {
                 <div className="fld"><label>Начало работы</label><input type="time" value={d.workStart} onChange={e => set("workStart", e.target.value)} /></div>
                 <div className="fld"><label>Конец работы</label><input type="time" value={d.workEnd} onChange={e => set("workEnd", e.target.value)} /></div>
               </div>
-              <div className="fld"><label>Рабочие дни</label>
-                <div className="chips">{["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"].map((v, i) => <div key={v} className={`chip ${(d.workDaysList || []).includes(i + 1) ? "on" : ""}`} onClick={() => { const c = d.workDaysList || [1,2,3,4,5]; set("workDaysList", c.includes(i+1) ? c.filter(x=>x!==i+1) : [...c, i+1]); }}>{v}</div>)}</div>
+              <div className="fld"><label>Рабочие дни</label>                <div className="chips">{["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"].map((v, i) => <div key={v} className={`chip ${(d.workDaysList || []).includes(i + 1) ? "on" : ""}`} onClick={() => { const c = d.workDaysList || [1,2,3,4,5]; set("workDaysList", c.includes(i+1) ? c.filter(x=>x!==i+1) : [...c, i+1]); }}>{v}</div>)}</div>
               </div>
               <div className="fld-row">
                 <div className="fld"><label>Обед</label><input type="time" value={d.lunchTime || "13:00"} onChange={e => set("lunchTime", e.target.value)} /></div>
@@ -342,6 +355,7 @@ export function Onboarding() {
               </div>
             </>
           )}
+
           {s.id === "home" && (
             <>
               <div className="fld-row">
@@ -377,20 +391,20 @@ export function Onboarding() {
               </>}
             </>
           )}
-
           {s.id === "pets" && (
             <>
-              <div className="fld-hint" style={{marginBottom: 8}}>Каждый питомец — это кормление и визиты. Всё попадёт в расписание.</div>
+              <div className="fld-hint" style={{marginBottom: 10}}>Каждый питомец — это кормление и визиты. Всё попадёт в расписание.</div>
               {(d.pets || []).map((pet, i) => (
-                <div key={pet.id} style={{ background: "rgba(0,112,192,0.04)", border: "1px solid var(--line)", borderRadius: 8, padding: 12, marginBottom: 12 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--blue)" }}>ПИТОМЕЦ {i + 1}</span>
-                    <button className="btn btn-sm" onClick={() => delPet(pet.id)} style={{padding:"2px 8px", fontSize:12}}>✕</button>
+                <div key={pet.id} style={{ background: "rgba(0,112,192,0.04)", border: "1px solid rgba(0,112,192,0.2)", borderRadius: 10, padding: 14, marginBottom: 12 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
+                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "#0070c0" }}>ПИТОМЕЦ {i + 1}</span>
+                    <button className="btn btn-sm" onClick={() => delPet(pet.id)} style={{padding:"4px 10px", fontSize:13}}>✕</button>
                   </div>
                   <div className="fld-row">
                     <div className="fld"><label>Кличка</label><input placeholder="Мурка" value={pet.name} onChange={e => updPet(pet.id, "name", e.target.value)} /></div>
                     <div className="fld"><label>Вид</label><select value={pet.type} onChange={e => updPet(pet.id, "type", e.target.value)}>{["Кошка", "Собака", "Попугай", "Кролик", "Хомяк", "Черепаха", "Рыбки", "Другое"].map(t => <option key={t}>{t}</option>)}</select></div>
-                  </div>                  <div className="fld-row">
+                  </div>
+                  <div className="fld-row">
                     <div className="fld"><label>Корм</label><input value={pet.food} onChange={e => updPet(pet.id, "food", e.target.value)} /></div>
                     <div className="fld"><label>Кормлений/день</label><div className="chips">{["1", "2", "3", "4"].map(v => <div key={v} className={`chip ${pet.feedTimes === v ? "on" : ""}`} onClick={() => updPet(pet.id, "feedTimes", v)}>{v}</div>)}</div></div>
                   </div>
@@ -418,19 +432,18 @@ export function Onboarding() {
           {s.id === "tcm" && (
             <>
               <div className="fld"><label>Час рождения</label>
-                <div className="chips">{["🌙 Ночь (23–01)", "🌑 Глубокая ночь (01–03)", " Ранее утро (03–05)", "🌅 Рассвет (05–07)", "☀️ Утро (07–09)", "🌤 Позднее утро (09–11)", "💛 Полдень (11–13)", "🌞 День (13–15)", "🌇 Послеполуденное (15–17)", "🌆 Ранний вечер (17–19)", "🌃 Вечер (19–21)", "🌙 Поздний вечер (21–23)", "❓ Не знаю"].map(v => <div key={v} className={`chip ${d.birthHour === v ? "on" : ""}`} onClick={() => set("birthHour", v)}>{v}</div>)}</div>
+                <div className="chips">{["🌙 Ночь (23–01)", "🌑 Глубокая ночь (01–03)", "🌒 Ранее утро (03–05)", "🌅 Рассвет (05–07)", "☀️ Утро (07–09)", "🌤 Позднее утро (09–11)", "💛 Полдень (11–13)", "🌞 День (13–15)", "🌇 Послеполуденное (15–17)", "🌆 Ранний вечер (17–19)", "🌃 Вечер (19–21)", "🌙 Поздний вечер (21–23)", "❓ Не знаю"].map(v => <div key={v} className={`chip ${d.birthHour === v ? "on" : ""}`} onClick={() => set("birthHour", v)}>{v}</div>)}</div>
               </div>
               <div className="fld"><label>Температура тела</label>
-                <div className="chips">{[" Часто жарко", "🥶 Часто мёрзну", "🌡 Бывает и так, и так", "✅ Комфортно"].map(v => <div key={v} className={`chip ${d.tcmTemp === v ? "on" : ""}`} onClick={() => set("tcmTemp", v)}>{v}</div>)}</div>
+                <div className="chips">{["🥵 Часто жарко", "🥶 Часто мёрзну", "🌡 Бывает и так, и так", "✅ Комфортно"].map(v => <div key={v} className={`chip ${d.tcmTemp === v ? "on" : ""}`} onClick={() => set("tcmTemp", v)}>{v}</div>)}</div>
               </div>
               <div className="fld"><label>Влажность/Сухость</label>
                 <div className="chips">{["💧 Отёки, слизь", "🏜 Сухость кожи/глаз", "😓 Избыточная потливость", "🌿 Нормально"].map(v => <div key={v} className={`chip ${d.tcmMoisture === v ? "on" : ""}`} onClick={() => set("tcmMoisture", v)}>{v}</div>)}</div>
-              </div>
-              <div className="fld"><label>Преобладающие эмоции</label>
+              </div>              <div className="fld"><label>Преобладающие эмоции</label>
                 <div className="chips">{["😤 Раздражение/Гнев", "😰 Тревога/Суета", "😟 Беспокойство/Мысли", "😢 Печаль/Грусть", "😨 Страх/Неуверенность", "😊 Гармонично"].map(v => <div key={v} className={`chip ${d.tcmEmotion === v ? "on" : ""}`} onClick={() => set("tcmEmotion", v)}>{v}</div>)}</div>
               </div>
               <div className="fld"><label>Тяга к вкусу</label>
-                <div className="chips">{["🍋 Кислое", " Горькое", "🍬 Сладкое", "🧂 Острое/Пряное", "🥓 Солёное", " Всё одинаково"].map(v => <div key={v} className={`chip ${d.tcmTaste === v ? "on" : ""}`} onClick={() => set("tcmTaste", v)}>{v}</div>)}</div>
+                <div className="chips">{["🍋 Кислое", "🌶 Горькое", "🍬 Сладкое", "🧂 Острое/Пряное", "🥓 Солёное", "🤷 Всё одинаково"].map(v => <div key={v} className={`chip ${d.tcmTaste === v ? "on" : ""}`} onClick={() => set("tcmTaste", v)}>{v}</div>)}</div>
               </div>
             </>
           )}
@@ -439,7 +452,8 @@ export function Onboarding() {
             <>
               <div className="fld"><label>Тип кожи</label>
                 <div className="chips">{["Нормальная", "Сухая", "Жирная", "Комбинированная", "Чувствительная"].map(v => <div key={v} className={`chip ${d.skinType === v ? "on" : ""}`} onClick={() => set("skinType", v)}>{v}</div>)}</div>
-              </div>              {d.gender === "Мужской" ? <>
+              </div>
+              {d.gender === "Мужской" ? <>
                 <div className="fld"><label>Борода / усы</label>
                   <div className="chips">{["Нет", "Щетина", "Короткая", "Длинная", "Усы"].map(v => <div key={v} className={`chip ${d.beard === v ? "on" : ""}`} onClick={() => set("beard", v)}>{v}</div>)}</div>
                 </div>
@@ -474,8 +488,7 @@ export function Onboarding() {
             </>
           )}
 
-          {s.id === "hobbies" && (
-            <>
+          {s.id === "hobbies" && (            <>
               <div className="fld"><label>Хобби</label>
                 <div className="chips">{["Чтение", "Фотография", "Музыка", "Готовка", "Садоводство", "Кино", "Путешествия", "Спорт", "Рисование", "Блогинг", "Языки", "Рукоделие", "Игры", "Туризм"].map(v => <div key={v} className={`chip ${(d.hobbies || []).includes(v) ? "on" : ""}`} onClick={() => tog("hobbies", v)}>{v}</div>)}</div>
               </div>
@@ -488,11 +501,12 @@ export function Onboarding() {
 
           {s.id === "travel" && (
             <>
-              <div className="fld-hint" style={{marginBottom: 8}}>Добавь куда хочешь поехать — приложение напомнит о подготовке.</div>              {(d.trips || []).map((trip, i) => (
-                <div key={trip.id} style={{ background: "rgba(200,164,90,0.06)", border: "1px solid var(--line)", borderRadius: 8, padding: 12, marginBottom: 12 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--gold)" }}>ПОЕЗДКА {i + 1}</span>
-                    <button className="btn btn-sm" onClick={() => delTrip(trip.id)} style={{padding:"2px 8px", fontSize:12}}></button>
+              <div className="fld-hint" style={{marginBottom: 10}}>Добавь куда хочешь поехать — приложение напомнит о подготовке.</div>
+              {(d.trips || []).map((trip, i) => (
+                <div key={trip.id} style={{ background: "rgba(200,164,90,0.06)", border: "1px solid rgba(200,164,90,0.25)", borderRadius: 10, padding: 14, marginBottom: 12 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
+                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "#c8a45a" }}>ПОЕЗДКА {i + 1}</span>
+                    <button className="btn btn-sm" onClick={() => delTrip(trip.id)} style={{padding:"4px 10px", fontSize:13}}>✕</button>
                   </div>
                   <div className="fld"><label>Куда?</label><input placeholder="Стамбул, Бали..." value={trip.destination} onChange={e => updTrip(trip.id, "destination", e.target.value)} /></div>
                   <div className="fld-row">
@@ -507,7 +521,7 @@ export function Onboarding() {
 
           {s.id === "goals" && (
             <>
-              <div className="fld"><label>Главная цель на 3 месяца</label><textarea placeholder="Наладить режим, похудеть на 5 кг..." value={d.mainGoal || ""} onChange={e => set("mainGoal", e.target.value)} style={{resize:"vertical", minHeight:60}} /></div>
+              <div className="fld"><label>Главная цель на 3 месяца</label><textarea placeholder="Наладить режим, похудеть на 5 кг..." value={d.mainGoal || ""} onChange={e => set("mainGoal", e.target.value)} style={{resize:"vertical", minHeight:70}} /></div>
               <div className="fld"><label>Сферы прогресса</label>
                 <div className="chips">{["Здоровье", "Карьера", "Финансы", "Отношения", "Саморазвитие", "Творчество", "Путешествия", "Духовность", "Семья", "Внешность"].map(v => <div key={v} className={`chip ${(d.goalAreas || []).includes(v) ? "on" : ""}`} onClick={() => tog("goalAreas", v)}>{v}</div>)}</div>
               </div>
@@ -518,13 +532,12 @@ export function Onboarding() {
           )}
 
           {s.id === "done" && (
-            <div style={{ textAlign: "center", padding: "12px 0" }}>
-              <div style={{ fontSize: 48, marginBottom: 12 }}>✨</div>
-              {d.name && <div style={{ fontFamily: "var(--font-italic)", fontSize: "clamp(18px, 3vw, 24px)", color: "var(--gold)", marginBottom: 8 }}>Привет, {d.name.split(" ")[0] || d.name}!</div>}
-              <div style={{ fontFamily: "var(--font-italic)", fontSize: "clamp(14px, 2vw, 16px)", color: "var(--text2)", lineHeight: 1.8, fontStyle: "italic" }}>
+            <div style={{ textAlign: "center", padding: "20px 0" }}>
+              <div style={{ fontSize: 56, marginBottom: 16 }}>✨</div>
+              {d.name && <div style={{ fontFamily: "'Cormorant Infant', serif", fontSize: "clamp(20px, 4vw, 26px)", color: "#c8a45a", marginBottom: 10 }}>Привет, {d.name.split(" ")[0] || d.name}!</div>}
+              <div style={{ fontFamily: "'Cormorant Infant', serif", fontSize: "clamp(15px, 2.8vw, 18px)", color: "#5c4a30", lineHeight: 1.8, fontStyle: "italic" }}>
                 {d.dob && `${getZodiacInline(d.dob).emoji} ${getZodiacInline(d.dob).name} · 🐾 ${getEasternInline(d.dob)}`}
-                {d.fullName && ` · ✦ ${calcDegreeInline(d.fullName)}° судьбы`}
-                <br />Life Diary знает тебя и готов держать всё в голове вместо тебя.
+                {d.fullName && ` · ✦ ${calcDegreeInline(d.fullName)}° судьбы`}                <br />Life Diary знает тебя и готов держать всё в голове вместо тебя.
               </div>
             </div>
           )}
@@ -537,10 +550,11 @@ export function Onboarding() {
           ) : <div />}
           {step < OB_STEPS.length - 1 ? (
             <button className="btn btn-primary" onClick={() => setStep(s => s + 1)}>Далее →</button>
-          ) : (            <button className="btn btn-primary" onClick={handleDone}>Открыть Life Diary ✨</button>
+          ) : (
+            <button className="btn btn-primary" onClick={handleDone}>Открыть Life Diary ✨</button>
           )}
         </div>
       </div>
     </div>
   );
-                  }
+                                                                                                      }
