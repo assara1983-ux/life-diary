@@ -13,7 +13,7 @@ import { HomeSection }     from './sections/HomeSection';
 import { ShoppingSection } from './sections/ShoppingSection';
 import { PetsSection }     from './sections/PetsSection';
 import { CarSection }      from './sections/CarSection';
-import { HealthMentalSection } from './sections/HealthMentalSection';
+import { HealthSection }   from './sections/HealthSection';
 import { BeautySection }   from './sections/BeautySection';
 import { HobbiesSection }  from './sections/HobbiesSection';
 import { GoalsSection }    from './sections/GoalsSection';
@@ -29,7 +29,7 @@ const DEF_SECTIONS = [
   { id:"shopping", name:"Покупки",    vis:true },
   { id:"pets",     name:"Питомцы",    vis:true },
   { id:"car",      name:"Авто",       vis:true },
-  { id:"health_mental", name:"Здоровье & Ментальное", vis:true },
+  { id:"health",   name:"Здоровье",   vis:true },
   { id:"beauty",   name:"Уход",       vis:true },
   { id:"hobbies",  name:"Хобби",      vis:true },
   { id:"goals",    name:"Мои цели",   vis:true },
@@ -87,7 +87,6 @@ function AppContent() {
           filter: 'grayscale(20%) sepia(10%)',
         }} />
       )}
-
       {toastMsg && (
         <div style={{
           position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)',
@@ -96,10 +95,9 @@ function AppContent() {
           border: '1.5px solid rgba(0,112,192,0.4)',
           boxShadow: '0 4px 16px rgba(0,112,192,0.15)',
           fontFamily: "'JetBrains Mono', monospace",
-        }}>          {toastMsg}
-        </div>
+        }}>
+          {toastMsg}        </div>
       )}
-
       <nav className="sidebar-wide" style={{
         gridColumn: '1 / 2',
         background: 'rgba(245,240,225,0.95)',
@@ -134,7 +132,6 @@ function AppContent() {
           </div>
         ))}
       </nav>
-
       <main className="main" style={{
         gridColumn: '2 / 3',
         display: 'flex', flexDirection: 'column',
@@ -145,10 +142,10 @@ function AppContent() {
           background: 'rgba(245,240,225,0.9)',
           borderBottom: '1px solid rgba(0,112,192,0.15)',
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        }}>          <div>
+        }}>
+          <div>
             <div className="hdr-title" style={{ fontSize: 20, fontWeight: 600, color: '#0070c0' }}>{activeSection?.name}</div>
-            <div className="hdr-sub" style={{ fontSize: 12, color: '#5c4a30' }}>
-              {new Date().toLocaleDateString("ru-RU",{weekday:"long",day:"numeric",month:"long"})}
+            <div className="hdr-sub" style={{ fontSize: 12, color: '#5c4a30' }}>              {new Date().toLocaleDateString("ru-RU",{weekday:"long",day:"numeric",month:"long"})}
             </div>
           </div>
           <div className="hdr-r" style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
@@ -156,7 +153,6 @@ function AppContent() {
             <div className="date-tag" style={{ fontSize: 12, fontFamily: "'JetBrains Mono'", color: '#0070c0' }}>{today}</div>
           </div>
         </div>
-
         <div className="page" style={{ flex: 1, overflowY: 'auto', padding: 24 }}>
           {active==='today'         && <TodaySection />}
           {active==='schedule'      && <ScheduleSection />}
@@ -165,7 +161,7 @@ function AppContent() {
           {active==='shopping'      && <ShoppingSection />}
           {active==='pets'          && <PetsSection />}
           {active==='car'           && <CarSection />}
-          {active==='health_mental' && <HealthMentalSection />}
+          {active==='health'        && <HealthSection />}
           {active==='beauty'        && <BeautySection />}
           {active==='hobbies'       && <HobbiesSection />}
           {active==='goals'         && <GoalsSection />}
@@ -184,4 +180,4 @@ export default function App() {
       <AppContent />
     </AppProvider>
   );
-            }
+}
