@@ -1,7 +1,6 @@
 // src/components/MeridianClock.jsx
 import React from 'react';
 
-// Аппроксимация анатомических зон на фронтальной проекции (viewBox: 400x700)
 const ORGAN_REGIONS = [
   { id: 1, name: 'Лёгкие', time: '03:00-05:00', desc: 'Дыхание, кожа, иммунная защита.', path: 'M100,140 C80,140 70,180 70,230 C70,290 90,310 140,310 C180,310 190,270 180,220 C170,170 160,140 100,140 Z M220,140 C260,140 270,180 270,230 C270,290 290,310 240,310 C200,310 190,270 200,220 C210,170 220,140 220,140 Z' },
   { id: 2, name: 'Толстый кишечник', time: '05:00-07:00', desc: 'Выведение токсинов, детокс, утренний ритм.', path: 'M90,320 L90,460 C90,490 120,510 160,510 L240,510 C280,510 310,490 310,460 L310,320 L290,320 L290,480 C290,490 270,500 240,500 L160,500 C130,500 110,490 110,480 L110,320 Z' },
@@ -17,8 +16,9 @@ const ORGAN_REGIONS = [
   { id: 12, name: 'Печень', time: '01:00-03:00', desc: 'Очищение крови, сны, стратегия, гнев.', path: 'M220,270 C210,300 230,340 270,350 C310,360 330,320 310,280 C290,240 240,250 220,270 Z' }
 ];
 
-export function MeridianClock({ current, onOpen }) {
-  const activeId = current?.id || (current?.name && ORGAN_REGIONS.find(o => o.name === current.name)?.id);
+// ИСПРАВЛЕНИЕ: Принимает activeMeridian и onSelect (как передает HealthSection.jsx)
+export function MeridianClock({ activeMeridian, onSelect }) {
+  const activeId = activeMeridian?.id || (activeMeridian?.name && ORGAN_REGIONS.find(o => o.name === activeMeridian.name)?.id);
 
   return (
     <div style={{ position: 'relative', width: '100%', maxWidth: '350px', margin: '0 auto', border: '2px solid var(--blue)', padding: '10px', background: '#f9f9f9' }}>
@@ -47,11 +47,11 @@ export function MeridianClock({ current, onOpen }) {
         {ORGAN_REGIONS.map((organ) => {
           const isActive = activeId === organ.id;
           return (
-            <g key={organ.id} style={{ pointerEvents: 'auto' }} onClick={() => onOpen({ title: organ.name, time: organ.time, desc: organ.desc })}>
+            <g key={organ.id} style={{ pointerEvents: 'auto' }} onClick={() => onSelect({ title: organ.name, time: organ.time, desc: organ.desc })}>
               <path
                 className={`meridian-shape ${isActive ? 'active' : ''}`}
                 d={organ.path}
-                fill="rgba(211, 47, 47, 0.35)"
+                fill={isActive ? "rgba(211, 47, 47, 0.8)" : "rgba(211, 47, 47, 0.4)"}
                 stroke="#d32f2f"
                 strokeWidth="1.5"
               />
