@@ -1,0 +1,57 @@
+<!-- public/assets/anatomy/body_base.svg -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 800" width="100%" height="100%">
+  <defs>
+    <!-- Blueprint Grid -->
+    <pattern id="blueprint-grid" width="20" height="20" patternUnits="userSpaceOnUse">
+      <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#0070c0" stroke-width="0.5" opacity="0.15"/>
+    </pattern>
+    <!-- Golden Gradient -->
+    <linearGradient id="gold-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#c8a45a;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#d4b76a;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background Grid -->
+  <rect width="100%" height="100%" fill="url(#blueprint-grid)"/>
+
+  <!-- Annotations -->
+  <text x="20" y="40" font-family="var(--font-mono)" font-size="10" fill="#0070c0" opacity="0.6">ANATOMY / U-SIN</text>
+  <text x="300" y="40" font-family="var(--font-mono)" font-size="10" fill="#0070c0" opacity="0.6">REF: 001</text>
+
+  <!-- Body Contour (Blueprint Style) -->
+  <g stroke="#0070c0" stroke-width="1.5" fill="none" opacity="0.8">
+    <!-- Head -->
+    <ellipse cx="200" cy="100" rx="30" ry="40" />
+    <!-- Torso -->
+    <path d="M 170 150 C 170 130, 230 130, 230 150 L 240 350 C 240 400, 160 400, 160 350 Z" />
+    <!-- Arms -->
+    <path d="M 170 160 L 130 280 L 120 380 L 140 390 L 150 280 L 180 180" />
+    <path d="M 230 160 L 270 280 L 280 380 L 260 390 L 250 280 L 220 180" />
+    <!-- Legs -->
+    <path d="M 170 380 L 160 550 L 150 700 L 170 720 L 190 700 L 190 550 L 190 380" />
+    <path d="M 230 380 L 240 550 L 250 700 L 230 720 L 210 700 L 210 550 L 210 380" />
+  </g>
+
+  <!-- Golden Section Lines (Overlay) -->
+  <g stroke="url(#gold-grad)" stroke-width="1" fill="none" stroke-dasharray="5,5" opacity="0.6">
+    <line x1="200" y1="60" x2="200" y2="740" />
+    <circle cx="200" cy="400" r="120" />
+    <circle cx="200" cy="100" r="45" />
+  </g>
+
+  <!-- Constitution Diagram (Simplified Circle) -->
+  <g transform="translate(320, 680)">
+    <circle cx="0" cy="0" r="40" fill="none" stroke="#0070c0" stroke-width="1" opacity="0.5"/>
+    <circle cx="0" cy="0" r="25" fill="none" stroke="#0070c0" stroke-width="1" opacity="0.3"/>
+    <line x1="0" y1="-40" x2="0" y2="40" stroke="#0070c0" opacity="0.5"/>
+    <line x1="-40" y1="0" x2="40" y2="0" stroke="#0070c0" opacity="0.5"/>
+    <text x="-20" y="60" font-family="var(--font-mono)" font-size="8" fill="#0070c0">CONSTITUTION DIAGRAM</text>
+  </g>
+
+  <!-- Scale Ruler -->
+  <g transform="translate(20, 760)" stroke="#0070c0" stroke-width="1" opacity="0.6">
+    <line x1="0" y1="0" x2="360" y2="0" />
+    <path d="M0,-5 L0,5 M20,-3 L20,3 M40,-5 L40,5 M60,-3 L60,3 M80,-5 L80,5 M100,-3 L100,3 M120,-5 L120,5 M140,-3 L140,3 M160,-5 L160,5 M180,-3 L180,3 M200,-5 L200,5 M220,-3 L220,3 M240,-5 L240,5 M260,-3 L260,3 M280,-5 L280,5 M300,-3 L300,3 M320,-5 L320,5 M340,-3 L340,3 M360,-5 L360,5" />
+  </g>
+</svg>
