@@ -8,6 +8,7 @@ export function AnatomyViewer({ activeOrganId, onSelect }) {
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
+
     const handleClick = (e) => {
       const target = e.target.closest('[data-organ], [data-chakra]');
       if (target) {
@@ -16,6 +17,7 @@ export function AnatomyViewer({ activeOrganId, onSelect }) {
         onSelect({ type, id });
       }
     };
+
     container.addEventListener('click', handleClick);
     return () => container.removeEventListener('click', handleClick);
   }, [onSelect]);
@@ -38,15 +40,28 @@ export function AnatomyViewer({ activeOrganId, onSelect }) {
       `}</style>
 
       <div className="av-container">
-        <div className="av-layer base-layer"><img src="/assets/anatomy/meridian-body-base.png" alt="Base" /></div>
+        {/* Базовый слой - Векторный SVG (Blueprint стиль) */}
+        <div className="av-layer base-layer">
+          <img src="/assets/anatomy/meridian-body-base.svg" alt="Base" />
+        </div>
+
+        {/* Слой органов (Интерактивный) */}
         <div className={`av-layer interactive ${!layers.organs ? 'hidden' : ''}`}>
           <img src="/assets/anatomy/organs.svg" alt="Organs" />
           {activeOrganId && layers.organs && (
             <style>{`.organ-path[data-organ="${activeOrganId}"] { fill: rgba(211,47,47,0.7) !important; stroke: #b71c1c !important; stroke-width: 2.5 !important; filter: drop-shadow(0 0 6px rgba(211,47,47,0.6)); animation: pulse-organ 2s infinite ease-in-out; }`}</style>
           )}
         </div>
-        <div className={`av-layer ${!layers.meridians ? 'hidden' : ''}`}><img src="/assets/anatomy/meridians.svg" alt="Meridians" /></div>
-        <div className={`av-layer interactive ${!layers.chakras ? 'hidden' : ''}`}><img src="/assets/anatomy/chakras.svg" alt="Chakras" /></div>
+
+        {/* Слой меридианов */}
+        <div className={`av-layer ${!layers.meridians ? 'hidden' : ''}`}>
+          <img src="/assets/anatomy/meridians.svg" alt="Meridians" />
+        </div>
+
+        {/* Слой чакр (Интерактивный) */}
+        <div className={`av-layer interactive ${!layers.chakras ? 'hidden' : ''}`}>
+          <img src="/assets/anatomy/chakras.svg" alt="Chakras" />
+        </div>
       </div>
 
       <div className="av-controls">
