@@ -38,6 +38,7 @@ function useStorageState(key, defaultValue) {
   return [value, setValue];
 }
 
+// ✅ ИСПРАВЛЕНО: дефолты используют health
 const DEFAULT_SECTIONS = [
   { id: "today", emoji: "☀️", name: "Сегодня", vis: true },
   { id: "schedule", emoji: "🗓️", name: "Расписание", vis: true },
@@ -46,8 +47,8 @@ const DEFAULT_SECTIONS = [
   { id: "shopping", emoji: "🛒", name: "Покупки", vis: true },
   { id: "pets", emoji: "🐾", name: "Питомцы", vis: true },
   { id: "car", emoji: "🚗", name: "Авто", vis: true },
-  { id: "health", emoji: "🫁", name: "Здоровье", vis: true },
-  { id: "beauty", emoji: "✨", name: "Уход", vis: true },  { id: "hobbies", emoji: "🎨", name: "Хобби", vis: true },
+  { id: "health", emoji: "🫁", name: "Здоровье", vis: true },  { id: "beauty", emoji: "✨", name: "Уход", vis: true },
+  { id: "hobbies", emoji: "🎨", name: "Хобби", vis: true },
   { id: "goals", emoji: "🎯", name: "Мои цели", vis: true },
   { id: "travel", emoji: "✈️", name: "Поездки", vis: true },
   { id: "journal", emoji: "📖", name: "Журнал", vis: true },
@@ -58,15 +59,18 @@ export function AppProvider({ children }) {
   const [profile, setProfile] = useStorageState('ld_pf_v3', null);
   const [sections, setSections] = useStorageState('ld_sec_v3', DEFAULT_SECTIONS);
 
-  // ═══ АВТО-МИГРАЦИЯ РАЗДЕЛОВ ═══
+  // ═══ АВТО-МИГРАЦИЯ ═══
   useEffect(() => {
     try {
       const raw = localStorage.getItem('ld_sec_v3');
       if (!raw) return;
       const parsed = JSON.parse(raw);
-      const cleaned = parsed.filter(s => s.id !== 'mental' && s.id !== 'health_mental');
+      // Удаляем устаревшие разделы
+      const cleaned = parsed.filter(s => s.id !== 'health_mental' && s.id !== 'mental' && s.id !== 'health_mental_ru');
+      // Если health нет, добавляем
       const hasHealth = cleaned.some(s => s.id === 'health');
       if (!hasHealth) cleaned.push({ id: "health", emoji: "🫁", name: "Здоровье", vis: true });
+      
       if (cleaned.length !== parsed.length || !hasHealth) {
         localStorage.setItem('ld_sec_v3', JSON.stringify(cleaned));
         setSections(cleaned);
@@ -92,11 +96,11 @@ export function AppProvider({ children }) {
   const [mentalStress, setMentalStress] = useStorageState('mental_stress', 5);
   const [mentalLog, setMentalLog] = useStorageState('mental_log', []);
   const [mentalRecoveryPlan, setMentalRecoveryPlan] = useStorageState('mental_recovery_plan', '');
-  const [customPractices, setCustomPractices] = useStorageState('custom_practices', []);
-  const [aiNotes, setAiNotes] = useStorageState('ld_ai_notes', []);
+  const [customPractices, setCustomPractices] = useStorageState('custom_practices', []);  const [aiNotes, setAiNotes] = useStorageState('ld_ai_notes', []);
   const [aiJournal, setAiJournal] = useStorageState('ld_ai_journal', []);
   const [workOpenWeek, setWorkOpenWeek] = useStorageState('ld_work_open_week', true);
-  const [workOpenUpcoming, setWorkOpenUpcoming] = useStorageState('ld_work_open_upcoming', true);  const [workOpenGroups, setWorkOpenGroups] = useStorageState('ld_work_open_groups', true);
+  const [workOpenUpcoming, setWorkOpenUpcoming] = useStorageState('ld_work_open_upcoming', true);
+  const [workOpenGroups, setWorkOpenGroups] = useStorageState('ld_work_open_groups', true);
   const [workOpenTasks, setWorkOpenTasks] = useStorageState('ld_work_open_tasks', true);
   const [workOpenAdvice, setWorkOpenAdvice] = useStorageState('ld_work_open_advice', true);
   const [shopAdvice, setShopAdvice] = useStorageState('ld_shop_advice', true);
@@ -141,11 +145,11 @@ export function AppProvider({ children }) {
   const addCustomReport = (groupId, reportData) => setCustomReportGroups(prev => prev.map(g => g.id === groupId ? { ...g, reports: [...g.reports, { id: 'r-' + Date.now(), ...reportData }] } : g));
   const toggleReport = (reportId) => setSelectedReports(prev => prev.includes(reportId) ? prev.filter(id => id !== reportId) : [...prev, reportId]);
   const toggleSection = (id) => setCollapsedSections(prev => ({ ...prev, [id]: !prev[id] }));
-
   const allCatalogReports = useMemo(() => [...KGD_CATALOG, ...BNS_CATALOG], []);
   useEffect(() => {
     const today = new Date(); today.setHours(0, 0, 0, 0);
-    const todayStr = today.toISOString().split('T')[0];    const warningDate = new Date(today); warningDate.setDate(today.getDate() + 7);
+    const todayStr = today.toISOString().split('T')[0];
+    const warningDate = new Date(today); warningDate.setDate(today.getDate() + 7);
     const warningDateStr = warningDate.toISOString().split('T')[0];
     setTasks(prev => {
       const newTasks = [...prev];
@@ -190,11 +194,11 @@ export function AppProvider({ children }) {
     selectedReports, toggleReport,
     collapsedSections, toggleSection,
     aiRecommendations, setAiRecommendations,
-    mentalMood, setMentalMood, mentalStress, setMentalStress, mentalLog, setMentalLog,
-    mentalRecoveryPlan, setMentalRecoveryPlan, customPractices, setCustomPractices,
+    mentalMood, setMentalMood, mentalStress, setMentalStress, mentalLog, setMentalLog,    mentalRecoveryPlan, setMentalRecoveryPlan, customPractices, setCustomPractices,
     aiNotes, setAiNotes, aiJournal, setAiJournal,
     workOpenWeek, setWorkOpenWeek, workOpenUpcoming, setWorkOpenUpcoming, workOpenGroups, setWorkOpenGroups,
-    workOpenTasks, setWorkOpenTasks, workOpenAdvice, setWorkOpenAdvice,    shopAdvice, setShopAdvice, shopListOpen, setShopListOpen,
+    workOpenTasks, setWorkOpenTasks, workOpenAdvice, setWorkOpenAdvice,
+    shopAdvice, setShopAdvice, shopListOpen, setShopListOpen,
     petsAdvice, setPetsAdvice, petsFeed, setPetsFeed, petsCare, setPetsCare,
     homeAdvice, setHomeAdvice, homeTasks, setHomeTasks,
     hobbyAdvice, setHobbyAdvice, hobbyList, setHobbyList,
@@ -215,4 +219,4 @@ export function useApp() {
   const ctx = useContext(AppContext);
   if (!ctx) throw new Error('useApp must be used within AppProvider');
   return ctx;
-}
+    }
