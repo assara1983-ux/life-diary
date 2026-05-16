@@ -13,7 +13,7 @@ import { HomeSection }     from './sections/HomeSection';
 import { ShoppingSection } from './sections/ShoppingSection';
 import { PetsSection }     from './sections/PetsSection';
 import { CarSection }      from './sections/CarSection';
-import { HealthSection }   from './sections/HealthSection';
+import { HealthMentalSection } from './sections/HealthMentalSection';
 import { BeautySection }   from './sections/BeautySection';
 import { HobbiesSection }  from './sections/HobbiesSection';
 import { GoalsSection }    from './sections/GoalsSection';
@@ -161,7 +161,7 @@ function AppContent() {
           {active==='shopping'      && <ShoppingSection />}
           {active==='pets'          && <PetsSection />}
           {active==='car'           && <CarSection />}
-          {active==='health'        && <HealthSection />}
+          {active==='health'        && <HealthMentalSection />}
           {active==='beauty'        && <BeautySection />}
           {active==='hobbies'       && <HobbiesSection />}
           {active==='goals'         && <GoalsSection />}
