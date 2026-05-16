@@ -135,7 +135,7 @@ export function Onboarding() {
         .ob-bg { position: absolute; inset: 0; background: url('/assets/onboarding-blueprint.png') center/cover no-repeat; opacity: 0.12; mix-blend-mode: multiply; filter: blur(1px) grayscale(20%) sepia(15%); pointer-events: none; z-index: 0; }
         
         /* ─── CARD ─── */
-        .ob-card { position: relative; z-index: 1; width: 100%; max-width: 680px; background: rgba(255,255,255,0.96); border: 1.5px solid rgba(0,112,192,0.25); border-radius: 16px; padding: clamp(28px, 6vw, 48px); box-shadow: 0 12px 40px rgba(0,112,192,0.12); display: flex; flex-direction: column; gap: clamp(18px, 3.5vw, 28px); }
+        .ob-card { position: relative; z-index: 1; width: 100%; max-width: 720px; background: rgba(255,255,255,0.96); border: 1.5px solid rgba(0,112,192,0.25); border-radius: 16px; padding: clamp(32px, 6vw, 56px); box-shadow: 0 12px 40px rgba(0,112,192,0.12); display: flex; flex-direction: column; gap: clamp(20px, 4vw, 32px); }
         
         /* ─── PROGRESS ─── */
         .ob-progress { width: 100%; }
@@ -146,12 +146,22 @@ export function Onboarding() {
         .ob-marker { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #8c7a5a; opacity: 0.6; transition: all 0.3s; }
         .ob-marker.active { color: #0070c0; font-weight: 700; opacity: 1; transform: scale(1.15); }
         /* ─── HEADER ─── */
-        .ob-header { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+        .ob-header { text-align: center; display: flex; flex-direction: column; align-items: center; gap: clamp(16px, 3vw, 24px); }
+        .ob-title { font-family: 'Cinzel', serif; font-size: clamp(2rem, 5.5vw, 2.6rem); color: #2c241b; margin: 0; line-height: 1.2; font-weight: 600; }
+        .ob-sub { font-family: 'Cormorant Infant', serif; font-size: clamp(1.2rem, 3.5vw, 1.7rem); color: #5c4a30; margin: 0; max-width: 95%; line-height: 1.6; font-weight: 400; }
+
+        /* ─── ICON WRAP (Для шагов кроме welcome) ─── */
         .ob-icon-wrap { width: clamp(56px, 9vw, 72px); height: clamp(56px, 9vw, 72px); background: rgba(0,112,192,0.06); border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 1.5px solid rgba(0,112,192,0.2); overflow: hidden; flex-shrink: 0; }
         .ob-icon-wrap svg { width: 60%; height: 60%; color: #0070c0; }
-        .ob-icon-img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
-        .ob-title { font-family: 'Cinzel', serif; font-size: clamp(1.5rem, 4.5vw, 2rem); color: #2c241b; margin: 0; line-height: 1.2; }
-        .ob-sub { font-family: 'Cormorant Infant', serif; font-size: clamp(1rem, 2.8vw, 1.25rem); color: #5c4a30; margin: 0; max-width: 90%; line-height: 1.5; }
+        
+        /* ─── WELCOME IMAGE (Без круга, натуральные пропорции) ─── */
+        .ob-welcome-img {
+          width: clamp(320px, 65vw, 520px);
+          height: auto;
+          object-fit: contain;
+          display: block;
+          filter: drop-shadow(0 6px 15px rgba(0,112,192,0.15));
+        }
 
         /* ─── BODY & FORMS ─── */
         .ob-body { display: flex; flex-direction: column; gap: clamp(16px, 3vw, 24px); min-height: 180px; }
@@ -184,17 +194,18 @@ export function Onboarding() {
         /* ─── MOBILE BREAKPOINT ─── */
         @media (max-width: 600px) {
           .ob-root { padding: 12px; align-items: stretch; }
-          .ob-card { padding: 24px 20px; max-width: 100%; border-radius: 12px; }
-          .fld-row { grid-template-columns: 1fr; }
+          .ob-card { padding: 24px 20px; max-width: 100%; border-radius: 12px; }          .fld-row { grid-template-columns: 1fr; }
           .ob-marker:not(.active) { display: none; }
-          .ob-sub { font-size: 15px; }
-          .ob-title { font-size: 22px; }
+          .ob-sub { font-size: 1.15rem; }
+          .ob-title { font-size: 24px; }
+          .ob-welcome-img { width: 90%; max-width: 360px; }
         }
       `}</style>
 
       <div className="ob-bg" />
       <div className="ob-card">
-        {/* Progress */}        <div className="ob-progress">
+        {/* Progress */}
+        <div className="ob-progress">
           <div className="ob-phase-label">Фаза: {currentPhase}</div>
           <div className="ob-bar-track">
             <div className="ob-bar-fill" style={{ width: `${pct}%` }} />
@@ -210,13 +221,16 @@ export function Onboarding() {
 
         {/* Header */}
         <div className="ob-header">
-          <div className="ob-icon-wrap">
-            {s.id === "welcome" ? (
-              <img src="/assets/onboarding-blueprint.png" alt="Blueprint" className="ob-icon-img" />
-            ) : (
-              STEP_ICONS[s.id] || STEP_ICONS.welcome
-            )}
-          </div>
+          {s.id === "welcome" ? (
+            <img 
+              src="/assets/onboarding-blueprint.png" 
+              alt="Blueprint Book" 
+              className="ob-welcome-img" 
+            />
+          ) : (
+            <div className="ob-icon-wrap">{STEP_ICONS[s.id] || STEP_ICONS.welcome}</div>
+          )}
+          
           <h2 className="ob-title">{s.title}</h2>
           <p className="ob-sub">{s.sub}</p>
         </div>
@@ -225,12 +239,11 @@ export function Onboarding() {
         <div className="ob-body">
           {s.id === "welcome" && (
             <div style={{ textAlign: "center", padding: "16px 0" }}>
-              <div style={{ fontFamily: "'Cormorant Infant', serif", fontSize: "clamp(15px, 2.5vw, 18px)", color: "#5c4a30", fontStyle: "italic", lineHeight: 1.7 }}>
+              <div style={{ fontFamily: "'Cormorant Infant', serif", fontSize: "clamp(16px, 2.5vw, 20px)", color: "#5c4a30", fontStyle: "italic", lineHeight: 1.7 }}>
                 «Всё записано — ничего не потеряно»
               </div>
             </div>
           )}
-
           {s.id === "basic" && (
             <>
               <div className="fld"><label>Имя</label><input placeholder="Мария" value={d.name || ""} onChange={e => set("name", e.target.value)} /></div>
@@ -243,7 +256,8 @@ export function Onboarding() {
                 <div className="calc-preview">
                   <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "#8c7a5a", letterSpacing: 2, marginBottom: 10, textTransform: "uppercase" }}>Рассчитано автоматически</div>
                   <div className="calc-row">
-                    {zodiac && <div className="calc-item"><div className="calc-l">Знак</div><div className="calc-v">{zodiac.emoji} {zodiac.name}</div></div>}                    {eastern && <div className="calc-item"><div className="calc-l">Восточный</div><div className="calc-v">🐾 {eastern}</div></div>}
+                    {zodiac && <div className="calc-item"><div className="calc-l">Знак</div><div className="calc-v">{zodiac.emoji} {zodiac.name}</div></div>}
+                    {eastern && <div className="calc-item"><div className="calc-l">Восточный</div><div className="calc-v">🐾 {eastern}</div></div>}
                     {age && <div className="calc-item"><div className="calc-l">Возраст</div><div className="calc-v">{age} лет</div></div>}
                     {degree && <div className="calc-item"><div className="calc-l">Градус</div><div className="calc-v" style={{ color: "#c8a45a", fontSize: 20 }}>{degree}°</div></div>}
                   </div>
@@ -278,8 +292,7 @@ export function Onboarding() {
             <>
               {[
                 ["Что выбивает из колеи?", "stressors", ["Неопределённость", "Много задач сразу", "Конфликты", "Нехватка времени", "Усталость", "Критика", "Хаос", "Сложные решения", "Шум и суета"], true],
-                ["Как восстанавливаешься?", "recovery", ["Сон и тишина", "Прогулка на природе", "Общение с близкими", "Любимое хобби", "Спорт и движение", "Уход за собой", "Вкусная еда", "Кино / книга", "Музыка", "Медитация", "Горячая ванна", "Время в одиночестве", "Творчество", "Путешествие"], true],
-              ].map(([label, key, opts, multi]) => (
+                ["Как восстанавливаешься?", "recovery", ["Сон и тишина", "Прогулка на природе", "Общение с близкими", "Любимое хобби", "Спорт и движение", "Уход за собой", "Вкусная еда", "Кино / книга", "Музыка", "Медитация", "Горячая ванна", "Время в одиночестве", "Творчество", "Путешествие"], true],              ].map(([label, key, opts, multi]) => (
                 <div className="fld" key={key}>
                   <label>{label}</label>
                   <div className="chips">{opts.map(v => <div key={v} className={`chip ${(d[key] || []).includes(v) ? "on" : ""}`} onClick={() => multi ? tog(key, v) : set(key, v)}>{v}</div>)}</div>
@@ -292,7 +305,8 @@ export function Onboarding() {
                 <div className="fld" key={key}>
                   <label>{label}</label>
                   <div className="chips">{opts.map(v => <div key={v} className={`chip ${d[key] === v ? "on" : ""}`} onClick={() => set(key, v)}>{v}</div>)}</div>
-                </div>              ))}
+                </div>
+              ))}
             </>
           )}
 
@@ -327,8 +341,7 @@ export function Onboarding() {
                 <div className="chips">{["Много встреч", "Однообразие", "Дедлайны", "Конфликты", "Переработки", "Скучные задачи", "Неопределённость"].map(v => <div key={v} className={`chip ${(d.workDrain || []).includes(v) ? "on" : ""}`} onClick={() => tog("workDrain", v)}>{v}</div>)}</div>
               </div>
               <div className="fld"><label>Рабочая цель</label>
-                <div className="chips">{["Карьерный рост", "Повышение дохода", "Сменить профессию", "Своё дело", "Работать меньше", "Прокачать навыки", "Стабильность"].map(v => <div key={v} className={`chip ${d.careerGoal === v ? "on" : ""}`} onClick={() => set("careerGoal", v)}>{v}</div>)}</div>
-              </div>
+                <div className="chips">{["Карьерный рост", "Повышение дохода", "Сменить профессию", "Своё дело", "Работать меньше", "Прокачать навыки", "Стабильность"].map(v => <div key={v} className={`chip ${d.careerGoal === v ? "on" : ""}`} onClick={() => set("careerGoal", v)}>{v}</div>)}</div>              </div>
               <div className="fld"><label>Отчётность</label>
                 <div className="chips">{["Бухгалтер / ИП", "HR / Кадры", "Юрист", "Врач", "Педагог", "Госслужащий", "Нет отчётности"].map(v => <div key={v} className={`chip ${d.profDeadlines === v ? "on" : ""}`} onClick={() => set("profDeadlines", v)}>{v}</div>)}</div>
               </div>
@@ -341,7 +354,8 @@ export function Onboarding() {
                 <div className="fld"><label>Начало работы</label><input type="time" value={d.workStart} onChange={e => set("workStart", e.target.value)} /></div>
                 <div className="fld"><label>Конец работы</label><input type="time" value={d.workEnd} onChange={e => set("workEnd", e.target.value)} /></div>
               </div>
-              <div className="fld"><label>Рабочие дни</label>                <div className="chips">{["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"].map((v, i) => <div key={v} className={`chip ${(d.workDaysList || []).includes(i + 1) ? "on" : ""}`} onClick={() => { const c = d.workDaysList || [1,2,3,4,5]; set("workDaysList", c.includes(i+1) ? c.filter(x=>x!==i+1) : [...c, i+1]); }}>{v}</div>)}</div>
+              <div className="fld"><label>Рабочие дни</label>
+                <div className="chips">{["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"].map((v, i) => <div key={v} className={`chip ${(d.workDaysList || []).includes(i + 1) ? "on" : ""}`} onClick={() => { const c = d.workDaysList || [1,2,3,4,5]; set("workDaysList", c.includes(i+1) ? c.filter(x=>x!==i+1) : [...c, i+1]); }}>{v}</div>)}</div>
               </div>
               <div className="fld-row">
                 <div className="fld"><label>Обед</label><input type="time" value={d.lunchTime || "13:00"} onChange={e => set("lunchTime", e.target.value)} /></div>
@@ -376,8 +390,7 @@ export function Onboarding() {
               <div className="fld"><label>Растения</label>
                 <div className="chips">{["Нет", "1–3", "4–10", "Много"].map(v => <div key={v} className={`chip ${d.plants === v ? "on" : ""}`} onClick={() => set("plants", v)}>{v}</div>)}</div>
               </div>
-              <div className="fld"><label>Уборка</label>
-                <div className="chips">{["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"].map(v => <div key={v} className={`chip ${(d.cleanDays || []).includes(v) ? "on" : ""}`} onClick={() => tog("cleanDays", v)}>{v}</div>)}</div>
+              <div className="fld"><label>Уборка</label>                <div className="chips">{["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"].map(v => <div key={v} className={`chip ${(d.cleanDays || []).includes(v) ? "on" : ""}`} onClick={() => tog("cleanDays", v)}>{v}</div>)}</div>
               </div>
               <div className="fld"><label>Есть автомобиль?</label>
                 <div className="chips">{["Нет", "Да"].map(v => <div key={v} className={`chip ${d.hasCar === v ? "on" : ""}`} onClick={() => set("hasCar", v)}>{v}</div>)}</div>
@@ -391,6 +404,7 @@ export function Onboarding() {
               </>}
             </>
           )}
+
           {s.id === "pets" && (
             <>
               <div className="fld-hint" style={{marginBottom: 10}}>Каждый питомец — это кормление и визиты. Всё попадёт в расписание.</div>
@@ -425,8 +439,7 @@ export function Onboarding() {
               </div>
               <div className="fld"><label>Питание</label>
                 <div className="chips">{["Обычное", "Вегетарианское", "Веганское", "Без глютена", "Кето", "Интервальное", "ПП"].map(v => <div key={v} className={`chip ${d.nutrition === v ? "on" : ""}`} onClick={() => set("nutrition", v)}>{v}</div>)}</div>
-              </div>
-            </>
+              </div>            </>
           )}
 
           {s.id === "tcm" && (
@@ -439,7 +452,8 @@ export function Onboarding() {
               </div>
               <div className="fld"><label>Влажность/Сухость</label>
                 <div className="chips">{["💧 Отёки, слизь", "🏜 Сухость кожи/глаз", "😓 Избыточная потливость", "🌿 Нормально"].map(v => <div key={v} className={`chip ${d.tcmMoisture === v ? "on" : ""}`} onClick={() => set("tcmMoisture", v)}>{v}</div>)}</div>
-              </div>              <div className="fld"><label>Преобладающие эмоции</label>
+              </div>
+              <div className="fld"><label>Преобладающие эмоции</label>
                 <div className="chips">{["😤 Раздражение/Гнев", "😰 Тревога/Суета", "😟 Беспокойство/Мысли", "😢 Печаль/Грусть", "😨 Страх/Неуверенность", "😊 Гармонично"].map(v => <div key={v} className={`chip ${d.tcmEmotion === v ? "on" : ""}`} onClick={() => set("tcmEmotion", v)}>{v}</div>)}</div>
               </div>
               <div className="fld"><label>Тяга к вкусу</label>
@@ -474,8 +488,7 @@ export function Onboarding() {
             </>
           )}
 
-          {s.id === "shopping" && (
-            <>
+          {s.id === "shopping" && (            <>
               <div className="fld"><label>Как часто закупаешься?</label>
                 <div className="chips">{["Каждый день", "2–3 раза в неделю", "Раз в неделю", "Раз в 2 недели", "Онлайн"].map(v => <div key={v} className={`chip ${d.shopFreq === v ? "on" : ""}`} onClick={() => set("shopFreq", v)}>{v}</div>)}</div>
               </div>
@@ -488,7 +501,8 @@ export function Onboarding() {
             </>
           )}
 
-          {s.id === "hobbies" && (            <>
+          {s.id === "hobbies" && (
+            <>
               <div className="fld"><label>Хобби</label>
                 <div className="chips">{["Чтение", "Фотография", "Музыка", "Готовка", "Садоводство", "Кино", "Путешествия", "Спорт", "Рисование", "Блогинг", "Языки", "Рукоделие", "Игры", "Туризм"].map(v => <div key={v} className={`chip ${(d.hobbies || []).includes(v) ? "on" : ""}`} onClick={() => tog("hobbies", v)}>{v}</div>)}</div>
               </div>
@@ -523,8 +537,7 @@ export function Onboarding() {
             <>
               <div className="fld"><label>Главная цель на 3 месяца</label><textarea placeholder="Наладить режим, похудеть на 5 кг..." value={d.mainGoal || ""} onChange={e => set("mainGoal", e.target.value)} style={{resize:"vertical", minHeight:70}} /></div>
               <div className="fld"><label>Сферы прогресса</label>
-                <div className="chips">{["Здоровье", "Карьера", "Финансы", "Отношения", "Саморазвитие", "Творчество", "Путешествия", "Духовность", "Семья", "Внешность"].map(v => <div key={v} className={`chip ${(d.goalAreas || []).includes(v) ? "on" : ""}`} onClick={() => tog("goalAreas", v)}>{v}</div>)}</div>
-              </div>
+                <div className="chips">{["Здоровье", "Карьера", "Финансы", "Отношения", "Саморазвитие", "Творчество", "Путешествия", "Духовность", "Семья", "Внешность"].map(v => <div key={v} className={`chip ${(d.goalAreas || []).includes(v) ? "on" : ""}`} onClick={() => tog("goalAreas", v)}>{v}</div>)}</div>              </div>
               <div className="fld"><label>Что сдерживает?</label>
                 <div className="chips">{["Нехватка времени", "Нехватка энергии", "Откладываю", "Не знаю с чего начать", "Много отвлекаюсь", "Страх неудачи"].map(v => <div key={v} className={`chip ${(d.goalBlocks || []).includes(v) ? "on" : ""}`} onClick={() => tog("goalBlocks", v)}>{v}</div>)}</div>
               </div>
@@ -537,7 +550,8 @@ export function Onboarding() {
               {d.name && <div style={{ fontFamily: "'Cormorant Infant', serif", fontSize: "clamp(20px, 4vw, 26px)", color: "#c8a45a", marginBottom: 10 }}>Привет, {d.name.split(" ")[0] || d.name}!</div>}
               <div style={{ fontFamily: "'Cormorant Infant', serif", fontSize: "clamp(15px, 2.8vw, 18px)", color: "#5c4a30", lineHeight: 1.8, fontStyle: "italic" }}>
                 {d.dob && `${getZodiacInline(d.dob).emoji} ${getZodiacInline(d.dob).name} · 🐾 ${getEasternInline(d.dob)}`}
-                {d.fullName && ` · ✦ ${calcDegreeInline(d.fullName)}° судьбы`}                <br />Life Diary знает тебя и готов держать всё в голове вместо тебя.
+                {d.fullName && ` · ✦ ${calcDegreeInline(d.fullName)}° судьбы`}
+                <br />Life Diary знает тебя и готов держать всё в голове вместо тебя.
               </div>
             </div>
           )}
@@ -557,4 +571,4 @@ export function Onboarding() {
       </div>
     </div>
   );
-                                                                                                      }
+                    }
