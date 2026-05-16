@@ -1,4 +1,4 @@
-// src/App.jsx — Blueprint Theme v2
+// src/App.jsx
 import { useState, useEffect } from "react";
 import { AppProvider, useApp } from './store/AppContext';
 import { Onboarding } from './components/Onboarding';
@@ -6,36 +6,38 @@ import { getMoon } from './utils/helpers';
 import { Icon } from './components/Icon';
 import { getSectionGraphic } from './config/sectionGraphics';
 import './index.css';
-import { TodaySection }    from './sections/TodaySection';
+import { TodaySection } from './sections/TodaySection';
 import { ScheduleSection } from './sections/ScheduleSection';
-import { WorkSection }     from './sections/WorkSection';
-import { HomeSection }     from './sections/HomeSection';
+import { WorkSection } from './sections/WorkSection';
+import { HomeSection } from './sections/HomeSection';
 import { ShoppingSection } from './sections/ShoppingSection';
-import { PetsSection }     from './sections/PetsSection';
-import { CarSection }      from './sections/CarSection';
-import { HealthMentalSection } from './sections/HealthMentalSection';
-import { BeautySection }   from './sections/BeautySection';
-import { HobbiesSection }  from './sections/HobbiesSection';
-import { GoalsSection }    from './sections/GoalsSection';
-import { TravelSection }   from './sections/TravelSection';
-import { JournalSection }  from './sections/JournalSection';
-import { ProfileSection }  from './sections/ProfileSection';
+import { PetsSection } from './sections/PetsSection';
+import { CarSection } from './sections/CarSection';
+// ✅ ИСПРАВЛЕНО: импортируем HealthSection вместо HealthMentalSection
+import { HealthSection } from './sections/HealthSection';
+import { BeautySection } from './sections/BeautySection';
+import { HobbiesSection } from './sections/HobbiesSection';
+import { GoalsSection } from './sections/GoalsSection';
+import { TravelSection } from './sections/TravelSection';
+import { JournalSection } from './sections/JournalSection';
+import { ProfileSection } from './sections/ProfileSection';
 
+// ✅ ИСПРАВЛЕНО: единый ID "health"
 const DEF_SECTIONS = [
-  { id:"today",    name:"Сегодня",   vis:true },
-  { id:"schedule", name:"Расписание", vis:true },
-  { id:"work",     name:"Работа",     vis:true },
-  { id:"home",     name:"Дом",        vis:true },
-  { id:"shopping", name:"Покупки",    vis:true },
-  { id:"pets",     name:"Питомцы",    vis:true },
-  { id:"car",      name:"Авто",       vis:true },
-  { id:"health",   name:"Здоровье",   vis:true },
-  { id:"beauty",   name:"Уход",       vis:true },
-  { id:"hobbies",  name:"Хобби",      vis:true },
-  { id:"goals",    name:"Мои цели",   vis:true },
-  { id:"travel",   name:"Поездки",    vis:true },
-  { id:"journal",  name:"Журнал",     vis:true },
-  { id:"profile",  name:"Профиль",    vis:true },
+  { id: "today", name: "Сегодня", vis: true },
+  { id: "schedule", name: "Расписание", vis: true },
+  { id: "work", name: "Работа", vis: true },
+  { id: "home", name: "Дом", vis: true },
+  { id: "shopping", name: "Покупки", vis: true },
+  { id: "pets", name: "Питомцы", vis: true },
+  { id: "car", name: "Авто", vis: true },
+  { id: "health", name: "Здоровье", vis: true },
+  { id: "beauty", name: "Уход", vis: true },
+  { id: "hobbies", name: "Хобби", vis: true },
+  { id: "goals", name: "Мои цели", vis: true },
+  { id: "travel", name: "Поездки", vis: true },
+  { id: "journal", name: "Журнал", vis: true },
+  { id: "profile", name: "Профиль", vis: true },
 ];
 
 function AppContent() {
@@ -45,9 +47,9 @@ function AppContent() {
   const [bgUrl, setBgUrl] = useState(null);
 
   useEffect(() => {
-    if (!profile) return;
-    const current = sections.length > 0 ? sections : DEF_SECTIONS;
-    const merged = [...current];    let changed = sections.length === 0;
+    if (!profile) return;    const current = sections.length > 0 ? sections : DEF_SECTIONS;
+    const merged = [...current];
+    let changed = sections.length === 0;
     DEF_SECTIONS.forEach(def => {
       if (!merged.find(s => s.id === def.id)) { merged.push(def); changed = true; }
     });
@@ -94,21 +96,17 @@ function AppContent() {
           borderRadius: 6, fontSize: 13, fontWeight: 500, zIndex: 9999,
           border: '1.5px solid rgba(0,112,192,0.4)',
           boxShadow: '0 4px 16px rgba(0,112,192,0.15)',
-          fontFamily: "'JetBrains Mono', monospace",
-        }}>
-          {toastMsg}        </div>
+          fontFamily: "'JetBrains Mono', monospace",        }}>
+          {toastMsg}
+        </div>
       )}
       <nav className="sidebar-wide" style={{
         gridColumn: '1 / 2',
         background: 'rgba(245,240,225,0.95)',
         borderRight: '1px solid rgba(0,112,192,0.15)',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        padding: '12px 0',
-        gap: 6,
-        overflowY: 'auto',
-        zIndex: 10,
+        display: 'flex', flexDirection: 'column',
+        alignItems: 'center', padding: '12px 0', gap: 6,
+        overflowY: 'auto', zIndex: 10,
       }}>
         <div className="s-logo" style={{ fontSize: 16, fontWeight: 700, color: '#0070c0', marginBottom: 12 }}>LD</div>
         {vis.map(s => (
@@ -145,29 +143,30 @@ function AppContent() {
         }}>
           <div>
             <div className="hdr-title" style={{ fontSize: 20, fontWeight: 600, color: '#0070c0' }}>{activeSection?.name}</div>
-            <div className="hdr-sub" style={{ fontSize: 12, color: '#5c4a30' }}>              {new Date().toLocaleDateString("ru-RU",{weekday:"long",day:"numeric",month:"long"})}
-            </div>
-          </div>
+            <div className="hdr-sub" style={{ fontSize: 12, color: '#5c4a30' }}>
+              {new Date().toLocaleDateString("ru-RU", { weekday: "long", day: "numeric", month: "long" })}
+            </div>          </div>
           <div className="hdr-r" style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
             <div className="moon-tag" style={{ fontSize: 12, color: '#5c4a30' }}>{moon.e} {moon.n}</div>
             <div className="date-tag" style={{ fontSize: 12, fontFamily: "'JetBrains Mono'", color: '#0070c0' }}>{today}</div>
           </div>
         </div>
         <div className="page" style={{ flex: 1, overflowY: 'auto', padding: 24 }}>
-          {active==='today'         && <TodaySection />}
-          {active==='schedule'      && <ScheduleSection />}
-          {active==='work'          && <WorkSection />}
-          {active==='home'          && <HomeSection />}
-          {active==='shopping'      && <ShoppingSection />}
-          {active==='pets'          && <PetsSection />}
-          {active==='car'           && <CarSection />}
-          {active==='health'        && <HealthMentalSection />}
-          {active==='beauty'        && <BeautySection />}
-          {active==='hobbies'       && <HobbiesSection />}
-          {active==='goals'         && <GoalsSection />}
-          {active==='travel'        && <TravelSection />}
-          {active==='journal'       && <JournalSection />}
-          {active==='profile'       && <ProfileSection />}
+          {active === 'today' && <TodaySection />}
+          {active === 'schedule' && <ScheduleSection />}
+          {active === 'work' && <WorkSection />}
+          {active === 'home' && <HomeSection />}
+          {active === 'shopping' && <ShoppingSection />}
+          {active === 'pets' && <PetsSection />}
+          {active === 'car' && <CarSection />}
+          {/* ✅ ИСПРАВЛЕНО: рендерим HealthSection по ключу 'health' */}
+          {active === 'health' && <HealthSection />}
+          {active === 'beauty' && <BeautySection />}
+          {active === 'hobbies' && <HobbiesSection />}
+          {active === 'goals' && <GoalsSection />}
+          {active === 'travel' && <TravelSection />}
+          {active === 'journal' && <JournalSection />}
+          {active === 'profile' && <ProfileSection />}
         </div>
       </main>
     </div>
