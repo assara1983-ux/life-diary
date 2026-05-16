@@ -13,7 +13,6 @@ import { HomeSection }     from './sections/HomeSection';
 import { ShoppingSection } from './sections/ShoppingSection';
 import { PetsSection }     from './sections/PetsSection';
 import { CarSection }      from './sections/CarSection';
-// ✅ ИЗМЕНЕНИЕ: Объединённый раздел вместо HealthSection и MentalSection
 import { HealthMentalSection } from './sections/HealthMentalSection';
 import { BeautySection }   from './sections/BeautySection';
 import { HobbiesSection }  from './sections/HobbiesSection';
@@ -30,7 +29,6 @@ const DEF_SECTIONS = [
 { id:"shopping", name:"Покупки",    vis:true },
 { id:"pets",     name:"Питомцы",    vis:true },
 { id:"car",      name:"Авто",       vis:true },
-// ✅ ИЗМЕНЕНИЕ: Объединённый раздел Здоровье & Ментальное
 { id:"health_mental", name:"Здоровье & Ментальное", vis:true },
 { id:"beauty",   name:"Уход",       vis:true },
 { id:"hobbies",  name:"Хобби",      vis:true },
@@ -47,16 +45,15 @@ const [bgLoaded, setBgLoaded] = useState(false);
 const [bgUrl, setBgUrl] = useState(null);
 
 useEffect(() => {
-  if (!profile) return;  const current = sections.length > 0 ? sections : DEF_SECTIONS;
-  const merged = [...current];
-  let changed = sections.length === 0;
+  if (!profile) return;
+  const current = sections.length > 0 ? sections : DEF_SECTIONS;
+  const merged = [...current];  let changed = sections.length === 0;
   DEF_SECTIONS.forEach(def => {
     if (!merged.find(s => s.id === def.id)) { merged.push(def); changed = true; }
   });
   if (changed) setSections(merged);
 }, [profile]);
 
-// Загрузка фона для текущей секции
 useEffect(() => {
 const graphic = getSectionGraphic(active);
 if (graphic?.image) {
@@ -96,10 +93,10 @@ return (
   position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)',
   background: '#fff', color: '#0070c0', padding: '10px 20px',
   borderRadius: 6, fontSize: 13, fontWeight: 500, zIndex: 9999,
-  border: '1.5px solid rgba(0,112,192,0.4)',  boxShadow: '0 4px 16px rgba(0,112,192,0.15)',
+  border: '1.5px solid rgba(0,112,192,0.4)',
+  boxShadow: '0 4px 16px rgba(0,112,192,0.15)',
   fontFamily: "'JetBrains Mono', monospace",
-}}>
-{toastMsg}
+}}>{toastMsg}
 </div>
 )}
 {/* SIDEBAR — WIDE */}
@@ -137,7 +134,7 @@ return (
 >
 <Icon name={s.id} size={20} animated={active === s.id} />
 <span style={{ fontSize: 9, color: active === s.id ? '#0070c0' : '#5c4a30', textAlign: 'center', lineHeight: 1.1 }}>
-{s.name.slice(0, 12)}
+{s.name.slice(0, 14)}
 </span>
 </div>
 ))}
@@ -145,10 +142,10 @@ return (
 {/* MAIN CONTENT */}
 <main className="main" style={{
   gridColumn: '2 / 3',
-  display: 'flex',  flexDirection: 'column',
+  display: 'flex',
+  flexDirection: 'column',
   overflow: 'hidden',
-  position: 'relative',
-  zIndex: 1,
+  position: 'relative',  zIndex: 1,
 }}>
 {/* Header */}
 <div className="hdr" style={{
@@ -194,7 +191,7 @@ return (
 
 export default function App() {
 return (
-<AppProvider><AppContent />
+<AppProvider>
+<AppContent />
 </AppProvider>
-);
-}
+);}
