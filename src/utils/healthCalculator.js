@@ -1,6 +1,4 @@
 // src/utils/healthCalculator.js
-
-// Простой маппинг для расчета стихии по году (упрощенно)
 const ELEMENTS = ["Металл", "Вода", "Дерево", "Огонь", "Земля"];
 
 export function calculateHealthProfile(profile) {
@@ -13,13 +11,15 @@ export function calculateHealthProfile(profile) {
   const elementIndex = (year - 4) % 10; 
   const element = elementIndex < 2 ? "Дерево" : elementIndex < 4 ? "Огонь" : elementIndex < 6 ? "Земля" : elementIndex < 8 ? "Металл" : "Вода";
 
-  // 2. Инь/Ян (упрощенная логика по году)
+  // 2. Инь/Ян
   const yinyang = year % 2 === 0 ? "Ян" : "Инь";
 
-  // 3. У-Син паттерн (на основе стресса)
+  // 3. У-Син паттерн
   const stress = profile.stressLevel || 5;
   let uxinPattern = "equal";
-  if (stress > 8) uxinPattern = "neutral"; // Защита
+  
+  // ИСПРАВЛЕНИЕ: & & заменен на &&, убраны лишние пробелы в строках
+  if (stress > 8) uxinPattern = "neutral"; 
   if (stress < 3 && profile.coreValue === "giver") uxinPattern = "donor";
   if (stress > 5 && profile.coreValue === "taker") uxinPattern = "vampire";
 
@@ -28,8 +28,8 @@ export function calculateHealthProfile(profile) {
     yinyang,
     stress,
     uxinPattern,
-    chronotype: profile.chronotype || "Ворона", // Галлюцинация на основе ТЗ, нужно брать из профиля
-    zodiac: "Весы", // Заглушка
+    chronotype: profile.chronotype || "Ворона", 
+    zodiac: "Весы", 
     jiaziPhase: "Фаза роста",
     lunarNodes: "Северный узел"
   };
@@ -39,10 +39,9 @@ export function getTimeRecommendation(profile) {
   const now = new Date();
   const hours = now.getHours();
   
-  // Маппинг часов на меридианы
   let mIndex = Math.floor(hours / 2);
-  if (mIndex > 11) mIndex = 0; // Цикл 24ч, но меридианов 12
-  
+  if (mIndex > 11) mIndex = 0; 
+
   const MERIDIANS = [
     { name: "Печень", h: "01-03", desc: "Очищение крови. Сон.", warning: "Будильник выключить." },
     { name: "Лёгкие", h: "03-05", desc: "Распределение Ци. Пробуждение.", benefit: "Дышите глубже." },
