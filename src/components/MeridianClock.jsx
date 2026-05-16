@@ -1,88 +1,105 @@
 // src/components/MeridianClock.jsx
-import React from "react";
+import React, { useMemo } from 'react';
 
-// Упрощённые координаты для 12 меридианов на силуэте (viewBox 0 0 300 500)
-const MERIDIAN_POINTS = [
-  { id: 0, cx: 150, cy: 60, label: "3Обг", hour: "23-01" },
-  { id: 1, cx: 150, cy: 90, label: "Печень", hour: "01-03" },
-  { id: 2, cx: 130, cy: 130, label: "Лёгкие", hour: "03-05" },
-  { id: 3, cx: 150, cy: 160, label: "Т.К.", hour: "05-07" },
-  { id: 4, cx: 150, cy: 190, label: "Желудок", hour: "07-09" },
-  { id: 5, cx: 170, cy: 130, label: "Селёз", hour: "09-11" },
-  { id: 6, cx: 150, cy: 220, label: "Сердце", hour: "11-13" },
-  { id: 7, cx: 150, cy: 250, label: "Т.Кш", hour: "13-15" },
-  { id: 8, cx: 130, cy: 290, label: "М.П.", hour: "15-17" },
-  { id: 9, cx: 150, cy: 320, label: "Почки", hour: "17-19" },
-  { id: 10, cx: 170, cy: 290, label: "Перик", hour: "19-21" },
-  { id: 11, cx: 150, cy: 360, label: "3Обг", hour: "21-23" }
+// Статичная карта 12 меридианов для визуализации
+const MERIDIANS = [
+  { id: 'gallbladder', name: 'Желчный пузырь', time: '23-01', emoji: '💛', element: 'Дерево', sign: 'Мышь' },
+  { id: 'liver', name: 'Печень', time: '01-03', emoji: '🌿', element: 'Дерево', sign: 'Вол' },
+  { id: 'lungs', name: 'Лёгкие', time: '03-05', emoji: '🫁', element: 'Металл', sign: 'Тигр' },
+  { id: 'large_intestine', name: 'Толстый кишечник', time: '05-07', emoji: '🌾', element: 'Металл', sign: 'Заяц' },
+  { id: 'stomach', name: 'Желудок', time: '07-09', emoji: '🍽️', element: 'Земля', sign: 'Дракон' },
+  { id: 'spleen', name: 'Селезёнка', time: '09-11', emoji: '🍂', element: 'Земля', sign: 'Змея' },
+  { id: 'heart', name: 'Сердце', time: '11-13', emoji: '❤️', element: 'Огонь', sign: 'Лошадь' },
+  { id: 'small_intestine', name: 'Тонкий кишечник', time: '13-15', emoji: '🌡️', element: 'Огонь', sign: 'Овца' },
+  { id: 'bladder', name: 'Мочевой пузырь', time: '15-17', emoji: '💧', element: 'Вода', sign: 'Обезьяна' },
+  { id: 'kidneys', name: 'Почки', time: '17-19', emoji: '🌊', element: 'Вода', sign: 'Петух' },
+  { id: 'pericardium', name: 'Перикард', time: '19-21', emoji: '🛡️', element: 'Огонь II', sign: 'Собака' },
+  { id: 'triple_burner', name: 'Тройной обогреватель', time: '21-23', emoji: '🔥', element: 'Огонь II', sign: 'Кабан' },
 ];
 
-export function MeridianClock({ current, profile, onOpen }) {
-  const now = new Date();
-  const hour = now.getHours();
-  const isActive = (h) => {
-    const [start] = h.split("-").map(Number);
-    return hour >= start && hour < start + 2;
+export function MeridianClock({ current, profile, onOpen, size = 240 }) {
+  // Нормализация текущего меридиана для подсветки
+  const activeMeridian = useMemo(() => {
+    if (!current) return MERIDIANS[0];
+    const cleanTime = (current.time || '').replace(/[\s–\-]/g, '-');
+    return MERIDIANS.find(m => m.time === cleanTime) || MERIDIANS[0];
+  }, [current]);
+
+  // Генерация SVG-пути для сегмента
+  const getSegmentPath = (index, outerR = 82, innerR = 38) => {
+    const startRad = ((index * 30 - 90) * Math.PI) / 180;
+    const endRad = (((index + 1) * 30 - 90) * Math.PI) / 180;
+    const x1 = 100 + outerR * Math.cos(startRad);
+    const y1 = 100 + outerR * Math.sin(startRad);
+    const x2 = 100 + outerR * Math.cos(endRad);
+    const y2 = 100 + outerR * Math.sin(endRad);
+    const x3 = 100 + innerR * Math.cos(endRad);
+    const y3 = 100 + innerR * Math.sin(endRad);
+    const x4 = 100 + innerR * Math.cos(startRad);
+    const y4 = 100 + innerR * Math.sin(startRad);
+    return `M ${x1} ${y1} A ${outerR} ${outerR} 0 0 1 ${x2} ${y2} L ${x3} ${y3} A ${innerR} ${innerR} 0 0 0 ${x4} ${y4} Z`;
   };
 
   return (
-    <div className="hm-clock-wrap">
+    <div className="mc-wrap">
       <style>{`
-        .hm-clock-wrap { position: relative; width: 100%; max-width: 320px; margin: 0 auto; }
-        .hm-silhouette { width: 100%; height: auto; background: rgba(0,112,192,0.02); border-radius: 12px; }
-        .hm-meridian { cursor: pointer; transition: all 0.2s; }
-        .hm-meridian:hover { filter: brightness(1.2); }
-        .hm-meridian.active { animation: hm-pulse 2s infinite; }
-        @keyframes hm-pulse { 0% { r: 6; opacity: 0.8; } 50% { r: 9; opacity: 1; } 100% { r: 6; opacity: 0.8; } }
-        .hm-ring { transform-origin: 150px 200px; transition: transform 0.5s ease; }
-        .hm-ring-text { font-family: var(--font-mono); font-size: 10px; fill: var(--text3); }
+        .mc-wrap { display: flex; justify-content: center; align-items: center; padding: 8px; }
+        .mc-svg { width: ${size}px; height: ${size}px; cursor: pointer; user-select: none; }
+        .mc-seg { transition: all 0.2s ease; stroke: var(--line); stroke-width: 0.5; }
+        .mc-seg:hover { fill: rgba(0,112,192,0.12); stroke: var(--blue); }
+        .mc-seg.active { fill: rgba(0,112,192,0.22); stroke: var(--blue); stroke-width: 1.5; }        .mc-label { font-size: 8px; fill: var(--text2); font-family: var(--font-mono); text-anchor: middle; dominant-baseline: middle; pointer-events: none; }
+        .mc-time { font-size: 7px; fill: var(--text3); font-family: var(--font-mono); text-anchor: middle; dominant-baseline: middle; pointer-events: none; }
+        .mc-center { fill: var(--blue); }
+        .mc-dot { fill: #fff; }
+        @media (hover: hover) { .mc-seg:hover { transform-origin: 100px 100px; } }
       `}</style>
 
-      <svg className="hm-silhouette" viewBox="0 0 300 500">
-        {/* Blueprint сетка */}
+      <svg viewBox="0 0 200 200" className="mc-svg">
         <defs>
-          <pattern id="hm-grid" width="20" height="20" patternUnits="userSpaceOnUse">
-            <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(0,112,192,0.08)" strokeWidth="0.5" />
-          </pattern>
+          <filter id="mc-shadow" x="-10%" y="-10%" width="120%" height="120%">
+            <feDropShadow dx="0" dy="2" stdDeviation="3" floodColor="rgba(0,0,0,0.06)" />
+          </filter>
         </defs>
-        <rect width="300" height="500" fill="url(#hm-grid)" />
 
-        {/* Кольцо часов */}
-        <circle cx="150" cy="200" r="130" fill="none" stroke="rgba(0,112,192,0.15)" strokeWidth="1" />
+        {/* Фоновый круг */}
+        <circle cx="100" cy="100" r="96" fill="rgba(245,240,225,0.6)" stroke="var(--line)" strokeWidth="1" filter="url(#mc-shadow)" />
+        
+        {/* Разделительные линии */}
         {Array.from({ length: 12 }).map((_, i) => {
-          const angle = (i * 30 - 90) * (Math.PI / 180);
-          const x = 150 + 125 * Math.cos(angle);
-          const y = 200 + 125 * Math.sin(angle);
+          const rad = ((i * 30 - 90) * Math.PI) / 180;
           return (
-            <g key={i} className="hm-ring">
-              <circle cx={x} cy={y} r="2" fill="var(--blue)" />
-              <text x={x} y={y} textAnchor="middle" dominantBaseline="middle" className="hm-ring-text">
-                {MERIDIAN_POINTS[i].hour}
-              </text>
+            <line 
+              key={`line-${i}`}
+              x1={100 + 38 * Math.cos(rad)} y1={100 + 38 * Math.sin(rad)}
+              x2={100 + 96 * Math.cos(rad)} y2={100 + 96 * Math.sin(rad)}
+              stroke="var(--line)" strokeWidth="0.5" opacity="0.5"
+            />
+          );
+        })}
+
+        {/* Сегменты меридианов */}
+        {MERIDIANS.map((m, i) => {
+          const isActive = m.id === activeMeridian.id;
+          const midAngle = ((i + 0.5) * 30 - 90) * (Math.PI / 180);
+          const lx = 100 + 64 * Math.cos(midAngle);
+          const ly = 100 + 64 * Math.sin(midAngle);
+          const tx = 100 + 52 * Math.cos(midAngle);
+          const ty = 100 + 52 * Math.sin(midAngle);
+
+          return (
+            <g key={m.id} onClick={() => onOpen({ type: 'meridian', ...m })}>
+              <path d={getSegmentPath(i)} className={`mc-seg ${isActive ? 'active' : ''}`} fill="rgba(0,112,192,0.05)" />
+              <text x={lx} y={ly} className="mc-label">{m.emoji} {m.name}</text>
+              <text x={tx} y={ty} className="mc-time">{m.time}</text>
             </g>
           );
         })}
 
-        {/* Силуэт (упрощённый) */}
-        <path d="M150 30 C170 30, 180 50, 180 70 C180 90, 170 100, 150 100 C130 100, 120 90, 120 70 C120 50, 130 30, 150 30 Z" fill="rgba(0,112,192,0.06)" stroke="var(--line)" strokeWidth="1" />
-        <path d="M150 105 C140 110, 130 130, 130 180 C130 250, 140 300, 140 400 C140 430, 130 460, 130 480" fill="none" stroke="var(--line)" strokeWidth="1.5" />
-        <path d="M150 105 C160 110, 170 130, 170 180 C170 250, 160 300, 160 400 C160 430, 170 460, 170 480" fill="none" stroke="var(--line)" strokeWidth="1.5" />
-        <path d="M130 130 C110 150, 90 180, 80 220" fill="none" stroke="var(--line)" strokeWidth="1" />
-        <path d="M170 130 C190 150, 210 180, 220 220" fill="none" stroke="var(--line)" strokeWidth="1" />
-
-        {/* Интерактивные точки */}
-        {MERIDIAN_POINTS.map((p) => (
-          <g
-            key={p.id}
-            className={`hm-meridian ${isActive(p.hour) ? "active" : ""}`}
-            onClick={() => onOpen({ type: "meridian", data: p, current: current, profile })}
-          >
-            <circle cx={p.cx} cy={p.cy} r={isActive(p.hour) ? 8 : 6} fill={isActive(p.hour) ? "var(--gold)" : "var(--blue)"} stroke="#fff" strokeWidth="2" />
-            <text x={p.cx} y={p.cy - 14} textAnchor="middle" fontSize="10" fill="var(--text2)" fontFamily="var(--font-mono)">
-              {p.label}
-            </text>
-          </g>
-        ))}
+        {/* Центр и указатель */}
+        <circle cx="100" cy="100" r="10" className="mc-center" />        <circle cx="100" cy="100" r="5" className="mc-dot" />
+        <text x="100" y="118" textAnchor="middle" fontSize="9" fill="var(--text2)" fontFamily="var(--font-mono)" fontWeight="600">
+          ЦИ
+        </text>
       </svg>
     </div>
   );
