@@ -40,12 +40,12 @@ export function AnatomyViewer({ activeOrganId, onSelect }) {
       `}</style>
 
       <div className="av-container">
-        {/* Базовый слой - Векторный SVG (Blueprint стиль) */}
+        {/* Слой 1: Ваш новый PNG фон */}
         <div className="av-layer base-layer">
-          <img src="/assets/anatomy/meridian-body-base.svg" alt="Base" />
+          <img src="/assets/anatomy/meridian-body-base.png" alt="Base" />
         </div>
 
-        {/* Слой органов (Интерактивный) */}
+        {/* Слой 2: Органы (Интерактивный) */}
         <div className={`av-layer interactive ${!layers.organs ? 'hidden' : ''}`}>
           <img src="/assets/anatomy/organs.svg" alt="Organs" />
           {activeOrganId && layers.organs && (
@@ -53,12 +53,12 @@ export function AnatomyViewer({ activeOrganId, onSelect }) {
           )}
         </div>
 
-        {/* Слой меридианов */}
+        {/* Слой 3: Меридианы */}
         <div className={`av-layer ${!layers.meridians ? 'hidden' : ''}`}>
           <img src="/assets/anatomy/meridians.svg" alt="Meridians" />
         </div>
 
-        {/* Слой чакр (Интерактивный) */}
+        {/* Слой 4: Чакры (Интерактивный) */}
         <div className={`av-layer interactive ${!layers.chakras ? 'hidden' : ''}`}>
           <img src="/assets/anatomy/chakras.svg" alt="Chakras" />
         </div>
