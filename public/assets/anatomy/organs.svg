@@ -1,12 +1,43 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 800" width="100%" height="100%">
-  <style>.organ-path{fill:rgba(0,112,192,0.15);stroke:#0070c0;stroke-width:1.5;transition:all 0.2s}.organ-path:hover{fill:rgba(0,112,192,0.35);stroke-width:2}</style>
-  <path class="organ-path" data-organ="brain" d="M170,120 Q200,90 230,120 Q200,150 170,120"/>
-  <path class="organ-path" data-organ="heart" d="M185,240 Q185,230 192,230 Q200,230 200,240 Q200,250 192,260 Q185,250 185,240"/>
-  <path class="organ-path" data-organ="lungs" d="M175,260 Q155,230 175,200 Q200,230 225,200 Q245,230 225,260 Q200,290 175,260"/>
-  <path class="organ-path" data-organ="liver" d="M210,320 Q230,315 240,330 Q245,345 235,355 Q220,360 210,350 Q205,340 210,320"/>
-  <path class="organ-path" data-organ="stomach" d="M180,340 Q175,360 180,375 Q185,385 195,380 Q205,375 205,360 Q205,345 195,340 Q185,335 180,340"/>
-  <path class="organ-path" data-organ="spleen" d="M240,350 Q232,335 240,335 Q248,335 240,350"/>
-  <path class="organ-path" data-organ="kidneys" d="M185,420 Q175,400 185,400 Q195,400 185,420 M215,420 Q205,400 215,400 Q225,400 215,420"/>
-  <path class="organ-path" data-organ="intestines" d="M170,480 Q165,520 170,560 Q200,580 230,560 Q235,520 230,480"/>
-  <path class="organ-path" data-organ="bladder" d="M185,620 Q185,605 200,605 Q215,605 215,620 Q215,635 200,635 Q185,635 185,620"/>
+  <style>
+    .organ-path {
+      fill: rgba(0, 112, 192, 0.15);
+      stroke: #0070c0;
+      stroke-width: 1.5;
+      transition: all 0.2s;
+    }
+    .organ-path:hover {
+      fill: rgba(0, 112, 192, 0.35);
+      stroke-width: 2;
+    }
+  </style>
+  
+  <!-- Координаты пересчитаны под пропорции Витрувианского человека (400x800) -->
+  
+  <!-- Голова (Мозг) -->
+  <path class="organ-path" data-organ="brain" d="M175,100 Q200,70 225,100 Q200,130 175,100" />
+
+  <!-- Легкие (Грудная клетка) -->
+  <path class="organ-path" data-organ="lungs" d="M160,260 Q140,230 160,200 Q180,230 195,250 Q180,280 160,260 Z M240,260 Q260,230 240,200 Q220,230 205,250 Q220,280 240,260 Z" />
+
+  <!-- Сердце (Лево от центра - правая часть фигуры на рисунке) -->
+  <path class="organ-path" data-organ="heart" d="M210,280 Q200,270 210,260 Q220,270 210,280 Q200,290 210,280 Z" />
+
+  <!-- Печень (Право от центра - левая часть фигуры на рисунке) -->
+  <path class="organ-path" data-organ="liver" d="M170,340 Q190,330 200,350 Q190,370 170,340 Z" />
+
+  <!-- Желудок (Левее печени, ниже) -->
+  <path class="organ-path" data-organ="stomach" d="M200,360 Q190,380 200,390 Q210,380 200,360 Z" />
+
+  <!-- Селезенка (Далеко слева) -->
+  <path class="organ-path" data-organ="spleen" d="M225,360 Q215,350 225,340 Q235,350 225,360 Z" />
+
+  <!-- Почки (Поясница, по бокам) -->
+  <path class="organ-path" data-organ="kidneys" d="M190,420 Q180,400 190,400 Q200,400 190,420 Z M210,420 Q200,400 210,400 Q220,400 210,420 Z" />
+
+  <!-- Кишечник (Тазовая полость) -->
+  <path class="organ-path" data-organ="intestines" d="M175,480 Q165,520 175,560 Q200,580 225,560 Q235,520 225,480 Z" />
+
+  <!-- Мочевой пузырь (Ниже) -->
+  <path class="organ-path" data-organ="bladder" d="M185,600 Q185,585 200,585 Q215,585 215,600 Q215,615 200,615 Q185,615 185,600 Z" />
 </svg>
