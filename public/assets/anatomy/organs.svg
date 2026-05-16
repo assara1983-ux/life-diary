@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 800" width="100%" height="100%">
+  <style>.organ-path{fill:rgba(0,112,192,0.15);stroke:#0070c0;stroke-width:1.5;transition:all 0.2s}.organ-path:hover{fill:rgba(0,112,192,0.35);stroke-width:2}</style>
+  <path class="organ-path" data-organ="brain" d="M170,120 Q200,90 230,120 Q200,150 170,120"/>
+  <path class="organ-path" data-organ="heart" d="M185,240 Q185,230 192,230 Q200,230 200,240 Q200,250 192,260 Q185,250 185,240"/>
+  <path class="organ-path" data-organ="lungs" d="M175,260 Q155,230 175,200 Q200,230 225,200 Q245,230 225,260 Q200,290 175,260"/>
+  <path class="organ-path" data-organ="liver" d="M210,320 Q230,315 240,330 Q245,345 235,355 Q220,360 210,350 Q205,340 210,320"/>
+  <path class="organ-path" data-organ="stomach" d="M180,340 Q175,360 180,375 Q185,385 195,380 Q205,375 205,360 Q205,345 195,340 Q185,335 180,340"/>
+  <path class="organ-path" data-organ="spleen" d="M240,350 Q232,335 240,335 Q248,335 240,350"/>
+  <path class="organ-path" data-organ="kidneys" d="M185,420 Q175,400 185,400 Q195,400 185,420 M215,420 Q205,400 215,400 Q225,400 215,420"/>
+  <path class="organ-path" data-organ="intestines" d="M170,480 Q165,520 170,560 Q200,580 230,560 Q235,520 230,480"/>
+  <path class="organ-path" data-organ="bladder" d="M185,620 Q185,605 200,605 Q215,605 215,620 Q215,635 200,635 Q185,635 185,620"/>
+</svg>
