@@ -38,36 +38,34 @@ function useStorageState(key, defaultValue) {
   return [value, setValue];
 }
 
-// ✅ ИСПРАВЛЕНО: дефолты используют health
-const DEFAULT_SECTIONS = [
-  { id: "today", emoji: "☀️", name: "Сегодня", vis: true },
-  { id: "schedule", emoji: "🗓️", name: "Расписание", vis: true },
-  { id: "work", emoji: "💼", name: "Работа", vis: true },
-  { id: "home", emoji: "🏡", name: "Дом", vis: true },
-  { id: "shopping", emoji: "🛒", name: "Покупки", vis: true },
-  { id: "pets", emoji: "🐾", name: "Питомцы", vis: true },
-  { id: "car", emoji: "🚗", name: "Авто", vis: true },
-  { id: "health", emoji: "🫁", name: "Здоровье", vis: true },  { id: "beauty", emoji: "✨", name: "Уход", vis: true },
-  { id: "hobbies", emoji: "🎨", name: "Хобби", vis: true },
-  { id: "goals", emoji: "🎯", name: "Мои цели", vis: true },
-  { id: "travel", emoji: "✈️", name: "Поездки", vis: true },
-  { id: "journal", emoji: "📖", name: "Журнал", vis: true },
-  { id: "profile", emoji: "👤", name: "Профиль", vis: true },
-];
-
 export function AppProvider({ children }) {
   const [profile, setProfile] = useStorageState('ld_pf_v3', null);
-  const [sections, setSections] = useStorageState('ld_sec_v3', DEFAULT_SECTIONS);
+  const [sections, setSections] = useStorageState('ld_sec_v3', [
+    { id: "today", emoji: "☀️", name: "Сегодня", vis: true },
+    { id: "schedule", emoji: "🗓️", name: "Расписание", vis: true },
+    { id: "work", emoji: "💼", name: "Работа", vis: true },
+    { id: "home", emoji: "🏡", name: "Дом", vis: true },
+    { id: "shopping", emoji: "🛒", name: "Покупки", vis: true },
+    { id: "pets", emoji: "🐾", name: "Питомцы", vis: true },
+    { id: "car", emoji: "🚗", name: "Авто", vis: true },    // ✅ ОБЪЕДИНЁННЫЙ РАЗДЕЛ: ID "health"
+    { id: "health", emoji: "🫁", name: "Здоровье", vis: true },
+    { id: "beauty", emoji: "✨", name: "Уход", vis: true },
+    { id: "hobbies", emoji: "🎨", name: "Хобби", vis: true },
+    { id: "goals", emoji: "🎯", name: "Мои цели", vis: true },
+    { id: "travel", emoji: "✈️", name: "Поездки", vis: true },
+    { id: "journal", emoji: "📖", name: "Журнал", vis: true },
+    { id: "profile", emoji: "👤", name: "Профиль", vis: true },
+  ]);
 
-  // ═══ АВТО-МИГРАЦИЯ ═══
+  // ═══ МИГРАЦИЯ: Убираем health_mental и mental, оставляем health ═══
   useEffect(() => {
     try {
       const raw = localStorage.getItem('ld_sec_v3');
       if (!raw) return;
       const parsed = JSON.parse(raw);
-      // Удаляем устаревшие разделы
+      // Удаляем старые разделы
       const cleaned = parsed.filter(s => s.id !== 'health_mental' && s.id !== 'mental' && s.id !== 'health_mental_ru');
-      // Если health нет, добавляем
+      // Если health нет, добавляем его
       const hasHealth = cleaned.some(s => s.id === 'health');
       if (!hasHealth) cleaned.push({ id: "health", emoji: "🫁", name: "Здоровье", vis: true });
       
@@ -96,9 +94,9 @@ export function AppProvider({ children }) {
   const [mentalStress, setMentalStress] = useStorageState('mental_stress', 5);
   const [mentalLog, setMentalLog] = useStorageState('mental_log', []);
   const [mentalRecoveryPlan, setMentalRecoveryPlan] = useStorageState('mental_recovery_plan', '');
-  const [customPractices, setCustomPractices] = useStorageState('custom_practices', []);  const [aiNotes, setAiNotes] = useStorageState('ld_ai_notes', []);
-  const [aiJournal, setAiJournal] = useStorageState('ld_ai_journal', []);
-  const [workOpenWeek, setWorkOpenWeek] = useStorageState('ld_work_open_week', true);
+  const [customPractices, setCustomPractices] = useStorageState('custom_practices', []);
+  const [aiNotes, setAiNotes] = useStorageState('ld_ai_notes', []);
+  const [aiJournal, setAiJournal] = useStorageState('ld_ai_journal', []);  const [workOpenWeek, setWorkOpenWeek] = useStorageState('ld_work_open_week', true);
   const [workOpenUpcoming, setWorkOpenUpcoming] = useStorageState('ld_work_open_upcoming', true);
   const [workOpenGroups, setWorkOpenGroups] = useStorageState('ld_work_open_groups', true);
   const [workOpenTasks, setWorkOpenTasks] = useStorageState('ld_work_open_tasks', true);
@@ -145,9 +143,9 @@ export function AppProvider({ children }) {
   const addCustomReport = (groupId, reportData) => setCustomReportGroups(prev => prev.map(g => g.id === groupId ? { ...g, reports: [...g.reports, { id: 'r-' + Date.now(), ...reportData }] } : g));
   const toggleReport = (reportId) => setSelectedReports(prev => prev.includes(reportId) ? prev.filter(id => id !== reportId) : [...prev, reportId]);
   const toggleSection = (id) => setCollapsedSections(prev => ({ ...prev, [id]: !prev[id] }));
+
   const allCatalogReports = useMemo(() => [...KGD_CATALOG, ...BNS_CATALOG], []);
-  useEffect(() => {
-    const today = new Date(); today.setHours(0, 0, 0, 0);
+  useEffect(() => {    const today = new Date(); today.setHours(0, 0, 0, 0);
     const todayStr = today.toISOString().split('T')[0];
     const warningDate = new Date(today); warningDate.setDate(today.getDate() + 7);
     const warningDateStr = warningDate.toISOString().split('T')[0];
@@ -194,9 +192,9 @@ export function AppProvider({ children }) {
     selectedReports, toggleReport,
     collapsedSections, toggleSection,
     aiRecommendations, setAiRecommendations,
-    mentalMood, setMentalMood, mentalStress, setMentalStress, mentalLog, setMentalLog,    mentalRecoveryPlan, setMentalRecoveryPlan, customPractices, setCustomPractices,
-    aiNotes, setAiNotes, aiJournal, setAiJournal,
-    workOpenWeek, setWorkOpenWeek, workOpenUpcoming, setWorkOpenUpcoming, workOpenGroups, setWorkOpenGroups,
+    mentalMood, setMentalMood, mentalStress, setMentalStress, mentalLog, setMentalLog,
+    mentalRecoveryPlan, setMentalRecoveryPlan, customPractices, setCustomPractices,
+    aiNotes, setAiNotes, aiJournal, setAiJournal,    workOpenWeek, setWorkOpenWeek, workOpenUpcoming, setWorkOpenUpcoming, workOpenGroups, setWorkOpenGroups,
     workOpenTasks, setWorkOpenTasks, workOpenAdvice, setWorkOpenAdvice,
     shopAdvice, setShopAdvice, shopListOpen, setShopListOpen,
     petsAdvice, setPetsAdvice, petsFeed, setPetsFeed, petsCare, setPetsCare,
