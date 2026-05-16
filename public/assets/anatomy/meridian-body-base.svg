@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 800" width="100%" height="100%">
+  <defs>
+    <!-- Blueprint Grid -->
+    <pattern id="bp-grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#0070c0" stroke-width="0.5" opacity="0.15"/>
+      <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#0070c0" stroke-width="0.2" opacity="0.1"/>
+    </pattern>
+    
+    <!-- Gradient for Golden Lines -->
+    <linearGradient id="gold-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#c8a45a" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#d4b76a" stop-opacity="0.4"/>
+    </linearGradient>
+
+    <!-- Glow Filter -->
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- 1. Фон (Сетка) -->
+  <rect width="100%" height="100%" fill="url(#bp-grid)"/>
+
+  <!-- 2. Геометрия Золотого Сечения (Окружности и Линии) -->
+  <g stroke="#c8a45a" stroke-width="1" fill="none" opacity="0.6">
+    <!-- Главная ось -->
+    <line x1="200" y1="50" x2="200" y2="750" stroke-dasharray="10,5"/>
+    
+    <!-- Круг головы (Золотое сечение) -->
+    <circle cx="200" cy="120" r="42" stroke-dasharray="4,2"/>
+    
+    <!-- Круг груди/солнечного сплетения -->
+    <circle cx="200" cy="250" r="65" />
+    
+    <!-- Круг таза -->
+    <circle cx="200" cy="450" r="50" />
+  </g>
+
+  <!-- 3. Силуэт тела (Blueprint Style) -->
+  <!-- Рисуем анатомический контур, который идеально ложится в координаты органов -->
+  <g stroke="#0070c0" stroke-width="2" fill="rgba(0,112,192,0.05)">
+    <!-- Голова -->
+    <path d="M 170 120 Q 200 80 230 120 Q 240 160 200 170 Q 160 160 170 120 Z" />
+    <!-- Шея -->
+    <path d="M 185 165 L 185 190 M 215 165 L 215 190" stroke-width="1.5"/>
+    <!-- Торс (Грудная клетка и Живот) -->
+    <path d="M 160 190 L 240 190 L 250 350 Q 200 380 150 350 Z" />
+    <!-- Ноги (Бедро и Голень) -->
+    <path d="M 160 360 L 150 550 L 145 700" />
+    <path d="M 240 360 L 250 550 L 255 700" />
+    <path d="M 170 360 L 165 550 L 160 700" />
+    <path d="M 230 360 L 235 550 L 240 700" />
+    
+    <!-- Руки -->
+    <path d="M 165 195 L 130 280 L 120 400" /> <!-- Левая -->
+    <path d="M 235 195 L 270 280 L 280 400" /> <!-- Правая -->
+  </g>
+
+  <!-- 4. Точки акупунктуры / Узловые точки (Декор) -->
+  <g fill="#c8a45a" filter="url(#glow)">
+    <circle cx="200" cy="100" r="3" />
+    <circle cx="200" cy="240" r="3" /> <!-- Сердце -->
+    <circle cx="200" cy="320" r="3" /> <!-- Солнечное сплетение -->
+    <circle cx="200" cy="450" r="3" /> <!-- Танден -->
+    <circle cx="160" cy="240" r="2" /> <!-- Левая грудь -->
+    <circle cx="240" cy="240" r="2" /> <!-- Правая грудь -->
+  </g>
+
+  <!-- 5. Текст (Blueprint Annotations) -->
+  <g font-family="'JetBrains Mono', monospace" font-size="10" fill="#0070c0" opacity="0.7">
+    <text x="20" y="30">PROJ: ANATOMY</text>
+    <text x="380" y="30" text-anchor="end">REF: 001</text>
+    
+    <!-- Линейка внизу -->
+    <text x="20" y="770">SCALE 1:1</text>
+    <text x="380" y="770" text-anchor="end">PHI = 1.618</text>
+    
+    <!-- Размерные линии (декор) -->
+    <line x1="150" y1="120" x2="130" y2="120" stroke-width="1"/>
+    <line x1="250" y1="120" x2="270" y2="120" stroke-width="1"/>
+    <text x="130" y="124" text-anchor="end">320mm</text>
+  </g>
+</svg>
