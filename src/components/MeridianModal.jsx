@@ -1,4 +1,6 @@
+// src/components/MeridianModal.jsx
 import React, { useEffect, useState, useMemo } from "react";
+// Источник: healing-sounds-daoist.md, norbekov-breathing-technique.md, omz-youth-health-image.md, meridian-diseases.md
 
 const MERIDIAN_DB = {
   gallbladder: { diseases: "Сосуды, иннервация кожи, вестибулярный аппарат, горло, дыхательные пути, ЖКТ.", sound: 3, zone: "side" },
