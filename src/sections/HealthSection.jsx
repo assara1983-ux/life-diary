@@ -21,7 +21,8 @@ const getZodiac = (d) => {
   const m = d.getMonth() + 1, dd = d.getDate();
   const signs = ['♑Козерог','♒Водолей','♓Рыбы','♈Овен','♉Телец','♊Близнецы','♋Рак','♌Лев','♍Дева','♎Весы','♏Скорпион','♐Стрелец'];
   const days = [[1,20],[2,19],[3,21],[4,21],[5,21],[6,22],[7,23],[8,23],[9,23],[10,23],[11,22],[12,22],[12,32]];
-  return signs[days.findIndex(([dm, ddm]) => (m === dm && dd <= ddm) || (m === (dm % 12) + 1 && dd > days[dm-1]?.[1])) % 12];
+  const idx = days.findIndex(([dm, ddm]) => (m === dm && dd <= ddm) || (m === (dm % 12) + 1 && dd > (days[dm-1]?.[1] || 0)));
+  return signs[(idx + 12) % 12] || '♑Козерог';
 };
 
 const getEasternYear = (y) => {
@@ -46,16 +47,25 @@ export function HealthSection() {
 
   const sortedBreathing = useMemo(() => {
     const list = [...BREATHING_TECHNIQUES];
-    const s = list.sort((a, b) => {
-      if (stress > 7 && a.id === 'wilunas') return -1;      if (isWeightGoal && a.id === 'physical') return a.id === 'wilunas' ? 1 : -1;
+    return list.sort((a, b) => {      if (stress > 7 && a.id === 'wilunas') return -1;
+      if (isWeightGoal && a.id === 'physical') return a.id === 'wilunas' ? 1 : -1;
       return 0;
     });
-    return s;
   }, [stress, isWeightGoal]);
 
-  const renderCard = (title, content, style = {}) => (
-    <div className="h-card" style={style}>{content}</div>
+  const renderCard = (title, content, extraStyle = {}) => (
+    <div className="h-card" style={extraStyle}>
+      <h3 className={title.includes('У-Син') || title.includes('Стихии') ? 'blue' : ''}>{title}</h3>
+      {content}
+    </div>
   );
+
+  const MERIDIAN_MAP = { 
+    "Печень": "liver", "Лёгкие": "lungs", "Толстый кишечник": "intestines",
+    "Желудок": "stomach", "Селезенка": "spleen", "Сердце": "heart",
+    "Тонкий кишечник": "intestines", "Мочевой пузырь": "bladder",
+    "Почки": "kidneys", "Перикард": "heart", "Сань Цзяо": "spleen", "Желчный пузырь": "liver" 
+  };
 
   return (
     <div className="health-wrapper">
@@ -78,14 +88,15 @@ export function HealthSection() {
 
       <div className="h-tabs">
         {['anatomy','profile','breathing','mental','recommendations','tracker'].map(t => (
-          <button key={t} className={`h-tab ${activeTab === t ? 'active' : ''}`} onClick={() => setActiveTab(t)}>{t === 'recommendations' ? 'Рекомендации' : t === 'profile' ? 'Досье' : t.charAt(0).toUpperCase() + t.slice(1)}</button>
+          <button key={t} className={`h-tab ${activeTab === t ? 'active' : ''}`} onClick={() => setActiveTab(t)}>
+            {t === 'recommendations' ? 'Рекомендации' : t === 'profile' ? 'Досье' : t.charAt(0).toUpperCase() + t.slice(1)}
+          </button>
         ))}
       </div>
 
       <div className="h-content">
         {activeTab === 'anatomy' && (
-          <div>
-            <h2 className="section-title" style={{ fontFamily: 'var(--font-head)', borderBottom: '2px solid var(--blue)', paddingBottom: 5 }}>Интерактивная Анатомия</h2>
+          <div>            <h2 className="section-title" style={{ fontFamily: 'var(--font-head)', borderBottom: '2px solid var(--blue)', paddingBottom: 5 }}>Интерактивная Анатомия</h2>
             <div style={{ background: 'rgba(0,112,192,0.05)', padding: 10, borderLeft: '3px solid var(--blue)', marginBottom: 15, fontSize: 12 }}>
               <strong>СЕЙЧАС АКТИВЕН:</strong> {timeData.currentMeridian.name} ({timeData.currentMeridian.h})
             </div>
@@ -96,7 +107,8 @@ export function HealthSection() {
         {activeTab === 'profile' && (
           <div className="h-grid">
             {renderCard('👤 Биокарта', <>
-              <p><b>{p.name || 'Пользователь'}</b> • Возраст: {age}</p>              <p style={{ marginTop: 4 }}>{getZodiac(dob)} • Восточный год: {getEasternYear(dob.getFullYear())}</p>
+              <p><b>{p.name || 'Пользователь'}</b> • Возраст: {age}</p>
+              <p style={{ marginTop: 4 }}>{getZodiac(dob)} • Восточный год: {getEasternYear(dob.getFullYear())}</p>
             </>)}
             {renderCard('🧬 ТКМ Профиль', <>
               <p>Стихия: <b>{element}</b> • Баланс: <b>{healthData.yinyang}</b></p>
@@ -126,13 +138,21 @@ export function HealthSection() {
 
         {activeTab === 'breathing' && (
           <div className="h-grid">
-            {sortedBreathing.map((tech, idx) => {
-              const border = stress > 7 && tech.id === 'wilunas' ? '2px solid #d32f2f' : '1px solid var(--blue)';
-              const badge = tech.id === 'wilunas' && stress > 7 ? '<span class="badge red">Экстренно</span>' : isWeightGoal && tech.id === 'physical' ? '<span class="badge gold">Рекомендовано</span>' : '';
-              return renderCard(`${tech.title}`, <>
-                <div dangerouslySetInnerHTML={{ __html: badge }} />
-                <BreathingTimer technique={{ ...tech }} onFinish={() => {}} />
-              </div>, { borderColor: border === '2px solid #d32f2f' ? '#d32f2f' : undefined })
+            {sortedBreathing.map((tech) => {
+              const isEmergency = stress > 7 && tech.id === 'wilunas';
+              const isRecommended = isWeightGoal && tech.id === 'physical';
+              const borderColor = isEmergency ? '#d32f2f' : undefined;
+              const badge = isEmergency 
+                ? <span className="badge red">Экстренно</span> 
+                : isRecommended 
+                  ? <span className="badge gold">Рекомендовано</span>                   : null;
+              return (
+                <div key={tech.id} className="h-card" style={{ borderColor }}>
+                  <h3>{tech.title}</h3>
+                  {badge}
+                  <BreathingTimer technique={{ ...tech }} onFinish={() => {}} />
+                </div>
+              );
             })}
           </div>
         )}
@@ -144,12 +164,17 @@ export function HealthSection() {
               <p>Доминанта: {element}. Поведение: ориентация на баланс стихий. Сильные качества: адаптивность. Зоны роста: осознанное переключение фокуса.</p>
             </>)}
             {renderCard('🤝 Стихии и отношения', <>
-              <p><b>Порождение:</b> {element} → {ELEMENT_NUTRITION[element] ? Object.keys(ELEMENT_NUTRITION).find((e,i,a) => a[(i+2)%5] === element) || 'Металл'} : комфорт в диалоге.</p>
-              <p style={{ marginTop: 4 }}><b>Контроль:</b> {element} → {ELEMENT_NUTRITION[element] ? Object.keys(ELEMENT_NUTRITION).find((e,i,a) => a[(i+3)%5] === element) || 'Земля'} : требует границ.</p>              <p style={{ marginTop: 4, fontSize: 12 }}>Совет: в работе ищите компенсаторные стихии, в личной жизни — порождающие.</p>
+              <p><b>Порождение:</b> {element} → {Object.keys(ELEMENT_NUTRITION).find((e,i,a) => a[(i+2)%5] === element) || 'Металл'} : комфорт в диалоге.</p>
+              <p style={{ marginTop: 4 }}><b>Контроль:</b> {element} → {Object.keys(ELEMENT_NUTRITION).find((e,i,a) => a[(i+3)%5] === element) || 'Земля'} : требует границ.</p>
+              <p style={{ marginTop: 4, fontSize: 12 }}>Совет: в работе ищите компенсаторные стихии, в личной жизни — порождающие.</p>
             </>)}
             {renderCard('📅 Эмоциональный календарь', <>
               {Object.values(ANATOMY_DATA).slice(0, 4).map(o => (
-                <div key={o.id} className="organ-row"><span>{o.name}</span><span>→ {o.emotion || 'Напряжение'}</span><span style={{ color: '#0070c0' }}>{o.sound || 'Звук + растяжка'}</span></div>
+                <div key={o.id} className="organ-row">
+                  <span>{o.name}</span>
+                  <span>→ {o.emotion || 'Напряжение'}</span>
+                  <span style={{ color: '#0070c0' }}>{o.sound || 'Звук + растяжка'}</span>
+                </div>
               ))}
             </>)}
           </div>
@@ -160,17 +185,26 @@ export function HealthSection() {
             {ELEMENT_NUTRITION[element] && renderCard('🥗 Питание по стихии', <>
               <p>Вкус: <b>{ELEMENT_NUTRITION[element].flavor}</b>. Продукты: {ELEMENT_NUTRITION[element].foods}.</p>
               <p style={{ marginTop: 4 }}>Ограничить: {ELEMENT_NUTRITION[element].avoid}. Главный приём: {ELEMENT_NUTRITION[element].time}.</p>
-              {isWeightGoal && <div style={{ marginTop: 6, background: '#fff8e1', padding: 6, fontSize: 12, borderRadius: 4 }}>🔥 Снижение веса: {ELEMENT_NUTRITION[element].weightLoss}</div>}
+              {isWeightGoal && (
+                <div style={{ marginTop: 6, background: '#fff8e1', padding: 6, fontSize: 12, borderRadius: 4 }}>
+                  🔥 Снижение веса: {ELEMENT_NUTRITION[element].weightLoss}
+                </div>
+              )}
             </>)}
             {CHRONO_SCHEDULE[p.chronotype] && renderCard('🕒 Режим дня', <>
-              {Object.entries(CHRONO_SCHEDULE[p.chronotype]).map(([k,v]) => <div key={k} style={{ fontSize: 12, marginTop: 2 }}><b>{k}:</b> {v}</div>)}
-            </>)}
+              {Object.entries(CHRONO_SCHEDULE[p.chronotype]).map(([k,v]) => (
+                <div key={k} style={{ fontSize: 12, marginTop: 2 }}><b>{k}:</b> {v}</div>
+              ))}            </>)}
             {ACTIVITY_BY_LEVEL[p.activityLevel] && renderCard('🏃 Физическая активность', <>
               <p>Уровень: {p.activityLevel}. {ACTIVITY_BY_LEVEL[p.activityLevel]}</p>
-              <p style={{ fontSize: 12, marginTop: 4 }}>По стихии {element}: рекомендуется {element === 'Дерево' ? 'йога и растяжка' : element === 'Металл' ? 'дыхательные практики и ходьба' : 'умеренная нагрузка без перегрева'}.</p>
+              <p style={{ fontSize: 12, marginTop: 4 }}>
+                По стихии {element}: рекомендуется {element === 'Дерево' ? 'йога и растяжка' : element === 'Металл' ? 'дыхательные практики и ходьба' : 'умеренная нагрузка без перегрева'}.
+              </p>
             </>)}
             {p.healthConditions?.length > 0 && renderCard('⚕️ Учёт хронических состояний', <>
-              {p.healthConditions.map((c, i) => <div key={i} style={{ fontSize: 12, marginBottom: 4 }}><b>{c}:</b> Исключить: {CHRONIC_REC[c]?.avoid || '—'}.</div>)}
+              {p.healthConditions.map((c, i) => (
+                <div key={i} style={{ fontSize: 12, marginBottom: 4 }}><b>{c}:</b> Исключить: {CHRONIC_REC[c]?.avoid || '—'}.</div>
+              ))}
               <div className="disclaimer">⚠️ Данные носят ознакомительный характер.</div>
             </>)}
           </div>
@@ -179,8 +213,17 @@ export function HealthSection() {
         {activeTab === 'tracker' && <HealthTracker />}
       </div>
 
-      {modalContent && <ModalDetail isOpen={!!modalContent} onClose={() => setModalContent(null)} title={modalContent.title} description={modalContent.desc} warning={modalContent.warning} rules={modalContent.rules} benefit={modalContent.benefit} />}
+      {modalContent && (
+        <ModalDetail 
+          isOpen={!!modalContent} 
+          onClose={() => setModalContent(null)} 
+          title={modalContent.title} 
+          description={modalContent.desc} 
+          warning={modalContent.warning} 
+          rules={modalContent.rules} 
+          benefit={modalContent.benefit} 
+        />
+      )}
     </div>
   );
-}
-const MERIDIAN_MAP = { "Печень": "liver", "Лёгкие": "lungs", "Толстый кишечник": "intestines", "Желудок": "stomach", "Селезенка": "spleen", "Сердце": "heart", "Тонкий кишечник": "intestines", "Мочевой пузырь": "bladder", "Почки": "kidneys", "Перикард": "heart", "Сань Цзяо": "spleen", "Желчный пузырь": "liver" };
+              }
