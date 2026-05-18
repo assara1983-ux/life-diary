@@ -84,19 +84,21 @@ export function HealthSection() {
         .badge.gold { background: var(--gold); color: #000; }
         .disclaimer { font-size: 10px; color: #888; margin-top: 8px; font-style: italic; }
         .organ-row { display: flex; justify-content: space-between; border-bottom: 1px dashed #ddd; padding: 4px 0; font-size: 12px; }
+        .tracker-section { margin-top: 20px; border-top: 2px solid var(--blue); padding-top: 20px; }
+        .section-subtitle { font-family: var(--font-head); color: var(--blue); font-size: 14px; margin-bottom: 12px; }
       `}</style>
 
       <div className="h-tabs">
-        {['anatomy','profile','breathing','mental','recommendations','tracker'].map(t => (
+        {['anatomy','profile','breathing','mental','recommendations'].map(t => (
           <button key={t} className={`h-tab ${activeTab === t ? 'active' : ''}`} onClick={() => setActiveTab(t)}>
             {t === 'recommendations' ? 'Рекомендации' : t === 'profile' ? 'Досье' : t.charAt(0).toUpperCase() + t.slice(1)}
           </button>
         ))}
       </div>
 
-      <div className="h-content">
-        {activeTab === 'anatomy' && (
-          <div>            <h2 className="section-title" style={{ fontFamily: 'var(--font-head)', borderBottom: '2px solid var(--blue)', paddingBottom: 5 }}>Интерактивная Анатомия</h2>
+      <div className="h-content">        {activeTab === 'anatomy' && (
+          <div>
+            <h2 className="section-title" style={{ fontFamily: 'var(--font-head)', borderBottom: '2px solid var(--blue)', paddingBottom: 5 }}>Интерактивная Анатомия</h2>
             <div style={{ background: 'rgba(0,112,192,0.05)', padding: 10, borderLeft: '3px solid var(--blue)', marginBottom: 15, fontSize: 12 }}>
               <strong>СЕЙЧАС АКТИВЕН:</strong> {timeData.currentMeridian.name} ({timeData.currentMeridian.h})
             </div>
@@ -105,38 +107,45 @@ export function HealthSection() {
         )}
 
         {activeTab === 'profile' && (
-          <div className="h-grid">
-            {renderCard('👤 Биокарта', <>
-              <p><b>{p.name || 'Пользователь'}</b> • Возраст: {age}</p>
-              <p style={{ marginTop: 4 }}>{getZodiac(dob)} • Восточный год: {getEasternYear(dob.getFullYear())}</p>
-            </>)}
-            {renderCard('🧬 ТКМ Профиль', <>
-              <p>Стихия: <b>{element}</b> • Баланс: <b>{healthData.yinyang}</b></p>
-              <p style={{ marginTop: 6, fontSize: 12 }}>Паттерн: {healthData.uxinPattern}.</p>
-            </>)}
-            {renderCard('⏰ Хронотип', <>
-              <p>Тип: <b>{p.chronotype || 'Голубь'}</b> • Подъём: {p.wake || '08:00'} • Отбой: {p.sleep || '23:00'}</p>
-            </>)}
-            {p.healthConditions?.length > 0 && renderCard('🏥 Хронические состояния', <>
-              {p.healthConditions.map((cond, i) => (
-                <div key={i} style={{ marginBottom: 4 }}><b>{cond}</b>: {CHRONIC_REC[cond]?.rec || 'Щадящий режим'}</div>
-              ))}
-              <div className="disclaimer">⚠️ Рекомендации носят информационный характер</div>
-            </>)}
-            {hasHealthGoal && renderCard('🎯 Цели и здоровье', <>
-              <p>Акцент на: {isWeightGoal ? 'Коррекцию веса' : 'Общее укрепление'}</p>
-            </>)}
-            {renderCard('⚡ Стресс-профиль', <>
-              <p>Уровень: <b style={{ color: stress > 7 ? '#d32f2f' : stress > 4 ? '#e6a800' : '#2e7d32' }}>{stress}/10</b></p>
-              <button className="badge" style={{ marginTop: 8, background: 'transparent', color: '#0070c0', border: '1px solid var(--blue)', cursor: 'pointer' }} onClick={() => setActiveTab('breathing')}>Перейти в Дыхание →</button>
-            </>)}
+          <div>
+            <div className="h-grid">
+              {renderCard('👤 Биокарта', <>
+                <p><b>{p.name || 'Пользователь'}</b> • Возраст: {age}</p>
+                <p style={{ marginTop: 4 }}>{getZodiac(dob)} • Восточный год: {getEasternYear(dob.getFullYear())}</p>
+              </>)}
+              {renderCard('🧬 ТКМ Профиль', <>
+                <p>Стихия: <b>{element}</b> • Баланс: <b>{healthData.yinyang}</b></p>
+                <p style={{ marginTop: 6, fontSize: 12 }}>Паттерн: {healthData.uxinPattern}.</p>
+              </>)}
+              {renderCard('⏰ Хронотип', <>
+                <p>Тип: <b>{p.chronotype || 'Голубь'}</b> • Подъём: {p.wake || '08:00'} • Отбой: {p.sleep || '23:00'}</p>
+              </>)}
+              {p.healthConditions?.length > 0 && renderCard('🏥 Хронические состояния', <>
+                {p.healthConditions.map((cond, i) => (
+                  <div key={i} style={{ marginBottom: 4 }}><b>{cond}</b>: {CHRONIC_REC[cond]?.rec || 'Щадящий режим'}</div>
+                ))}
+                <div className="disclaimer">⚠️ Рекомендации носят информационный характер</div>
+              </>)}
+              {hasHealthGoal && renderCard('🎯 Цели и здоровье', <>
+                <p>Акцент на: {isWeightGoal ? 'Коррекцию веса' : 'Общее укрепление'}</p>
+              </>)}
+              {renderCard('⚡ Стресс-профиль', <>
+                <p>Уровень: <b style={{ color: stress > 7 ? '#d32f2f' : stress > 4 ? '#e6a800' : '#2e7d32' }}>{stress}/10</b></p>
+                <button className="badge" style={{ marginTop: 8, background: 'transparent', color: '#0070c0', border: '1px solid var(--blue)', cursor: 'pointer' }} onClick={() => setActiveTab('breathing')}>Перейти в Дыхание →</button>
+              </>)}
+            </div>
+            
+            {/* Трекер внутри вкладки Досье */}
+            <div className="tracker-section">
+              <div className="section-subtitle">📊 Ежедневный Трекер</div>
+              <HealthTracker />
+            </div>
           </div>
         )}
 
         {activeTab === 'breathing' && (
           <div className="h-grid">
-            {sortedBreathing.map((tech) => {
-              const isEmergency = stress > 7 && tech.id === 'wilunas';
+            {sortedBreathing.map((tech) => {              const isEmergency = stress > 7 && tech.id === 'wilunas';
               const isRecommended = isWeightGoal && tech.id === 'physical';
               return (
                 <div key={tech.id} className="h-card" style={{ borderColor: isEmergency ? '#d32f2f' : undefined }}>
@@ -145,7 +154,8 @@ export function HealthSection() {
                   {isRecommended && <span className="badge gold">Рекомендовано</span>}
                   <BreathingTimer technique={{ ...tech }} onFinish={() => {}} />
                 </div>
-              );            })}
+              );
+            })}
           </div>
         )}
 
@@ -184,20 +194,18 @@ export function HealthSection() {
             </>)}
             {ACTIVITY_BY_LEVEL[p.activityLevel] && renderCard('🏃 Физическая активность', <>
               <p>{ACTIVITY_BY_LEVEL[p.activityLevel]}</p>
-            </>)}
-            {p.healthConditions?.length > 0 && renderCard('⚕️ Учёт состояний', <>
+            </>)}            {p.healthConditions?.length > 0 && renderCard('⚕️ Учёт состояний', <>
               {p.healthConditions.map((c, i) => (
                 <div key={i} style={{ fontSize: 12, marginBottom: 4 }}><b>{c}:</b> {CHRONIC_REC[c]?.avoid}</div>
               ))}
             </>)}
           </div>
         )}
-
-        {activeTab === 'tracker' && <HealthTracker />}
       </div>
+
       {modalContent && (
         <ModalDetail isOpen={!!modalContent} onClose={() => setModalContent(null)} title={modalContent.title} description={modalContent.desc} warning={modalContent.warning} rules={modalContent.rules} benefit={modalContent.benefit} />
       )}
     </div>
   );
-        }
+}
