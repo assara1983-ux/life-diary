@@ -1,38 +1,61 @@
+// src/sections/HealthSection.jsx
 import React, { useState, useMemo } from "react";
 import { useApp } from "../store/AppContext";
 import { calculateHealthProfile, getTimeRecommendation } from "../utils/healthCalculator";
 import { AnatomyViewer } from "../components/AnatomyViewer";
 import { ModalDetail } from "../components/ModalDetail";
 import { ANATOMY_DATA } from "../data/anatomyKnowledge";
+import { BreathingTimer } from "../components/BreathingTimer";
+import { HealthTracker } from "../components/HealthTracker";
+import { ELEMENT_NUTRITION, CHRONO_SCHEDULE, ACTIVITY_BY_LEVEL, CHRONIC_REC } from "../data/healthRecommendations";
 
-const BREATHING_TECHNIQUES = {
-  sam_chon_do: { title: "Сам Чон До (Базовое)", desc: "Вдох носом 3с → Выдох ртом 6с → Пауза 2с. 3–9 циклов.", rules: "Ментально: вдох «в-д-о-о-х», выдох «в-ы-д-о-о-х». Завершение: фиксация 1 мин.", benefit: "Гармонизация, подготовка, снятие зажимов." },
-  norbekov: { title: "Настрой Норбекова + ОМЗ", desc: "4 этапа: Образ → Палец → Рука → Сплетеие → 13 центров.", benefit: "Омоложение, ресурс.", warning: "⛔ ЖЁСТКИЙ ЗАПРЕТ: НИКОГДА не направлять поток в ❤️ Сердце и 🧠 Мозг!" },
-  physical_form: { title: "Дыхание для коррекции фигуры", desc: "Поза 'Всадник'. Вдох носом, активный выдох 'ба-ба-х', втягивание живота на 10 счетов.", benefit: "Сжигание жира, тонус мышц.", rules: "Только утром натощак. 5-20 мин." },
-  mood_shift: { title: "Смена настроения", desc: "Сам Чон До → Образ человека в нужном настроении → Дыхание через образ.", benefit: "Быстрая эмоциональная перестройка." },
-  wilunas: { title: "Рыдающее дыхание (Сброс)", desc: "Вдох ртом → выдох со звуком 'с-с-с' → пауза. 3 мин.", benefit: "Мгновенное снятие острого стресса (>7), снижение давления.", warning: "Не применять при острых сердечных патологиях!" }
+const BREATHING_TECHNIQUES = [
+  { id: 'wilunas', title: 'Экстренный сброс', inhale: 1, exhale: 3, hold: 0, cycles: 3, priority: 'stress' },
+  { id: 'physical', title: 'Коррекция фигуры', inhale: 2, exhale: 5, hold: 2, cycles: 10, priority: 'goal' },
+  { id: 'samchon', title: 'Сам Чон До (Базовое)', inhale: 3, exhale: 6, hold: 2, cycles: 5, priority: 'base' },
+  { id: 'norbekov', title: 'Настрой Норбекова', inhale: 4, exhale: 8, hold: 2, cycles: 4, priority: 'base' },
+  { id: 'mood', title: 'Смена настроения', inhale: 3, exhale: 5, hold: 0, cycles: 6, priority: 'base' }
+];
+
+const getZodiac = (d) => {
+  const m = d.getMonth() + 1, dd = d.getDate();
+  const signs = ['♑Козерог','♒Водолей','♓Рыбы','♈Овен','♉Телец','♊Близнецы','♋Рак','♌Лев','♍Дева','♎Весы','♏Скорпион','♐Стрелец'];
+  const days = [[1,20],[2,19],[3,21],[4,21],[5,21],[6,22],[7,23],[8,23],[9,23],[10,23],[11,22],[12,22],[12,32]];
+  return signs[days.findIndex(([dm, ddm]) => (m === dm && dd <= ddm) || (m === (dm % 12) + 1 && dd > days[dm-1]?.[1])) % 12];
 };
 
-const MERIDIAN_TO_ID = {
-  "Печень": "liver", "Лёгкие": "lungs", "Толстый кишечник": "intestines",
-  "Желудок": "stomach", "Селезенка": "spleen", "Сердце": "heart",
-  "Тонкий кишечник": "intestines", "Мочевой пузырь": "bladder",
-  "Почки": "kidneys", "Перикард": "heart", "Сань Цзяо": "spleen", "Желчный пузырь": "liver"
+const getEasternYear = (y) => {
+  const animals = ['Крыса','Бык','Тигр','Кролик','Дракон','Змея','Лошадь','Коза','Обезьяна','Петух','Собака','Свинья'];
+  return animals[(y - 4) % 12];
 };
 
 export function HealthSection() {
   const { profile } = useApp();
   const [activeTab, setActiveTab] = useState("anatomy");
   const [modalContent, setModalContent] = useState(null);
-
   const healthData = useMemo(() => calculateHealthProfile(profile), [profile]);
-  const timeData = useMemo(() => getTimeRecommendation(profile), [profile]);
-  const currentActiveOrganId = MERIDIAN_TO_ID[timeData.currentMeridian.name] || null;
+  const timeData = useMemo(() => getTimeRecommendation(), []);
 
-  const handleAnatomyClick = (data) => {
-    const source = ANATOMY_DATA[data.id];
-    if (source) setModalContent(source);
-  };
+  const p = profile || {};
+  const dob = p.dob ? new Date(p.dob) : new Date();
+  const age = Math.floor((new Date() - dob) / 365.25e9);
+  const element = healthData.element?.trim() || "Земля";
+  const stress = p.stressLevel ?? 5;
+  const isWeightGoal = p.goalAreas?.includes('Похудение') || /похудение|вес|форма/i.test(p.mainGoal || '');
+  const hasHealthGoal = p.goalAreas?.includes('Здоровье') || p.goalAreas?.includes('Внешность') || isWeightGoal;
+
+  const sortedBreathing = useMemo(() => {
+    const list = [...BREATHING_TECHNIQUES];
+    const s = list.sort((a, b) => {
+      if (stress > 7 && a.id === 'wilunas') return -1;      if (isWeightGoal && a.id === 'physical') return a.id === 'wilunas' ? 1 : -1;
+      return 0;
+    });
+    return s;
+  }, [stress, isWeightGoal]);
+
+  const renderCard = (title, content, style = {}) => (
+    <div className="h-card" style={style}>{content}</div>
+  );
 
   return (
     <div className="health-wrapper">
@@ -41,74 +64,123 @@ export function HealthSection() {
         .h-tabs { display: flex; gap: 10px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 4px; }
         .h-tab { padding: 8px 16px; background: transparent; border: 1px solid var(--blue); color: var(--blue); border-radius: 4px; cursor: pointer; font-family: var(--font-mono); text-transform: uppercase; font-size: 12px; transition: 0.2s; flex-shrink: 0; }
         .h-tab.active { background: var(--blue); color: #fff; }
-        .h-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
-        .h-card { background: #fff; border: 1px solid var(--blue); padding: 15px; position: relative; cursor: pointer; box-shadow: 0 4px 0 rgba(0,112,192,0.1); transition: transform 0.1s; }
-        .h-card:hover { transform: translateY(-2px); box-shadow: 0 6px 0 rgba(0,112,192,0.15); }
-        .h-card h3 { font-family: var(--font-head); color: var(--blue); margin: 0 0 8px 0; font-size: 14px; }
+        .h-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
+        .h-card { background: #fff; border: 1px solid var(--blue); padding: 15px; border-radius: 6px; box-shadow: 0 4px 0 rgba(0,112,192,0.1); }
+        .h-card h3 { font-family: 'Cinzel', var(--font-head), serif; color: var(--gold); margin: 0 0 8px 0; font-size: 16px; border-bottom: 1px solid #eee; padding-bottom: 6px; }
+        .h-card h3.blue { color: var(--blue); }
         .h-card p { margin: 0; font-size: 13px; line-height: 1.4; color: #444; }
-        .h-badge { display: inline-block; font-size: 10px; background: var(--blue); color: #fff; padding: 2px 6px; border-radius: 2px; margin-top: 8px; font-family: var(--font-mono); }
-        .h-badge.warning { background: #d32f2f; }        .section-title { font-family: var(--font-head); color: var(--text-main); border-bottom: 2px solid var(--blue); padding-bottom: 5px; margin-bottom: 15px; font-size: 18px; }
-        .active-organ-info { background: rgba(0,112,192,0.05); padding: 10px; border-left: 3px solid var(--blue); margin-bottom: 15px; font-family: var(--font-mono); font-size: 12px; }
+        .badge { display: inline-block; font-size: 10px; background: var(--blue); color: #fff; padding: 2px 6px; border-radius: 2px; margin-top: 8px; font-family: var(--font-mono); }
+        .badge.red { background: #d32f2f; }
+        .badge.gold { background: var(--gold); color: #000; }
+        .disclaimer { font-size: 10px; color: #888; margin-top: 8px; font-style: italic; }
+        .organ-row { display: flex; justify-content: space-between; border-bottom: 1px dashed #ddd; padding: 4px 0; font-size: 12px; }
       `}</style>
 
       <div className="h-tabs">
-        <button className={`h-tab ${activeTab === 'anatomy' ? 'active' : ''}`} onClick={() => setActiveTab('anatomy')}>Анатомия</button>
-        <button className={`h-tab ${activeTab === 'profile' ? 'active' : ''}`} onClick={() => setActiveTab('profile')}>Досье</button>
-        <button className={`h-tab ${activeTab === 'breathing' ? 'active' : ''}`} onClick={() => setActiveTab('breathing')}>Дыхание</button>
-        <button className={`h-tab ${activeTab === 'mental' ? 'active' : ''}`} onClick={() => setActiveTab('mental')}>Сфера</button>
+        {['anatomy','profile','breathing','mental','recommendations','tracker'].map(t => (
+          <button key={t} className={`h-tab ${activeTab === t ? 'active' : ''}`} onClick={() => setActiveTab(t)}>{t === 'recommendations' ? 'Рекомендации' : t === 'profile' ? 'Досье' : t.charAt(0).toUpperCase() + t.slice(1)}</button>
+        ))}
       </div>
 
       <div className="h-content">
         {activeTab === 'anatomy' && (
           <div>
-            <h2 className="section-title">Интерактивная Анатомия</h2>
-            <div className="active-organ-info">
+            <h2 className="section-title" style={{ fontFamily: 'var(--font-head)', borderBottom: '2px solid var(--blue)', paddingBottom: 5 }}>Интерактивная Анатомия</h2>
+            <div style={{ background: 'rgba(0,112,192,0.05)', padding: 10, borderLeft: '3px solid var(--blue)', marginBottom: 15, fontSize: 12 }}>
               <strong>СЕЙЧАС АКТИВЕН:</strong> {timeData.currentMeridian.name} ({timeData.currentMeridian.h})
-              <br/><span style={{opacity: 0.7}}>Подсвечен на схеме красным. Клик для деталей.</span>
             </div>
-            <AnatomyViewer activeOrganId={currentActiveOrganId} onSelect={handleAnatomyClick} />
+            <AnatomyViewer activeOrganId={MERIDIAN_MAP[timeData.currentMeridian.name] || null} onSelect={d => setModalContent(ANATOMY_DATA[d.id] || {})} />
           </div>
         )}
 
         {activeTab === 'profile' && (
-          <div>
-            <h2 className="section-title">Био-Энергетический Профиль</h2>
-            <div className="h-grid">
-              <div className="h-card" onClick={() => setModalContent({ title: "ТКМ Конституция", desc: `Стихия: ${healthData.element}. Баланс: ${healthData.yinyang}.`, rules: "Рекомендации по питанию зависят от стихии." })}>
-                <h3>🧬 ТКМ Конституция</h3><p>Стихия: <strong>{healthData.element}</strong></p><span className="h-badge">Клик для деталей</span>
-              </div>
-              <div className="h-card" onClick={() => setModalContent({ title: "Стресс-профиль", desc: `Уровень: ${healthData.stress}/10.`, rules: healthData.stress > 7 ? "Протокол: Рыдающее дыхание → Светотерапия → Аэробика." : "Поддержание ритма." })}>
-                <h3>⚡ Стресс</h3><p>Уровень: <strong>{healthData.stress}/10</strong></p>{healthData.stress > 7 && <span className="h-badge warning">Требуется сброс</span>}
-              </div>
-            </div>
+          <div className="h-grid">
+            {renderCard('👤 Биокарта', <>
+              <p><b>{p.name || 'Пользователь'}</b> • Возраст: {age}</p>              <p style={{ marginTop: 4 }}>{getZodiac(dob)} • Восточный год: {getEasternYear(dob.getFullYear())}</p>
+            </>)}
+            {renderCard('🧬 ТКМ Профиль', <>
+              <p>Стихия: <b>{element}</b> • Баланс: <b>{healthData.yinyang}</b></p>
+              <p style={{ marginTop: 6, fontSize: 12 }}>Паттерн: {healthData.uxinPattern}. {p.tcmElement ? `Полное описание: характер устойчивый, уязвимы органы, связанные с ${element.toLowerCase()}.` : ''}</p>
+            </>)}
+            {renderCard('⏰ Хронотип', <>
+              <p>Тип: <b>{p.chronotype || 'Голубь'}</b> • Подъём: {p.wake || '08:00'} • Отбой: {p.sleep || '23:00'}</p>
+              <p style={{ marginTop: 6, fontSize: 12 }}>Пик продуктивности: утро/день. Спорт: {p.chronotype === 'Сова' ? 'вечер' : 'обед'}. Еда: строго по режиму.</p>
+            </>)}
+            {p.healthConditions?.length > 0 && renderCard('🏥 Хронические состояния', <>
+              {p.healthConditions.map((cond, i) => (
+                <div key={i} style={{ marginBottom: 4 }}><b>{cond}</b>: {CHRONIC_REC[cond]?.rec || 'Щадящий режим, избегать перегрузок.'}</div>
+              ))}
+              <div className="disclaimer">⚠️ Рекомендации носят информационный характер. Консультируйтесь с врачом.</div>
+            </>)}
+            {hasHealthGoal && renderCard('🎯 Цели и здоровье', <>
+              <p>Акцент на: {isWeightGoal ? 'Коррекцию веса и метаболизм' : 'Общее укрепление и ресурс'}.</p>
+              <p style={{ fontSize: 12, marginTop: 4 }}>По У-Син оптимально: тренировки в часы активности меридиана {element}. Связка дыхания + активность ускоряет результат.</p>
+            </>)}
+            {renderCard('⚡ Стресс-профиль', <>
+              <p>Уровень: <b style={{ color: stress > 7 ? '#d32f2f' : stress > 4 ? '#e6a800' : '#2e7d32' }}>{stress}/10</b></p>
+              <p style={{ marginTop: 4 }}>Протокол: {stress > 7 ? 'Рыдающее дыхание → Светотерапия.' : 'Поддержание ритма, Сам Чон До.'}</p>
+              <button className="badge" style={{ background: 'transparent', color: '#0070c0', border: '1px solid var(--blue)', cursor: 'pointer' }} onClick={() => setActiveTab('breathing')}>Перейти в Дыхание →</button>
+            </>)}
           </div>
         )}
 
         {activeTab === 'breathing' && (
-          <div>
-            <h2 className="section-title">Дыхательные протоколы</h2>
-            <div className="h-grid">
-              <div className="h-card" onClick={() => setModalContent(BREATHING_TECHNIQUES.sam_chon_do)}><h3>Базовое: Сам Чон До</h3><p>3-6-2. Подготовка.</p><span className="h-badge">Универсально</span></div>
-              <div className="h-card" onClick={() => setModalContent(BREATHING_TECHNIQUES.physical_form)}><h3>Коррекция фигуры</h3><p>Утро, натощак. 'Ба-ха'.</p><span className="h-badge">Метаболизм</span></div>
-              <div className="h-card" onClick={() => setModalContent(BREATHING_TECHNIQUES.norbekov)}><h3>ОМЗ (Норбеков)</h3><p>Омоложение, 13 центров.</p><span className="h-badge">Вечер</span></div>
-              <div className="h-card" onClick={() => setModalContent(BREATHING_TECHNIQUES.mood_shift)}><h3>Смена настроения</h3><p>Дыхание через образ-эталон.</p><span className="h-badge">Эмоции</span></div>
-              {healthData.stress > 7 && (
-                <div className="h-card" style={{borderColor:'#d32f2f'}} onClick={() => setModalContent(BREATHING_TECHNIQUES.wilunas)}>
-                  <h3 style={{color:'#d32f2f'}}>Экстренный сброс</h3><p>Рыдающее дыхание.</p><span className="h-badge warning">Стресс {'>'} 7</span>
-                </div>
-              )}            </div>
+          <div className="h-grid">
+            {sortedBreathing.map((tech, idx) => {
+              const border = stress > 7 && tech.id === 'wilunas' ? '2px solid #d32f2f' : '1px solid var(--blue)';
+              const badge = tech.id === 'wilunas' && stress > 7 ? '<span class="badge red">Экстренно</span>' : isWeightGoal && tech.id === 'physical' ? '<span class="badge gold">Рекомендовано</span>' : '';
+              return renderCard(`${tech.title}`, <>
+                <div dangerouslySetInnerHTML={{ __html: badge }} />
+                <BreathingTimer technique={{ ...tech }} onFinish={() => {}} />
+              </div>, { borderColor: border === '2px solid #d32f2f' ? '#d32f2f' : undefined })
+            })}
           </div>
         )}
 
         {activeTab === 'mental' && (
-          <div>
-            <h2 className="section-title">Ментальное поле</h2>
-            <div className="h-card"><h3>Паттерн коммуникации: {healthData.uxinPattern.toUpperCase()}</h3><p style={{fontSize:'12px',color:'#666'}}>У-Син анализ.</p></div>
+          <div className="h-grid">
+            {renderCard('🌀 У-Син Паттерн', <>
+              <h3 className="blue">{healthData.uxinPattern.toUpperCase()}</h3>
+              <p>Доминанта: {element}. Поведение: ориентация на баланс стихий. Сильные качества: адаптивность. Зоны роста: осознанное переключение фокуса.</p>
+            </>)}
+            {renderCard('🤝 Стихии и отношения', <>
+              <p><b>Порождение:</b> {element} → {ELEMENT_NUTRITION[element] ? Object.keys(ELEMENT_NUTRITION).find((e,i,a) => a[(i+2)%5] === element) || 'Металл'} : комфорт в диалоге.</p>
+              <p style={{ marginTop: 4 }}><b>Контроль:</b> {element} → {ELEMENT_NUTRITION[element] ? Object.keys(ELEMENT_NUTRITION).find((e,i,a) => a[(i+3)%5] === element) || 'Земля'} : требует границ.</p>              <p style={{ marginTop: 4, fontSize: 12 }}>Совет: в работе ищите компенсаторные стихии, в личной жизни — порождающие.</p>
+            </>)}
+            {renderCard('📅 Эмоциональный календарь', <>
+              {Object.values(ANATOMY_DATA).slice(0, 4).map(o => (
+                <div key={o.id} className="organ-row"><span>{o.name}</span><span>→ {o.emotion || 'Напряжение'}</span><span style={{ color: '#0070c0' }}>{o.sound || 'Звук + растяжка'}</span></div>
+              ))}
+            </>)}
           </div>
         )}
+
+        {activeTab === 'recommendations' && (
+          <div className="h-grid">
+            {ELEMENT_NUTRITION[element] && renderCard('🥗 Питание по стихии', <>
+              <p>Вкус: <b>{ELEMENT_NUTRITION[element].flavor}</b>. Продукты: {ELEMENT_NUTRITION[element].foods}.</p>
+              <p style={{ marginTop: 4 }}>Ограничить: {ELEMENT_NUTRITION[element].avoid}. Главный приём: {ELEMENT_NUTRITION[element].time}.</p>
+              {isWeightGoal && <div style={{ marginTop: 6, background: '#fff8e1', padding: 6, fontSize: 12, borderRadius: 4 }}>🔥 Снижение веса: {ELEMENT_NUTRITION[element].weightLoss}</div>}
+            </>)}
+            {CHRONO_SCHEDULE[p.chronotype] && renderCard('🕒 Режим дня', <>
+              {Object.entries(CHRONO_SCHEDULE[p.chronotype]).map(([k,v]) => <div key={k} style={{ fontSize: 12, marginTop: 2 }}><b>{k}:</b> {v}</div>)}
+            </>)}
+            {ACTIVITY_BY_LEVEL[p.activityLevel] && renderCard('🏃 Физическая активность', <>
+              <p>Уровень: {p.activityLevel}. {ACTIVITY_BY_LEVEL[p.activityLevel]}</p>
+              <p style={{ fontSize: 12, marginTop: 4 }}>По стихии {element}: рекомендуется {element === 'Дерево' ? 'йога и растяжка' : element === 'Металл' ? 'дыхательные практики и ходьба' : 'умеренная нагрузка без перегрева'}.</p>
+            </>)}
+            {p.healthConditions?.length > 0 && renderCard('⚕️ Учёт хронических состояний', <>
+              {p.healthConditions.map((c, i) => <div key={i} style={{ fontSize: 12, marginBottom: 4 }}><b>{c}:</b> Исключить: {CHRONIC_REC[c]?.avoid || '—'}.</div>)}
+              <div className="disclaimer">⚠️ Данные носят ознакомительный характер.</div>
+            </>)}
+          </div>
+        )}
+
+        {activeTab === 'tracker' && <HealthTracker />}
       </div>
 
       {modalContent && <ModalDetail isOpen={!!modalContent} onClose={() => setModalContent(null)} title={modalContent.title} description={modalContent.desc} warning={modalContent.warning} rules={modalContent.rules} benefit={modalContent.benefit} />}
     </div>
   );
 }
+const MERIDIAN_MAP = { "Печень": "liver", "Лёгкие": "lungs", "Толстый кишечник": "intestines", "Желудок": "stomach", "Селезенка": "spleen", "Сердце": "heart", "Тонкий кишечник": "intestines", "Мочевой пузырь": "bladder", "Почки": "kidneys", "Перикард": "heart", "Сань Цзяо": "spleen", "Желчный пузырь": "liver" };
