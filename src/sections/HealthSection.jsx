@@ -10,11 +10,11 @@ import { HealthTracker } from "../components/HealthTracker";
 import { ELEMENT_NUTRITION, CHRONO_SCHEDULE, ACTIVITY_BY_LEVEL, CHRONIC_REC } from "../data/healthRecommendations";
 
 const BREATHING_TECHNIQUES = [
-  { id: 'wilunas', title: 'Экстренный сброс', inhale: 1, exhale: 3, hold: 0, cycles: 3, priority: 'stress' },
-  { id: 'physical', title: 'Коррекция фигуры', inhale: 2, exhale: 5, hold: 2, cycles: 10, priority: 'goal' },
-  { id: 'samchon', title: 'Сам Чон До (Базовое)', inhale: 3, exhale: 6, hold: 2, cycles: 5, priority: 'base' },
-  { id: 'norbekov', title: 'Настрой Норбекова', inhale: 4, exhale: 8, hold: 2, cycles: 4, priority: 'base' },
-  { id: 'mood', title: 'Смена настроения', inhale: 3, exhale: 5, hold: 0, cycles: 6, priority: 'base' }
+  { id: 'wilunas', title: 'Экстренный сброс', inhale: 1, exhale: 3, hold: 0, cycles: 3 },
+  { id: 'physical', title: 'Коррекция фигуры', inhale: 2, exhale: 5, hold: 2, cycles: 10 },
+  { id: 'samchon', title: 'Сам Чон До (Базовое)', inhale: 3, exhale: 6, hold: 2, cycles: 5 },
+  { id: 'norbekov', title: 'Настрой Норбекова', inhale: 4, exhale: 8, hold: 2, cycles: 4 },
+  { id: 'mood', title: 'Смена настроения', inhale: 3, exhale: 5, hold: 0, cycles: 6 }
 ];
 
 const getZodiac = (d) => {
@@ -112,26 +112,23 @@ export function HealthSection() {
             </>)}
             {renderCard('🧬 ТКМ Профиль', <>
               <p>Стихия: <b>{element}</b> • Баланс: <b>{healthData.yinyang}</b></p>
-              <p style={{ marginTop: 6, fontSize: 12 }}>Паттерн: {healthData.uxinPattern}. {p.tcmElement ? `Полное описание: характер устойчивый, уязвимы органы, связанные с ${element.toLowerCase()}.` : ''}</p>
+              <p style={{ marginTop: 6, fontSize: 12 }}>Паттерн: {healthData.uxinPattern}.</p>
             </>)}
             {renderCard('⏰ Хронотип', <>
               <p>Тип: <b>{p.chronotype || 'Голубь'}</b> • Подъём: {p.wake || '08:00'} • Отбой: {p.sleep || '23:00'}</p>
-              <p style={{ marginTop: 6, fontSize: 12 }}>Пик продуктивности: утро/день. Спорт: {p.chronotype === 'Сова' ? 'вечер' : 'обед'}. Еда: строго по режиму.</p>
             </>)}
             {p.healthConditions?.length > 0 && renderCard('🏥 Хронические состояния', <>
               {p.healthConditions.map((cond, i) => (
-                <div key={i} style={{ marginBottom: 4 }}><b>{cond}</b>: {CHRONIC_REC[cond]?.rec || 'Щадящий режим, избегать перегрузок.'}</div>
+                <div key={i} style={{ marginBottom: 4 }}><b>{cond}</b>: {CHRONIC_REC[cond]?.rec || 'Щадящий режим'}</div>
               ))}
-              <div className="disclaimer">⚠️ Рекомендации носят информационный характер. Консультируйтесь с врачом.</div>
+              <div className="disclaimer">⚠️ Рекомендации носят информационный характер</div>
             </>)}
             {hasHealthGoal && renderCard('🎯 Цели и здоровье', <>
-              <p>Акцент на: {isWeightGoal ? 'Коррекцию веса и метаболизм' : 'Общее укрепление и ресурс'}.</p>
-              <p style={{ fontSize: 12, marginTop: 4 }}>По У-Син оптимально: тренировки в часы активности меридиана {element}. Связка дыхания + активность ускоряет результат.</p>
+              <p>Акцент на: {isWeightGoal ? 'Коррекцию веса' : 'Общее укрепление'}</p>
             </>)}
             {renderCard('⚡ Стресс-профиль', <>
               <p>Уровень: <b style={{ color: stress > 7 ? '#d32f2f' : stress > 4 ? '#e6a800' : '#2e7d32' }}>{stress}/10</b></p>
-              <p style={{ marginTop: 4 }}>Протокол: {stress > 7 ? 'Рыдающее дыхание → Светотерапия.' : 'Поддержание ритма, Сам Чон До.'}</p>
-              <button className="badge" style={{ background: 'transparent', color: '#0070c0', border: '1px solid var(--blue)', cursor: 'pointer' }} onClick={() => setActiveTab('breathing')}>Перейти в Дыхание →</button>
+              <button className="badge" style={{ marginTop: 8, background: 'transparent', color: '#0070c0', border: '1px solid var(--blue)', cursor: 'pointer' }} onClick={() => setActiveTab('breathing')}>Перейти в Дыхание →</button>
             </>)}
           </div>
         )}
@@ -141,19 +138,14 @@ export function HealthSection() {
             {sortedBreathing.map((tech) => {
               const isEmergency = stress > 7 && tech.id === 'wilunas';
               const isRecommended = isWeightGoal && tech.id === 'physical';
-              const borderColor = isEmergency ? '#d32f2f' : undefined;
-              const badge = isEmergency 
-                ? <span className="badge red">Экстренно</span> 
-                : isRecommended 
-                  ? <span className="badge gold">Рекомендовано</span>                   : null;
               return (
-                <div key={tech.id} className="h-card" style={{ borderColor }}>
+                <div key={tech.id} className="h-card" style={{ borderColor: isEmergency ? '#d32f2f' : undefined }}>
                   <h3>{tech.title}</h3>
-                  {badge}
+                  {isEmergency && <span className="badge red">Экстренно</span>}
+                  {isRecommended && <span className="badge gold">Рекомендовано</span>}
                   <BreathingTimer technique={{ ...tech }} onFinish={() => {}} />
                 </div>
-              );
-            })}
+              );            })}
           </div>
         )}
 
@@ -161,19 +153,17 @@ export function HealthSection() {
           <div className="h-grid">
             {renderCard('🌀 У-Син Паттерн', <>
               <h3 className="blue">{healthData.uxinPattern.toUpperCase()}</h3>
-              <p>Доминанта: {element}. Поведение: ориентация на баланс стихий. Сильные качества: адаптивность. Зоны роста: осознанное переключение фокуса.</p>
+              <p>Доминанта: {element}. Адаптивность и баланс.</p>
             </>)}
             {renderCard('🤝 Стихии и отношения', <>
-              <p><b>Порождение:</b> {element} → {Object.keys(ELEMENT_NUTRITION).find((e,i,a) => a[(i+2)%5] === element) || 'Металл'} : комфорт в диалоге.</p>
-              <p style={{ marginTop: 4 }}><b>Контроль:</b> {element} → {Object.keys(ELEMENT_NUTRITION).find((e,i,a) => a[(i+3)%5] === element) || 'Земля'} : требует границ.</p>
-              <p style={{ marginTop: 4, fontSize: 12 }}>Совет: в работе ищите компенсаторные стихии, в личной жизни — порождающие.</p>
+              <p><b>Порождение:</b> комфорт в диалоге</p>
+              <p style={{ marginTop: 4 }}><b>Контроль:</b> требует границ</p>
             </>)}
             {renderCard('📅 Эмоциональный календарь', <>
               {Object.values(ANATOMY_DATA).slice(0, 4).map(o => (
                 <div key={o.id} className="organ-row">
                   <span>{o.name}</span>
                   <span>→ {o.emotion || 'Напряжение'}</span>
-                  <span style={{ color: '#0070c0' }}>{o.sound || 'Звук + растяжка'}</span>
                 </div>
               ))}
             </>)}
@@ -183,47 +173,31 @@ export function HealthSection() {
         {activeTab === 'recommendations' && (
           <div className="h-grid">
             {ELEMENT_NUTRITION[element] && renderCard('🥗 Питание по стихии', <>
-              <p>Вкус: <b>{ELEMENT_NUTRITION[element].flavor}</b>. Продукты: {ELEMENT_NUTRITION[element].foods}.</p>
-              <p style={{ marginTop: 4 }}>Ограничить: {ELEMENT_NUTRITION[element].avoid}. Главный приём: {ELEMENT_NUTRITION[element].time}.</p>
-              {isWeightGoal && (
-                <div style={{ marginTop: 6, background: '#fff8e1', padding: 6, fontSize: 12, borderRadius: 4 }}>
-                  🔥 Снижение веса: {ELEMENT_NUTRITION[element].weightLoss}
-                </div>
-              )}
+              <p>Вкус: <b>{ELEMENT_NUTRITION[element].flavor}</b>. Продукты: {ELEMENT_NUTRITION[element].foods}</p>
+              <p style={{ marginTop: 4 }}>Ограничить: {ELEMENT_NUTRITION[element].avoid}</p>
+              {isWeightGoal && <div style={{ marginTop: 6, background: '#fff8e1', padding: 6, fontSize: 12, borderRadius: 4 }}>🔥 {ELEMENT_NUTRITION[element].weightLoss}</div>}
             </>)}
             {CHRONO_SCHEDULE[p.chronotype] && renderCard('🕒 Режим дня', <>
               {Object.entries(CHRONO_SCHEDULE[p.chronotype]).map(([k,v]) => (
                 <div key={k} style={{ fontSize: 12, marginTop: 2 }}><b>{k}:</b> {v}</div>
-              ))}            </>)}
-            {ACTIVITY_BY_LEVEL[p.activityLevel] && renderCard('🏃 Физическая активность', <>
-              <p>Уровень: {p.activityLevel}. {ACTIVITY_BY_LEVEL[p.activityLevel]}</p>
-              <p style={{ fontSize: 12, marginTop: 4 }}>
-                По стихии {element}: рекомендуется {element === 'Дерево' ? 'йога и растяжка' : element === 'Металл' ? 'дыхательные практики и ходьба' : 'умеренная нагрузка без перегрева'}.
-              </p>
-            </>)}
-            {p.healthConditions?.length > 0 && renderCard('⚕️ Учёт хронических состояний', <>
-              {p.healthConditions.map((c, i) => (
-                <div key={i} style={{ fontSize: 12, marginBottom: 4 }}><b>{c}:</b> Исключить: {CHRONIC_REC[c]?.avoid || '—'}.</div>
               ))}
-              <div className="disclaimer">⚠️ Данные носят ознакомительный характер.</div>
+            </>)}
+            {ACTIVITY_BY_LEVEL[p.activityLevel] && renderCard('🏃 Физическая активность', <>
+              <p>{ACTIVITY_BY_LEVEL[p.activityLevel]}</p>
+            </>)}
+            {p.healthConditions?.length > 0 && renderCard('⚕️ Учёт состояний', <>
+              {p.healthConditions.map((c, i) => (
+                <div key={i} style={{ fontSize: 12, marginBottom: 4 }}><b>{c}:</b> {CHRONIC_REC[c]?.avoid}</div>
+              ))}
             </>)}
           </div>
         )}
 
         {activeTab === 'tracker' && <HealthTracker />}
       </div>
-
       {modalContent && (
-        <ModalDetail 
-          isOpen={!!modalContent} 
-          onClose={() => setModalContent(null)} 
-          title={modalContent.title} 
-          description={modalContent.desc} 
-          warning={modalContent.warning} 
-          rules={modalContent.rules} 
-          benefit={modalContent.benefit} 
-        />
+        <ModalDetail isOpen={!!modalContent} onClose={() => setModalContent(null)} title={modalContent.title} description={modalContent.desc} warning={modalContent.warning} rules={modalContent.rules} benefit={modalContent.benefit} />
       )}
     </div>
   );
-              }
+        }
