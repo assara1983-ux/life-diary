@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="42" height="38" viewBox="0 0 42 38" style="background:transparent">
+  <defs><filter id="glow"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+  <g filter="url(#glow)">
+  <ellipse cx="21" cy="19" rx="13" ry="11" fill="#ef444499" stroke="#ef4444" stroke-width="1.5"/>
+  </g>
+</svg>
