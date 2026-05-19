@@ -31,15 +31,19 @@ function useStorageState(key, defaultValue) {
       return item ? JSON.parse(item) : defaultValue;
     } catch { return defaultValue; }
   });
+
   useEffect(() => {
     try { localStorage.setItem(key, JSON.stringify(value)); }
     catch (e) { console.error(`Ошибка сохранения ${key}:`, e); }
   }, [key, value]);
+
   return [value, setValue];
 }
 
 export function AppProvider({ children }) {
   const [profile, setProfile] = useStorageState('ld_pf_v3', null);
+  
+  // ✅ ИСПРАВЛЕНО: Убраны пробелы в ID и названиях
   const [sections, setSections] = useStorageState('ld_sec_v3', [
     { id: "today", emoji: "☀️", name: "Сегодня", vis: true },
     { id: "schedule", emoji: "🗓️", name: "Расписание", vis: true },
@@ -47,7 +51,7 @@ export function AppProvider({ children }) {
     { id: "home", emoji: "🏡", name: "Дом", vis: true },
     { id: "shopping", emoji: "🛒", name: "Покупки", vis: true },
     { id: "pets", emoji: "🐾", name: "Питомцы", vis: true },
-    { id: "car", emoji: "🚗", name: "Авто", vis: true },    // ✅ ОБЪЕДИНЁННЫЙ РАЗДЕЛ: ID "health"
+    { id: "car", emoji: "🚗", name: "Авто", vis: true },
     { id: "health", emoji: "🫁", name: "Здоровье", vis: true },
     { id: "beauty", emoji: "✨", name: "Уход", vis: true },
     { id: "hobbies", emoji: "🎨", name: "Хобби", vis: true },
@@ -83,46 +87,62 @@ export function AppProvider({ children }) {
   const [trips, setTrips] = useStorageState('ld_trips_v3', []);
   const [hobbies, setHobbies] = useStorageState('ld_hobbies_v3', []);
   const [reportGroups, setReportGroups] = useStorageState('ld_report_groups', []);
-  const [reports, setReports] = useStorageState('ld_reports_v2', []);
+  const [reports, setReports] = useStorageState('ld_reports_v2', []); 
   const [checkResults, setCheckResults] = useStorageState('ld_deadline_checks', {});
   const [workTools, setWorkTools] = useStorageState('ld_work_tools', []);
+  
+  // ✅ ИСПРАВЛЕНО: Опечатки в именах переменных
   const [customReportGroups, setCustomReportGroups] = useStorageState('ld_custom_report_groups', []);
   const [selectedReports, setSelectedReports] = useStorageState('ld_selected_reports', []);
   const [collapsedSections, setCollapsedSections] = useStorageState('ld_collapsed_sections', {});
   const [aiRecommendations, setAiRecommendations] = useStorageState('ld_ai_recommendations', []);
+  
   const [mentalMood, setMentalMood] = useStorageState('mental_mood', 3);
   const [mentalStress, setMentalStress] = useStorageState('mental_stress', 5);
   const [mentalLog, setMentalLog] = useStorageState('mental_log', []);
   const [mentalRecoveryPlan, setMentalRecoveryPlan] = useStorageState('mental_recovery_plan', '');
   const [customPractices, setCustomPractices] = useStorageState('custom_practices', []);
+  
   const [aiNotes, setAiNotes] = useStorageState('ld_ai_notes', []);
-  const [aiJournal, setAiJournal] = useStorageState('ld_ai_journal', []);  const [workOpenWeek, setWorkOpenWeek] = useStorageState('ld_work_open_week', true);
+  const [aiJournal, setAiJournal] = useStorageState('ld_ai_journal', []);
+  
+  const [workOpenWeek, setWorkOpenWeek] = useStorageState('ld_work_open_week', true);
   const [workOpenUpcoming, setWorkOpenUpcoming] = useStorageState('ld_work_open_upcoming', true);
   const [workOpenGroups, setWorkOpenGroups] = useStorageState('ld_work_open_groups', true);
   const [workOpenTasks, setWorkOpenTasks] = useStorageState('ld_work_open_tasks', true);
   const [workOpenAdvice, setWorkOpenAdvice] = useStorageState('ld_work_open_advice', true);
+  
   const [shopAdvice, setShopAdvice] = useStorageState('ld_shop_advice', true);
   const [shopListOpen, setShopListOpen] = useStorageState('ld_shop_list', true);
+  
   const [petsAdvice, setPetsAdvice] = useStorageState('ld_pets_advice', true);
   const [petsFeed, setPetsFeed] = useStorageState('ld_pets_feed', true);
   const [petsCare, setPetsCare] = useStorageState('ld_pets_care', true);
+  
   const [homeAdvice, setHomeAdvice] = useStorageState('ld_home_open_advice', true);
   const [homeTasks, setHomeTasks] = useStorageState('ld_home_open_tasks', true);
+  
   const [hobbyAdvice, setHobbyAdvice] = useStorageState('ld_hobby_advice', true);
   const [hobbyList, setHobbyList] = useStorageState('ld_hobby_list', true);
+  
   const [travelAdvice, setTravelAdvice] = useStorageState('ld_travel_advice', true);
   const [travelTrips, setTravelTrips] = useStorageState('ld_travel_trips', true);
+  
   const [journalPrompts, setJournalPrompts] = useStorageState('ld_journal_prompts', true);
   const [journalHistory, setJournalHistory] = useStorageState('ld_journal_history', true);
+  
   const [carAdvice, setCarAdvice] = useStorageState('ld_car_advice', true);
-  const [carTasks, setCarTasks] = useStorageState('ld_car_tasks', true);
+  const [carTasks, setCarTasks] = useStorageState('ld_car_tasks', true); 
+  
   const [beautyProcs, setBeautyProcs] = useStorageState('ld_beauty_procs', {});
   const [beautyTopics, setBeautyTopics] = useStorageState('ld_beauty_topics', []);
   const [beautyProcsOpen, setBeautyProcsOpen] = useStorageState('ld_beauty_procs_open', true);
   const [beautyTodayOpen, setBeautyTodayOpen] = useStorageState('ld_beauty_today_open', true);
   const [beautyChooseOpen, setBeautyChooseOpen] = useStorageState('ld_beauty_choose_open', true);
+  
   const [healthAdvice, setHealthAdvice] = useStorageState('ld_health_advice', true);
   const [healthHabits, setHealthHabits] = useStorageState('ld_health_habits', true);
+  
   const [toastMsg, setToastMsg] = useState('');
 
   const notify = useCallback((msg) => {
@@ -138,21 +158,27 @@ export function AppProvider({ children }) {
     newSteps[stepIndex] = { text: typeof newSteps[stepIndex] === 'string' ? newSteps[stepIndex] : newSteps[stepIndex].text, completed: Boolean(completed) };
     return { ...tool, steps: newSteps };
   }));
+
   const addCustomGroup = (name) => setCustomReportGroups(prev => [...prev, { id: 'g-' + Date.now(), name, reports: [] }]);
   const deleteGroup = (groupId) => setCustomReportGroups(prev => prev.filter(g => g.id !== groupId));
   const addCustomReport = (groupId, reportData) => setCustomReportGroups(prev => prev.map(g => g.id === groupId ? { ...g, reports: [...g.reports, { id: 'r-' + Date.now(), ...reportData }] } : g));
+  
   const toggleReport = (reportId) => setSelectedReports(prev => prev.includes(reportId) ? prev.filter(id => id !== reportId) : [...prev, reportId]);
   const toggleSection = (id) => setCollapsedSections(prev => ({ ...prev, [id]: !prev[id] }));
 
   const allCatalogReports = useMemo(() => [...KGD_CATALOG, ...BNS_CATALOG], []);
-  useEffect(() => {    const today = new Date(); today.setHours(0, 0, 0, 0);
+
+  useEffect(() => {
+    const today = new Date(); today.setHours(0, 0, 0, 0);
     const todayStr = today.toISOString().split('T')[0];
     const warningDate = new Date(today); warningDate.setDate(today.getDate() + 7);
     const warningDateStr = warningDate.toISOString().split('T')[0];
+
     setTasks(prev => {
       const newTasks = [...prev];
       let changed = false;
       const existingIds = new Set(prev.map(t => t.id));
+
       selectedReports.forEach(reportId => {
         const reportData = allCatalogReports.find(r => r.id === reportId);
         if (!reportData) return;
@@ -160,23 +186,49 @@ export function AppProvider({ children }) {
           if (deadlineStr >= todayStr && deadlineStr <= warningDateStr) {
             const taskId = `report-task-${reportId}-${deadlineStr}`;
             if (!existingIds.has(taskId)) {
-              newTasks.push({ id: taskId, type: 'report', source: 'catalog', reportId, title: `📋 ${reportData.name}`, section: 'work', deadline: deadlineStr, priority: 'h', notes: `Срок: ${deadlineStr}`, doneDate: null, createdAt: new Date().toISOString() });
+              newTasks.push({
+                id: taskId,
+                type: 'report',
+                source: 'catalog',
+                reportId,
+                title: `📋 ${reportData.name}`,
+                section: 'work',
+                deadline: deadlineStr,
+                priority: 'h',
+                notes: `Срок: ${deadlineStr}`,
+                doneDate: null,
+                createdAt: new Date().toISOString()
+              });
               changed = true;
             }
           }
         });
       });
+
       customReportGroups.forEach(group => {
         group.reports.forEach(report => {
           if (report.deadline && report.deadline >= todayStr && report.deadline <= warningDateStr) {
             const taskId = `custom-task-${report.id}-${report.deadline}`;
             if (!existingIds.has(taskId)) {
-              newTasks.push({ id: taskId, type: 'report', source: 'custom', reportId: report.id, title: `📋 ${report.name}`, section: 'work', deadline: report.deadline, priority: 'h', notes: `Срок: ${report.deadline}`, doneDate: null, createdAt: new Date().toISOString() });
+              newTasks.push({
+                id: taskId,
+                type: 'report',
+                source: 'custom',
+                reportId: report.id,
+                title: `📋 ${report.name}`,
+                section: 'work',
+                deadline: report.deadline,
+                priority: 'h',
+                notes: `Срок: ${report.deadline}`,
+                doneDate: null,
+                createdAt: new Date().toISOString()
+              });
               changed = true;
             }
           }
         });
       });
+
       return changed ? newTasks : prev;
     });
   }, [selectedReports, customReportGroups, allCatalogReports, setTasks]);
@@ -194,7 +246,8 @@ export function AppProvider({ children }) {
     aiRecommendations, setAiRecommendations,
     mentalMood, setMentalMood, mentalStress, setMentalStress, mentalLog, setMentalLog,
     mentalRecoveryPlan, setMentalRecoveryPlan, customPractices, setCustomPractices,
-    aiNotes, setAiNotes, aiJournal, setAiJournal,    workOpenWeek, setWorkOpenWeek, workOpenUpcoming, setWorkOpenUpcoming, workOpenGroups, setWorkOpenGroups,
+    aiNotes, setAiNotes, aiJournal, setAiJournal,
+    workOpenWeek, setWorkOpenWeek, workOpenUpcoming, setWorkOpenUpcoming, workOpenGroups, setWorkOpenGroups,
     workOpenTasks, setWorkOpenTasks, workOpenAdvice, setWorkOpenAdvice,
     shopAdvice, setShopAdvice, shopListOpen, setShopListOpen,
     petsAdvice, setPetsAdvice, petsFeed, setPetsFeed, petsCare, setPetsCare,
@@ -217,4 +270,4 @@ export function useApp() {
   const ctx = useContext(AppContext);
   if (!ctx) throw new Error('useApp must be used within AppProvider');
   return ctx;
-    }
+}
