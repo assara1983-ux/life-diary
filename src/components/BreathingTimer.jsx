@@ -9,14 +9,14 @@ export function BreathingTimer({ technique, onFinish }) {
   const [timeLeft, setTimeLeft] = useState(0);
   const timerRef = useRef(null);
 
-  const totalSteps = inhale + (hold ? hold : 0) + exhale;
-
   useEffect(() => {
     if (!isRunning) return;
     if (cycle >= cycles) { onFinish?.(); return; }
 
     let currentPhase = phase === "ready" ? "inhale" : phase;
-    let sec = timeLeft === 0 ? (currentPhase === "inhale" ? inhale : currentPhase === "hold" ? hold : exhale) : timeLeft;
+    let sec = timeLeft === 0 
+      ? (currentPhase === "inhale" ? inhale : currentPhase === "hold" ? hold : exhale) 
+      : timeLeft;
 
     timerRef.current = setInterval(() => {
       sec--;
@@ -34,11 +34,20 @@ export function BreathingTimer({ technique, onFinish }) {
     }, 1000);
 
     return () => clearInterval(timerRef.current);
-  }, [isRunning, phase, cycle, inhale, exhale, hold, cycles, timeLeft, onFinish]);
+  }, [isRunning, phase, cycle, inhale, exhale, hold, cycles, timeLeft]);
 
   const toggle = () => {
-    if (!isRunning) { setIsRunning(true); setCycle(0); setPhase("inhale"); setTimeLeft(inhale); }
-    else { setIsRunning(false); setCycle(0); setPhase("ready"); setTimeLeft(0); }
+    if (!isRunning) { 
+      setIsRunning(true); 
+      setCycle(0); 
+      setPhase("inhale"); 
+      setTimeLeft(inhale); 
+    } else { 
+      setIsRunning(false); 
+      setCycle(0); 
+      setPhase("ready"); 
+      setTimeLeft(0); 
+    }
   };
 
   const scale = phase === "inhale" ? 1.8 : phase === "exhale" ? 0.8 : 1.2;
@@ -46,18 +55,18 @@ export function BreathingTimer({ technique, onFinish }) {
   const phaseText = phase === "ready" ? "Готовы?" : phase === "inhale" ? "Вдох" : phase === "hold" ? "Пауза" : "Выдох";
 
   return (
-    <div style={{ textAlign: 'center', padding: '10px 0' }}>
+    <div style={{ textAlign: 'center', padding: '15px 0', background: '#f9f9f9', borderRadius: 6 }}>
       <div style={{ 
         width: 100, height: 100, margin: '0 auto 12px', borderRadius: '50%', 
-        background: 'rgba(0,112,192,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: 'rgba(0,112,192,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center',
         transform: `scale(${scale})`, transition: `transform ${dur}s ease-in-out` 
       }}>
-        <span style={{ fontSize: 14, fontWeight: 600, color: '#0070c0' }}>{phaseText}</span>
+        <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--blue)' }}>{phaseText}</span>
       </div>
       <div style={{ fontSize: 12, color: '#555', marginBottom: 10 }}>
         {isRunning ? `Цикл ${cycle + 1}/${cycles} • ${timeLeft}с` : title}
       </div>
-      <button onClick={toggle} style={{ padding: '6px 16px', background: isRunning ? '#d32f2f' : '#0070c0', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: 12 }}>
+      <button onClick={toggle} style={{ padding: '6px 20px', background: isRunning ? '#d32f2f' : 'var(--blue)', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: 12 }}>
         {isRunning ? "Стоп" : "Начать"}
       </button>
     </div>
