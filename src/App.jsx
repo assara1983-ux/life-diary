@@ -13,7 +13,6 @@ import { HomeSection } from './sections/HomeSection';
 import { ShoppingSection } from './sections/ShoppingSection';
 import { PetsSection } from './sections/PetsSection';
 import { CarSection } from './sections/CarSection';
-// ✅ ИСПРАВЛЕНО: импортируем HealthSection вместо HealthMentalSection
 import { HealthSection } from './sections/HealthSection';
 import { BeautySection } from './sections/BeautySection';
 import { HobbiesSection } from './sections/HobbiesSection';
@@ -22,7 +21,7 @@ import { TravelSection } from './sections/TravelSection';
 import { JournalSection } from './sections/JournalSection';
 import { ProfileSection } from './sections/ProfileSection';
 
-// ✅ ИСПРАВЛЕНО: единый ID "health"
+// ✅ ИСПРАВЛЕНО: Убраны пробелы в ID
 const DEF_SECTIONS = [
   { id: "today", name: "Сегодня", vis: true },
   { id: "schedule", name: "Расписание", vis: true },
@@ -47,7 +46,8 @@ function AppContent() {
   const [bgUrl, setBgUrl] = useState(null);
 
   useEffect(() => {
-    if (!profile) return;    const current = sections.length > 0 ? sections : DEF_SECTIONS;
+    if (!profile) return;
+    const current = sections.length > 0 ? sections : DEF_SECTIONS;
     const merged = [...current];
     let changed = sections.length === 0;
     DEF_SECTIONS.forEach(def => {
@@ -96,7 +96,8 @@ function AppContent() {
           borderRadius: 6, fontSize: 13, fontWeight: 500, zIndex: 9999,
           border: '1.5px solid rgba(0,112,192,0.4)',
           boxShadow: '0 4px 16px rgba(0,112,192,0.15)',
-          fontFamily: "'JetBrains Mono', monospace",        }}>
+          fontFamily: "'JetBrains Mono', monospace",
+        }}>
           {toastMsg}
         </div>
       )}
@@ -145,7 +146,8 @@ function AppContent() {
             <div className="hdr-title" style={{ fontSize: 20, fontWeight: 600, color: '#0070c0' }}>{activeSection?.name}</div>
             <div className="hdr-sub" style={{ fontSize: 12, color: '#5c4a30' }}>
               {new Date().toLocaleDateString("ru-RU", { weekday: "long", day: "numeric", month: "long" })}
-            </div>          </div>
+            </div>
+          </div>
           <div className="hdr-r" style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
             <div className="moon-tag" style={{ fontSize: 12, color: '#5c4a30' }}>{moon.e} {moon.n}</div>
             <div className="date-tag" style={{ fontSize: 12, fontFamily: "'JetBrains Mono'", color: '#0070c0' }}>{today}</div>
@@ -159,7 +161,6 @@ function AppContent() {
           {active === 'shopping' && <ShoppingSection />}
           {active === 'pets' && <PetsSection />}
           {active === 'car' && <CarSection />}
-          {/* ✅ ИСПРАВЛЕНО: рендерим HealthSection по ключу 'health' */}
           {active === 'health' && <HealthSection />}
           {active === 'beauty' && <BeautySection />}
           {active === 'hobbies' && <HobbiesSection />}
