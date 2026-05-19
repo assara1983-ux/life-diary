@@ -1,5 +1,5 @@
 // src/components/Onboarding.jsx
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useApp } from "../store/AppContext";
 
 // ═══════════════════════════════════════════════════════════════
@@ -19,10 +19,12 @@ function getZodiacInline(dob) {
   }
   return { name: "Козерог", emoji: "♑" };
 }
+
 function getEasternInline(dob) {
   if (!dob) return "—";
   return ["Крыса", "Бык", "Тигр", "Кролик", "Дракон", "Змея", "Лошадь", "Коза", "Обезьяна", "Петух", "Собака", "Свинья"][(new Date(dob).getFullYear() - 4) % 12];
 }
+
 function calcDegreeInline(name) {
   if (!name) return null;
   const ru = "абвгдеёжзийклмнопрстуфхцчшщъыьэюя";
@@ -45,9 +47,9 @@ const STEP_ICONS = {
   schedule: <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="32" cy="32" r="20"/><line x1="32" y1="32" x2="32" y2="20" strokeWidth="2"/><line x1="32" y1="32" x2="42" y2="36" strokeWidth="2"/></svg>,
   work: <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="12" y="24" width="40" height="28" rx="2"/><path d="M12 32 L52 32"/><rect x="28" y="20" width="8" height="8" rx="1"/></svg>,
   work2: <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="16" y="8" width="32" height="48" rx="2"/><path d="M24 16 L26 18 L30 14" stroke="#c8a45a" strokeWidth="2"/><path d="M24 24 L26 26 L30 22" stroke="#c8a45a" strokeWidth="2"/></svg>,
-  home: <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M8 28 L32 8 L56 28"/><rect x="14" y="30" width="36" height="26" rx="1"/><rect x="26" y="42" width="12" height="14"/></svg>,
-  pets: <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="1.5"><ellipse cx="32" cy="36" rx="14" ry="10"/><circle cx="24" cy="24" r="6"/><circle cx="40" cy="24" r="6"/><path d="M20 18 L18 12 L24 16"/><path d="M44 18 L46 12 L40 16"/></svg>,
-  health: <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M32 52 Q16 40 16 28 Q16 20 24 20 Q28 20 32 24 Q36 20 40 20 Q48 20 48 28 Q48 40 32 52 Z"/><line x1="32" y1="28" x2="32" y2="44" strokeWidth="2"/></svg>,  tcm: <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="32" cy="32" r="20"/><path d="M32 12 Q42 12 42 32 Q42 52 32 52" fill="currentColor" opacity="0.3"/><circle cx="32" cy="22" r="4" fill="currentColor"/><circle cx="32" cy="42" r="4" fill="#fff"/></svg>,
+  home: <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M8 28 L32 8 L56 28"/><rect x="14" y="30" width="36" height="26" rx="1"/><rect x="26" y="42" width="12" height="14"/></svg>,  pets: <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="1.5"><ellipse cx="32" cy="36" rx="14" ry="10"/><circle cx="24" cy="24" r="6"/><circle cx="40" cy="24" r="6"/><path d="M20 18 L18 12 L24 16"/><path d="M44 18 L46 12 L40 16"/></svg>,
+  health: <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M32 52 Q16 40 16 28 Q16 20 24 20 Q28 20 32 24 Q36 20 40 20 Q48 20 48 28 Q48 40 32 52 Z"/><line x1="32" y1="28" x2="32" y2="44" strokeWidth="2"/></svg>,
+  tcm: <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="32" cy="32" r="20"/><path d="M32 12 Q42 12 42 32 Q42 52 32 52" fill="currentColor" opacity="0.3"/><circle cx="32" cy="22" r="4" fill="currentColor"/><circle cx="32" cy="42" r="4" fill="#fff"/></svg>,
   beauty: <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="1.5"><polygon points="32,8 36,24 52,24 40,36 44,52 32,42 20,52 24,36 12,24 28,24 Z" fill="#c8a45a" fillOpacity="0.3"/><circle cx="32" cy="32" r="8"/></svg>,
   shopping: <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 20 L16 48 Q17 52 22 52 L42 52 Q47 52 48 48 L52 20"/><circle cx="24" cy="52" r="3"/><circle cx="40" cy="52" r="3"/></svg>,
   hobbies: <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="12" y="12" width="40" height="40" rx="2" transform="rotate(15 32 32)"/><circle cx="24" cy="24" r="4" fill="#c8a45a" stroke="none"/></svg>,
@@ -65,6 +67,7 @@ const PHASES = [
   { name: "Здоровье & Быт", range: [8, 12] },
   { name: "Цели & Финал", range: [13, 16] }
 ];
+
 const OB_STEPS = [
   { id: "welcome", title: "Добро пожаловать", sub: "Твой личный организатор жизни — знает тебя, думает за тебя. 7–10 минут." },
   { id: "basic", title: "Кто ты?", sub: "Имя, дата рождения и место. Расчёт знака, восточного цикла и градуса судьбы." },
@@ -88,15 +91,22 @@ const OB_STEPS = [
 export function Onboarding() {
   const { setProfile } = useApp();
   const [step, setStep] = useState(0);
+  
+  // ✅ ДОБАВЛЕНЫ НОВЫЕ ПОЛЯ ДЛЯ АВТОМОБИЛЯ
   const [d, setD] = useState({
     pets: [], trips: [], hobbies: [],
     wake: "07:00", sleep: "23:00",
-    workStart: "09:00", workEnd: "18:00",
-    workDaysList: [1, 2, 3, 4, 5],
+    workStart: "09:00", workEnd: "18:00",    workDaysList: [1, 2, 3, 4, 5],
+    // Авто
+    mileage: "",
+    lastServiceDate: "",
+    tireSeason: "",
+    tireChangeDate: "",
   });
 
   const set = (k, v) => setD(p => ({ ...p, [k]: v }));
-  const tog = (k, v) => {    const a = d[k] || [];
+  const tog = (k, v) => {
+    const a = d[k] || [];
     set(k, a.includes(v) ? a.filter(x => x !== v) : [...a, v]);
   };
 
@@ -104,9 +114,24 @@ export function Onboarding() {
   const pct = (step / (OB_STEPS.length - 1)) * 100;
   const currentPhase = PHASES.find(p => step >= p.range[0] && step <= p.range[1])?.name || "";
 
-  const addPet = () => set("pets", [...d.pets, { id: Date.now(), name: "", type: "Кошка", breed: "", dob: "", food: "", feedTimes: "2", weightKg: "", notes: "", vacDate: "", parasiteDate: "" }]);
+  // ✅ ДОБАВЛЕНЫ ПОЛЯ breed И weightKg (дефолт 3.5)
+  const addPet = () => set("pets", [...d.pets, { 
+    id: Date.now(), 
+    name: "", 
+    type: "Кошка", 
+    breed: "", 
+    dob: "", 
+    food: "", 
+    feedTimes: "2", 
+    weightKg: "3.5", 
+    notes: "", 
+    vacDate: "", 
+    parasiteDate: "" 
+  }]);
+  
   const updPet = (id, k, v) => set("pets", d.pets.map(p => p.id === id ? { ...p, [k]: v } : p));
   const delPet = id => set("pets", d.pets.filter(p => p.id !== id));
+
   const addTrip = () => set("trips", [...d.trips, { id: Date.now(), destination: "", targetDate: "", budget: "", saved: "", stage: "💭 Мечта", notes: "" }]);
   const updTrip = (id, k, v) => set("trips", d.trips.map(t => t.id === id ? { ...t, [k]: v } : t));
   const delTrip = id => set("trips", d.trips.filter(t => t.id !== id));
@@ -114,14 +139,38 @@ export function Onboarding() {
   const zodiac = d.dob ? getZodiacInline(d.dob) : null;
   const eastern = d.dob ? getEasternInline(d.dob) : null;
   const degree = d.fullName ? calcDegreeInline(d.fullName) : null;
-  const age = d.dob ? new Date().getFullYear() - new Date(d.dob).getFullYear() : null;
+  
+  // ✅ ИСПРАВЛЕН РАСЧЕТ ВОЗРАСТА (учет месяца и дня)
+  const age = useMemo(() => {
+    if (!d.dob) return null;
+    const today = new Date();
+    const birthDate = new Date(d.dob);
+    let ageVal = today.getFullYear() - birthDate.getFullYear();    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      ageVal--;
+    }
+    return ageVal;
+  }, [d.dob]);
 
   const handleDone = () => {
+    // Базовая валидация
+    if (!d.name || !d.dob) {
+      alert("Пожалуйста, заполните Имя и Дату рождения на шаге 'Кто ты?'");
+      setStep(1);
+      return;
+    }
+
     setProfile({
-      ...d, trips: d.trips || [], hobbies: d.hobbies || [], pets: d.pets || [],
-      wake: d.wake || "07:00", sleep: d.sleep || "23:00",
-      workStart: d.workStart || "09:00", workEnd: d.workEnd || "18:00",
-      workDaysList: d.workDaysList || [1, 2, 3, 4, 5], onboardingComplete: true,
+      ...d,
+      trips: d.trips || [],
+      hobbies: d.hobbies || [],
+      pets: d.pets || [],
+      wake: d.wake || "07:00",
+      sleep: d.sleep || "23:00",
+      workStart: d.workStart || "09:00",
+      workEnd: d.workEnd || "18:00",
+      workDaysList: d.workDaysList || [1, 2, 3, 4, 5],
+      onboardingComplete: true,
     });
   };
 
@@ -145,23 +194,17 @@ export function Onboarding() {
         .ob-phase-markers { display: flex; justify-content: space-between; margin-top: 14px; padding: 0 4px; }
         .ob-marker { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #8c7a5a; opacity: 0.6; transition: all 0.3s; font-weight: 500; }
         .ob-marker.active { color: #0070c0; font-weight: 700; opacity: 1; transform: scale(1.15); }
-        /* ─── HEADER ── */
+                /* ─── HEADER ── */
         .ob-header { text-align: center; display: flex; flex-direction: column; align-items: center; gap: clamp(20px, 4vw, 32px); }
         .ob-title { font-family: 'Cinzel', serif; font-size: clamp(2.2rem, 6.5vw, 3.2rem); color: #2c241b; margin: 0; line-height: 1.2; font-weight: 600; }
         .ob-sub { font-family: 'Cormorant Infant', serif; font-size: clamp(1.4rem, 4vw, 2rem); color: #5c4a30; margin: 0; max-width: 95%; line-height: 1.5; font-weight: 500; }
 
-        /* ─── ICON WRAP (Для шагов кроме welcome) ─── */
+        /* ─── ICON WRAP ─── */
         .ob-icon-wrap { width: clamp(64px, 10vw, 80px); height: clamp(64px, 10vw, 80px); background: rgba(0,112,192,0.06); border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 1.5px solid rgba(0,112,192,0.2); overflow: hidden; flex-shrink: 0; }
         .ob-icon-wrap svg { width: 60%; height: 60%; color: #0070c0; }
         
-        /* ─── WELCOME IMAGE (Без круга, натуральные пропорции) ─── */
-        .ob-welcome-img {
-          width: clamp(340px, 70vw, 560px);
-          height: auto;
-          object-fit: contain;
-          display: block;
-          filter: drop-shadow(0 8px 20px rgba(0,112,192,0.15));
-        }
+        /* ─── WELCOME IMAGE ─── */
+        .ob-welcome-img { width: clamp(340px, 70vw, 560px); height: auto; object-fit: contain; display: block; filter: drop-shadow(0 8px 20px rgba(0,112,192,0.15)); }
 
         /* ─── BODY & FORMS ─── */
         .ob-body { display: flex; flex-direction: column; gap: clamp(20px, 3.5vw, 28px); min-height: 180px; }
@@ -194,13 +237,13 @@ export function Onboarding() {
         /* ─── MOBILE BREAKPOINT ─── */
         @media (max-width: 600px) {
           .ob-root { padding: 12px; align-items: stretch; }
-          .ob-card { padding: 28px 24px; max-width: 100%; border-radius: 12px; }          .fld-row { grid-template-columns: 1fr; }
+          .ob-card { padding: 28px 24px; max-width: 100%; border-radius: 12px; }
+          .fld-row { grid-template-columns: 1fr; }
           .ob-marker:not(.active) { display: none; }
           .ob-sub { font-size: 1.4rem; }
           .ob-title { font-size: 28px; }
           .ob-welcome-img { width: 92%; max-width: 380px; }
-          .fld input, .fld select, .fld textarea { font-size: 18px; }
-          .chip { font-size: 17px; padding: 12px 18px; }
+          .fld input, .fld select, .fld textarea { font-size: 18px; }          .chip { font-size: 17px; padding: 12px 18px; }
         }
       `}</style>
 
@@ -243,16 +286,34 @@ export function Onboarding() {
             <div style={{ textAlign: "center", padding: "24px 0" }}>
               <div style={{ fontFamily: "'Cormorant Infant', serif", fontSize: "clamp(18px, 3vw, 24px)", color: "#5c4a30", fontStyle: "italic", lineHeight: 1.7 }}>
                 «Всё записано — ничего не потеряно»
-              </div>            </div>
+              </div>
+            </div>
           )}
 
           {s.id === "basic" && (
             <>
-              <div className="fld"><label>Имя</label><input placeholder="Мария" value={d.name || ""} onChange={e => set("name", e.target.value)} /></div>
-              <div className="fld"><label>Полное ФИО</label><input placeholder="Иванова Мария Петровна" value={d.fullName || ""} onChange={e => set("fullName", e.target.value)} /><div className="fld-hint">Для расчёта градуса судьбы (1–360°)</div></div>
+              <div className="fld">                <label>Имя</label>
+                <input placeholder="Мария" value={d.name || ""} onChange={e => set("name", e.target.value)} />
+              </div>
+              <div className="fld">
+                <label>Полное ФИО</label>
+                <input placeholder="Иванова Мария Петровна" value={d.fullName || ""} onChange={e => set("fullName", e.target.value)} />
+                <div className="fld-hint">Для расчёта градуса судьбы (1–360°)</div>
+              </div>
               <div className="fld-row">
-                <div className="fld"><label>Дата рождения</label><input type="date" value={d.dob || ""} onChange={e => set("dob", e.target.value)} /><div className="fld-hint">Знак · Восточный цикл · Слабые зоны</div></div>
-                <div className="fld"><label>Пол</label><select value={d.gender || ""} onChange={e => set("gender", e.target.value)}><option value="">—</option><option>Женский</option><option>Мужской</option></select></div>
+                <div className="fld">
+                  <label>Дата рождения</label>
+                  <input type="date" value={d.dob || ""} onChange={e => set("dob", e.target.value)} />
+                  <div className="fld-hint">Знак · Восточный цикл · Слабые зоны</div>
+                </div>
+                <div className="fld">
+                  <label>Пол</label>
+                  <select value={d.gender || ""} onChange={e => set("gender", e.target.value)}>
+                    <option value="">—</option>
+                    <option>Женский</option>
+                    <option>Мужской</option>
+                  </select>
+                </div>
               </div>
               {(d.dob || d.fullName) && (
                 <div className="calc-preview">
@@ -260,18 +321,27 @@ export function Onboarding() {
                   <div className="calc-row">
                     {zodiac && <div className="calc-item"><div className="calc-l">Знак</div><div className="calc-v">{zodiac.emoji} {zodiac.name}</div></div>}
                     {eastern && <div className="calc-item"><div className="calc-l">Восточный</div><div className="calc-v">🐾 {eastern}</div></div>}
-                    {age && <div className="calc-item"><div className="calc-l">Возраст</div><div className="calc-v">{age} лет</div></div>}
+                    {age !== null && <div className="calc-item"><div className="calc-l">Возраст</div><div className="calc-v">{age} лет</div></div>}
                     {degree && <div className="calc-item"><div className="calc-l">Градус</div><div className="calc-v" style={{ color: "#c8a45a", fontSize: 26 }}>{degree}°</div></div>}
                   </div>
                 </div>
               )}
               <div className="fld-row">
-                <div className="fld"><label>Город</label><input placeholder="Москва" value={d.city || ""} onChange={e => set("city", e.target.value)} /></div>
-                <div className="fld"><label>Часовой пояс</label><select value={d.tz || ""} onChange={e => set("tz", e.target.value)}><option value="">—</option><option>UTC+5 Западный Казахстан</option><option>UTC+6 Восточный Казахстан</option></select></div>
+                <div className="fld">
+                  <label>Город</label>
+                  <input placeholder="Москва" value={d.city || ""} onChange={e => set("city", e.target.value)} />
+                </div>
+                <div className="fld">
+                  <label>Часовой пояс</label>
+                  <select value={d.tz || ""} onChange={e => set("tz", e.target.value)}>
+                    <option value="">—</option>
+                    <option>UTC+5 Западный Казахстан</option>
+                    <option>UTC+6 Восточный Казахстан</option>
+                  </select>
+                </div>
               </div>
             </>
           )}
-
           {s.id === "persona" && (
             <>
               {[
@@ -286,13 +356,17 @@ export function Onboarding() {
                   <div className="chips">{opts.map(v => <div key={v} className={`chip ${d[key] === v ? "on" : ""}`} onClick={() => set(key, v)}>{v}</div>)}</div>
                 </div>
               ))}
-              <div className="fld"><label>Что тебя мотивирует?</label><input placeholder="Видеть результат, похвала, интерес, деньги..." value={d.motivates || ""} onChange={e => set("motivates", e.target.value)} /></div>
+              <div className="fld">
+                <label>Что тебя мотивирует?</label>
+                <input placeholder="Видеть результат, похвала, интерес, деньги..." value={d.motivates || ""} onChange={e => set("motivates", e.target.value)} />
+              </div>
             </>
           )}
 
           {s.id === "persona2" && (
             <>
-              {[                ["Что выбивает из колеи?", "stressors", ["Неопределённость", "Много задач сразу", "Конфликты", "Нехватка времени", "Усталость", "Критика", "Хаос", "Сложные решения", "Шум и суета"], true],
+              {[
+                ["Что выбивает из колеи?", "stressors", ["Неопределённость", "Много задач сразу", "Конфликты", "Нехватка времени", "Усталость", "Критика", "Хаос", "Сложные решения", "Шум и суета"], true],
                 ["Как восстанавливаешься?", "recovery", ["Сон и тишина", "Прогулка на природе", "Общение с близкими", "Любимое хобби", "Спорт и движение", "Уход за собой", "Вкусная еда", "Кино / книга", "Музыка", "Медитация", "Горячая ванна", "Время в одиночестве", "Творчество", "Путешествие"], true],
               ].map(([label, key, opts, multi]) => (
                 <div className="fld" key={key}>
@@ -316,15 +390,17 @@ export function Onboarding() {
             <>
               <div className="fld-row">
                 <div className="fld"><label>Подъём</label><input type="time" value={d.wake} onChange={e => set("wake", e.target.value)} /></div>
-                <div className="fld"><label>Отбой</label><input type="time" value={d.sleep} onChange={e => set("sleep", e.target.value)} /></div>
-              </div>
-              <div className="fld"><label>Хронотип</label>
+                <div className="fld"><label>Отбой</label><input type="time" value={d.sleep} onChange={e => set("sleep", e.target.value)} /></div>              </div>
+              <div className="fld">
+                <label>Хронотип</label>
                 <div className="chips">{["🌅 Жаворонок", "🕊️ Голубь", "🦉 Сова"].map(v => <div key={v} className={`chip ${d.chronotype === v ? "on" : ""}`} onClick={() => set("chronotype", v)}>{v}</div>)}</div>
               </div>
-              <div className="fld"><label>Минут в день на себя</label>
+              <div className="fld">
+                <label>Минут в день на себя</label>
                 <div className="chips">{["15", "30", "45", "60", "90+"].map(v => <div key={v} className={`chip ${d.selfTime === v ? "on" : ""}`} onClick={() => set("selfTime", v)}>{v} мин</div>)}</div>
               </div>
-              <div className="fld"><label>Качество сна</label>
+              <div className="fld">
+                <label>Качество сна</label>
                 <div className="chips">{["Отличное", "Хорошее", "Среднее", "Плохое"].map(v => <div key={v} className={`chip ${d.sleepQuality === v ? "on" : ""}`} onClick={() => set("sleepQuality", v)}>{v}</div>)}</div>
               </div>
             </>
@@ -336,15 +412,20 @@ export function Onboarding() {
                 <div className="fld"><label>Профессия / должность</label><input placeholder="Менеджер, дизайнер..." value={d.profession || ""} onChange={e => set("profession", e.target.value)} /></div>
                 <div className="fld"><label>Сфера</label><input placeholder="IT, медицина..." value={d.jobSphere || ""} onChange={e => set("jobSphere", e.target.value)} /></div>
               </div>
-              <div className="fld"><label>Формат занятости</label>
+              <div className="fld">
+                <label>Формат занятости</label>
                 <div className="chips">{["Офис", "Удалёнка", "Гибрид", "Фриланс", "Своё дело", "Учусь", "Декрет / не работаю"].map(v => <div key={v} className={`chip ${d.workType === v ? "on" : ""}`} onClick={() => set("workType", v)}>{v}</div>)}</div>
               </div>
-              <div className="fld"><label>Что забирает энергию?</label>
+              <div className="fld">
+                <label>Что забирает энергию?</label>
                 <div className="chips">{["Много встреч", "Однообразие", "Дедлайны", "Конфликты", "Переработки", "Скучные задачи", "Неопределённость"].map(v => <div key={v} className={`chip ${(d.workDrain || []).includes(v) ? "on" : ""}`} onClick={() => tog("workDrain", v)}>{v}</div>)}</div>
-              </div>              <div className="fld"><label>Рабочая цель</label>
+              </div>
+              <div className="fld">
+                <label>Рабочая цель</label>
                 <div className="chips">{["Карьерный рост", "Повышение дохода", "Сменить профессию", "Своё дело", "Работать меньше", "Прокачать навыки", "Стабильность"].map(v => <div key={v} className={`chip ${d.careerGoal === v ? "on" : ""}`} onClick={() => set("careerGoal", v)}>{v}</div>)}</div>
               </div>
-              <div className="fld"><label>Отчётность</label>
+              <div className="fld">
+                <label>Отчётность</label>
                 <div className="chips">{["Бухгалтер / ИП", "HR / Кадры", "Юрист", "Врач", "Педагог", "Госслужащий", "Нет отчётности"].map(v => <div key={v} className={`chip ${d.profDeadlines === v ? "on" : ""}`} onClick={() => set("profDeadlines", v)}>{v}</div>)}</div>
               </div>
             </>
@@ -356,17 +437,19 @@ export function Onboarding() {
                 <div className="fld"><label>Начало работы</label><input type="time" value={d.workStart} onChange={e => set("workStart", e.target.value)} /></div>
                 <div className="fld"><label>Конец работы</label><input type="time" value={d.workEnd} onChange={e => set("workEnd", e.target.value)} /></div>
               </div>
-              <div className="fld"><label>Рабочие дни</label>
-                <div className="chips">{["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"].map((v, i) => <div key={v} className={`chip ${(d.workDaysList || []).includes(i + 1) ? "on" : ""}`} onClick={() => { const c = d.workDaysList || [1,2,3,4,5]; set("workDaysList", c.includes(i+1) ? c.filter(x=>x!==i+1) : [...c, i+1]); }}>{v}</div>)}</div>
-              </div>
+              <div className="fld">
+                <label>Рабочие дни</label>
+                <div className="chips">{["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"].map((v, i) => <div key={v} className={`chip ${(d.workDaysList || []).includes(i + 1) ? "on" : ""}`} onClick={() => { const c = d.workDaysList || [1,2,3,4,5]; set("workDaysList", c.includes(i+1) ? c.filter(x=>x!==i+1) : [...c, i+1]); }}>{v}</div>)}</div>              </div>
               <div className="fld-row">
                 <div className="fld"><label>Обед</label><input type="time" value={d.lunchTime || "13:00"} onChange={e => set("lunchTime", e.target.value)} /></div>
                 <div className="fld"><label>Длительность (мин)</label><input type="number" placeholder="60" value={d.lunchDur || ""} onChange={e => set("lunchDur", e.target.value)} /></div>
               </div>
-              <div className="fld"><label>Дорога до работы</label>
+              <div className="fld">
+                <label>Дорога до работы</label>
                 <div className="chips">{["Дома", "5–15 мин", "15–30 мин", "30–60 мин", "60+ мин"].map(v => <div key={v} className={`chip ${d.commuteTime === v ? "on" : ""}`} onClick={() => set("commuteTime", v)}>{v}</div>)}</div>
               </div>
-              <div className="fld"><label>Регулярные задачи</label>
+              <div className="fld">
+                <label>Регулярные задачи</label>
                 <div className="chips">{["Отчёты", "Встречи", "Звонки", "Контент", "Почта", "Документы", "Обучение", "Аналитика"].map(v => <div key={v} className={`chip ${(d.workRoutines || []).includes(v) ? "on" : ""}`} onClick={() => tog("workRoutines", v)}>{v}</div>)}</div>
               </div>
             </>
@@ -375,35 +458,76 @@ export function Onboarding() {
           {s.id === "home" && (
             <>
               <div className="fld-row">
-                <div className="fld"><label>Тип жилья</label>
+                <div className="fld">
+                  <label>Тип жилья</label>
                   <div className="chips">{["Квартира", "Дом", "Комната", "Студия"].map(v => <div key={v} className={`chip ${d.homeType === v ? "on" : ""}`} onClick={() => set("homeType", v)}>{v}</div>)}</div>
                 </div>
                 <div className="fld"><label>Площадь (м²)</label><input type="number" placeholder="45" value={d.homeArea || ""} onChange={e => set("homeArea", e.target.value)} /></div>
               </div>
-              <div className="fld"><label>Помещения</label>
+              <div className="fld">
+                <label>Помещения</label>
                 <div className="chips">{["Кухня", "Гостиная", "Коридор", "Балкон", "Кабинет", "Детская", "Кладовка", "Гараж"].map(v => <div key={v} className={`chip ${(d.homeRooms || []).includes(v) ? "on" : ""}`} onClick={() => tog("homeRooms", v)}>{v}</div>)}</div>
               </div>
               <div className="fld-row">
                 <div className="fld"><label>Комнат</label><input type="number" placeholder="2" value={d.rooms || ""} onChange={e => set("rooms", e.target.value)} /></div>
-                <div className="fld"><label>Живёшь с</label>
+                <div className="fld">
+                  <label>Живёшь с</label>
                   <div className="chips">{["Один(а)", "Партнёр", "Дети", "Родители", "Соседи"].map(v => <div key={v} className={`chip ${(d.livesWith || []).includes(v) ? "on" : ""}`} onClick={() => tog("livesWith", v)}>{v}</div>)}</div>
                 </div>
               </div>
-              <div className="fld"><label>Растения</label>
-                <div className="chips">{["Нет", "1–3", "4–10", "Много"].map(v => <div key={v} className={`chip ${d.plants === v ? "on" : ""}`} onClick={() => set("plants", v)}>{v}</div>)}</div>              </div>
-              <div className="fld"><label>Уборка</label>
+              <div className="fld">
+                <label>Растения</label>
+                <div className="chips">{["Нет", "1–3", "4–10", "Много"].map(v => <div key={v} className={`chip ${d.plants === v ? "on" : ""}`} onClick={() => set("plants", v)}>{v}</div>)}</div>
+              </div>
+              <div className="fld">
+                <label>Уборка</label>
                 <div className="chips">{["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"].map(v => <div key={v} className={`chip ${(d.cleanDays || []).includes(v) ? "on" : ""}`} onClick={() => tog("cleanDays", v)}>{v}</div>)}</div>
               </div>
-              <div className="fld"><label>Есть автомобиль?</label>
+              <div className="fld">
+                <label>Есть автомобиль?</label>
                 <div className="chips">{["Нет", "Да"].map(v => <div key={v} className={`chip ${d.hasCar === v ? "on" : ""}`} onClick={() => set("hasCar", v)}>{v}</div>)}</div>
               </div>
-              {d.hasCar === "Да" && <>
-                <div className="fld-row">
-                  <div className="fld"><label>Марка/Модель</label><input placeholder="Toyota..." value={d.carModel || ""} onChange={e => set("carModel", e.target.value)} /></div>
-                  <div className="fld"><label>Год</label><input type="number" placeholder="2020" value={d.carYear || ""} onChange={e => set("carYear", e.target.value)} /></div>
-                </div>
-                <div className="fld"><label>Страховка (до)</label><input type="date" value={d.carInsurance || ""} onChange={e => set("carInsurance", e.target.value)} /></div>
-              </>}
+              
+              {/* ✅ НОВЫЕ ПОЛЯ ДЛЯ АВТОМОБИЛЯ */}              {d.hasCar === "Да" && (
+                <>
+                  <div className="fld-row">
+                    <div className="fld"><label>Марка/Модель</label><input placeholder="Toyota..." value={d.carModel || ""} onChange={e => set("carModel", e.target.value)} /></div>
+                    <div className="fld"><label>Год</label><input type="number" placeholder="2020" value={d.carYear || ""} onChange={e => set("carYear", e.target.value)} /></div>
+                  </div>
+                  
+                  {/* Пробег */}
+                  <div className="fld">
+                    <label>Пробег (км)</label>
+                    <input type="number" placeholder="50000" value={d.mileage || ""} onChange={e => set("mileage", e.target.value)} />
+                  </div>
+
+                  {/* Дата последнего ТО */}
+                  <div className="fld">
+                    <label>Дата последнего ТО</label>
+                    <input type="date" value={d.lastServiceDate || ""} onChange={e => set("lastServiceDate", e.target.value)} />
+                  </div>
+
+                  {/* Сезон резины */}
+                  <div className="fld">
+                    <label>Сезон текущей резины</label>
+                    <div className="chips">
+                      {["Зимняя", "Летняя", "Всесезонная"].map(v => (
+                        <div key={v} className={`chip ${d.tireSeason === v ? "on" : ""}`} onClick={() => set("tireSeason", v)}>
+                          {v}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Дата смены резины */}
+                  <div className="fld">
+                    <label>Дата последней смены резины</label>
+                    <input type="date" value={d.tireChangeDate || ""} onChange={e => set("tireChangeDate", e.target.value)} />
+                  </div>
+
+                  <div className="fld"><label>Страховка (до)</label><input type="date" value={d.carInsurance || ""} onChange={e => set("carInsurance", e.target.value)} /></div>
+                </>
+              )}
             </>
           )}
 
@@ -413,13 +537,19 @@ export function Onboarding() {
               {(d.pets || []).map((pet, i) => (
                 <div key={pet.id} style={{ background: "rgba(0,112,192,0.04)", border: "1px solid rgba(0,112,192,0.2)", borderRadius: 12, padding: 16, marginBottom: 14 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
-                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 13, color: "#0070c0" }}>ПИТОМЕЦ {i + 1}</span>
-                    <button className="btn btn-sm" onClick={() => delPet(pet.id)} style={{padding:"6px 12px", fontSize:15}}>✕</button>
+                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 13, color: "#0070c0" }}>ПИТОМЕЦ {i + 1}</span>                    <button className="btn btn-sm" onClick={() => delPet(pet.id)} style={{padding: "6px 12px", fontSize:15}}>✕</button>
                   </div>
                   <div className="fld-row">
                     <div className="fld"><label>Кличка</label><input placeholder="Мурка" value={pet.name} onChange={e => updPet(pet.id, "name", e.target.value)} /></div>
                     <div className="fld"><label>Вид</label><select value={pet.type} onChange={e => updPet(pet.id, "type", e.target.value)}>{["Кошка", "Собака", "Попугай", "Кролик", "Хомяк", "Черепаха", "Рыбки", "Другое"].map(t => <option key={t}>{t}</option>)}</select></div>
                   </div>
+                  
+                  {/* ✅ НОВЫЕ ПОЛЯ ДЛЯ ПИТОМЦЕВ: Порода и Вес */}
+                  <div className="fld-row">
+                    <div className="fld"><label>Порода</label><input placeholder="Мейн-кун" value={pet.breed || ""} onChange={e => updPet(pet.id, "breed", e.target.value)} /></div>
+                    <div className="fld"><label>Вес (кг)</label><input type="number" placeholder="3.5" value={pet.weightKg || "3.5"} onChange={e => updPet(pet.id, "weightKg", e.target.value)} /></div>
+                  </div>
+
                   <div className="fld-row">
                     <div className="fld"><label>Корм</label><input value={pet.food} onChange={e => updPet(pet.id, "food", e.target.value)} /></div>
                     <div className="fld"><label>Кормлений/день</label><div className="chips">{["1", "2", "3", "4"].map(v => <div key={v} className={`chip ${pet.feedTimes === v ? "on" : ""}`} onClick={() => updPet(pet.id, "feedTimes", v)}>{v}</div>)}</div></div>
@@ -432,33 +562,41 @@ export function Onboarding() {
 
           {s.id === "health" && (
             <>
-              <div className="fld"><label>Зоны внимания</label>
+              <div className="fld">
+                <label>Зоны внимания</label>
                 <div className="chips">{["Сердце", "ЖКТ", "Суставы", "Нервы", "Гормоны", "Кожа", "Зрение", "Иммунитет", "Вес", "Давление"].map(v => <div key={v} className={`chip ${(d.healthFocus || []).includes(v) ? "on" : ""}`} onClick={() => tog("healthFocus", v)}>{v}</div>)}</div>
               </div>
               <div className="fld"><label>Хронические заболевания</label><input placeholder="Нет / гастрит..." value={d.chronic || ""} onChange={e => set("chronic", e.target.value)} /></div>
-              <div className="fld"><label>Физическая активность</label>
+              <div className="fld">
+                <label>Физическая активность</label>
                 <div className="chips">{["Не занимаюсь", "Прогулки", "Йога", "Тренажёр", "Бег", "Плавание", "Велосипед", "Цигун"].map(v => <div key={v} className={`chip ${(d.sport || []).includes(v) ? "on" : ""}`} onClick={() => tog("sport", v)}>{v}</div>)}</div>
               </div>
-              <div className="fld"><label>Питание</label>                <div className="chips">{["Обычное", "Вегетарианское", "Веганское", "Без глютена", "Кето", "Интервальное", "ПП"].map(v => <div key={v} className={`chip ${d.nutrition === v ? "on" : ""}`} onClick={() => set("nutrition", v)}>{v}</div>)}</div>
+              <div className="fld">
+                <label>Питание</label>
+                <div className="chips">{["Обычное", "Вегетарианское", "Веганское", "Без глютена", "Кето", "Интервальное", "ПП"].map(v => <div key={v} className={`chip ${d.nutrition === v ? "on" : ""}`} onClick={() => set("nutrition", v)}>{v}</div>)}</div>
               </div>
             </>
           )}
 
           {s.id === "tcm" && (
             <>
-              <div className="fld"><label>Час рождения</label>
+              <div className="fld">
+                <label>Час рождения</label>
                 <div className="chips">{["🌙 Ночь (23–01)", "🌑 Глубокая ночь (01–03)", "🌒 Ранее утро (03–05)", "🌅 Рассвет (05–07)", "☀️ Утро (07–09)", "🌤 Позднее утро (09–11)", "💛 Полдень (11–13)", "🌞 День (13–15)", "🌇 Послеполуденное (15–17)", "🌆 Ранний вечер (17–19)", "🌃 Вечер (19–21)", "🌙 Поздний вечер (21–23)", "❓ Не знаю"].map(v => <div key={v} className={`chip ${d.birthHour === v ? "on" : ""}`} onClick={() => set("birthHour", v)}>{v}</div>)}</div>
               </div>
-              <div className="fld"><label>Температура тела</label>
-                <div className="chips">{["🥵 Часто жарко", "🥶 Часто мёрзну", "🌡 Бывает и так, и так", "✅ Комфортно"].map(v => <div key={v} className={`chip ${d.tcmTemp === v ? "on" : ""}`} onClick={() => set("tcmTemp", v)}>{v}</div>)}</div>
-              </div>
-              <div className="fld"><label>Влажность/Сухость</label>
+              <div className="fld">
+                <label>Температура тела</label>
+                <div className="chips">{["🥵 Часто жарко", "🥶 Часто мёрзну", "🌡 Бывает и так, и так", "✅ Комфортно"].map(v => <div key={v} className={`chip ${d.tcmTemp === v ? "on" : ""}`} onClick={() => set("tcmTemp", v)}>{v}</div>)}</div>              </div>
+              <div className="fld">
+                <label>Влажность/Сухость</label>
                 <div className="chips">{["💧 Отёки, слизь", "🏜 Сухость кожи/глаз", "😓 Избыточная потливость", "🌿 Нормально"].map(v => <div key={v} className={`chip ${d.tcmMoisture === v ? "on" : ""}`} onClick={() => set("tcmMoisture", v)}>{v}</div>)}</div>
               </div>
-              <div className="fld"><label>Преобладающие эмоции</label>
+              <div className="fld">
+                <label>Преобладающие эмоции</label>
                 <div className="chips">{["😤 Раздражение/Гнев", "😰 Тревога/Суета", "😟 Беспокойство/Мысли", "😢 Печаль/Грусть", "😨 Страх/Неуверенность", "😊 Гармонично"].map(v => <div key={v} className={`chip ${d.tcmEmotion === v ? "on" : ""}`} onClick={() => set("tcmEmotion", v)}>{v}</div>)}</div>
               </div>
-              <div className="fld"><label>Тяга к вкусу</label>
+              <div className="fld">
+                <label>Тяга к вкусу</label>
                 <div className="chips">{["🍋 Кислое", "🌶 Горькое", "🍬 Сладкое", "🧂 Острое/Пряное", "🥓 Солёное", "🤷 Всё одинаково"].map(v => <div key={v} className={`chip ${d.tcmTaste === v ? "on" : ""}`} onClick={() => set("tcmTaste", v)}>{v}</div>)}</div>
               </div>
             </>
@@ -466,38 +604,51 @@ export function Onboarding() {
 
           {s.id === "beauty" && (
             <>
-              <div className="fld"><label>Тип кожи</label>
+              <div className="fld">
+                <label>Тип кожи</label>
                 <div className="chips">{["Нормальная", "Сухая", "Жирная", "Комбинированная", "Чувствительная"].map(v => <div key={v} className={`chip ${d.skinType === v ? "on" : ""}`} onClick={() => set("skinType", v)}>{v}</div>)}</div>
               </div>
-              {d.gender === "Мужской" ? <>
-                <div className="fld"><label>Борода / усы</label>
-                  <div className="chips">{["Нет", "Щетина", "Короткая", "Длинная", "Усы"].map(v => <div key={v} className={`chip ${d.beard === v ? "on" : ""}`} onClick={() => set("beard", v)}>{v}</div>)}</div>
-                </div>
-                <div className="fld"><label>Стрижка</label>
-                  <div className="chips">{["Раз в 2–3 нед.", "Раз в месяц", "Раз в 2 мес.", "Стригусь сам"].map(v => <div key={v} className={`chip ${d.haircutFreq === v ? "on" : ""}`} onClick={() => set("haircutFreq", v)}>{v}</div>)}</div>
-                </div>
-              </> : <>
-                <div className="fld"><label>Волосы</label>
-                  <div className="chips">{["Нормальные", "Сухие", "Жирные", "Окрашенные", "Вьющиеся"].map(v => <div key={v} className={`chip ${d.hairType === v ? "on" : ""}`} onClick={() => set("hairType", v)}>{v}</div>)}</div>
-                </div>
-                <div className="fld"><label>Ногти</label>
-                  <div className="chips">{["Не делаю", "Раз в 2–3 нед.", "Раз в месяц", "Сама дома"].map(v => <div key={v} className={`chip ${d.nailFreq === v ? "on" : ""}`} onClick={() => set("nailFreq", v)}>{v}</div>)}</div>
-                </div>
-              </>}
-              <div className="fld"><label>Приоритет</label>
+              {d.gender === "Мужской" ? (
+                <>
+                  <div className="fld">
+                    <label>Борода / усы</label>
+                    <div className="chips">{["Нет", "Щетина", "Короткая", "Длинная", "Усы"].map(v => <div key={v} className={`chip ${d.beard === v ? "on" : ""}`} onClick={() => set("beard", v)}>{v}</div>)}</div>
+                  </div>
+                  <div className="fld">
+                    <label>Стрижка</label>
+                    <div className="chips">{["Раз в 2–3 нед.", "Раз в месяц", "Раз в 2 мес.", "Стригусь сам"].map(v => <div key={v} className={`chip ${d.haircutFreq === v ? "on" : ""}`} onClick={() => set("haircutFreq", v)}>{v}</div>)}</div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="fld">
+                    <label>Волосы</label>
+                    <div className="chips">{["Нормальные", "Сухие", "Жирные", "Окрашенные", "Вьющиеся"].map(v => <div key={v} className={`chip ${d.hairType === v ? "on" : ""}`} onClick={() => set("hairType", v)}>{v}</div>)}</div>
+                  </div>
+                  <div className="fld">
+                    <label>Ногти</label>
+                    <div className="chips">{["Не делаю", "Раз в 2–3 нед.", "Раз в месяц", "Сама дома"].map(v => <div key={v} className={`chip ${d.nailFreq === v ? "on" : ""}`} onClick={() => set("nailFreq", v)}>{v}</div>)}</div>
+                  </div>
+                </>
+              )}
+              <div className="fld">
+                <label>Приоритет</label>
                 <div className="chips">{["Кожа лица", "Тело", "Волосы", "Всё одинаково"].map(v => <div key={v} className={`chip ${d.beautyPriority === v ? "on" : ""}`} onClick={() => set("beautyPriority", v)}>{v}</div>)}</div>
               </div>
-            </>
-          )}
+            </>          )}
+
           {s.id === "shopping" && (
             <>
-              <div className="fld"><label>Как часто закупаешься?</label>
+              <div className="fld">
+                <label>Как часто закупаешься?</label>
                 <div className="chips">{["Каждый день", "2–3 раза в неделю", "Раз в неделю", "Раз в 2 недели", "Онлайн"].map(v => <div key={v} className={`chip ${d.shopFreq === v ? "on" : ""}`} onClick={() => set("shopFreq", v)}>{v}</div>)}</div>
               </div>
-              <div className="fld"><label>Удобный день</label>
+              <div className="fld">
+                <label>Удобный день</label>
                 <div className="chips">{["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"].map(v => <div key={v} className={`chip ${d.shopDay === v ? "on" : ""}`} onClick={() => set("shopDay", v)}>{v}</div>)}</div>
               </div>
-              <div className="fld"><label>Что всегда дома?</label>
+              <div className="fld">
+                <label>Что всегда дома?</label>
                 <div className="chips">{["Яйца", "Крупы", "Молочное", "Фрукты", "Овощи", "Мясо", "Рыба", "Хлеб", "Консервы", "Орехи", "Бобовые", "Зелень"].map(v => <div key={v} className={`chip ${(d.staples || []).includes(v) ? "on" : ""}`} onClick={() => tog("staples", v)}>{v}</div>)}</div>
               </div>
             </>
@@ -505,11 +656,13 @@ export function Onboarding() {
 
           {s.id === "hobbies" && (
             <>
-              <div className="fld"><label>Хобби</label>
+              <div className="fld">
+                <label>Хобби</label>
                 <div className="chips">{["Чтение", "Фотография", "Музыка", "Готовка", "Садоводство", "Кино", "Путешествия", "Спорт", "Рисование", "Блогинг", "Языки", "Рукоделие", "Игры", "Туризм"].map(v => <div key={v} className={`chip ${(d.hobbies || []).includes(v) ? "on" : ""}`} onClick={() => tog("hobbies", v)}>{v}</div>)}</div>
               </div>
               <div className="fld"><label>Хобби-проект</label><input placeholder="Освоить гитару, прочитать 12 книг..." value={d.hobbyProject || ""} onChange={e => set("hobbyProject", e.target.value)} /></div>
-              <div className="fld"><label>Частота занятий</label>
+              <div className="fld">
+                <label>Частота занятий</label>
                 <div className="chips">{["Почти никогда", "Раз в месяц", "Раз в неделю", "Несколько раз", "Каждый день"].map(v => <div key={v} className={`chip ${d.hobbyFreq === v ? "on" : ""}`} onClick={() => set("hobbyFreq", v)}>{v}</div>)}</div>
               </div>
             </>
@@ -522,7 +675,7 @@ export function Onboarding() {
                 <div key={trip.id} style={{ background: "rgba(200,164,90,0.06)", border: "1px solid rgba(200,164,90,0.25)", borderRadius: 12, padding: 16, marginBottom: 14 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
                     <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 13, color: "#c8a45a" }}>ПОЕЗДКА {i + 1}</span>
-                    <button className="btn btn-sm" onClick={() => delTrip(trip.id)} style={{padding:"6px 12px", fontSize:15}}>✕</button>
+                    <button className="btn btn-sm" onClick={() => delTrip(trip.id)} style={{padding: "6px 12px", fontSize:15}}>✕</button>
                   </div>
                   <div className="fld"><label>Куда?</label><input placeholder="Стамбул, Бали..." value={trip.destination} onChange={e => updTrip(trip.id, "destination", e.target.value)} /></div>
                   <div className="fld-row">
@@ -531,16 +684,18 @@ export function Onboarding() {
                   </div>
                 </div>
               ))}
-              <button className="btn btn-ghost btn-sm" onClick={addTrip}>+ Добавить поездку</button>
-            </>
+              <button className="btn btn-ghost btn-sm" onClick={addTrip}>+ Добавить поездку</button>            </>
           )}
 
           {s.id === "goals" && (
             <>
-              <div className="fld"><label>Главная цель на 3 месяца</label><textarea placeholder="Наладить режим, похудеть на 5 кг..." value={d.mainGoal || ""} onChange={e => set("mainGoal", e.target.value)} style={{resize:"vertical", minHeight:80}} /></div>              <div className="fld"><label>Сферы прогресса</label>
+              <div className="fld"><label>Главная цель на 3 месяца</label><textarea placeholder="Наладить режим, похудеть на 5 кг..." value={d.mainGoal || ""} onChange={e => set("mainGoal", e.target.value)} style={{resize: "vertical", minHeight:80}} /></div>
+              <div className="fld">
+                <label>Сферы прогресса</label>
                 <div className="chips">{["Здоровье", "Карьера", "Финансы", "Отношения", "Саморазвитие", "Творчество", "Путешествия", "Духовность", "Семья", "Внешность"].map(v => <div key={v} className={`chip ${(d.goalAreas || []).includes(v) ? "on" : ""}`} onClick={() => tog("goalAreas", v)}>{v}</div>)}</div>
               </div>
-              <div className="fld"><label>Что сдерживает?</label>
+              <div className="fld">
+                <label>Что сдерживает?</label>
                 <div className="chips">{["Нехватка времени", "Нехватка энергии", "Откладываю", "Не знаю с чего начать", "Много отвлекаюсь", "Страх неудачи"].map(v => <div key={v} className={`chip ${(d.goalBlocks || []).includes(v) ? "on" : ""}`} onClick={() => tog("goalBlocks", v)}>{v}</div>)}</div>
               </div>
             </>
@@ -573,4 +728,4 @@ export function Onboarding() {
       </div>
     </div>
   );
-                                                                                                                        }
+                                         }
