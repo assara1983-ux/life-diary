@@ -8,7 +8,7 @@ import { MaleAvatar, FemaleAvatar } from "../components/BlueprintAvatars";
 // ─── БАЗА ДАННЫХ ЦЯЦЗЫ (12 СТАДИЙ) ───
 const JIAZI_STAGES = [
   { name: 'Рождение', spheres: { health: 'Иммунитет, конституция', career: 'Обучение, адаптация', relations: 'Семья, корни', spirit: 'Поиск смысла', finance: 'Накопление' }, tips: 'Закладка фундамента. Избегай перегрузок.', critical: 'Формирование базовых реакций.' },
-  { name: 'Купание', spheres: { health: 'Нервная система, адаптация', career: 'Поиск пути', relations: 'Первые связи', spirit: 'Духовный выбор', finance: 'Зависимость → самостоятельность' }, tips: 'Формирование реакций. Учитесь говорить "нет".', critical: 'Эмоциональные тесты, создание комплексов.' },
+  { name: 'Купание', spheres: {  health: 'Нервная система, адаптация', career: 'Поиск пути', relations: 'Первые связи', spirit: 'Духовный выбор', finance: 'Зависимость → самостоятельность' }, tips: 'Формирование реакций. Учитесь говорить "нет".', critical: 'Эмоциональные тесты, создание комплексов.' },
   { name: 'Облачение', spheres: { health: 'Гормоны, кожа', career: 'Карьерный старт', relations: 'Партнёрство', spirit: 'Самоидентификация', finance: 'Первые доходы' }, tips: 'Публичный выход. Формируйте имидж осознанно.', critical: 'Риск чужих обёрток и непродуманных связей.' },
   { name: 'Взросление', spheres: { health: 'Энергия, выносливость', career: 'Проф. рост', relations: 'Стабильные союзы', spirit: 'Философия жизни', finance: 'Инвестиции' }, tips: 'Стабилизация. Долгосрочные проекты приносят плоды.', critical: 'Переход от экспериментов к ответственности.' },
   { name: 'Расцвет', spheres: { health: 'Пик тонуса', career: 'Лидерство', relations: 'Глубокие связи', spirit: 'Духовный авторитет', finance: 'Капитал' }, tips: 'Пик сил. Реализуй главные цели, но береги нервную систему.', critical: 'Риск выгорания при игнорировании восстановления.' },
@@ -65,7 +65,7 @@ function InnerAccordion({ title, children, defaultOpen = false }) {
   return (
     <div style={{ marginBottom: 10, background: "rgba(0,112,192,0.04)", borderRadius: 8, border: "1px solid rgba(0,112,192,0.15)" }}>
       <div onClick={(e) => { e.stopPropagation(); setOpen(!open); }} style={{ padding: "10px 12px", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", userSelect: "none" }}>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--blue)", letterSpacing: 0.5 }}>{title}</span>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--blue)", letterSpacing: 0.5 }}>{title}</span>
         <span style={{ fontSize: 12, color: "var(--gold)", transform: open ? "rotate(180deg)" : "rotate(0)", transition: "0.2s" }}>▼</span>
       </div>
       {open && <div style={{ padding: "0 12px 12px", fontSize: 13, lineHeight: 1.6, color: "var(--text2)" }}>{children}</div>}
@@ -73,7 +73,7 @@ function InnerAccordion({ title, children, defaultOpen = false }) {
   );
 }
 
-// ─── КАРТОЧКА (МОДИФИЦИРОВАНА ДЛЯ FRONT CONTENT) ───
+// ─── КАРТОЧКА (МОДИФИЦИРОВАНА: frontContent) ───
 function FlipCardBlock({ title, frontImage, frontContent, accentColor = "var(--blue)", children, minHeight = 340 }) {
   const [flipped, setFlipped] = useState(false);
   return (
@@ -81,29 +81,35 @@ function FlipCardBlock({ title, frontImage, frontContent, accentColor = "var(--b
       <div onClick={() => setFlipped(!flipped)} style={{ position: "relative", width: "100%", minHeight, transformStyle: "preserve-3d", transition: "transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1)", transform: flipped ? "rotateY(180deg)" : "none", cursor: "pointer", borderRadius: 12 }}>
         
         {/* ЛИЦЕВАЯ СТОРОНА */}
-        <div style={{ position: "absolute", inset: 0, backfaceVisibility: "hidden", borderRadius: 12, overflow: "hidden", background: "linear-gradient(135deg, #f8f4e8 0%, #e8d8c0 100%)", border: "2px solid var(--gold)", boxShadow: "0 6px 20px rgba(0,0,0,0.12)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", transform: "translateZ(0)" }}>
+        <div style={{ position: "absolute", inset: 0, backfaceVisibility: "hidden", borderRadius: 12, overflow: "hidden", background: "linear-gradient(135deg, #f8f4e8 0%, #e8d8c0 100%)", border: "2px solid var(--gold)", boxShadow: "0 6px 20px rgba(0,0,0,0.12)", display: "flex", flexDirection: "column", alignItems: "center", transform: "translateZ(0)" }}>
+          
           {frontImage ? (
-             <img src={frontImage} alt={title} style={{ maxHeight: "60%", maxWidth: "90%", objectFit: "contain", filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.15))" }} onError={(e) => e.target.style.display = "none"} />
+             // ✅ ИСПРАВЛЕНО: Масштаб картинки уменьшен до 55%
+             <img src={frontImage} alt={title} style={{ maxHeight: "55%", maxWidth: "90%", marginTop: 16, objectFit: "contain", filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.15))" }} onError={(e) => e.target.style.display = "none"} />
           ) : (
-             <div style={{ width: "80%", height: "60%", background: "rgba(0,112,192,0.05)", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text3)", fontSize: 12 }}>Иллюстрация</div>
+             <div style={{ width: "80%", height: "40%", background: "rgba(0,112,192,0.05)", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text3)", fontSize: 12, marginTop: 24 }}>Иллюстрация</div>
           )}
           
-          {/* НОВЫЙ БЛОК КОНТЕНТА НА ЛИЦЕ */}
           {frontContent && (
-            <div style={{ padding: "0 20px 20px", width: "100%", textAlign: "center" }}>
+            <div style={{ padding: "0 20px 20px", width: "100%", textAlign: "center", overflowY: "auto", maxHeight: "50%" }}>
               {frontContent}
             </div>
           )}
 
-          <div style={{ marginTop: 4, fontFamily: "var(--font-head)", fontSize: 15, color: "var(--blue)", letterSpacing: "1px", fontWeight: 500 }}>{title}</div>
-          <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 4, fontFamily: "var(--font-mono)" }}>Нажмите для деталей</div>
+          {!frontContent && (
+            <>
+              <div style={{ marginTop: 14, fontFamily: "var(--font-head)", fontSize: 16, color: "var(--blue)", letterSpacing: "1px", fontWeight: 500 }}>{title}</div>
+              <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 4, fontFamily: "var(--font-mono)" }}>Нажмите для деталей</div>
+            </>
+          )}
         </div>
 
         {/* ОБОРОТНАЯ СТОРОНА */}
         <div style={{ position: "absolute", inset: 0, backfaceVisibility: "hidden", transform: "rotateY(180deg) translateZ(0)", borderRadius: 12, overflow: "hidden", background: "rgba(255,255,255,0.98)", border: "1.5px solid rgba(0,112,192,0.25)", boxShadow: "0 4px 16px rgba(0,112,192,0.12)", padding: 18, display: "flex", flexDirection: "column" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, paddingBottom: 12, borderBottom: "1px solid var(--line)" }}>
             <div style={{ width: 4, height: 24, background: accentColor, borderRadius: 2, boxShadow: "0 2px 4px rgba(0,0,0,0.1)" }} />
-            <h3 style={{ fontFamily: "var(--font-head)", fontSize: 15, color: "var(--blue)", margin: 0, letterSpacing: "0.6px", fontWeight: 600 }}>{title}</h3>
+            {/* ✅ ЕДИНЫЙ СТИЛЬ ЗАГОЛОВКА: 16px */}
+            <h3 style={{ fontFamily: "var(--font-head)", fontSize: 16, color: "var(--blue)", margin: 0, letterSpacing: "0.6px", fontWeight: 600 }}>{title}</h3>
           </div>
           <div style={{ overflowY: "auto", flex: 1, maxHeight: "65vh", fontSize: 14, lineHeight: 1.7, color: "var(--text2)", paddingRight: 4 }}>{children}</div>
         </div>
@@ -167,7 +173,7 @@ function YearModal({ year, currentAge, onClose }) {
 
 // ─── ГРАФИЧЕСКИЙ ТАЙМЛАЙН ───
 function CycleTimeline({ dob, onYearSelect }) {
-  // ТОЧНЫЙ РАСЧЕТ ВОЗРАСТА
+  // ✅ ИСПРАВЛЕН РАСЧЕТ ВОЗРАСТА (useMemo + учет месяца/дня)
   const age = useMemo(() => {
     if (!dob) return 0;
     const today = new Date();
@@ -237,7 +243,7 @@ export function ProfileSection() {
 
   const insights = getProfileInsights(profile);
   
-  // ТОЧНЫЙ РАСЧЕТ ВОЗРАСТА (исправлено)
+  // ✅ ТОЧНЫЙ РАСЧЕТ ВОЗРАСТА (для основного компонента)
   const age = useMemo(() => {
     if (!profile.dob) return null;
     const today = new Date();
@@ -275,6 +281,7 @@ export function ProfileSection() {
             accentColor="var(--blue)" 
             minHeight={360}
             frontContent={
+              // ✅ ДАННЫЕ АККАУНТА СКРЫТЫ. ОСТАВЛЕНЫ ВОЗРАСТ И СВОДКА.
               <div style={{ textAlign: "center", marginTop: 10 }}>
                  <h2 style={{ fontFamily: "var(--font-head)", fontSize: 20, color: "var(--text1)", margin: "0 0 8px 0", letterSpacing: "1.2px", fontWeight: 600 }}>{profile.name || "Пользователь"}</h2>
                  <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap", marginBottom: 8 }}>
@@ -288,9 +295,9 @@ export function ProfileSection() {
               </div>
             }
           >
-            {/* Оборот: Данные аккаунта СКРЫТЫ по ТЗ */}
+            {/* Оборот: Данные аккаунта удалены по ТЗ */}
             <div style={{ textAlign: "center", color: "var(--text3)", marginTop: 40 }}>
-               <p>Детали профиля скрыты.</p>
+               <p style={{ fontSize: 12 }}>Подробная информация доступна в настройках приложения.</p>
             </div>
           </FlipCardBlock>
 
