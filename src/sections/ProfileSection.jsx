@@ -157,7 +157,7 @@ function YearModal({ year, currentAge, onClose }) {
   );
 }
 
-// ─── ГРАФИЧЕСКИЙ ТАЙМЛАЙН (5 ЛИНИЙ) ───
+// ─── ГРАФИЧЕСКИЙ ТАЙМЛАЙН (ЦИЯЦЗЫ) ───
 function CycleTimeline({ dob, onYearSelect }) {
   // ✅ ТОЧНЫЙ РАСЧЕТ ВОЗРАСТА (useMemo)
   const age = useMemo(() => {
@@ -318,8 +318,7 @@ export function ProfileSection() {
   if (!profile) return <div style={{ padding: 40, textAlign: "center", color: "var(--text2)" }}>Загрузка профиля...</div>;
 
   const insights = getProfileInsights(profile);
-  
-  // ✅ ТОЧНЫЙ РАСЧЕТ ВОЗРАСТА (useMemo)
+  // ✅ ТОЧНЫЙ РАСЧЕТ ВОЗРАСТА (дублируем для надежности в основном компоненте)
   const age = useMemo(() => {
     if (!profile.dob) return null;
     const today = new Date();
@@ -341,8 +340,8 @@ export function ProfileSection() {
   const currentJiaziStage = JIAZI_STAGES[currentJiaziIndex];
 
   const handleRefresh = () => { setIsRefreshing(true); setTimeout(() => { setIsRefreshing(false); notify?.("✅ Данные обновлены"); }, 800); };
-  const handleReset = () => { if (window.confirm("Вы уверены? Это удалит ваш профиль и вернет к началу настройки.")) { setProfile(null); notify?.("🗑️ Профиль сброшен"); } };  const handleYearSelect = (y) => setSelectedYear(y);
-
+  const handleReset = () => { if (window.confirm("Вы уверены? Это удалит ваш профиль и вернет к началу настройки.")) { setProfile(null); notify?.("🗑️ Профиль сброшен"); } };
+  const handleYearSelect = (y) => setSelectedYear(y);
   return (
     <div className="page" style={{ paddingBottom: 100 }}>
       <ProfileTabs activeTab={activeTab} setActiveTab={setActiveTab} />
@@ -390,8 +389,8 @@ export function ProfileSection() {
                    <li>Избегай многозадачности</li>
                    <li>Дыхательные практики укрепляют слабые зоны</li>
                 </ul>
-             </InnerAccordion>          </FlipCardBlock>
-
+             </InnerAccordion>
+          </FlipCardBlock>
           <FlipCardBlock title="Восточный Знак" frontImage={getFrontImage("eastern", insights.eastern)} accentColor="var(--gold)"
             frontContent={
                <div style={{ fontSize: 13, lineHeight: 1.6, color: "var(--text2)", padding: "0 10px" }}>
@@ -439,8 +438,8 @@ export function ProfileSection() {
             frontContent={
                <div style={{ fontSize: 13, lineHeight: 1.6, color: "var(--text2)", padding: "0 10px" }}>
                   <p style={{ marginBottom: 10, fontWeight: 500 }}>
-                     <strong style={{ color: "var(--blue)", fontSize: 15 }}>{profile.chronotype || "🕊️ Голубь"}</strong>                  </p>
-                  <div style={{ padding: 10, background: "rgba(45,106,79,0.08)", borderRadius: 8, borderLeft: "3px solid var(--success)", marginBottom: 10 }}>
+                     <strong style={{ color: "var(--blue)", fontSize: 15 }}>{profile.chronotype || "🕊️ Голубь"}</strong>
+                  </p>                  <div style={{ padding: 10, background: "rgba(45,106,79,0.08)", borderRadius: 8, borderLeft: "3px solid var(--success)", marginBottom: 10 }}>
                      <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--success)", letterSpacing: 1, marginBottom: 4 }}>🧠 ПИК КОНЦЕНТРАЦИИ</div>
                      <p style={{ margin: 0, fontSize: 12 }}>{chronoPeaks.focus?.tip || "Самые сложные задачи — в это время."}</p>
                   </div>
@@ -488,8 +487,8 @@ export function ProfileSection() {
                    <div style={{ fontSize: 13, lineHeight: 1.6, color: "var(--text2)" }}>
                       <p style={{ marginBottom: 6 }}>Ваша текущая фаза Цзяцзы требует {currentJiaziStage.name === 'Расцвет' ? 'реализации и лидерства' : currentJiaziStage.name === 'Взросление' ? 'стабилизации и долгосрочных проектов' : 'восстановления и аккумулирования ресурсов'}.</p>
                       <p style={{ marginBottom: 6 }}>Ведический фон указывает на необходимость {insights.zodiac === 'Близнецы' ? 'баланса речи и дыхательных практик' : 'гармонизации Инь-Ян через режим сна и питание'}.</p>
-                      <p>Пересечение показывает: благоприятно действовать в пиковые часы биоритмов, избегать агрессивной терапии в лунные запрещённые декады, использовать период для {insights.zodiacStrengths ? 'развития сильных зон' : 'укрепления базы'}.</p>                   </div>
-                </div>
+                      <p>Пересечение показывает: благоприятно действовать в пиковые часы биоритмов, избегать агрессивной терапии в лунные запрещённые декады, использовать период для {insights.zodiacStrengths ? 'развития сильных зон' : 'укрепления базы'}.</p>
+                   </div>                </div>
 
                 {/* Рекомендации */}
                 <div style={{ background: "#fff", padding: 16, borderRadius: 8, border: "1px solid var(--line)", borderTop: "3px solid var(--success)" }}>
@@ -537,8 +536,8 @@ export function ProfileSection() {
                 frontContent={
                    <div style={{ fontSize: 13, lineHeight: 1.6, padding: "0 10px" }}>
                       <strong style={{ color: "var(--text1)", fontSize: 15 }}>Запреты</strong>
-                      <p style={{ marginTop: 4 }}>В дни новолуния/полнолуния организм ослаблен.</p>                   </div>
-                }
+                      <p style={{ marginTop: 4 }}>В дни новолуния/полнолуния организм ослаблен.</p>
+                   </div>                }
              >
                 <p>Избегайте малой хирургии, иглотерапии и агрессивных процедур на коже.</p>
              </FlipCardBlock>
@@ -561,4 +560,4 @@ export function ProfileSection() {
       {selectedYear !== null && <YearModal year={selectedYear} currentAge={age} onClose={() => setSelectedYear(null)} />}
     </div>
   );
-                 }
+                        }
