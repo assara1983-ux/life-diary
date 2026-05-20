@@ -1,5 +1,5 @@
 // src/components/Onboarding.jsx
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useApp } from "../store/AppContext";
 
 // ═══════════════════════════════════════════════════════════════
@@ -728,4 +728,4 @@ export function Onboarding() {
       </div>
     </div>
   );
-                                         }
+                }
