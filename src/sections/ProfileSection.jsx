@@ -73,30 +73,42 @@ function InnerAccordion({ title, children, defaultOpen = false }) {
 }
 
 // ─── КАРТОЧКА (МОДИФИЦИРОВАНА: frontContent) ───
-function FlipCardBlock({ title, frontImage, accentColor = "var(--blue)", children, minHeight = 340 }) {
+function FlipCardBlock({ title, frontImage, accentColor = "var(--blue)", children, minHeight = 340, frontContent }) {
   const [flipped, setFlipped] = useState(false);
   return (
     <div style={{ perspective: "1200px", marginBottom: 28 }}>
       <div onClick={() => setFlipped(!flipped)} style={{ position: "relative", width: "100%", minHeight, transformStyle: "preserve-3d", transition: "transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1)", transform: flipped ? "rotateY(180deg)" : "none", cursor: "pointer", borderRadius: 12 }}>
+        
+        {/* ЛИЦЕВАЯ СТОРОНА */}
         <div style={{ position: "absolute", inset: 0, backfaceVisibility: "hidden", borderRadius: 12, overflow: "hidden", background: "linear-gradient(135deg, #f8f4e8 0%, #e8d8c0 100%)", border: "2px solid var(--gold)", boxShadow: "0 6px 20px rgba(0,0,0,0.12)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", transform: "translateZ(0)" }}>
           {frontImage ? <img src={frontImage} alt={title} style={{ maxHeight: "70%", maxWidth: "90%", objectFit: "contain", filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.15))" }} onError={(e) => e.target.style.display = "none"} /> : <div style={{ width: "80%", height: "60%", background: "rgba(0,112,192,0.05)", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text3)", fontSize: 12 }}>Иллюстрация</div>}
-          <div style={{ marginTop: 14, fontFamily: "var(--font-head)", fontSize: 15, color: "var(--blue)", letterSpacing: "1px", fontWeight: 500 }}>{title}</div>
-          <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 4, fontFamily: "var(--font-mono)" }}>Нажмите для деталей</div>
+          
+          {frontContent ? (
+            <div style={{ padding: "0 20px 20px", width: "100%", textAlign: "center" }}>{frontContent}</div>
+          ) : (
+            <>
+              <div style={{ marginTop: 14, fontFamily: "var(--font-head)", fontSize: 15, color: "var(--blue)", letterSpacing: "1px", fontWeight: 500 }}>{title}</div>
+              <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 4, fontFamily: "var(--font-mono)" }}>Нажмите для деталей</div>
+            </>
+          )}
         </div>
+
+        {/* ОБОРОТНАЯ СТОРОНА */}
         <div style={{ position: "absolute", inset: 0, backfaceVisibility: "hidden", transform: "rotateY(180deg) translateZ(0)", borderRadius: 12, overflow: "hidden", background: "rgba(255,255,255,0.98)", border: "1.5px solid rgba(0,112,192,0.25)", boxShadow: "0 4px 16px rgba(0,112,192,0.12)", padding: 18, display: "flex", flexDirection: "column" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, paddingBottom: 12, borderBottom: "1px solid var(--line)" }}>
-            <div style={{ width: 4, height: 24, background: accentColor, borderRadius: 2, boxShadow: "0 2px 4px rgba(0,0,0,0.1)" }} />
-            <h3 style={{ fontFamily: "var(--font-head)", fontSize: 15, color: "var(--blue)", margin: 0, letterSpacing: "0.6px", fontWeight: 600 }}>{title}</h3>
+            <div style={{ width: 4, height: 24, background: accentColor, borderRadius: 2, boxShadow: "0 2px 4px rgba(0,0,0,0.1)" }} />            <h3 style={{ fontFamily: "var(--font-head)", fontSize: 15, color: "var(--blue)", margin: 0, letterSpacing: "0.6px", fontWeight: 600 }}>{title}</h3>
           </div>
           <div style={{ overflowY: "auto", flex: 1, maxHeight: "65vh", fontSize: 14, lineHeight: 1.7, color: "var(--text2)", paddingRight: 4 }}>{children}</div>
         </div>
+
       </div>
     </div>
   );
 }
 
 // ─── МОДАЛЬНОЕ ОКНО ПЕРИОДА ───
-function YearModal({ year, currentAge, onClose }) {  const stageIndex = Math.floor((year % 60) / 5) % 12;
+function YearModal({ year, currentAge, onClose }) {
+  const stageIndex = Math.floor((year % 60) / 5) % 12;
   const stage = JIAZI_STAGES[stageIndex];
   const isCurrent = year === currentAge;
   return (
@@ -134,7 +146,6 @@ function YearModal({ year, currentAge, onClose }) {  const stageIndex = Math.flo
           <p style={{ marginBottom: 8 }}>В период {year} лет энергетический фон требует {year % 5 === 0 ? 'переходной осторожности' : year % 2 === 0 ? 'стабилизации и заземления' : 'активности и движения'}.</p>
           <p>Синхронизация с биоритмами и лунными циклами в этот период усиливает влияние {stage.name === 'Расцвет' ? 'Ян-Ци (расширение)' : 'Инь-Ци (внутренняя работа)'}. Рекомендованы практики {stage.name === 'Старение' ? 'сохранения и наставничества' : 'реализации и обмена энергией'}.</p>
         </InnerAccordion>
-
         {isCurrent && (
           <div style={{ marginTop: 12, padding: 12, background: "rgba(0,112,192,0.06)", borderRadius: 8, borderLeft: "3px solid var(--blue)" }}>
             <strong style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--blue)", letterSpacing: 1 }}>🧭 ВАШ ТЕКУЩИЙ ПУТЬ</strong>
@@ -145,29 +156,49 @@ function YearModal({ year, currentAge, onClose }) {  const stageIndex = Math.flo
     </div>
   );
 }
-// ─── ГРАФИЧЕСКИЙ ТАЙМЛАЙН (ЦИЯЦЗЫ) ───
+
+// ─── ГРАФИЧЕСКИЙ ТАЙМЛАЙН (5 ЛИНИЙ) ───
 function CycleTimeline({ dob, onYearSelect }) {
-  const age = dob ? Math.floor((new Date() - new Date(dob)) / (365.25 * 24 * 60 * 60 * 1000)) : 0;
+  // ✅ ТОЧНЫЙ РАСЧЕТ ВОЗРАСТА (useMemo)
+  const age = useMemo(() => {
+    if (!dob) return 0;
+    const today = new Date();
+    const birthDate = new Date(dob);
+    let ageVal = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+      ageVal--;
+    }
+    return ageVal;
+  }, [dob]);
+
   const years = useMemo(() => Array.from({ length: 21 }, (_, i) => i * 5), []);
   const [hoverYear, setHoverYear] = useState(null);
 
-  // Генерация данных для графика на основе стадий Цяцзы
-  const generateChartData = () => {
-    const points = { health: [], career: [], relations: [], spirit: [], finance: [] };
-    years.forEach((y, i) => {
-      const stageIndex = Math.floor((y % 60) / 5) % 12;
-      const stage = JIAZI_STAGES[stageIndex];
-      Object.keys(points).forEach(k => {
-        // Добавляем вариативность для плавности
-        const base = stage.spheres[k] || 50;
-        const variation = Math.sin(i * 0.5) * 10; 
-        points[k].push({ x: i, y: Math.max(0, Math.min(100, base + variation)) });
-      });
-    });
+  // Данные для 5 линий (Здоровье, Карьера, Отношения, Духовность, Финансы)
+  // Значения энергии (0-100) для 12 стадий Цяцзы
+  const stagePower = {
+    health: [30, 40, 55, 70, 90, 80, 60, 40, 35, 45, 55, 65],
+    career: [20, 35, 50, 70, 90, 75, 55, 35, 40, 55, 70, 80],
+    relations: [40, 50, 60, 70, 80, 90, 70, 50, 60, 70, 80, 90],
+    spirit: [90, 80, 70, 60, 50, 60, 80, 95, 85, 75, 65, 55],
+    finance: [10, 30, 50, 70, 80, 70, 50, 30, 40, 60, 80, 95]
+  };
+
+  // Интерполяция для 20 точек (0-100 лет)
+  const getChartData = (sphere) => {
+    const data = stagePower[sphere];
+    const points = [];
+    for (let i = 0; i < 20; i++) {
+      const idx = (i / 20) * 12;
+      const lower = Math.floor(idx);
+      const upper = Math.ceil(idx) % 12;
+      const frac = idx - lower;
+      const val = data[lower] + (data[upper] - data[lower]) * frac;      points.push({ x: i, y: val });
+    }
     return points;
   };
 
-  const chartData = generateChartData();
   const width = 800;
   const height = 200;
   const paddingX = 40;
@@ -182,21 +213,22 @@ function CycleTimeline({ dob, onYearSelect }) {
   return (
     <div style={{ position: "relative", padding: "20px 0", overflow: "hidden", borderRadius: 12, background: "rgba(255,255,255,0.8)", border: "1px solid var(--line)", marginBottom: 24 }}>
       <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none", opacity: 0.6 }} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMidYMid meet">
-        {/* Сетка */}
+        <defs>
+          <style>{"@keyframes flow-bg { 0%{stroke-dashoffset:0} 100%{stroke-dashoffset:-40} } "}</style>
+        </defs>
         <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
           <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(0,112,192,0.08)" strokeWidth="0.5" />
         </pattern>
         <rect width="100%" height="100%" fill="url(#grid)" />
         
-        {/* Линии сетки */}
         {[0, 25, 50, 75, 100].map(pct => (
            <line key={pct} x1={paddingX} y1={getScaledY(pct)} x2={width - paddingX} y2={getScaledY(pct)} stroke="rgba(0,112,192,0.1)" strokeWidth="1" />
         ))}
 
-        {/* Кривые сфер */}
-        {spheres.map(sphere => {          const data = chartData[sphere];
+        {spheres.map(sphere => {
+          const data = getChartData(sphere);
           const d = data.map((pt, i) => {
-            const x = paddingX + (i / (years.length - 1)) * graphWidth;
+            const x = paddingX + (i / 19) * graphWidth;
             const y = getScaledY(pt.y);
             return `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
           }).join(' ');
@@ -205,29 +237,21 @@ function CycleTimeline({ dob, onYearSelect }) {
           );
         })}
 
-        {/* Маркеры лет и тултипы */}
         {years.map((y, i) => {
-          const x = paddingX + (i / (years.length - 1)) * graphWidth;
+          const x = paddingX + (i / 19) * graphWidth;
           return (
             <g key={y} onMouseEnter={() => setHoverYear(y)} onMouseLeave={() => setHoverYear(null)} style={{ cursor: 'pointer' }}>
-              {/* Невидимая область для наведения */}
               <rect x={x - 15} y={0} width={30} height={height} fill="transparent" />
-              
-              {/* Точки маркеров */}
               {spheres.map(sphere => {
-                const pt = chartData[sphere][i];
-                const py = getScaledY(pt.y);
+                const data = getChartData(sphere);                const py = getScaledY(data[i].y);
                 return <circle key={sphere} cx={x} cy={py} r={hoverYear === y ? 5 : 3} fill={getSphereColor(sphere)} opacity={hoverYear === y ? 1 : 0} />;
               })}
-              
-              {/* Метка года */}
               <text x={x} y={height - 5} textAnchor="middle" fontSize="10" fontFamily="var(--font-mono)" fill={hoverYear === y ? "var(--blue)" : "var(--text3)"}>{y}</text>
             </g>
           );
         })}
       </svg>
 
-      {/* Заголовок и Легенда */}
       <div style={{ position: "relative", zIndex: 1, padding: "0 20px", marginBottom: 20 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
            <h3 style={{ fontFamily: "var(--font-head)", fontSize: 16, color: "var(--blue)", margin: 0, letterSpacing: 1 }}>🌊 Жизненный цикл (Цяцзы)</h3>
@@ -243,7 +267,7 @@ function CycleTimeline({ dob, onYearSelect }) {
            ))}
         </div>
       </div>
-      {/* Тултип при наведении */}
+
       {hoverYear !== null && (
         <div style={{
           position: "absolute", bottom: 20, left: 20, right: 20,
@@ -253,8 +277,9 @@ function CycleTimeline({ dob, onYearSelect }) {
           <div style={{ fontFamily: "var(--font-head)", fontSize: 14, color: "var(--blue)", marginBottom: 8 }}>Возраст: {hoverYear} лет</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 8 }}>
             {spheres.map(s => {
-              const idx = hoverYear / 5;
-              const val = chartData[s][idx] ? Math.round(chartData[s][idx].y) : "—";
+              const data = getChartData(s);
+              const idx = Math.round((hoverYear / 100) * 19);
+              const val = data[idx] ? Math.round(data[idx].y) : "—";
               return (
                 <div key={s} style={{ fontSize: 12, display: "flex", justifyContent: "space-between" }}>
                   <span style={{ color: "var(--text3)" }}>{s}:</span>
@@ -267,13 +292,11 @@ function CycleTimeline({ dob, onYearSelect }) {
       )}
 
       <div style={{ textAlign: "center", fontSize: 11, color: "var(--text3)", marginTop: 12 }}>
-         Нажмите на год для детализации. Наведите для просмотра баланса сфер.
-      </div>
+         Нажмите на год для детализации. Наведите для просмотра баланса сфер.      </div>
     </div>
   );
 }
 
-// Вспомогательная функция цветов (нужна для графика)
 const getSphereColor = (sphere) => {
   switch(sphere) {
     case 'health': return '#2d6a4f';
@@ -293,8 +316,10 @@ export function ProfileSection() {
   const [selectedYear, setSelectedYear] = useState(null);
 
   if (!profile) return <div style={{ padding: 40, textAlign: "center", color: "var(--text2)" }}>Загрузка профиля...</div>;
+
   const insights = getProfileInsights(profile);
-  // ✅ ТОЧНЫЙ РАСЧЕТ ВОЗРАСТА (дублируем для надежности в основном компоненте)
+  
+  // ✅ ТОЧНЫЙ РАСЧЕТ ВОЗРАСТА (useMemo)
   const age = useMemo(() => {
     if (!profile.dob) return null;
     const today = new Date();
@@ -316,8 +341,7 @@ export function ProfileSection() {
   const currentJiaziStage = JIAZI_STAGES[currentJiaziIndex];
 
   const handleRefresh = () => { setIsRefreshing(true); setTimeout(() => { setIsRefreshing(false); notify?.("✅ Данные обновлены"); }, 800); };
-  const handleReset = () => { if (window.confirm("Вы уверены? Это удалит ваш профиль и вернет к началу настройки.")) { setProfile(null); notify?.("🗑️ Профиль сброшен"); } };
-  const handleYearSelect = (y) => setSelectedYear(y);
+  const handleReset = () => { if (window.confirm("Вы уверены? Это удалит ваш профиль и вернет к началу настройки.")) { setProfile(null); notify?.("🗑️ Профиль сброшен"); } };  const handleYearSelect = (y) => setSelectedYear(y);
 
   return (
     <div className="page" style={{ paddingBottom: 100 }}>
@@ -325,94 +349,170 @@ export function ProfileSection() {
       
       {activeTab === 'main' && (
         <>
-          <FlipCardBlock title="Профиль" frontImage={isMale ? '/assets/avatars-icons/male-avatar.png' : '/assets/avatars-icons/female-avatar.png'} accentColor="var(--blue)" minHeight={360}>
-            <div style={{ textAlign: "center", marginTop: 10, marginBottom: 16 }}>
-              <h2 style={{ fontFamily: "var(--font-head)", fontSize: 22, color: "var(--text1)", margin: "0 0 8px 0", letterSpacing: "1.2px", fontWeight: 600 }}>{profile.name || "Пользователь"}</h2>
-              <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap", marginBottom: 12 }}>
-                <span className="badge bgr" style={{ fontSize: 12, padding: "4px 10px" }}>🎂 {age ?? "—"} лет</span>
-                {profile.chronotype && <span className="badge bt" style={{ fontSize: 12, padding: "4px 10px" }}>⏱ {profile.chronotype}</span>}
-                {insights.zodiac && <span className="badge bm" style={{ fontSize: 12, padding: "4px 10px" }}>♈ {insights.zodiac}</span>}
+          <FlipCardBlock title="Профиль" frontImage={isMale ? '/assets/avatars-icons/male-avatar.png' : '/assets/avatars-icons/female-avatar.png'} accentColor="var(--blue)" minHeight={360}
+            frontContent={
+              <div style={{ textAlign: "center", marginTop: 10 }}>
+                 <h2 style={{ fontFamily: "var(--font-head)", fontSize: 22, color: "var(--text1)", margin: "0 0 8px 0", letterSpacing: "1.2px", fontWeight: 600 }}>{profile.name || "Пользователь"}</h2>
+                 <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap", marginBottom: 8 }}>
+                    <span className="badge bgr" style={{ fontSize: 12, padding: "4px 10px" }}>🎂 {age ?? "—"} лет</span>
+                    {profile.chronotype && <span className="badge bt" style={{ fontSize: 12, padding: "4px 10px" }}>⏱ {profile.chronotype}</span>}
+                    {insights.zodiac && <span className="badge bm" style={{ fontSize: 12, padding: "4px 10px" }}>♈ {insights.zodiac}</span>}
+                 </div>
+                 <div style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.5, padding: "8px 12px", background: "rgba(0,112,192,0.05)", borderRadius: 8, borderLeft: "3px solid var(--gold)", textAlign: "left" }}>
+                    <strong style={{ color: "var(--gold-dark)" }}>Сводка:</strong> {insights.zodiac || "—"} ({insights.zodiacElement || "Воздух"}) · {insights.eastern || "—"} ({insights.easternElement || "Вода"}) · Градус: <strong style={{ color: "var(--gold)" }}>{destiny.degree}°</strong>
+                 </div>
               </div>
-              <div style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.6, padding: "12px 14px", background: "rgba(0,112,192,0.05)", borderRadius: 8, borderLeft: "3px solid var(--gold)", textAlign: "left" }}>
-                <strong style={{ color: "var(--gold-dark)" }}>Сводка:</strong> {insights.zodiac || "—"} ({insights.zodiacElement || "Воздух"}) · {insights.eastern || "—"} ({insights.easternElement || "Вода"}) · Градус: <strong style={{ color: "var(--gold)" }}>{destiny.degree}°</strong>
-              </div>
-            </div>
-            <InnerAccordion title="Данные аккаунта" defaultOpen={true}>
-              <div>ФИО: {profile.fullName || "—"} <br/>Дата рождения: {profile.dob || "—"} <br/>Пол: {profile.gender || "—"} <br/>Хроно-тип: {profile.chronotype || "—"}</div>
-            </InnerAccordion>
-          </FlipCardBlock>
-          <FlipCardBlock title="Западный Зодиак" frontImage={getFrontImage("western", insights.zodiac)} accentColor="var(--blue)">
-            <div style={{ fontSize: 14, lineHeight: 1.75, color: "var(--text2)" }}>
-              <p style={{ marginBottom: 12, fontWeight: 500 }}><strong style={{ color: "var(--blue)", fontSize: 16 }}>{insights.zodiac || "—"}</strong> <span>({insights.zodiacElement || "Воздух"}) под управлением {insights.rulingPlanet || "Меркурия"}. </span></p>
-              <InnerAccordion title="Сильные стороны" defaultOpen={true}>{insights.zodiacStrengths || "Коммуникация, адаптивность, интеллект"}</InnerAccordion>
-              <InnerAccordion title="Уязвимые зоны">{insights.zodiacWeaknesses || "Лёгкие, бронхи, плечи, нервная система"}</InnerAccordion>
-              <InnerAccordion title="Как использовать">
-                <ul style={{ margin: "0 0 0 18px", lineHeight: 1.7 }}>
-                  <li>Планируй важные дела на {chronoPeaks.focus?.hours || "утро"}</li>
-                  <li>Избегай многозадачности</li>
-                  <li>Дыхательные практики укрепляют слабые зоны</li>
-                </ul>
-              </InnerAccordion>
+            }
+          >
+            <div style={{ textAlign: "center", color: "var(--text3)", marginTop: 40, fontSize: 12 }}>
+               <p>Подробная информация доступна в настройках приложения.</p>
             </div>
           </FlipCardBlock>
 
-          <FlipCardBlock title="Восточный Знак" frontImage={getFrontImage("eastern", insights.eastern)} accentColor="var(--gold)">
-            <div style={{ fontSize: 14, lineHeight: 1.75, color: "var(--text2)" }}>
-              <p style={{ marginBottom: 12, fontWeight: 500 }}><strong style={{ color: "var(--gold-dark)", fontSize: 16 }}>{insights.eastern || "—"}</strong> <span>({insights.easternElement || "Вода"}). </span></p>
-              <InnerAccordion title="Энергетический портрет" defaultOpen={true}>{insights.easternTraits || "Честность и терпимость"}. Твоя стихия наделяет тебя глубокой интуицией.</InnerAccordion>
-              <InnerAccordion title="Кармическая задача">{insights.easternKarma || "Научиться говорить 'нет' без чувства вины"}. Выстраивай границы, не теряя эмпатии.</InnerAccordion>
-              <InnerAccordion title="Рекомендации">
+          <FlipCardBlock title="Западный Зодиак" frontImage={getFrontImage("western", insights.zodiac)} accentColor="var(--blue)"
+            frontContent={
+               <div style={{ fontSize: 13, lineHeight: 1.6, color: "var(--text2)", padding: "0 10px" }}>
+                  <p style={{ marginBottom: 8, fontWeight: 500 }}>
+                     <strong style={{ color: "var(--blue)", fontSize: 15 }}>{insights.zodiac || "—"}</strong> <span>({insights.zodiacElement || "Воздух"}) под управлением {insights.rulingPlanet || "Меркурия"}.</span>
+                  </p>
+                  <InnerAccordion title="Сильные стороны" defaultOpen={true}>
+                     {insights.zodiacStrengths || "Коммуникация, адаптивность, интеллект"}
+                  </InnerAccordion>
+               </div>
+             }
+          >
+             <InnerAccordion title="Уязвимые зоны">
+                {insights.zodiacWeaknesses || "Лёгкие, бронхи, плечи, нервная система"}
+             </InnerAccordion>
+             <InnerAccordion title="Как использовать">
                 <ul style={{ margin: "0 0 0 18px", lineHeight: 1.7 }}>
-                  <li>Используй спады энергии для восстановления</li>
-                  <li>Доверяй интуиции в финансовых вопросах</li>
-                  <li>Избегай токсичных связей</li>
+                   <li>Планируй важные дела на {chronoPeaks.focus?.hours || "утро"}</li>
+                   <li>Избегай многозадачности</li>
+                   <li>Дыхательные практики укрепляют слабые зоны</li>
                 </ul>
-              </InnerAccordion>
-            </div>
+             </InnerAccordion>          </FlipCardBlock>
+
+          <FlipCardBlock title="Восточный Знак" frontImage={getFrontImage("eastern", insights.eastern)} accentColor="var(--gold)"
+            frontContent={
+               <div style={{ fontSize: 13, lineHeight: 1.6, color: "var(--text2)", padding: "0 10px" }}>
+                  <p style={{ marginBottom: 8, fontWeight: 500 }}>
+                     <strong style={{ color: "var(--gold-dark)", fontSize: 15 }}>{insights.eastern || "—"}</strong> <span>({insights.easternElement || "Вода"}).</span>
+                  </p>
+                  <InnerAccordion title="Энергетический портрет" defaultOpen={true}>
+                     {insights.easternTraits || "Честность и терпимость"}. Твоя стихия наделяет тебя глубокой интуицией.
+                  </InnerAccordion>
+               </div>
+             }
+          >
+             <InnerAccordion title="Кармическая задача">
+                {insights.easternKarma || "Научиться говорить 'нет' без чувства вины"}. Выстраивай границы, не теряя эмпатии.
+             </InnerAccordion>
+             <InnerAccordion title="Рекомендации">
+                <ul style={{ margin: "0 0 0 18px", lineHeight: 1.7 }}>
+                   <li>Используй спады энергии для восстановления</li>
+                   <li>Доверяй интуиции в финансовых вопросах</li>
+                   <li>Избегай токсичных связей</li>
+                </ul>
+             </InnerAccordion>
           </FlipCardBlock>
 
-          <FlipCardBlock title="Градус Судьбы" frontImage={getFrontImage("destiny")} accentColor="var(--gold)">
-            <div style={{ textAlign: "center", padding: "8px 0 16px" }}>
-              <div style={{ fontFamily: "var(--font-head)", fontSize: 38, color: "var(--gold)", fontWeight: 600, letterSpacing: "2.5px" }}>{destiny.degree || 241}°</div>
-              <div style={{ fontFamily: "var(--font-italic)", fontSize: 15, color: "var(--text2)", marginTop: 6, fontStyle: "italic" }}>{destiny.interpretation || "Интеграция опыта"}</div>
-            </div>
-            <InnerAccordion title="Зона развития" defaultOpen={true}>Твой градус {destiny.degree}° указывает на текущую фазу жизненного цикла. {destiny.degree < 120 ? "Активное созидание. " : destiny.degree < 240 ? "Структурирование роста. " : "Интеграция опыта. "}</InnerAccordion>
-            <InnerAccordion title="Как использовать">
-              <ul style={{ margin: "0 0 0 18px", lineHeight: 1.7 }}>
-                <li>Доверяй интуиции, проверяй фактами</li>
-                <li>Веди дневник наблюдений</li>
-              </ul>
-            </InnerAccordion>
+          <FlipCardBlock title="Градус Судьбы" frontImage={getFrontImage("destiny")} accentColor="var(--gold)"
+            frontContent={
+               <div style={{ textAlign: "center", padding: "0 10px" }}>
+                  <div style={{ fontFamily: "var(--font-head)", fontSize: 32, color: "var(--gold)", fontWeight: 600, letterSpacing: "2.5px" }}>{destiny.degree || 241}°</div>
+                  <div style={{ fontFamily: "var(--font-italic)", fontSize: 14, color: "var(--text2)", marginTop: 4, fontStyle: "italic" }}>{destiny.interpretation || "Интеграция опыта"}</div>
+                  <InnerAccordion title="Описание" defaultOpen={true} style={{ marginTop: 12, textAlign: "left" }}>
+                     Твой градус {destiny.degree}° указывает на текущую фазу жизненного цикла. {destiny.degree < 120 ? "Активное созидание. " : destiny.degree < 240 ? "Структурирование роста. " : "Интеграция опыта. "}
+                  </InnerAccordion>
+               </div>
+             }
+          >
+             <InnerAccordion title="Как использовать">
+                <ul style={{ margin: "0 0 0 18px", lineHeight: 1.7 }}>
+                   <li>Доверяй интуиции, проверяй фактами</li>
+                   <li>Веди дневник наблюдений</li>
+                </ul>
+             </InnerAccordion>
           </FlipCardBlock>
 
-          <FlipCardBlock title="Хроно-тип" frontImage={getFrontImage("chrono", profile.chronotype)} accentColor="var(--blue)">
-            <div style={{ fontSize: 14, lineHeight: 1.75, color: "var(--text2)" }}>
-              <p style={{ marginBottom: 14, fontWeight: 500 }}><strong style={{ color: "var(--blue)", fontSize: 16 }}>{profile.chronotype || "🕊️ Голубь"}</strong></p>
-              <div style={{ display: "grid", gap: 10, marginBottom: 14 }}>
-                <div style={{ padding: 12, background: "rgba(45,106,79,0.08)", borderRadius: 8, borderLeft: "3px solid var(--success)" }}>
-                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--success)", letterSpacing: 1, marginBottom: 6 }}>🧠 ПИК КОНЦЕНТРАЦИИ</div>                  <p style={{ margin: 0, fontSize: 13 }}>{chronoPeaks.focus?.tip || "Самые сложные задачи — в это время."}</p>
-                </div>
-                <div style={{ padding: 12, background: "rgba(139,32,32,0.06)", borderRadius: 8, borderLeft: "3px solid var(--error)" }}>
-                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--error)", letterSpacing: 1, marginBottom: 6 }}>⚡ ПРОВАЛ ЭНЕРГИИ</div>
-                  <p style={{ margin: 0, fontSize: 13 }}>Идеально для рутины и делегирования.</p>
-                </div>
-              </div>
-              <InnerAccordion title="Как использовать" defaultOpen={true}>
+          <FlipCardBlock title="Хроно-тип" frontImage={getFrontImage("chrono", profile.chronotype)} accentColor="var(--blue)"
+            frontContent={
+               <div style={{ fontSize: 13, lineHeight: 1.6, color: "var(--text2)", padding: "0 10px" }}>
+                  <p style={{ marginBottom: 10, fontWeight: 500 }}>
+                     <strong style={{ color: "var(--blue)", fontSize: 15 }}>{profile.chronotype || "🕊️ Голубь"}</strong>                  </p>
+                  <div style={{ padding: 10, background: "rgba(45,106,79,0.08)", borderRadius: 8, borderLeft: "3px solid var(--success)", marginBottom: 10 }}>
+                     <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--success)", letterSpacing: 1, marginBottom: 4 }}>🧠 ПИК КОНЦЕНТРАЦИИ</div>
+                     <p style={{ margin: 0, fontSize: 12 }}>{chronoPeaks.focus?.tip || "Самые сложные задачи — в это время."}</p>
+                  </div>
+               </div>
+             }
+          >
+             <div style={{ padding: 10, background: "rgba(139,32,32,0.06)", borderRadius: 8, borderLeft: "3px solid var(--error)", marginBottom: 12 }}>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--error)", letterSpacing: 1, marginBottom: 4 }}>⚡ ПРОВАЛ ЭНЕРГИИ</div>
+                <p style={{ margin: 0, fontSize: 12 }}>{chronoPeaks.rest?.tip || "Идеально для рутины."}</p>
+             </div>
+             <InnerAccordion title="Как использовать" defaultOpen={true}>
                 <ul style={{ margin: "0 0 0 18px", lineHeight: 1.7 }}>
-                  <li>Синхронизируй расписание с биоритмами — КПД +30–40%</li>
-                  <li>Сложные решения — только в пиковые часы</li>
-                  <li>Соблюдай режим сна: {chronoPeaks.sleep?.hours || "22:30–23:30"}</li>
+                   <li>Синхронизируй расписание с биоритмами — КПД +30–40%</li>
+                   <li>Сложные решения — только в пиковые часы</li>
+                   <li>Соблюдай режим сна: {chronoPeaks.sleep?.hours || "22:30–23:30"}</li>
                 </ul>
-              </InnerAccordion>
-            </div>
+             </InnerAccordion>
           </FlipCardBlock>
         </>
       )}
 
       {activeTab === 'deep' && (
-         <>
-          {/* 1. ГРАФИК ЖИЗНЕННОГО ЦИКЛА */}
-           <CycleTimeline dob={profile.dob} onYearSelect={handleYearSelect} />
+        <>
+          {/* 1. ГЛУБОКИЙ АНАЛИЗ (СЕТКА 2x2) */}
+           <div style={{ background: "rgba(0,112,192,0.03)", borderRadius: 10, padding: 18, border: "1px solid var(--line)", marginBottom: 24 }}>
+             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, paddingBottom: 10, borderBottom: "1px solid var(--line)" }}>
+               <div style={{ width: 4, height: 24, background: "var(--blue)", borderRadius: 2 }} />
+               <h3 style={{ fontFamily: "var(--font-head)", fontSize: 16, color: "var(--blue)", margin: 0, letterSpacing: 1 }}>🔍 Глубокий анализ профиля</h3>
+             </div>
+             
+             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
+                {/* Методология */}
+                <div style={{ background: "#fff", padding: 16, borderRadius: 8, border: "1px solid var(--line)", borderTop: "3px solid var(--blue)" }}>
+                   <h4 style={{ fontFamily: "var(--font-head)", fontSize: 14, color: "var(--blue)", margin: "0 0 8px 0" }}>Методология</h4>
+                   <div style={{ fontSize: 13, lineHeight: 1.6, color: "var(--text2)" }}>
+                      <div style={{ marginBottom: 6 }}><strong style={{ color: "var(--blue)" }}>Цзяцзы:</strong> Возраст редуцируется по модулю 60 → определяется стадия (0–5, 5–10… 55–60 лет). Каждая стадия задаёт вектор Ци для 5 сфер.</div>
+                      <div style={{ marginBottom: 6 }}><strong style={{ color: "var(--gold-dark)" }}>Ведический календарь:</strong> Определяется сезонный фон (Ян/Инь Ци), лунные ограничения по декадам, конфликт дней с месяцем, благоприятные/неблагоприятные часы.</div>
+                      <div><strong style={{ color: "var(--success)" }}>Рао (Йоги/Мараки):</strong> Управители 1,5,9 домов → благотворные; 3,6,11 → злотворные; 2,8,12 → пагубно-нейтральные. Мараки (2+7) показывают зоны риска.</div>
+                   </div>
+                </div>
+
+                {/* Синхронизация */}
+                <div style={{ background: "#fff", padding: 16, borderRadius: 8, border: "1px solid var(--line)", borderTop: "3px solid var(--gold)" }}>
+                   <h4 style={{ fontFamily: "var(--font-head)", fontSize: 14, color: "var(--gold)", margin: "0 0 8px 0" }}>Синхронизация</h4>
+                   <div style={{ fontSize: 13, lineHeight: 1.6, color: "var(--text2)" }}>
+                      <p style={{ marginBottom: 6 }}>Ваша текущая фаза Цзяцзы требует {currentJiaziStage.name === 'Расцвет' ? 'реализации и лидерства' : currentJiaziStage.name === 'Взросление' ? 'стабилизации и долгосрочных проектов' : 'восстановления и аккумулирования ресурсов'}.</p>
+                      <p style={{ marginBottom: 6 }}>Ведический фон указывает на необходимость {insights.zodiac === 'Близнецы' ? 'баланса речи и дыхательных практик' : 'гармонизации Инь-Ян через режим сна и питание'}.</p>
+                      <p>Пересечение показывает: благоприятно действовать в пиковые часы биоритмов, избегать агрессивной терапии в лунные запрещённые декады, использовать период для {insights.zodiacStrengths ? 'развития сильных зон' : 'укрепления базы'}.</p>                   </div>
+                </div>
+
+                {/* Рекомендации */}
+                <div style={{ background: "#fff", padding: 16, borderRadius: 8, border: "1px solid var(--line)", borderTop: "3px solid var(--success)" }}>
+                   <h4 style={{ fontFamily: "var(--font-head)", fontSize: 14, color: "var(--success)", margin: "0 0 8px 0" }}>Рекомендации</h4>
+                   <ul style={{ fontSize: 13, lineHeight: 1.6, color: "var(--text2)", margin: "0 0 0 16px", padding: 0 }}>
+                      <li>Планируйте важные решения на часы, совпадающие с пиком вашей энергии и благоприятными звёздами часа</li>
+                      <li>В стадии {currentJiaziStage.name} фокусируйтесь на {currentJiaziStage.spheres.career || 'развитии'} и {currentJiaziStage.spheres.health || 'здоровье'}</li>
+                      <li>Избегайте курсов лечения в дни угасания Ци и разделителей сезонной энергии</li>
+                      <li>Для умиротворения мараковых периодов: чтение стотр 108×, благотворительность, осознанное питание</li>
+                      <li>Отслеживайте конфликт дней с месячным знаком → в эти дни не начинайте нового</li>
+                   </ul>
+                </div>
+
+                {/* Зоны внимания */}
+                <div style={{ background: "#fff", padding: 16, borderRadius: 8, border: "1px solid var(--line)", borderTop: "3px solid var(--error)" }}>
+                   <h4 style={{ fontFamily: "var(--font-head)", fontSize: 14, color: "var(--error)", margin: "0 0 8px 0" }}>Зоны внимания</h4>
+                   <div style={{ fontSize: 13, lineHeight: 1.6, color: "var(--text2)" }}>
+                      <p style={{ marginBottom: 6 }}>Учитывая знак {insights.zodiac || '—'} и лунные узлы, особое внимание уделите: {meridianInfo.tip || 'регулярности питания и режиму'}. В сезоны перехода (равноденствия/солнцестояния) проводится мягкая коррекция Ци.</p>
+                      <p>При наличии мараковых планет в активные периоды: минимизируйте риски, делайте чекапы, практикуйте дыхательные и заземляющие техники. Судьба = семя, воля = почва. Вы управляете урожаем.</p>
+                   </div>
+                </div>
+             </div>
+           </div>
 
           {/* 2. ВЕДИЧЕСКИЙ КАЛЕНДАРЬ (КАРТОЧКИ) */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16, marginBottom: 24 }}>
@@ -437,57 +537,18 @@ export function ProfileSection() {
                 frontContent={
                    <div style={{ fontSize: 13, lineHeight: 1.6, padding: "0 10px" }}>
                       <strong style={{ color: "var(--text1)", fontSize: 15 }}>Запреты</strong>
-                      <p style={{ marginTop: 4 }}>В дни новолуния/полнолуния организм ослаблен.</p>
-                   </div>
-                }             >
+                      <p style={{ marginTop: 4 }}>В дни новолуния/полнолуния организм ослаблен.</p>                   </div>
+                }
+             >
                 <p>Избегайте малой хирургии, иглотерапии и агрессивных процедур на коже.</p>
              </FlipCardBlock>
           </div>
 
-          {/* 3. ГЛУБОКИЙ АНАЛИЗ ПРОФИЛЯ (ВИЗУАЛЬНЫЕ БЛОКИ) */}
-           <div style={{ background: "rgba(0,112,192,0.03)", borderRadius: 10, padding: 18, border: "1px solid var(--line)" }}>
-             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, paddingBottom: 10, borderBottom: "1px solid var(--line)" }}>
-               <div style={{ width: 4, height: 24, background: "var(--blue)", borderRadius: 2 }} />
-               <h3 style={{ fontFamily: "var(--font-head)", fontSize: 16, color: "var(--blue)", margin: 0, letterSpacing: 1 }}>🔍 Глубокий анализ</h3>
-             </div>
-             
-             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
-                {/* Методология */}
-                <div style={{ background: "#fff", padding: 16, borderRadius: 8, border: "1px solid var(--line)", borderTop: "3px solid var(--blue)" }}>
-                   <h4 style={{ fontFamily: "var(--font-head)", fontSize: 14, color: "var(--blue)", margin: "0 0 8px 0" }}>Методология</h4>
-                   <p style={{ fontSize: 13, lineHeight: 1.6, color: "var(--text2)" }}>
-                      Пересечение 60-фазного цикла Цзяцзы, ведического календаря и кн. Рао.
-                   </p>
-                </div>
-
-                {/* Синхронизация */}
-                <div style={{ background: "#fff", padding: 16, borderRadius: 8, border: "1px solid var(--line)", borderTop: "3px solid var(--gold)" }}>
-                   <h4 style={{ fontFamily: "var(--font-head)", fontSize: 14, color: "var(--gold)", margin: "0 0 8px 0" }}>Синхронизация</h4>
-                   <p style={{ fontSize: 13, lineHeight: 1.6, color: "var(--text2)" }}>
-                      Текущая фаза: <strong>{currentJiaziStage.name}</strong>. Требует {currentJiaziStage.name === 'Расцвет' ? 'лидерства' : 'восстановления'}.
-                   </p>
-                </div>
-
-                {/* Рекомендации */}
-                <div style={{ background: "#fff", padding: 16, borderRadius: 8, border: "1px solid var(--line)", borderTop: "3px solid var(--success)" }}>
-                   <h4 style={{ fontFamily: "var(--font-head)", fontSize: 14, color: "var(--success)", margin: "0 0 8px 0" }}>Рекомендации</h4>
-                   <ul style={{ fontSize: 13, lineHeight: 1.6, color: "var(--text2)", margin: "0 0 0 16px", padding: 0 }}>
-                      <li>Планируйте на пиковые часы</li>
-                      <li>Фокус на {currentJiaziStage.spheres.career || 'карьере'}</li>
-                   </ul>
-                </div>
-
-                {/* Зоны внимания */}
-                <div style={{ background: "#fff", padding: 16, borderRadius: 8, border: "1px solid var(--line)", borderTop: "3px solid var(--error)" }}>
-                   <h4 style={{ fontFamily: "var(--font-head)", fontSize: 14, color: "var(--error)", margin: "0 0 8px 0" }}>Зоны внимания</h4>
-                   <p style={{ fontSize: 13, lineHeight: 1.6, color: "var(--text2)" }}>
-                      {meridianInfo.tip || 'Регулярность питания'}. Мягкая коррекция Ци в сезоны перехода.
-                   </p>
-                </div>
-             </div>
-           </div>
-         </>
+          {/* 3. ГРАФИК ЖИЗНЕННОГО ЦИКЛА */}
+           <CycleTimeline dob={profile.dob} onYearSelect={handleYearSelect} />
+        </>
       )}
+
        <div style={{ display: "flex", gap: 14, marginTop: 28 }}>
          <button className="btn btn-primary" onClick={handleRefresh} disabled={isRefreshing} style={{ flex: 1, opacity: isRefreshing ? 0.7 : 1, fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 1.2, padding: "12px 16px", borderRadius: 8 }}>
           {isRefreshing ? "⏳ Обновление..." : "🔄 Обновить данные"}
@@ -500,4 +561,4 @@ export function ProfileSection() {
       {selectedYear !== null && <YearModal year={selectedYear} currentAge={age} onClose={() => setSelectedYear(null)} />}
     </div>
   );
-                             }
+                 }
