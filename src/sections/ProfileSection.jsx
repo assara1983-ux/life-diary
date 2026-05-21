@@ -47,22 +47,64 @@ function InnerAccordion({ title, children, defaultOpen = false }) {
     <div style={{ marginBottom: 10, background: "rgba(0,112,192,0.04)", borderRadius: 8, border: "1px solid rgba(0,112,192,0.15)" }}>
       <div onClick={(e) => { e.stopPropagation(); setOpen(!open); }} style={{ padding: "10px 12px", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--blue)", letterSpacing: 0.5 }}>{title}</span>
-        <span style={{ fontSize: 12, color: "var(--gold)", transform: open ? "rotate(180deg)" : "rotate(0)", transition: "0.2s" }}>▼</span>
-      </div>
+        <span style={{ fontSize: 12, color: "var(--gold)", transform: open ? "rotate(180deg)" : "rotate(0)", transition: "0.2s" }}>▼</span>      </div>
       {open && <div style={{ padding: "0 12px 12px", fontSize: 13, lineHeight: 1.6, color: "var(--text2)" }}>{children}</div>}
     </div>
   );
 }
 
+// ✅ ИСПРАВЛЕНО: FlipCardBlock теперь всегда показывает title поверх контента
 function FlipCardBlock({ title, frontImage, accentColor = "var(--blue)", children, minHeight = 340, frontContent }) {
   const [flipped, setFlipped] = useState(false);
+  const [imgError, setImgError] = useState(false);
+
+  // Эмодзи-фоллбэк для основных знаков, если картинка не грузится
+  const getFallbackEmoji = () => {
+    if (title.includes("Западный")) return "♈";
+    if (title.includes("Восточный")) return "🐲";
+    if (title.includes("Хроно")) return "⏱️";
+    if (title.includes("Градус")) return "✨";
+    if (title.includes("Профиль")) return "👤";
+    return "📄";
+  };
+
   return (
     <div style={{ perspective: "1200px", marginBottom: 28 }}>
       <div onClick={() => setFlipped(!flipped)} style={{ position: "relative", width: "100%", minHeight, transformStyle: "preserve-3d", transition: "transform 0.6s", transform: flipped ? "rotateY(180deg)" : "none", cursor: "pointer", borderRadius: 12 }}>
+        
+        {/* ЛИЦЕВАЯ СТОРОНА */}
         <div style={{ position: "absolute", inset: 0, backfaceVisibility: "hidden", borderRadius: 12, overflow: "hidden", background: "linear-gradient(135deg, #f8f4e8 0%, #e8d8c0 100%)", border: "2px solid var(--gold)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-          {frontImage ? <img src={frontImage} alt={title} style={{ maxHeight: "70%", maxWidth: "90%", objectFit: "contain" }} onError={(e) => e.target.style.display = "none"} /> : <div style={{ fontSize: 12, color: "var(--text3)" }}>Нет иллюстрации</div>}
-          {frontContent ? <div style={{ padding: "0 20px 20px", width: "100%", textAlign: "center" }}>{frontContent}</div> : <div style={{ marginTop: 14, fontFamily: "var(--font-head)", fontSize: 15, color: "var(--blue)" }}>{title}</div>}
+          
+          {/* Слой 1: Фоновое изображение */}
+          {!imgError && frontImage ? (
+            <img 
+              src={frontImage} 
+              alt={title} 
+              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", opacity: 0.15, filter: "grayscale(100%) sepia(20%)" }} 
+              onError={() => setImgError(true)} 
+            />
+          ) : (
+            <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", opacity: 0.05, fontSize: 100 }}>{getFallbackEmoji()}</div>
+          )}
+
+          {/* Слой 2: Заголовок (ВСЕГДА виден) */}
+          <div style={{ position: "relative", zIndex: 2, textAlign: "center", padding: "0 10px", background: "rgba(248, 244, 232, 0.85)", borderRadius: 8, boxShadow: "0 2px 8px rgba(0,0,0,0.05)", marginTop: frontContent ? "-40px" : "0" }}>
+            <div style={{ fontFamily: "var(--font-head)", fontSize: 18, color: "var(--blue)", letterSpacing: "1px", fontWeight: 600, marginBottom: 4 }}>{title}</div>
+          </div>
+
+          {/* Слой 3: Дополнительный контент (если есть) */}
+          {frontContent && (
+            <div style={{ position: "relative", zIndex: 2, padding: "10px 20px", width: "100%", textAlign: "center", marginTop: 10 }}>
+              {frontContent}
+            </div>          )}
+
+          {/* Подсказка, если нет доп. контента */}
+          {!frontContent && (
+            <div style={{ position: "relative", zIndex: 2, fontSize: 11, color: "var(--text3)", marginTop: 12, fontFamily: "var(--font-mono)" }}>Нажмите для деталей</div>
+          )}
         </div>
+
+        {/* ОБОРОТНАЯ СТОРОНА */}
         <div style={{ position: "absolute", inset: 0, backfaceVisibility: "hidden", transform: "rotateY(180deg)", borderRadius: 12, overflow: "hidden", background: "#fff", border: "1.5px solid rgba(0,112,192,0.25)", padding: 18, display: "flex", flexDirection: "column" }}>
           <h3 style={{ fontFamily: "var(--font-head)", fontSize: 15, color: "var(--blue)", margin: "0 0 14px 0", borderBottom: "1px solid var(--line)", paddingBottom: 10 }}>{title}</h3>
           <div style={{ overflowY: "auto", flex: 1, fontSize: 14, lineHeight: 1.7, color: "var(--text2)" }}>{children}</div>
@@ -100,26 +142,42 @@ function YearModal({ year, currentAge, onClose }) {
 
 // ─── SVG КОМПОНЕНТЫ С АНИМАЦИЕЙ ───
 
-// 1. Синхронизация — Орбитальная диаграмма с анимацией
+// 1. Синхронизация — Орбитальная диаграмма с пояснениями
 function SyncRadialChart() {
   return (
-    <div style={{ position: "relative", width: "100%", height: 180 }}>
-      <img src="/assets/avatars-icons/bazi-sync-orbital.png" alt="Sync" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", opacity: 0.4, filter: "grayscale(100%) sepia(20%)" }} />
-      <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} viewBox="0 0 200 180">
-        <circle cx="100" cy="90" r="80" fill="none" stroke="var(--blue)" strokeWidth="2" opacity="0.3">
-          <animate attributeName="stroke-dasharray" values="0,1000;1000,0" dur="3s" repeatCount="indefinite" />
+    <div style={{ position: "relative", width: "100%", height: 220 }}>      {/* Статичный фон (если есть) */}
+      <img src="/assets/avatars-icons/bazi-sync-orbital.png" alt="Sync" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", opacity: 0.3, filter: "grayscale(100%) sepia(20%)" }} />
+      
+      {/* Анимированный SVG слой */}
+      <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} viewBox="0 0 200 220">
+        <defs>
+          <filter id="glow"><feGaussianBlur stdDeviation="1.5" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        </defs>
+        
+        {/* Внешний круг: Цзяцзы */}
+        <circle cx="100" cy="110" r="85" fill="none" stroke="var(--blue)" strokeWidth="2" strokeDasharray="4,4" opacity="0.6">
+          <animateTransform attributeName="transform" type="rotate" from="0 100 110" to="360 100 110" dur="30s" repeatCount="indefinite" />
         </circle>
-        <circle cx="100" cy="90" r="55" fill="none" stroke="var(--gold)" strokeWidth="2" opacity="0.5">
-          <animate attributeName="stroke-dasharray" values="0,1000;1000,0" dur="2s" repeatCount="indefinite" />
+        <text x="100" y="25" textAnchor="middle" fontSize="9" fill="var(--blue)" fontFamily="var(--font-mono)" fontWeight="600">ЦЗЯЦЗЫ (60 лет)</text>
+        
+        {/* Средний круг: Биоритмы */}
+        <circle cx="100" cy="110" r="60" fill="none" stroke="var(--gold)" strokeWidth="2" strokeDasharray="2,3" opacity="0.8">
+          <animateTransform attributeName="transform" type="rotate" from="360 100 110" to="0 100 110" dur="20s" repeatCount="indefinite" />
         </circle>
-        <circle cx="100" cy="90" r="30" fill="none" stroke="var(--success)" strokeWidth="2" opacity="0.7">
-          <animate attributeName="stroke-dasharray" values="0,1000;1000,0" dur="1.5s" repeatCount="indefinite" />
+        <text x="100" y="195" textAnchor="middle" fontSize="9" fill="var(--gold)" fontFamily="var(--font-mono)" fontWeight="600">БИОРИТМЫ</text>
+        
+        {/* Внутренний круг: Луна */}
+        <circle cx="100" cy="110" r="35" fill="none" stroke="var(--success)" strokeWidth="2" opacity="0.9">
+          <animate attributeName="r" values="35;37;35" dur="3s" repeatCount="indefinite" />
         </circle>
-        <circle r="4" fill="var(--blue)">
-          <animateMotion dur="10s" repeatCount="indefinite" path="M100,10 A80,80 0 1,1 100,170 A80,80 0 1,1 100,10" />
+        <text x="100" y="115" textAnchor="middle" fontSize="8" fill="var(--success)" fontFamily="var(--font-mono)">ЛУНА</text>
+        
+        {/* Бегущие точки (Маркеры) */}
+        <circle r="4" fill="var(--blue)" filter="url(#glow)">
+          <animateMotion dur="10s" repeatCount="indefinite" path="M100,25 A85,85 0 1,1 100,195 A85,85 0 1,1 100,25" />
         </circle>
         <circle r="3" fill="var(--gold)">
-          <animateMotion dur="7s" repeatCount="indefinite" path="M100,35 A55,55 0 1,1 100,145 A55,55 0 1,1 100,35" />
+          <animateMotion dur="7s" repeatCount="indefinite" path="M100,50 A60,60 0 1,1 100,170 A60,60 0 1,1 100,50" />
         </circle>
       </svg>
     </div>
@@ -136,14 +194,13 @@ function RecommendationsChecklist({ insights }) {
     { key: 'finance', label: 'Финансы', icon: '💰', value: 60 }
   ];
   
-  return (
-    <div style={{ position: "relative", width: "100%", height: 200, padding: "10px" }}>
-      <img src="/assets/avatars-icons/recommendations-checklist.png" alt="Recommendations" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", opacity: 0.3, filter: "grayscale(100%)" }} />
-      <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
+  return (    <div style={{ position: "relative", width: "100%", height: 200, padding: "10px", background: "rgba(255,255,255,0.5)" }}>
+      <img src="/assets/avatars-icons/recommendations-checklist.png" alt="Rec" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", opacity: 0.2 }} />
+      <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", gap: 8, justifyContent: "center", height: "100%" }}>
         {spheres.map((sphere, idx) => (
           <div key={sphere.key} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12 }}>
             <span style={{ fontSize: 14 }}>{sphere.icon}</span>
-            <span style={{ width: 80, color: "var(--text2)" }}>{sphere.label}</span>
+            <span style={{ width: 70, color: "var(--text2)", fontWeight: 500 }}>{sphere.label}</span>
             <div style={{ flex: 1, height: 8, background: "rgba(0,112,192,0.1)", borderRadius: 4, overflow: "hidden" }}>
               <div style={{ width: `${sphere.value}%`, height: "100%", background: "linear-gradient(90deg, var(--blue), var(--gold))", borderRadius: 4, animation: `slideIn 1s ease-out ${idx * 0.1}s both` }} />
             </div>
@@ -151,12 +208,7 @@ function RecommendationsChecklist({ insights }) {
           </div>
         ))}
       </div>
-      <style>{`
-        @keyframes slideIn {
-          from { width: 0%; }
-          to { width: var(--target-width); }
-        }
-      `}</style>
+      <style>{`@keyframes slideIn { from { width: 0%; } to { width: var(--target-width); } }`}</style>
     </div>
   );
 }
@@ -173,7 +225,7 @@ function AttentionZonesOrgans({ zodiac }) {
   
   return (
     <div style={{ position: "relative", width: "100%", height: 220 }}>
-      <img src="/assets/avatars-icons/attention-organs-meridians.png" alt="Attention Zones" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", opacity: 0.4 }} />
+      <img src="/assets/avatars-icons/attention-organs-meridians.png" alt="Zones" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", opacity: 0.4 }} />
       <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} viewBox="0 0 200 220">
         {zones.includes('head') && (
           <circle cx="100" cy="40" r="20" fill="rgba(139,32,32,0.2)" stroke="var(--error)" strokeWidth="2">
@@ -191,8 +243,7 @@ function AttentionZonesOrgans({ zodiac }) {
         <path d="M 100 60 Q 70 90 100 140" fill="none" stroke="var(--gold)" strokeWidth="1.5" strokeDasharray="4,4" opacity="0.6">
           <animate attributeName="stroke-dashoffset" values="0;8" dur="1s" repeatCount="indefinite" />
         </path>
-      </svg>
-    </div>
+      </svg>    </div>
   );
 }
 
@@ -241,8 +292,7 @@ function CycleTimeline({ dob, onYearSelect }) {
   
   return (
     <div style={{ position: "relative", padding: "20px 0", overflow: "hidden", borderRadius: 12, background: "rgba(255,255,255,0.8)", border: "1px solid var(--line)", marginBottom: 24 }}>
-      <svg viewBox={`0 0 ${width} ${height}`} style={{ width: "100%", height: "auto", opacity: 0.8 }}>
-        <defs>
+      <svg viewBox={`0 0 ${width} ${height}`} style={{ width: "100%", height: "auto", opacity: 0.8 }}>        <defs>
           {Object.keys(stagePower).map(k => (
             <linearGradient key={k} id={`grad-${k}`} x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor={colors[k]} stopOpacity="0.25" />
@@ -291,7 +341,6 @@ function CycleTimeline({ dob, onYearSelect }) {
           ))}
         </div>
       </div>
-
       {hoverYear !== null && (
         <div style={{ position: "absolute", bottom: 70, left: 20, right: 20, background: "rgba(255,255,255,0.98)", border: "1.5px solid var(--line)", borderRadius: 10, padding: 14, zIndex: 10, boxShadow: "0 6px 20px rgba(0,0,0,0.1)" }}>
           <div style={{ fontFamily: "var(--font-head)", fontSize: 14, color: "var(--blue)", marginBottom: 8, borderBottom: "1px solid var(--line)", paddingBottom: 6 }}>
@@ -341,8 +390,7 @@ export function ProfileSection() {
   const isMale = genderStr.toLowerCase().includes("муж") || genderStr.toLowerCase() === "male";
   const meridianInfo = insights ? getMeridianInfo(insights.zodiac) : { tip: "" };
   const chronoPeaks = insights ? getChronotypePeaks(profile.chronotype) : {};
-  const destiny = insights?.destiny || { degree: 241, interpretation: "Интеграция опыта" };
-  const stageIdx = age ? Math.floor((age % 60) / 5) % 12 : 0;
+  const destiny = insights?.destiny || { degree: 241, interpretation: "Интеграция опыта" };  const stageIdx = age ? Math.floor((age % 60) / 5) % 12 : 0;
   const currentStage = JIAZI_STAGES[stageIdx];
 
   const handleRefresh = () => { setIsRefreshing(true); setTimeout(() => { setIsRefreshing(false); notify?.("✅ Данные обновлены"); }, 800); };
@@ -391,8 +439,7 @@ export function ProfileSection() {
             </InnerAccordion>
             <InnerAccordion title="Как использовать">
               <ul style={{ margin: "0 0 0 18px", lineHeight: 1.7 }}>
-                <li>Планируй важные дела на {chronoPeaks.focus?.hours || "утро"}</li>
-                <li>Избегай многозадачности</li>
+                <li>Планируй важные дела на {chronoPeaks.focus?.hours || "утро"}</li>                <li>Избегай многозадачности</li>
                 <li>Дыхательные практики укрепляют слабые зоны</li>
               </ul>
             </InnerAccordion>
@@ -441,8 +488,7 @@ export function ProfileSection() {
             </InnerAccordion>
           </FlipCardBlock>
 
-          <FlipCardBlock title="Хроно-тип" frontImage={`/assets/avatars-icons/front-chrono-${profile.chronotype?.toLowerCase().includes('жаворонок') ? 'lark' : profile.chronotype?.toLowerCase().includes('сова') ? 'owl' : 'pigeon'}.png`} accentColor="var(--blue)"
-            frontContent={
+          <FlipCardBlock title="Хроно-тип" frontImage={`/assets/avatars-icons/front-chrono-${profile.chronotype?.toLowerCase().includes('жаворонок') ? 'lark' : profile.chronotype?.toLowerCase().includes('сова') ? 'owl' : 'pigeon'}.png`} accentColor="var(--blue)"            frontContent={
               <div style={{ fontSize: 13, lineHeight: 1.6, color: "var(--text2)", padding: "0 10px" }}>
                 <p style={{ marginBottom: 10, fontWeight: 500 }}>
                   <strong style={{ color: "var(--blue)", fontSize: 15 }}>{profile.chronotype || "🕊️ Голубь"}</strong>
@@ -491,8 +537,7 @@ export function ProfileSection() {
               {/* Синхронизация — SVG с анимацией */}
               <div style={{ background: "#fff", padding: 16, borderRadius: 8, border: "1px solid var(--line)", borderTop: "3px solid var(--gold)" }}>
                 <h4 style={{ fontFamily: "var(--font-head)", fontSize: 14, color: "var(--gold)", margin: "0 0 8px 0" }}>Синхронизация</h4>
-                <SyncRadialChart />
-                <p style={{ marginTop: 12, fontSize: 13, color: "var(--text2)", textAlign: "center" }}>
+                <SyncRadialChart />                <p style={{ marginTop: 12, fontSize: 13, color: "var(--text2)", textAlign: "center" }}>
                   Фаза: <strong style={{ color: "var(--blue)" }}>{currentStage?.name}</strong><br />
                   Согласование биоритмов с лунным циклом
                 </p>
@@ -541,8 +586,7 @@ export function ProfileSection() {
               frontImage="/assets/avatars-icons/bazi-ten-gods.png" 
               accentColor="var(--error)"
               minHeight={220}
-              frontContent={<div style={{ fontFamily: "var(--font-head)", fontSize: 14, color: "var(--blue)", letterSpacing: 1, marginTop: 8 }}>ДЕСЯТЬ БОГОВ</div>}
-            >
+              frontContent={<div style={{ fontFamily: "var(--font-head)", fontSize: 14, color: "var(--blue)", letterSpacing: 1, marginTop: 8 }}>ДЕСЯТЬ БОГОВ</div>}            >
               <p style={{ fontSize: 13, lineHeight: 1.6 }}>В новолуние/полнолуние организм ослаблен. Избегайте агрессивных процедур.</p>
               <div style={{ marginTop: 8, padding: 8, background: "rgba(139,32,32,0.06)", borderRadius: 6 }}>
                 <small style={{ color: "var(--error)" }}>⚠️ Внимание: Ограничьте хирургические вмешательства</small>
@@ -567,4 +611,4 @@ export function ProfileSection() {
       {selectedYear !== null && <YearModal year={selectedYear} currentAge={age} onClose={() => setSelectedYear(null)} />}
     </div>
   );
-}
+                }
