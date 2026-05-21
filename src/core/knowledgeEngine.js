@@ -1,9 +1,12 @@
 // src/core/knowledgeEngine.js
-// Мозг приложения: связывает профиль с базой знаний (Ба Цзы + 10 Богов + 5 Элементов)
+// Полная версия с Ба Цзы, 10 Богами и Пятью Элементами
 
 import { getMoon } from '../utils/helpers';
 
-// === БАЗА ДАННЫХ БА ЦЗЫ ===
+// =============================================
+// БАЗА ДАННЫХ БА ЦЗЫ
+// =============================================
+
 const HEAVENLY_STEMS = {
   '甲': { element: 'Дерево', polarity: 'Ян', name: 'Ян Дерево' },
   '乙': { element: 'Дерево', polarity: 'Инь', name: 'Инь Дерево' },
@@ -19,6 +22,7 @@ const HEAVENLY_STEMS = {
 
 export function getBaZiChart(profile) {
   if (!profile?.dob) return null;
+
   const date = new Date(profile.dob);
   const year = date.getFullYear();
   const month = date.getMonth() + 1;
@@ -39,15 +43,38 @@ export function getBaZiChart(profile) {
 
 export function getTenGodsAndElementsInsight(dayMasterStem) {
   const data = {
-    '甲': { element: 'Дерево', favorable: 'Вода (питание), Металл (структура)', unfavorable: 'Огонь (иссушает)', tenGods: 'Сильный 比肩 (независимость), 七杀 (амбиции), 正印 (поддержка)' },
-    '乙': { element: 'Дерево', favorable: 'Вода, Металл', unfavorable: 'Огонь', tenGods: '劫财 (гибкость), 伤官 (креативность)' },
-    '丙': { element: 'Огонь', favorable: 'Дерево, Вода', unfavorable: 'Вода (избыток)', tenGods: '食神 (радость), 正财 (стабильность)' },
-    default: { element: '—', favorable: 'Баланс всех элементов', unfavorable: '—', tenGods: '10 Богов показывают ваши ключевые архетипы и стратегии' }
+    '甲': { 
+      element: 'Дерево', 
+      favorable: 'Вода (питание), Металл (структура)', 
+      unfavorable: 'Огонь (иссушает)', 
+      tenGods: 'Сильный 比肩 (независимость), 七杀 (амбиции), 正印 (поддержка)' 
+    },
+    '乙': { 
+      element: 'Дерево', 
+      favorable: 'Вода, Металл', 
+      unfavorable: 'Огонь', 
+      tenGods: '劫财 (гибкость), 伤官 (креативность)' 
+    },
+    '丙': { 
+      element: 'Огонь', 
+      favorable: 'Дерево, Вода', 
+      unfavorable: 'Вода (избыток)', 
+      tenGods: '食神 (радость), 正财 (стабильность)' 
+    },
+    default: { 
+      element: '—', 
+      favorable: 'Баланс всех элементов', 
+      unfavorable: '—', 
+      tenGods: '10 Богов показывают ваши ключевые архетипы и стратегии' 
+    }
   };
   return data[dayMasterStem] || data.default;
 }
 
-// Основная функция insights
+// =============================================
+// ОСНОВНАЯ ФУНКЦИЯ ИНСАЙТОВ
+// =============================================
+
 export function getProfileInsights(profile) {
   const zodiac = getZodiacByDOB(profile?.dob);
   const eastern = getEasternByDOB(profile?.dob);
@@ -56,14 +83,19 @@ export function getProfileInsights(profile) {
 
   return {
     zodiac,
+    zodiacElement: getZodiacElement(zodiac),
     eastern,
+    easternElement: getEasternElement(eastern),
     bazi,
     tenGodsInsight,
     destiny: { degree: profile?.fullName ? calcDegree(profile.fullName) : 241 },
   };
 }
 
-// === Вспомогательные функции ===
+// =============================================
+// ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+// =============================================
+
 function getZodiacByDOB(dob) {
   if (!dob) return "—";
   const d = new Date(dob), m = d.getMonth() + 1, day = d.getDate();
@@ -79,6 +111,24 @@ function getEasternByDOB(dob) {
   return ["Крыса","Бык","Тигр","Кролик","Дракон","Змея","Лошадь","Коза","Обезьяна","Петух","Собака","Свинья"][(new Date(dob).getFullYear() - 4) % 12];
 }
 
+function getZodiacElement(zodiac) {
+  const map = { 
+    'Овен':'Огонь', 'Телец':'Земля', 'Близнецы':'Воздух', 'Рак':'Вода', 
+    'Лев':'Огонь', 'Дева':'Земля', 'Весы':'Воздух', 'Скорпион':'Вода',
+    'Стрелец':'Огонь', 'Козерог':'Земля', 'Водолей':'Воздух', 'Рыбы':'Вода' 
+  };
+  return map[zodiac] || "—";
+}
+
+function getEasternElement(eastern) {
+  const map = { 
+    'Крыса':'Вода', 'Бык':'Земля', 'Тигр':'Дерево', 'Кролик':'Дерево',
+    'Дракон':'Земля', 'Змея':'Огонь', 'Лошадь':'Огонь', 'Коза':'Земля',
+    'Обезьяна':'Металл', 'Петух':'Металл', 'Собака':'Земля', 'Свинья':'Вода' 
+  };
+  return map[eastern] || "—";
+}
+
 function calcDegree(name) {
   if (!name) return 241;
   const ru = "абвгдеёжзийклмнопрстуфхцчшщъыьэюя";
@@ -90,13 +140,43 @@ function calcDegree(name) {
   return s % 360 || 360;
 }
 
-// Существующие функции (оставлены)
-export function getSectionRecommendations(profile, sectionId) {
-  return []; // можно расширить позже
-}
 
-export function getBodyWeaknesses(profile) {
+export function getSectionRecommendations(profile, sectionId) {
+  if (!profile?.dob) return [];
+  // Здесь можно расширять дальше
   return [];
 }
 
-export { getMoon };
+export function getBodyWeaknesses(profile) {
+  if (!profile?.dob) return [];
+  const zodiac = getZodiacByDOB(profile.dob);
+  const weaknesses = {
+    'Овен': 'Голова, лицо, шея',
+    'Телец': 'Горло, щитовидка, шейные позвонки',
+    'Близнецы': 'Лопатки, плечи, лёгкие, трахея',
+    'Рак': 'Грудина, желудок, поджелудочная, печень',
+    'Лев': 'Позвоночник, сердце, сосуды',
+    'Дева': 'Пупок, кишечник, печень, аппендикс',
+    'Весы': 'Поясница, мочевой пузырь, мочеполовая система',
+    'Скорпион': 'Нос, половые органы, прямая кишка',
+    'Стрелец': 'Бёдра, крестец, ягодицы, печень',
+    'Козерог': 'Колени, зубы, кости, суставы, селезёнка',
+    'Водолей': 'Голени, лодыжки, нервная система',
+    'Рыбы': 'Стопы, лимфа, иммунитет, нервная система',
+  };
+  return [{ area: weaknesses[zodiac] || 'Не определено', zodiac }];
+}
+
+// =============================================
+// ЭКСПОРТ
+// =============================================
+
+export {
+  getProfileInsights,
+  getBaZiChart,
+  getTenGodsAndElementsInsight,
+  getSectionRecommendations,
+  getBodyWeaknesses,
+  getZodiacByDOB,
+  getEasternByDOB
+};
