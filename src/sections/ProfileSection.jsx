@@ -1,7 +1,6 @@
 // src/sections/ProfileSection.jsx
 import React, { useState, useMemo } from "react";
 import { useApp } from "../store/AppContext";
-// Убедитесь, что пути к файлам знаний верные
 import { getProfileInsights } from "../utils/knowledgeEngine";
 import { getMeridianInfo, getChronotypePeaks } from "../data/profileKnowledge";
 
@@ -60,12 +59,10 @@ function FlipCardBlock({ title, frontImage, accentColor = "var(--blue)", childre
   return (
     <div style={{ perspective: "1200px", marginBottom: 28 }}>
       <div onClick={() => setFlipped(!flipped)} style={{ position: "relative", width: "100%", minHeight, transformStyle: "preserve-3d", transition: "transform 0.6s", transform: flipped ? "rotateY(180deg)" : "none", cursor: "pointer", borderRadius: 12 }}>
-        {/* ЛИЦЕВАЯ СТОРОНА */}
         <div style={{ position: "absolute", inset: 0, backfaceVisibility: "hidden", borderRadius: 12, overflow: "hidden", background: "linear-gradient(135deg, #f8f4e8 0%, #e8d8c0 100%)", border: "2px solid var(--gold)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
           {frontImage ? <img src={frontImage} alt={title} style={{ maxHeight: "70%", maxWidth: "90%", objectFit: "contain" }} onError={(e) => e.target.style.display = "none"} /> : <div style={{ fontSize: 12, color: "var(--text3)" }}>Нет иллюстрации</div>}
           {frontContent ? <div style={{ padding: "0 20px 20px", width: "100%", textAlign: "center" }}>{frontContent}</div> : <div style={{ marginTop: 14, fontFamily: "var(--font-head)", fontSize: 15, color: "var(--blue)" }}>{title}</div>}
         </div>
-        {/* ОБОРОТНАЯ СТОРОНА */}
         <div style={{ position: "absolute", inset: 0, backfaceVisibility: "hidden", transform: "rotateY(180deg)", borderRadius: 12, overflow: "hidden", background: "#fff", border: "1.5px solid rgba(0,112,192,0.25)", padding: 18, display: "flex", flexDirection: "column" }}>
           <h3 style={{ fontFamily: "var(--font-head)", fontSize: 15, color: "var(--blue)", margin: "0 0 14px 0", borderBottom: "1px solid var(--line)", paddingBottom: 10 }}>{title}</h3>
           <div style={{ overflowY: "auto", flex: 1, fontSize: 14, lineHeight: 1.7, color: "var(--text2)" }}>{children}</div>
@@ -101,79 +98,71 @@ function YearModal({ year, currentAge, onClose }) {
   );
 }
 
-// ─── SVG КОМПОНЕНТЫ ДЛЯ ВИЗУАЛИЗАЦИИ (ПУНКТ 2) ───
+// ─── SVG КОМПОНЕНТЫ С АНИМАЦИЕЙ ───
 
-// 1. Синхронизация: 3 концентрических круга
-function SyncRadialChart({ jiaziStage, chronotype, moonPhase }) {
+// 1. Синхронизация — Орбитальная диаграмма с анимацией
+function SyncRadialChart() {
   return (
-    <svg viewBox="0 0 200 200" style={{ width: "100%", maxWidth: 200, margin: "0 auto" }}>
-      <circle cx="100" cy="100" r="90" fill="none" stroke="var(--blue)" strokeWidth="3" opacity="0.3" />
-      <text x="100" y="20" textAnchor="middle" fontSize="10" fill="var(--blue)" fontFamily="var(--font-mono)">ЦЗЯЦЗЫ</text>
-      
-      <circle cx="100" cy="100" r="60" fill="none" stroke="var(--gold)" strokeWidth="2" opacity="0.5" />
-      <text x="100" y="105" textAnchor="middle" fontSize="9" fill="var(--gold)" fontFamily="var(--font-mono)">БИОРИТМЫ</text>
-      
-      <circle cx="100" cy="100" r="30" fill="none" stroke="var(--success)" strokeWidth="2" opacity="0.7" />
-      <text x="100" y="105" textAnchor="middle" fontSize="8" fill="var(--success)" fontFamily="var(--font-mono)">ЛУНА</text>
-      
-      <circle cx="100" cy="10" r="4" fill="var(--blue)" />
-      <circle cx="160" cy="100" r="3" fill="var(--gold)" />
-      <circle cx="100" cy="70" r="2" fill="var(--success)" />
-      
-      <line x1="100" y1="10" x2="100" y2="70" stroke="var(--blue)" strokeWidth="1" strokeDasharray="3,3" opacity="0.5" />
-    </svg>
+    <div style={{ position: "relative", width: "100%", height: 180 }}>
+      <img src="/assets/avatars-icons/bazi-sync-orbital.png" alt="Sync" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", opacity: 0.4, filter: "grayscale(100%) sepia(20%)" }} />
+      <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} viewBox="0 0 200 180">
+        <circle cx="100" cy="90" r="80" fill="none" stroke="var(--blue)" strokeWidth="2" opacity="0.3">
+          <animate attributeName="stroke-dasharray" values="0,1000;1000,0" dur="3s" repeatCount="indefinite" />
+        </circle>
+        <circle cx="100" cy="90" r="55" fill="none" stroke="var(--gold)" strokeWidth="2" opacity="0.5">
+          <animate attributeName="stroke-dasharray" values="0,1000;1000,0" dur="2s" repeatCount="indefinite" />
+        </circle>
+        <circle cx="100" cy="90" r="30" fill="none" stroke="var(--success)" strokeWidth="2" opacity="0.7">
+          <animate attributeName="stroke-dasharray" values="0,1000;1000,0" dur="1.5s" repeatCount="indefinite" />
+        </circle>
+        <circle r="4" fill="var(--blue)">
+          <animateMotion dur="10s" repeatCount="indefinite" path="M100,10 A80,80 0 1,1 100,170 A80,80 0 1,1 100,10" />
+        </circle>
+        <circle r="3" fill="var(--gold)">
+          <animateMotion dur="7s" repeatCount="indefinite" path="M100,35 A55,55 0 1,1 100,145 A55,55 0 1,1 100,35" />
+        </circle>
+      </svg>
+    </div>
   );
 }
 
-// 2. Рекомендации: Radar chart (5 сфер)
-function RecommendationsRadar({ insights }) {
-  const spheres = ['health', 'career', 'relations', 'spirit', 'finance'];
-  const colors = { health: '#2d6a4f', career: '#0070c0', relations: '#e8556d', spirit: '#b882e8', finance: '#c8a45a' };
-  const centerX = 100, centerY = 100, radius = 80;
-  const angleStep = (Math.PI * 2) / 5;
-  
-  const getPoint = (index, value) => {
-    const angle = index * angleStep - Math.PI / 2;
-    const r = (value / 100) * radius;
-    return { x: centerX + r * Math.cos(angle), y: centerY + r * Math.sin(angle) };
-  };
-  
-  const values = spheres.map(() => Math.floor(Math.random() * 40) + 60); // Demo values
-  
-  const pathData = spheres.map((_, i) => {
-    const point = getPoint(i, values[i]);
-    return `${i === 0 ? 'M' : 'L'} ${point.x} ${point.y}`;
-  }).join(' ') + ' Z';
+// 2. Рекомендации — Чек-лист с прогресс-барами и анимацией
+function RecommendationsChecklist({ insights }) {
+  const spheres = [
+    { key: 'health', label: 'Здоровье', icon: '❤️', value: 75 },
+    { key: 'career', label: 'Карьера', icon: '💼', value: 65 },
+    { key: 'relations', label: 'Отношения', icon: '🤝', value: 80 },
+    { key: 'spirit', label: 'Духовность', icon: '🌟', value: 70 },
+    { key: 'finance', label: 'Финансы', icon: '💰', value: 60 }
+  ];
   
   return (
-    <svg viewBox="0 0 200 200" style={{ width: "100%", maxWidth: 200, margin: "0 auto" }}>
-      {[20, 40, 60, 80, 100].map(pct => (
-        <circle key={pct} cx={centerX} cy={centerY} r={(pct / 100) * radius} fill="none" stroke="var(--line)" strokeWidth="1" opacity="0.3" />
-      ))}
-      
-      {spheres.map((sphere, i) => {
-        const point = getPoint(i, 100);
-        return <line key={sphere} x1={centerX} y1={centerY} x2={point.x} y2={point.y} stroke="var(--line)" strokeWidth="1" opacity="0.3" />;
-      })}
-      
-      <path d={pathData} fill="rgba(0,112,192,0.2)" stroke="var(--blue)" strokeWidth="2" />
-      
-      {spheres.map((sphere, i) => {
-        const point = getPoint(i, 100);
-        const labelPoint = getPoint(i, 115);
-        return (
-          <g key={sphere}>
-            <circle cx={point.x} cy={point.y} r="3" fill={colors[sphere]} />
-            <text x={labelPoint.x} y={labelPoint.y} textAnchor="middle" fontSize="8" fill="var(--text2)" fontFamily="var(--font-mono)">{sphere[0].toUpperCase()}</text>
-          </g>
-        );
-      })}
-    </svg>
+    <div style={{ position: "relative", width: "100%", height: 200, padding: "10px" }}>
+      <img src="/assets/avatars-icons/recommendations-checklist.png" alt="Recommendations" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", opacity: 0.3, filter: "grayscale(100%)" }} />
+      <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
+        {spheres.map((sphere, idx) => (
+          <div key={sphere.key} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12 }}>
+            <span style={{ fontSize: 14 }}>{sphere.icon}</span>
+            <span style={{ width: 80, color: "var(--text2)" }}>{sphere.label}</span>
+            <div style={{ flex: 1, height: 8, background: "rgba(0,112,192,0.1)", borderRadius: 4, overflow: "hidden" }}>
+              <div style={{ width: `${sphere.value}%`, height: "100%", background: "linear-gradient(90deg, var(--blue), var(--gold))", borderRadius: 4, animation: `slideIn 1s ease-out ${idx * 0.1}s both` }} />
+            </div>
+            <span style={{ width: 30, textAlign: "right", fontFamily: "var(--font-mono)", fontSize: 11 }}>{sphere.value}%</span>
+          </div>
+        ))}
+      </div>
+      <style>{`
+        @keyframes slideIn {
+          from { width: 0%; }
+          to { width: var(--target-width); }
+        }
+      `}</style>
+    </div>
   );
 }
 
-// 3. Зоны внимания: Силуэт с меридианами
-function AttentionZonesSVG({ zodiac, meridianInfo }) {
+// 3. Зоны внимания — Органы с меридианами и анимацией
+function AttentionZonesOrgans({ zodiac }) {
   const weakZones = {
     'Овен': ['head', 'eyes'], 'Телец': ['throat', 'neck'], 'Близнецы': ['lungs', 'arms'],
     'Рак': ['stomach', 'chest'], 'Лев': ['heart', 'back'], 'Дева': ['intestines', 'nerves'],
@@ -183,26 +172,31 @@ function AttentionZonesSVG({ zodiac, meridianInfo }) {
   const zones = weakZones[zodiac] || ['stomach', 'nerves'];
   
   return (
-    <svg viewBox="0 0 200 200" style={{ width: "100%", maxWidth: 200, margin: "0 auto" }}>
-      <ellipse cx="100" cy="30" rx="15" ry="18" fill="rgba(0,112,192,0.1)" stroke="var(--blue)" strokeWidth="1" />
-      <line x1="100" y1="48" x2="100" y2="120" stroke="var(--blue)" strokeWidth="3" />
-      <line x1="100" y1="60" x2="70" y2="90" stroke="var(--blue)" strokeWidth="2" />
-      <line x1="100" y1="60" x2="130" y2="90" stroke="var(--blue)" strokeWidth="2" />
-      <line x1="100" y1="120" x2="80" y2="170" stroke="var(--blue)" strokeWidth="2" />
-      <line x1="100" y1="120" x2="120" y2="170" stroke="var(--blue)" strokeWidth="2" />
-      
-      {zones.includes('head') && <circle cx="100" cy="30" r="12" fill="rgba(139,32,32,0.3)" stroke="var(--error)" strokeWidth="2" />}
-      {zones.includes('stomach') && <ellipse cx="100" cy="85" rx="12" ry="8" fill="rgba(139,32,32,0.3)" stroke="var(--error)" strokeWidth="2" />}
-      
-      <path d="M 100 48 Q 120 70 100 120" fill="none" stroke="var(--gold)" strokeWidth="1" strokeDasharray="2,2" opacity="0.6" />
-      <path d="M 100 48 Q 80 70 100 120" fill="none" stroke="var(--gold)" strokeWidth="1" strokeDasharray="2,2" opacity="0.6" />
-      
-      <text x="100" y="190" textAnchor="middle" fontSize="9" fill="var(--text2)" fontFamily="var(--font-mono)">{meridianInfo?.organ || 'Меридианы'}</text>
-    </svg>
+    <div style={{ position: "relative", width: "100%", height: 220 }}>
+      <img src="/assets/avatars-icons/attention-organs-meridians.png" alt="Attention Zones" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", opacity: 0.4 }} />
+      <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} viewBox="0 0 200 220">
+        {zones.includes('head') && (
+          <circle cx="100" cy="40" r="20" fill="rgba(139,32,32,0.2)" stroke="var(--error)" strokeWidth="2">
+            <animate attributeName="opacity" values="0.3;0.6;0.3" dur="2s" repeatCount="indefinite" />
+          </circle>
+        )}
+        {zones.includes('stomach') && (
+          <ellipse cx="100" cy="120" rx="25" ry="15" fill="rgba(139,32,32,0.2)" stroke="var(--error)" strokeWidth="2">
+            <animate attributeName="opacity" values="0.3;0.6;0.3" dur="2.5s" repeatCount="indefinite" />
+          </ellipse>
+        )}
+        <path d="M 100 60 Q 130 90 100 140" fill="none" stroke="var(--gold)" strokeWidth="1.5" strokeDasharray="4,4" opacity="0.6">
+          <animate attributeName="stroke-dashoffset" values="0;8" dur="1s" repeatCount="indefinite" />
+        </path>
+        <path d="M 100 60 Q 70 90 100 140" fill="none" stroke="var(--gold)" strokeWidth="1.5" strokeDasharray="4,4" opacity="0.6">
+          <animate attributeName="stroke-dashoffset" values="0;8" dur="1s" repeatCount="indefinite" />
+        </path>
+      </svg>
+    </div>
   );
 }
 
-// ─── ГРАФИК ЖИЗНЕННОГО ЦИКЛА (ПУНКТ 4 - УЛУЧШЕННЫЙ) ───
+// ─── ГРАФИК ЖИЗНЕННОГО ЦИКЛА ───
 
 function CycleTimeline({ dob, onYearSelect }) {
   const age = useMemo(() => {
@@ -215,9 +209,7 @@ function CycleTimeline({ dob, onYearSelect }) {
     return ageVal;
   }, [dob]);
   
-  const years = useMemo(() => Array.from({ length: 21 }, (_, i) => i * 5), []);
   const [hoverYear, setHoverYear] = useState(null);
-  
   const stagePower = {
     health: [30, 40, 55, 70, 90, 80, 60, 40, 35, 45, 55, 65],
     career: [20, 35, 50, 70, 90, 75, 55, 35, 40, 55, 70, 80],
@@ -240,132 +232,86 @@ function CycleTimeline({ dob, onYearSelect }) {
     return points;
   };
   
-  const width = 800;
-  const height = 350; // УВЕЛИЧЕНО
-  const paddingX = 40;
-  const paddingY = 40;
-  const graphWidth = width - 2 * paddingX;
-  const graphHeight = height - 2 * paddingY;
-  
-  const getScaledY = (val) => graphHeight - (val / 100) * graphHeight + paddingY;
-  const spheres = ['health', 'career', 'relations', 'spirit', 'finance'];
-  const sphereColors = { health: '#2d6a4f', career: '#0070c0', relations: '#e8556d', spirit: '#b882e8', finance: '#c8a45a' };
-  
-  const currentStageIndex = Math.floor((age % 60) / 5) % 12;
-  const currentStage = JIAZI_STAGES[currentStageIndex];
-  const currentX = paddingX + (age / 100) * graphWidth;
+  const width = 800, height = 350, PX = 40, PY = 40;
+  const GW = width - PX * 2, GH = height - PY * 2;
+  const Y = (v) => GH - (v / 100) * GH + PY;
+  const X = (i) => PX + (i / 19) * GW;
+  const colors = { health: '#2d6a4f', career: '#0070c0', relations: '#e8556d', spirit: '#b882e8', finance: '#c8a45a' };
+  const currentStage = JIAZI_STAGES[Math.floor((age % 60) / 5) % 12];
   
   return (
     <div style={{ position: "relative", padding: "20px 0", overflow: "hidden", borderRadius: 12, background: "rgba(255,255,255,0.8)", border: "1px solid var(--line)", marginBottom: 24 }}>
-      <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: 0.6 }} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMidYMid meet">
+      <svg viewBox={`0 0 ${width} ${height}`} style={{ width: "100%", height: "auto", opacity: 0.8 }}>
         <defs>
-          <linearGradient id="grad-health" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#2d6a4f" stopOpacity="0.3" />
-            <stop offset="100%" stopColor="#2d6a4f" stopOpacity="0" />
-          </linearGradient>
-          <linearGradient id="grad-career" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#0070c0" stopOpacity="0.3" />
-            <stop offset="100%" stopColor="#0070c0" stopOpacity="0" />
-          </linearGradient>
-          <style>{"@keyframes flow-bg { 0%{stroke-dashoffset:0} 100%{stroke-dashoffset:-40} }"}</style>
+          {Object.keys(stagePower).map(k => (
+            <linearGradient key={k} id={`grad-${k}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={colors[k]} stopOpacity="0.25" />
+              <stop offset="100%" stopColor={colors[k]} stopOpacity="0" />
+            </linearGradient>
+          ))}
         </defs>
-        
         <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-          <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(0,112,192,0.08)" strokeWidth="0.5" />
+          <path d="M40 0 L0 0 0 40" fill="none" stroke="rgba(0,112,192,0.08)" strokeWidth="0.5" />
         </pattern>
         <rect width="100%" height="100%" fill="url(#grid)" />
         
-        {[0, 25, 50, 75, 100].map(pct => (
-          <line key={pct} x1={paddingX} y1={getScaledY(pct)} x2={width - paddingX} y2={getScaledY(pct)} stroke="rgba(0,112,192,0.1)" strokeWidth="1" />
+        {Object.entries(stagePower).map(([key, vals]) => {
+          const d = vals.map((v, i) => `${i === 0 ? 'M' : 'L'}${X(i)},${Y(v)}`).join(' ');
+          const fill = `${d} L${X(19)},${height - PY} L${PX},${height - PY} Z`;
+          return (
+            <g key={key}>
+              <path d={fill} fill={`url(#grad-${key})`} />
+              <path d={d} fill="none" stroke={colors[key]} strokeWidth="2.5" opacity="0.9" />
+            </g>
+          );
+        })}
+
+        <line x1={X(Math.min(age / 5, 19))} y1={PY} x2={X(Math.min(age / 5, 19))} y2={height - PY} stroke="var(--gold)" strokeWidth="2" strokeDasharray="5,4" />
+        <text x={X(Math.min(age / 5, 19))} y={PY - 8} textAnchor="middle" fontSize="11" fill="var(--gold)" fontWeight="600" fontFamily="var(--font-mono)">ВЫ ЗДЕСЬ ({age})</text>
+
+        {Array.from({ length: 21 }, (_, i) => i * 5).map((yr, i) => (
+          <g key={yr} onClick={() => onYearSelect(yr)} onMouseEnter={() => setHoverYear(yr)} onMouseLeave={() => setHoverYear(null)} style={{ cursor: 'pointer' }}>
+            <rect x={X(i) - 15} y={0} width={30} height={height} fill="transparent" />
+            <text x={X(i)} y={height - 12} textAnchor="middle" fontSize="10" fill={hoverYear === yr ? "var(--blue)" : "var(--text3)"} fontWeight={hoverYear === yr ? "600" : "400"} fontFamily="var(--font-mono)">{yr}</text>
+          </g>
         ))}
-        
-        {spheres.map(sphere => {
-          const data = getChartData(sphere);
-          const d = data.map((pt, i) => {
-            const x = paddingX + (i / 19) * graphWidth;
-            const y = getScaledY(pt.y);
-            return `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
-          }).join(' ');
-          const fillPath = `${d} L ${paddingX + graphWidth} ${height - paddingY} L ${paddingX} ${height - paddingY} Z`;
-          return (
-            <g key={sphere}>
-              <path d={fillPath} fill={`url(#grad-${sphere})`} opacity="0.5" />
-              <path d={d} fill="none" stroke={sphereColors[sphere]} strokeWidth="2.5" opacity="0.9" />
-            </g>
-          );
-        })}
-        
-        <line x1={currentX} y1={paddingY} x2={currentX} y2={height - paddingY} stroke="var(--gold)" strokeWidth="2" strokeDasharray="5,3" opacity="0.8" />
-        <text x={currentX} y={paddingY - 10} textAnchor="middle" fontSize="11" fill="var(--gold)" fontFamily="var(--font-mono)" fontWeight="600">
-          ВЫ ЗДЕСЬ ({age} лет)
-        </text>
-        
-        {years.map((y, i) => {
-          const x = paddingX + (i / 19) * graphWidth;
-          const dataIndex = Math.min(i, 19);
-          return (
-            <g key={y} onClick={() => onYearSelect(y)} onMouseEnter={() => setHoverYear(y)} onMouseLeave={() => setHoverYear(null)} style={{ cursor: 'pointer' }}>
-              <rect x={x - 15} y={0} width={30} height={height} fill="transparent" />
-              {spheres.map(sphere => {
-                const data = getChartData(sphere);
-                const py = getScaledY(data[dataIndex].y);
-                return <circle key={sphere} cx={x} cy={py} r={hoverYear === y ? 6 : 3} fill={sphereColors[sphere]} opacity={hoverYear === y ? 1 : 0.6} />;
-              })}
-              <text x={x} y={height - 15} textAnchor="middle" fontSize="10" fontFamily="var(--font-mono)" fill={hoverYear === y ? "var(--blue)" : "var(--text3)"} fontWeight={hoverYear === y ? "600" : "400"}>{y}</text>
-            </g>
-          );
-        })}
       </svg>
-      
-      <div style={{ position: "relative", zIndex: 1, padding: "0 20px", marginBottom: 20 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-          <h3 style={{ fontFamily: "var(--font-head)", fontSize: 16, color: "var(--blue)", margin: 0, letterSpacing: 1 }}>🌊 Жизненный цикл (Цяцзы)</h3>
-          <span className="badge bgr" style={{ fontSize: 11, padding: "4px 10px" }}>Текущий: {age} лет · {currentStage?.name}</span>
+
+      <div style={{ padding: "0 20px 10px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+          <h3 style={{ fontFamily: "var(--font-head)", fontSize: 16, color: "var(--blue)", margin: 0 }}>🌊 Жизненный цикл (Цяцзы)</h3>
+          <span className="badge bgr">{age} лет · {currentStage?.name}</span>
         </div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 12, justifyContent: "center" }}>
-          {spheres.map(s => (
-            <div key={s} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12 }}>
-              <span style={{ width: 10, height: 10, borderRadius: "50%", background: sphereColors[s] }}></span>
-              <span style={{ textTransform: "capitalize", color: "var(--text2)" }}>{s}</span>
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+          {Object.keys(stagePower).map(k => (
+            <div key={k} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12 }}>
+              <span style={{ width: 8, height: 8, borderRadius: "50%", background: colors[k] }} />
+              <span style={{ textTransform: "capitalize", color: "var(--text2)" }}>{k}</span>
             </div>
           ))}
         </div>
       </div>
-      
+
       {hoverYear !== null && (
-        <div style={{
-          position: "absolute", bottom: 80, left: 20, right: 20,
-          background: "rgba(255,255,255,0.98)", border: "1.5px solid var(--line)",
-          borderRadius: 10, padding: 16, zIndex: 10, boxShadow: "0 6px 20px rgba(0,0,0,0.12)"
-        }}>
-          <div style={{ fontFamily: "var(--font-head)", fontSize: 15, color: "var(--blue)", marginBottom: 12, borderBottom: "1px solid var(--line)", paddingBottom: 8 }}>
+        <div style={{ position: "absolute", bottom: 70, left: 20, right: 20, background: "rgba(255,255,255,0.98)", border: "1.5px solid var(--line)", borderRadius: 10, padding: 14, zIndex: 10, boxShadow: "0 6px 20px rgba(0,0,0,0.1)" }}>
+          <div style={{ fontFamily: "var(--font-head)", fontSize: 14, color: "var(--blue)", marginBottom: 8, borderBottom: "1px solid var(--line)", paddingBottom: 6 }}>
             Возраст: {hoverYear} лет
-            <span style={{ marginLeft: 12, fontSize: 12, color: "var(--gold)", fontFamily: "var(--font-mono)" }}>
-              {JIAZI_STAGES[Math.floor((hoverYear % 60) / 5) % 12]?.name}
-            </span>
+            <span style={{ marginLeft: 10, fontSize: 11, color: "var(--gold)" }}>{JIAZI_STAGES[Math.floor((hoverYear % 60) / 5) % 12]?.name}</span>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10 }}>
-            {spheres.map(s => {
-              const data = getChartData(s);
-              const idx = Math.round((hoverYear / 100) * 19);
-              const val = data[idx] ? Math.round(data[idx].y) : "—";
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 8 }}>
+            {Object.entries(stagePower).map(([k, vals]) => {
+              const idx = Math.min(Math.round((hoverYear / 100) * 19), 19);
               return (
-                <div key={s} style={{ fontSize: 12, display: "flex", justifyContent: "space-between", padding: "4px 8px", background: "rgba(0,112,192,0.03)", borderRadius: 4 }}>
-                  <span style={{ color: "var(--text3)", textTransform: "capitalize" }}>{s}:</span>
-                  <strong style={{ color: sphereColors[s] }}>{val}%</strong>
+                <div key={k} style={{ fontSize: 12, display: "flex", justifyContent: "space-between", background: "rgba(0,112,192,0.04)", padding: "4px 8px", borderRadius: 4 }}>
+                  <span style={{ color: "var(--text3)" }}>{k}:</span>
+                  <strong style={{ color: colors[k] }}>{vals[idx]}%</strong>
                 </div>
               );
             })}
           </div>
-          <div style={{ marginTop: 10, fontSize: 11, color: "var(--text3)", textAlign: "center", fontStyle: "italic" }}>
-            Кликните на год для детализации периода
-          </div>
+          <div style={{ marginTop: 8, fontSize: 10, color: "var(--text3)", textAlign: "center" }}>Кликните для детализации периода</div>
         </div>
       )}
-      
-      <div style={{ textAlign: "center", fontSize: 11, color: "var(--text3)", marginTop: 12 }}>
-        Наведите на год для просмотра баланса сфер · Кликните для детализации
-      </div>
     </div>
   );
 }
@@ -377,9 +323,8 @@ export function ProfileSection() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState('main');
   const [selectedYear, setSelectedYear] = useState(null);
-  
+
   const insights = useMemo(() => profile ? getProfileInsights(profile) : null, [profile]);
-  
   const age = useMemo(() => {
     if (!profile?.dob) return null;
     const today = new Date();
@@ -389,21 +334,20 @@ export function ProfileSection() {
     if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) ageVal--;
     return ageVal;
   }, [profile?.dob]);
-  
+
   if (!profile) return <div style={{ padding: 40, textAlign: "center", color: "var(--text2)" }}>Загрузка профиля...</div>;
-  
+
   const genderStr = String(profile.gender || "").trim();
   const isMale = genderStr.toLowerCase().includes("муж") || genderStr.toLowerCase() === "male";
-  
   const meridianInfo = insights ? getMeridianInfo(insights.zodiac) : { tip: "" };
   const chronoPeaks = insights ? getChronotypePeaks(profile.chronotype) : {};
   const destiny = insights?.destiny || { degree: 241, interpretation: "Интеграция опыта" };
-  const currentJiaziIndex = age ? Math.floor((age % 60) / 5) % 12 : 0;
-  const currentJiaziStage = JIAZI_STAGES[currentJiaziIndex];
-  
+  const stageIdx = age ? Math.floor((age % 60) / 5) % 12 : 0;
+  const currentStage = JIAZI_STAGES[stageIdx];
+
   const handleRefresh = () => { setIsRefreshing(true); setTimeout(() => { setIsRefreshing(false); notify?.("✅ Данные обновлены"); }, 800); };
   const handleReset = () => { if (window.confirm("Сбросить профиль?")) { setProfile(null); notify?.("🗑️ Профиль сброшен"); } };
-  
+
   return (
     <div className="page" style={{ paddingBottom: 100 }}>
       <ProfileTabs activeTab={activeTab} setActiveTab={setActiveTab} />
@@ -415,125 +359,211 @@ export function ProfileSection() {
               <div style={{ textAlign: "center", marginTop: 10 }}>
                 <h2 style={{ fontFamily: "var(--font-head)", fontSize: 22, color: "var(--text1)", margin: "0 0 8px 0" }}>{profile.name || "Пользователь"}</h2>
                 <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap", marginBottom: 8 }}>
-                  <span className="badge bgr" style={{ fontSize: 12, padding: "4px 10px" }}>🎂 {age ?? "—"} лет</span>
-                  {profile.chronotype && <span className="badge bt" style={{ fontSize: 12, padding: "4px 10px" }}>⏱ {profile.chronotype}</span>}
-                  {insights?.zodiac && <span className="badge bm" style={{ fontSize: 12, padding: "4px 10px" }}>♈ {insights.zodiac}</span>}
+                  <span className="badge bgr">🎂 {age ?? "—"} лет</span>
+                  {profile.chronotype && <span className="badge bt">⏱ {profile.chronotype}</span>}
+                  {insights?.zodiac && <span className="badge bm">♈ {insights.zodiac}</span>}
+                </div>
+                <div style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.5, padding: "8px 12px", background: "rgba(0,112,192,0.05)", borderRadius: 8, borderLeft: "3px solid var(--gold)", textAlign: "left" }}>
+                  <strong style={{ color: "var(--gold-dark)" }}>Сводка:</strong> {insights?.zodiac || "—"} ({insights?.zodiacElement || "Воздух"}) · {insights?.eastern || "—"} ({insights?.easternElement || "Вода"}) · Градус: <strong style={{ color: "var(--gold)" }}>{destiny.degree}°</strong>
                 </div>
               </div>
             }
           >
-            <div style={{ textAlign: "center", color: "var(--text3)", marginTop: 40 }}>Подробная информация доступна в настройках.</div>
+            <div style={{ textAlign: "center", color: "var(--text3)", marginTop: 40, fontSize: 12 }}>
+              <p>Подробная информация доступна в настройках приложения.</p>
+            </div>
+          </FlipCardBlock>
+
+          <FlipCardBlock title="Западный Зодиак" frontImage={`/assets/avatars-icons/front-zodiac-${insights?.zodiac?.toLowerCase() || 'gemini'}.png`} accentColor="var(--blue)"
+            frontContent={
+              <div style={{ fontSize: 13, lineHeight: 1.6, color: "var(--text2)", padding: "0 10px" }}>
+                <p style={{ marginBottom: 8, fontWeight: 500 }}>
+                  <strong style={{ color: "var(--blue)", fontSize: 15 }}>{insights?.zodiac || "—"}</strong> <span>({insights?.zodiacElement || "Воздух"}) под управлением {insights?.rulingPlanet || "Меркурия"}.</span>
+                </p>
+                <InnerAccordion title="Сильные стороны" defaultOpen={true}>
+                  {insights?.zodiacStrengths || "Коммуникация, адаптивность, интеллект"}
+                </InnerAccordion>
+              </div>
+            }
+          >
+            <InnerAccordion title="Уязвимые зоны">
+              {insights?.zodiacWeaknesses || "Лёгкие, бронхи, плечи, нервная система"}
+            </InnerAccordion>
+            <InnerAccordion title="Как использовать">
+              <ul style={{ margin: "0 0 0 18px", lineHeight: 1.7 }}>
+                <li>Планируй важные дела на {chronoPeaks.focus?.hours || "утро"}</li>
+                <li>Избегай многозадачности</li>
+                <li>Дыхательные практики укрепляют слабые зоны</li>
+              </ul>
+            </InnerAccordion>
+          </FlipCardBlock>
+
+          <FlipCardBlock title="Восточный Знак" frontImage={`/assets/avatars-icons/front-eastern-${insights?.eastern?.toLowerCase() || 'rabbit'}.png`} accentColor="var(--gold)"
+            frontContent={
+              <div style={{ fontSize: 13, lineHeight: 1.6, color: "var(--text2)", padding: "0 10px" }}>
+                <p style={{ marginBottom: 8, fontWeight: 500 }}>
+                  <strong style={{ color: "var(--gold-dark)", fontSize: 15 }}>{insights?.eastern || "—"}</strong> <span>({insights?.easternElement || "Вода"}).</span>
+                </p>
+                <InnerAccordion title="Энергетический портрет" defaultOpen={true}>
+                  {insights?.easternTraits || "Честность и терпимость"}. Твоя стихия наделяет тебя глубокой интуицией.
+                </InnerAccordion>
+              </div>
+            }
+          >
+            <InnerAccordion title="Кармическая задача">
+              {insights?.easternKarma || "Научиться говорить 'нет' без чувства вины"}. Выстраивай границы, не теряя эмпатии.
+            </InnerAccordion>
+            <InnerAccordion title="Рекомендации">
+              <ul style={{ margin: "0 0 0 18px", lineHeight: 1.7 }}>
+                <li>Используй спады энергии для восстановления</li>
+                <li>Доверяй интуиции в финансовых вопросах</li>
+                <li>Избегай токсичных связей</li>
+              </ul>
+            </InnerAccordion>
+          </FlipCardBlock>
+
+          <FlipCardBlock title="Градус Судьбы" frontImage="/assets/avatars-icons/front-destiny.png" accentColor="var(--gold)"
+            frontContent={
+              <div style={{ textAlign: "center", padding: "0 10px" }}>
+                <div style={{ fontFamily: "var(--font-head)", fontSize: 28, color: "var(--gold)", fontWeight: 600, letterSpacing: "2.5px" }}>{destiny.degree || 241}°</div>
+                <div style={{ fontFamily: "var(--font-italic)", fontSize: 14, color: "var(--text2)", marginTop: 4, fontStyle: "italic" }}>{destiny.interpretation || "Интеграция опыта"}</div>
+                <InnerAccordion title="Описание" defaultOpen={true} style={{ marginTop: 12, textAlign: "left" }}>
+                  Твой градус {destiny.degree}° указывает на текущую фазу жизненного цикла. {destiny.degree < 120 ? "Активное созидание. " : destiny.degree < 240 ? "Структурирование роста. " : "Интеграция опыта. "}
+                </InnerAccordion>
+              </div>
+            }
+          >
+            <InnerAccordion title="Как использовать">
+              <ul style={{ margin: "0 0 0 18px", lineHeight: 1.7 }}>
+                <li>Доверяй интуиции, проверяй фактами</li>
+                <li>Веди дневник наблюдений</li>
+              </ul>
+            </InnerAccordion>
+          </FlipCardBlock>
+
+          <FlipCardBlock title="Хроно-тип" frontImage={`/assets/avatars-icons/front-chrono-${profile.chronotype?.toLowerCase().includes('жаворонок') ? 'lark' : profile.chronotype?.toLowerCase().includes('сова') ? 'owl' : 'pigeon'}.png`} accentColor="var(--blue)"
+            frontContent={
+              <div style={{ fontSize: 13, lineHeight: 1.6, color: "var(--text2)", padding: "0 10px" }}>
+                <p style={{ marginBottom: 10, fontWeight: 500 }}>
+                  <strong style={{ color: "var(--blue)", fontSize: 15 }}>{profile.chronotype || "🕊️ Голубь"}</strong>
+                </p>
+                <div style={{ padding: 10, background: "rgba(45,106,79,0.08)", borderRadius: 8, borderLeft: "3px solid var(--success)", marginBottom: 10 }}>
+                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--success)", letterSpacing: 1, marginBottom: 4 }}>🧠 ПИК КОНЦЕНТРАЦИИ</div>
+                  <p style={{ margin: 0, fontSize: 12 }}>{chronoPeaks.focus?.tip || "Самые сложные задачи — в это время."}</p>
+                </div>
+              </div>
+            }
+          >
+            <div style={{ padding: 10, background: "rgba(139,32,32,0.06)", borderRadius: 8, borderLeft: "3px solid var(--error)", marginBottom: 12 }}>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--error)", letterSpacing: 1, marginBottom: 4 }}>⚡ ПРОВАЛ ЭНЕРГИИ</div>
+              <p style={{ margin: 0, fontSize: 12 }}>{chronoPeaks.rest?.tip || "Идеально для рутины."}</p>
+            </div>
+            <InnerAccordion title="Как использовать" defaultOpen={true}>
+              <ul style={{ margin: "0 0 0 18px", lineHeight: 1.7 }}>
+                <li>Синхронизируй расписание с биоритмами — КПД +30–40%</li>
+                <li>Сложные решения — только в пиковые часы</li>
+                <li>Соблюдай режим сна: {chronoPeaks.sleep?.hours || "22:30–23:30"}</li>
+              </ul>
+            </InnerAccordion>
           </FlipCardBlock>
         </>
       )}
-      
+
       {activeTab === 'deep' && (
         <>
-          {/* 1. ГЛУБОКИЙ АНАЛИЗ (СЕТКА 2x2 С SVG) */}
           <div style={{ background: "rgba(0,112,192,0.03)", borderRadius: 10, padding: 18, border: "1px solid var(--line)", marginBottom: 24 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, paddingBottom: 10, borderBottom: "1px solid var(--line)" }}>
               <div style={{ width: 4, height: 24, background: "var(--blue)", borderRadius: 2 }} />
               <h3 style={{ fontFamily: "var(--font-head)", fontSize: 16, color: "var(--blue)", margin: 0, letterSpacing: 1 }}>🔍 Глубокий анализ профиля</h3>
             </div>
-            
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
               
-              {/* Методология (СКРЫТА) */}
+              {/* Методология — СКРЫТА */}
               <div style={{ display: 'none', background: "#fff", padding: 16, borderRadius: 8, border: "1px solid var(--line)", borderTop: "3px solid var(--blue)" }}>
                 <h4 style={{ fontFamily: "var(--font-head)", fontSize: 14, color: "var(--blue)", margin: "0 0 8px 0" }}>Методология</h4>
                 <div style={{ fontSize: 13, lineHeight: 1.6, color: "var(--text2)" }}>
-                  <div><strong>Цзяцзы:</strong> Возраст редуцируется по модулю 60.</div>
-                  <div style={{marginTop:4}}><strong>Ведический календарь:</strong> Сезонный фон (Ян/Инь Ци).</div>
+                  <div style={{ marginBottom: 6 }}><strong style={{ color: "var(--blue)" }}>Цзяцзы:</strong> Возраст редуцируется по модулю 60 → определяется стадия (0–5, 5–10… 55–60 лет). Каждая стадия задаёт вектор Ци для 5 сфер.</div>
+                  <div style={{ marginBottom: 6 }}><strong style={{ color: "var(--gold-dark)" }}>Ведический календарь:</strong> Определяется сезонный фон (Ян/Инь Ци), лунные ограничения по декадам, конфликт дней с месяцем, благоприятные/неблагоприятные часы.</div>
+                  <div><strong style={{ color: "var(--success)" }}>Рао (Йоги/Мараки):</strong> Управители 1,5,9 домов → благотворные; 3,6,11 → злотворные; 2,8,12 → пагубно-нейтральные. Мараки (2+7) показывают зоны риска.</div>
                 </div>
               </div>
-              
-              {/* Синхронизация (SVG RADIAL) */}
+
+              {/* Синхронизация — SVG с анимацией */}
               <div style={{ background: "#fff", padding: 16, borderRadius: 8, border: "1px solid var(--line)", borderTop: "3px solid var(--gold)" }}>
                 <h4 style={{ fontFamily: "var(--font-head)", fontSize: 14, color: "var(--gold)", margin: "0 0 8px 0" }}>Синхронизация</h4>
-                <SyncRadialChart jiaziStage={currentJiaziStage} chronotype={profile.chronotype} moonPhase="waxing" />
-                <div style={{ marginTop: 12, fontSize: 13, lineHeight: 1.6, color: "var(--text2)", textAlign: "center" }}>
-                  <p>Ваша текущая фаза: <strong style={{color:"var(--blue)"}}>{currentJiaziStage?.name}</strong></p>
-                  <p style={{fontSize:12}}>Синхронизация биоритмов с лунным циклом</p>
-                </div>
+                <SyncRadialChart />
+                <p style={{ marginTop: 12, fontSize: 13, color: "var(--text2)", textAlign: "center" }}>
+                  Фаза: <strong style={{ color: "var(--blue)" }}>{currentStage?.name}</strong><br />
+                  Согласование биоритмов с лунным циклом
+                </p>
               </div>
-              
-              {/* Рекомендации (SVG RADAR) */}
+
+              {/* Рекомендации — Чек-лист с анимацией */}
               <div style={{ background: "#fff", padding: 16, borderRadius: 8, border: "1px solid var(--line)", borderTop: "3px solid var(--success)" }}>
                 <h4 style={{ fontFamily: "var(--font-head)", fontSize: 14, color: "var(--success)", margin: "0 0 8px 0" }}>Рекомендации</h4>
-                <RecommendationsRadar insights={insights} />
-                <div style={{ marginTop: 12, fontSize: 13, lineHeight: 1.6, color: "var(--text2)" }}>
-                  <ul style={{ margin: "0 0 0 16px", padding: 0 }}>
-                    <li>Планируйте решения на часы пика биоритмов</li>
-                    <li>Фокус на {currentJiaziStage?.spheres?.career || 'развитии'}</li>
-                    <li>Избегайте терапии в запрещённые лунные дни</li>
-                  </ul>
-                </div>
+                <RecommendationsChecklist insights={insights} />
+                <ul style={{ marginTop: 12, fontSize: 13, color: "var(--text2)", margin: "0 0 0 16px" }}>
+                  <li>Решения в пик биоритмов</li>
+                  <li>Фокус: {currentStage?.spheres?.career || 'развитие'}</li>
+                  <li>Избегать терапии в запрещенные дни</li>
+                </ul>
               </div>
-              
-              {/* Зоны внимания (SVG SILHOUETTE) */}
+
+              {/* Зоны внимания — Органы с анимацией */}
               <div style={{ background: "#fff", padding: 16, borderRadius: 8, border: "1px solid var(--line)", borderTop: "3px solid var(--error)" }}>
                 <h4 style={{ fontFamily: "var(--font-head)", fontSize: 14, color: "var(--error)", margin: "0 0 8px 0" }}>Зоны внимания</h4>
-                <AttentionZonesSVG zodiac={insights?.zodiac} meridianInfo={meridianInfo} />
-                <div style={{ marginTop: 12, fontSize: 13, lineHeight: 1.6, color: "var(--text2)" }}>
-                  <p>Учитывая знак <strong>{insights?.zodiac || '—'}</strong>:</p>
-                  <p style={{fontSize:12, marginTop:4}}>{meridianInfo?.tip || 'Регулярность питания и режим'}</p>
-                </div>
+                <AttentionZonesOrgans zodiac={insights?.zodiac} />
+                <p style={{ marginTop: 12, fontSize: 13, color: "var(--text2)" }}>
+                  Знак: <strong>{insights?.zodiac || '—'}</strong><br />
+                  {meridianInfo?.tip || 'Регулярность питания и режим'}
+                </p>
               </div>
-              
             </div>
           </div>
-          
-          {/* 2. ВЕДИЧЕСКИЙ КАЛЕНДАРЬ (ОБНОВЛЕННЫЕ ПУТИ И РАЗМЕРЫ) */}
+
+          {/* ВЕДИЧЕСКИЙ КАЛЕНДАРЬ */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16, marginBottom: 24 }}>
             <FlipCardBlock 
               title="Солнечный сезон" 
               frontImage="/assets/avatars-icons/bazi-five-elements.png" 
               accentColor="var(--success)"
               minHeight={220}
-              frontContent={
-                <div style={{ textAlign: "center", marginTop: 8 }}>
-                  <div style={{ fontFamily: "var(--font-head)", fontSize: 14, color: "var(--blue)", letterSpacing: 1 }}>ПЯТЬ ЭЛЕМЕНТОВ</div>
-                </div>
-              }
+              frontContent={<div style={{ fontFamily: "var(--font-head)", fontSize: 14, color: "var(--blue)", letterSpacing: 1, marginTop: 8 }}>ПЯТЬ ЭЛЕМЕНТОВ</div>}
             >
-              <p style={{ fontSize: 13, lineHeight: 1.6 }}>Энергия парит, болезни поднимаются на поверхность. Применяйте методы рассеивания Ци и лёгкие практики.</p>
+              <p style={{ fontSize: 13, lineHeight: 1.6 }}>Энергия парит. Применяйте методы рассеивания Ци и лёгкие практики.</p>
               <div style={{ marginTop: 8, padding: 8, background: "rgba(45,106,79,0.08)", borderRadius: 6 }}>
-                <small style={{ color: "var(--success)" }}>Совет: Следите за балансом Инь-Ян в питании.</small>
+                <small style={{ color: "var(--success)" }}>Совет: Баланс Инь-Ян в питании</small>
               </div>
             </FlipCardBlock>
-            
+
             <FlipCardBlock 
               title="Лунный фон" 
               frontImage="/assets/avatars-icons/bazi-ten-gods.png" 
               accentColor="var(--error)"
               minHeight={220}
-              frontContent={
-                <div style={{ textAlign: "center", marginTop: 8 }}>
-                  <div style={{ fontFamily: "var(--font-head)", fontSize: 14, color: "var(--blue)", letterSpacing: 1 }}>ДЕСЯТЬ БОГОВ</div>
-                </div>
-              }
+              frontContent={<div style={{ fontFamily: "var(--font-head)", fontSize: 14, color: "var(--blue)", letterSpacing: 1, marginTop: 8 }}>ДЕСЯТЬ БОГОВ</div>}
             >
-              <p style={{ fontSize: 13, lineHeight: 1.6 }}>В дни новолуния/полнолуния организм ослаблен. Избегайте малой хирургии, иглотерапии и агрессивных процедур на коже.</p>
+              <p style={{ fontSize: 13, lineHeight: 1.6 }}>В новолуние/полнолуние организм ослаблен. Избегайте агрессивных процедур.</p>
               <div style={{ marginTop: 8, padding: 8, background: "rgba(139,32,32,0.06)", borderRadius: 6 }}>
-                <small style={{ color: "var(--error)" }}>⚠️ Внимание: Избегайте агрессивных процедур.</small>
+                <small style={{ color: "var(--error)" }}>⚠️ Внимание: Ограничьте хирургические вмешательства</small>
               </div>
             </FlipCardBlock>
           </div>
-          
-          {/* 3. ГРАФИК ЖИЗНЕННОГО ЦИКЛА (УЛУЧШЕННЫЙ) */}
+
+          {/* ГРАФИК ЖИЗНЕННОГО ЦИКЛА */}
           <CycleTimeline dob={profile.dob} onYearSelect={setSelectedYear} />
         </>
       )}
-      
+
       <div style={{ display: "flex", gap: 14, marginTop: 28 }}>
-        <button className="btn btn-primary" onClick={handleRefresh} disabled={isRefreshing} style={{ flex: 1 }}>
+        <button className="btn btn-primary" onClick={handleRefresh} disabled={isRefreshing} style={{ flex: 1, opacity: isRefreshing ? 0.7 : 1 }}>
           {isRefreshing ? "⏳ Обновление..." : "🔄 Обновить данные"}
         </button>
         <button className="btn btn-ghost" onClick={handleReset} style={{ flex: 1, borderColor: "rgba(139,32,32,0.4)", color: "var(--error)" }}>
           🗑️ Сброс профиля
         </button>
       </div>
-      
+
       {selectedYear !== null && <YearModal year={selectedYear} currentAge={age} onClose={() => setSelectedYear(null)} />}
     </div>
   );
