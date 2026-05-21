@@ -222,7 +222,7 @@ function CycleTimeline({ dob, onYearSelect }) {
 
   return (
     <div style={{ position: "relative", padding: "20px 0", overflow: "hidden", borderRadius: 12, background: "rgba(255,255,255,0.8)", border: "1px solid var(--line)", marginBottom: 24 }}>
-      <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none", opacity: 0.6 }} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMidYMid meet">
+      <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: 0.6 }} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMidYMid meet">
         <defs>
           <style>{"@keyframes flow-bg { 0%{stroke-dashoffset:0} 100%{stroke-dashoffset:-40} } "}</style>
         </defs>
@@ -248,12 +248,13 @@ function CycleTimeline({ dob, onYearSelect }) {
 
         {years.map((y, i) => {
           const x = paddingX + (i / 19) * graphWidth;
+          const dataIndex = Math.min(i, 19); // fix: clamp to 0..19, data has 20 points
           return (
-            <g key={y} onMouseEnter={() => setHoverYear(y)} onMouseLeave={() => setHoverYear(null)} style={{ cursor: 'pointer' }}>
+            <g key={y} onClick={() => onYearSelect(y)} onMouseEnter={() => setHoverYear(y)} onMouseLeave={() => setHoverYear(null)} style={{ cursor: 'pointer' }}>
               <rect x={x - 15} y={0} width={30} height={height} fill="transparent" />
               {spheres.map(sphere => {
                 const data = getChartData(sphere);
-                const py = getScaledY(data[i].y);
+                const py = getScaledY(data[dataIndex].y);
                 return <circle key={sphere} cx={x} cy={py} r={hoverYear === y ? 5 : 3} fill={getSphereColor(sphere)} opacity={hoverYear === y ? 1 : 0} />;
               })}
               <text x={x} y={height - 5} textAnchor="middle" fontSize="10" fontFamily="var(--font-mono)" fill={hoverYear === y ? "var(--blue)" : "var(--text3)"}>{y}</text>
