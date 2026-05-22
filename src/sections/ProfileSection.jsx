@@ -3,7 +3,6 @@ import React, { useState, useMemo } from "react";
 import { useApp } from "../store/AppContext";
 import { getProfileInsights } from "../utils/knowledgeEngine";
 import { getMeridianInfo, getChronotypePeaks } from "../data/profileKnowledge";
-
 // ─── БАЗА ДАННЫХ ЦЯЦЗЫ (12 СТАДИЙ) ───
 const JIAZI_STAGES = [
   { name: 'Рождение', spheres: { health: 'Иммунитет', career: 'Обучение', relations: 'Семья', spirit: 'Поиск смысла', finance: 'Накопление' }, tips: 'Закладка фундамента.', critical: 'Формирование реакций.' },
@@ -19,7 +18,6 @@ const JIAZI_STAGES = [
   { name: 'Зачатие', spheres: { health: 'Подготовка', career: 'Идеи', relations: 'Новые знакомства', spirit: 'Намерение', finance: 'Планирование' }, tips: 'Задавай вектор.', critical: 'Решение о запуске.' },
   { name: 'Созревание', spheres: { health: 'Активация', career: 'Запуск', relations: 'Переговоры', spirit: 'Фокус', finance: 'Капитал' }, tips: 'Действуй решительно.', critical: 'Момент истины.' }
 ];
-
 // ─── УТИЛИТЫ ДЛЯ ПУТЕЙ К КАРТИНКАМ ───
 const ZODIAC_SLUGS = {
   'овен': 'aries', 'телец': 'taurus', 'близнецы': 'gemini', 'рак': 'cancer',
@@ -31,14 +29,12 @@ const EASTERN_SLUGS = {
   'дракон': 'dragon', 'змея': 'snake', 'лошадь': 'horse', 'коза': 'goat', 'овца': 'goat',
   'обезьяна': 'monkey', 'петух': 'rooster', 'собака': 'dog', 'свинья': 'pig'
 };
-
 function getSafeImagePath(type, name, fallback) {
   const map = type === 'zodiac' ? ZODIAC_SLUGS : type === 'eastern' ? EASTERN_SLUGS : {};
   const raw = name ? name.toLowerCase().trim() : fallback;
   const slug = map[raw] || raw.replace(/\s+/g, '-');
   return `/assets/avatars-icons/front-${type}-${slug}.png`;
 }
-
 // ─── ВСПОМОГАТЕЛЬНЫЕ КОМПОНЕНТЫ ───
 function ProfileTabs({ activeTab, setActiveTab }) {
   const tabs = [{ id: 'main', label: 'ОСНОВНОЙ' }, { id: 'deep', label: 'ГЛУБОКИЙ АНАЛИЗ' }];
@@ -47,7 +43,8 @@ function ProfileTabs({ activeTab, setActiveTab }) {
       {tabs.map(tab => (
         <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
           flex: 1, padding: "10px 0", border: "none", borderRadius: 6, cursor: "pointer",
-          fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 1,          background: activeTab === tab.id ? "var(--blue)" : "transparent",
+          fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 1,
+          background: activeTab === tab.id ? "var(--blue)" : "transparent",
           color: activeTab === tab.id ? "#fff" : "var(--text2)",
           transition: "all 0.2s"
         }}>
@@ -57,7 +54,6 @@ function ProfileTabs({ activeTab, setActiveTab }) {
     </div>
   );
 }
-
 function InnerAccordion({ title, children, defaultOpen = false }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
@@ -70,8 +66,7 @@ function InnerAccordion({ title, children, defaultOpen = false }) {
     </div>
   );
 }
-
-// ✅ FlipCardBlock: изображение сверху (не фон), текст под ним, opacity: 0.5
+// ✅ FlipCardBlock: Убраны фильтры и прозрачность. Теперь только оригинальный цвет и размер.
 function FlipCardBlock({ title, frontImage, accentColor = "var(--blue)", children, minHeight = 340, frontContent }) {
   const [flipped, setFlipped] = useState(false);
   const [imgError, setImgError] = useState(false);
@@ -87,30 +82,33 @@ function FlipCardBlock({ title, frontImage, accentColor = "var(--blue)", childre
     <div style={{ perspective: "1200px", marginBottom: 28 }}>
       <div onClick={() => setFlipped(!flipped)} style={{ position: "relative", width: "100%", minHeight, transformStyle: "preserve-3d", transition: "transform 0.6s", transform: flipped ? "rotateY(180deg)" : "none", cursor: "pointer", borderRadius: 12 }}>
         {/* ЛИЦЕВАЯ СТОРОНА */}
-        <div style={{ position: "absolute", inset: 0, backfaceVisibility: "hidden", borderRadius: 12, overflow: "hidden", background: "linear-gradient(135deg, #f8f4e8 0%, #e8d8c0 100%)", border: "2px solid var(--gold)", display: "flex", flexDirection: "column", alignItems: "center", padding: 16, boxSizing: "border-box" }}>
-          {/* Изображение сверху (не фон) */}
+        <div style={{ position: "absolute", inset: 0, backfaceVisibility: "hidden", borderRadius: 12, overflow: "hidden", background: "linear-gradient(135deg, #f8f4e8 0%, #e8d8c0 100%)", border: "2px solid var(--gold)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+          {/* Слой 1: Фоновое изображение (БЕЗ фильтров, ОРИГИНАЛЬНЫЙ ЦВЕТ) */}
           {!imgError && frontImage ? (
             <img
               src={frontImage}
               alt={title}
-              style={{ width: "100%", maxWidth: 180, height: "auto", objectFit: "contain", opacity: 0.5, filter: "grayscale(100%) sepia(20%)", marginBottom: 12 }}
+              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain" }}
               onError={() => setImgError(true)}
             />
-          ) : (            <div style={{ fontSize: 72, color: "var(--text3)", marginBottom: 12 }}>{getFallbackEmoji()}</div>
+          ) : (
+            <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", opacity: 0.4, fontSize: 90, color: "var(--text3)", background: "rgba(248,244,232,0.9)" }}>
+              {getFallbackEmoji()}
+            </div>
           )}
-          {/* Заголовок под изображением */}
-          <div style={{ textAlign: "center", marginBottom: 8 }}>
-            <div style={{ fontFamily: "var(--font-head)", fontSize: 18, color: "var(--blue)", letterSpacing: "1px", fontWeight: 600 }}>{title}</div>
+          {/* Слой 2: Заголовок (ВСЕГДА виден) */}
+          <div style={{ position: "relative", zIndex: 2, textAlign: "center", padding: "0 10px", background: "rgba(248, 244, 232, 0.85)", borderRadius: 8, boxShadow: "0 2px 8px rgba(0,0,0,0.05)", marginTop: frontContent ? "-40px" : "0" }}>
+            <div style={{ fontFamily: "var(--font-head)", fontSize: 18, color: "var(--blue)", letterSpacing: "1px", fontWeight: 600, marginBottom: 4 }}>{title}</div>
           </div>
-          {/* Дополнительный контент под заголовком */}
+          {/* Слой 3: Дополнительный контент (если есть) */}
           {frontContent && (
-            <div style={{ width: "100%", textAlign: "center" }}>
+            <div style={{ position: "relative", zIndex: 2, padding: "10px 20px", width: "100%", textAlign: "center", marginTop: 10 }}>
               {frontContent}
             </div>
           )}
-          {/* Подсказка */}
+          {/* Подсказка, если нет доп. контента */}
           {!frontContent && (
-            <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 8, fontFamily: "var(--font-mono)" }}>Нажмите для деталей</div>
+            <div style={{ position: "relative", zIndex: 2, fontSize: 11, color: "var(--text3)", marginTop: 12, fontFamily: "var(--font-mono)" }}>Нажмите для деталей</div>
           )}
         </div>
         {/* ОБОРОТНАЯ СТОРОНА */}
@@ -122,7 +120,6 @@ function FlipCardBlock({ title, frontImage, accentColor = "var(--blue)", childre
     </div>
   );
 }
-
 function YearModal({ year, currentAge, onClose }) {
   const stageIndex = Math.floor((year % 60) / 5) % 12;
   const stage = JIAZI_STAGES[stageIndex];
@@ -145,9 +142,9 @@ function YearModal({ year, currentAge, onClose }) {
           ))}
         </InnerAccordion>
       </div>
-    </div>  );
+    </div>
+  );
 }
-
 // ─── SVG КОМПОНЕНТЫ С АНИМАЦИЕЙ ───
 function SyncRadialChart() {
   return (
@@ -179,7 +176,6 @@ function SyncRadialChart() {
     </div>
   );
 }
-
 function RecommendationsChecklist({ insights }) {
   const spheres = [
     { key: 'health', label: 'Здоровье', icon: '❤️', value: 75 },
@@ -194,7 +190,8 @@ function RecommendationsChecklist({ insights }) {
       <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", gap: 8, justifyContent: "center", height: "100%" }}>
         {spheres.map((sphere, idx) => (
           <div key={sphere.key} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12 }}>
-            <span style={{ fontSize: 14 }}>{sphere.icon}</span>            <span style={{ width: 70, color: "var(--text2)", fontWeight: 500 }}>{sphere.label}</span>
+            <span style={{ fontSize: 14 }}>{sphere.icon}</span>
+            <span style={{ width: 70, color: "var(--text2)", fontWeight: 500 }}>{sphere.label}</span>
             <div style={{ flex: 1, height: 8, background: "rgba(0,112,192,0.1)", borderRadius: 4, overflow: "hidden" }}>
               <div style={{ width: `${sphere.value}%`, height: "100%", background: "linear-gradient(90deg, var(--blue), var(--gold))", borderRadius: 4, animation: `slideIn 1s ease-out ${idx * 0.1}s both` }} />
             </div>
@@ -202,10 +199,10 @@ function RecommendationsChecklist({ insights }) {
           </div>
         ))}
       </div>
+      <style>{`@keyframes slideIn { from { width: 0%; } to { width: var(--target-width); } }`}</style>
     </div>
   );
 }
-
 function AttentionZonesOrgans({ zodiac }) {
   const weakZones = {
     'Овен': ['head', 'eyes'], 'Телец': ['throat', 'neck'], 'Близнецы': ['lungs', 'arms'],
@@ -238,12 +235,12 @@ function AttentionZonesOrgans({ zodiac }) {
     </div>
   );
 }
-
 // ─── ГРАФИК ЖИЗНЕННОГО ЦИКЛА ───
 function CycleTimeline({ dob, onYearSelect }) {
   const age = useMemo(() => {
     if (!dob) return 0;
-    const today = new Date();    const birthDate = new Date(dob);
+    const today = new Date();
+    const birthDate = new Date(dob);
     let ageVal = today.getFullYear() - birthDate.getFullYear();
     const m = today.getMonth() - birthDate.getMonth();
     if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) ageVal--;
@@ -256,6 +253,19 @@ function CycleTimeline({ dob, onYearSelect }) {
     relations: [40, 50, 60, 70, 80, 90, 70, 50, 60, 70, 80, 90],
     spirit: [90, 80, 70, 60, 50, 60, 80, 95, 85, 75, 65, 55],
     finance: [10, 30, 50, 70, 80, 70, 50, 30, 40, 60, 80, 95]
+  };
+  const getChartData = (sphere) => {
+    const data = stagePower[sphere];
+    const points = [];
+    for (let i = 0; i < 20; i++) {
+      const idx = (i / 20) * 12;
+      const lower = Math.floor(idx);
+      const upper = Math.ceil(idx) % 12;
+      const frac = idx - lower;
+      const val = data[lower] + (data[upper] - data[lower]) * frac;
+      points.push({ x: i, y: val });
+    }
+    return points;
   };
   const width = 800, height = 350, PX = 40, PY = 40;
   const GW = width - PX * 2, GH = height - PY * 2;
@@ -292,7 +302,8 @@ function CycleTimeline({ dob, onYearSelect }) {
         <text x={X(Math.min(age / 5, 19))} y={PY - 8} textAnchor="middle" fontSize="11" fill="var(--gold)" fontWeight="600" fontFamily="var(--font-mono)">ВЫ ЗДЕСЬ ({age})</text>
         {Array.from({ length: 21 }, (_, i) => i * 5).map((yr, i) => (
           <g key={yr} onClick={() => onYearSelect(yr)} onMouseEnter={() => setHoverYear(yr)} onMouseLeave={() => setHoverYear(null)} style={{ cursor: 'pointer' }}>
-            <rect x={X(i) - 15} y={0} width={30} height={height} fill="transparent" />            <text x={X(i)} y={height - 12} textAnchor="middle" fontSize="10" fill={hoverYear === yr ? "var(--blue)" : "var(--text3)"} fontWeight={hoverYear === yr ? "600" : "400"} fontFamily="var(--font-mono)">{yr}</text>
+            <rect x={X(i) - 15} y={0} width={30} height={height} fill="transparent" />
+            <text x={X(i)} y={height - 12} textAnchor="middle" fontSize="10" fill={hoverYear === yr ? "var(--blue)" : "var(--text3)"} fontWeight={hoverYear === yr ? "600" : "400"} fontFamily="var(--font-mono)">{yr}</text>
           </g>
         ))}
       </svg>
@@ -333,7 +344,6 @@ function CycleTimeline({ dob, onYearSelect }) {
     </div>
   );
 }
-
 // ─── ОСНОВНОЙ КОМПОНЕНТ ───
 export function ProfileSection() {
   const { profile, setProfile, notify } = useApp();
@@ -341,7 +351,8 @@ export function ProfileSection() {
   const [activeTab, setActiveTab] = useState('main');
   const [selectedYear, setSelectedYear] = useState(null);
   const insights = useMemo(() => profile ? getProfileInsights(profile) : null, [profile]);
-  const age = useMemo(() => {    if (!profile?.dob) return null;
+  const age = useMemo(() => {
+    if (!profile?.dob) return null;
     const today = new Date();
     const birthDate = new Date(profile.dob);
     let ageVal = today.getFullYear() - birthDate.getFullYear();
@@ -390,7 +401,8 @@ export function ProfileSection() {
 
           <FlipCardBlock
             title="Западный Зодиак"
-            frontImage={getSafeImagePath('zodiac', insights?.zodiac, 'gemini')}            accentColor="var(--blue)"
+            frontImage={getSafeImagePath('zodiac', insights?.zodiac, 'gemini')}
+            accentColor="var(--blue)"
             frontContent={
               <div style={{ fontSize: 13, lineHeight: 1.6, color: "var(--text2)", padding: "0 10px" }}>
                 <p style={{ marginBottom: 8, fontWeight: 500 }}>
@@ -440,6 +452,7 @@ export function ProfileSection() {
               </ul>
             </InnerAccordion>
           </FlipCardBlock>
+
           <FlipCardBlock title="Градус Судьбы" frontImage="/assets/avatars-icons/front-destiny.png" accentColor="var(--gold)"
             frontContent={
               <div style={{ textAlign: "center", padding: "0 10px" }}>
@@ -488,7 +501,8 @@ export function ProfileSection() {
       )}
 
       {activeTab === 'deep' && (
-        <>          <div style={{ background: "rgba(0,112,192,0.03)", borderRadius: 10, padding: 18, border: "1px solid var(--line)", marginBottom: 24 }}>
+        <>
+          <div style={{ background: "rgba(0,112,192,0.03)", borderRadius: 10, padding: 18, border: "1px solid var(--line)", marginBottom: 24 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, paddingBottom: 10, borderBottom: "1px solid var(--line)" }}>
               <div style={{ width: 4, height: 24, background: "var(--blue)", borderRadius: 2 }} />
               <h3 style={{ fontFamily: "var(--font-head)", fontSize: 16, color: "var(--blue)", margin: 0, letterSpacing: 1 }}>🔍 Глубокий анализ профиля</h3>
@@ -537,7 +551,8 @@ export function ProfileSection() {
                 <small style={{ color: "var(--success)" }}>Совет: Баланс Инь-Ян в питании</small>
               </div>
             </FlipCardBlock>
-            <FlipCardBlock title="Лунный фон" frontImage="/assets/avatars-icons/bazi-ten-gods.png" accentColor="var(--error)" minHeight={220} frontContent={<div style={{ fontFamily: "var(--font-head)", fontSize: 14, color: "var(--blue)", letterSpacing: 1, marginTop: 8 }}>ДЕСЯТЬ БОГОВ</div>}>              <p style={{ fontSize: 13, lineHeight: 1.6 }}>В новолуние/полнолуние организм ослаблен. Избегайте агрессивных процедур.</p>
+            <FlipCardBlock title="Лунный фон" frontImage="/assets/avatars-icons/bazi-ten-gods.png" accentColor="var(--error)" minHeight={220} frontContent={<div style={{ fontFamily: "var(--font-head)", fontSize: 14, color: "var(--blue)", letterSpacing: 1, marginTop: 8 }}>ДЕСЯТЬ БОГОВ</div>}>
+              <p style={{ fontSize: 13, lineHeight: 1.6 }}>В новолуние/полнолуние организм ослаблен. Избегайте агрессивных процедур.</p>
               <div style={{ marginTop: 8, padding: 8, background: "rgba(139,32,32,0.06)", borderRadius: 6 }}>
                 <small style={{ color: "var(--error)" }}>⚠️ Внимание: Ограничьте хирургические вмешательства</small>
               </div>
@@ -559,4 +574,4 @@ export function ProfileSection() {
       {selectedYear !== null && <YearModal year={selectedYear} currentAge={age} onClose={() => setSelectedYear(null)} />}
     </div>
   );
-      }
+}
