@@ -47,8 +47,7 @@ function ProfileTabs({ activeTab, setActiveTab }) {
       {tabs.map(tab => (
         <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
           flex: 1, padding: "10px 0", border: "none", borderRadius: 6, cursor: "pointer",
-          fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 1,
-          background: activeTab === tab.id ? "var(--blue)" : "transparent",
+          fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 1,          background: activeTab === tab.id ? "var(--blue)" : "transparent",
           color: activeTab === tab.id ? "#fff" : "var(--text2)",
           transition: "all 0.2s"
         }}>
@@ -72,8 +71,8 @@ function InnerAccordion({ title, children, defaultOpen = false }) {
   );
 }
 
-// ✅ FlipCardBlock: сохранён оригинал из версии 6
-function FlipCardBlock({ title, frontImage, accentColor = "var(--blue)", children, minHeight = 340, frontContent }) {
+// ✅ FlipCardBlock: Карточки компактнее (260px), изображение крупнее (220px), текст оптимизирован
+function FlipCardBlock({ title, frontImage, accentColor = "var(--blue)", children, minHeight = 260, frontContent }) {
   const [flipped, setFlipped] = useState(false);
   const [imgError, setImgError] = useState(false);
   const getFallbackEmoji = () => {
@@ -84,43 +83,41 @@ function FlipCardBlock({ title, frontImage, accentColor = "var(--blue)", childre
     if (title.includes("Профиль")) return "👤";
     return "📄";
   };
+
   return (
-    <div style={{ perspective: "1200px", marginBottom: 28 }}>
+    <div style={{ perspective: "1200px", marginBottom: 20 }}>
       <div onClick={() => setFlipped(!flipped)} style={{ position: "relative", width: "100%", minHeight, transformStyle: "preserve-3d", transition: "transform 0.6s", transform: flipped ? "rotateY(180deg)" : "none", cursor: "pointer", borderRadius: 12 }}>
         {/* ЛИЦЕВАЯ СТОРОНА */}
-        <div style={{ position: "absolute", inset: 0, backfaceVisibility: "hidden", borderRadius: 12, overflow: "hidden", background: "linear-gradient(135deg, #f8f4e8 0%, #e8d8c0 100%)", border: "2px solid var(--gold)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-          {/* Слой 1: Фоновое изображение */}
-          {frontImage && !imgError ? (
+        <div style={{ position: "absolute", inset: 0, backfaceVisibility: "hidden", borderRadius: 12, overflow: "hidden", background: "linear-gradient(135deg, #f8f4e8 0%, #e8d8c0 100%)", border: "2px solid var(--gold)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-start", padding: 8, boxSizing: "border-box" }}>
+          {/* Изображение */}
+          {!imgError && frontImage ? (
             <img
               src={frontImage}
               alt={title}
-              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", opacity: 0.15, filter: "grayscale(100%) sepia(20%)" }}
+              style={{ width: "100%", maxWidth: 220, height: "auto", objectFit: "contain", marginBottom: 6, flexShrink: 0 }}
               onError={() => setImgError(true)}
-            />
-          ) : frontImage ? (
-            <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", opacity: 0.4, fontSize: 90, color: "var(--text3)", background: "rgba(248,244,232,0.9)" }}>
-              {getFallbackEmoji()}
-            </div>
-          ) : null}
-          {/* Слой 2: Заголовок (ВСЕГДА виден) */}
-          <div style={{ position: "relative", zIndex: 2, textAlign: "center", padding: "0 10px", background: frontImage ? "rgba(248, 244, 232, 0.85)" : "transparent", borderRadius: 8, boxShadow: frontImage ? "0 2px 8px rgba(0,0,0,0.05)" : "none", marginTop: frontContent ? "-40px" : "0" }}>
-            <div style={{ fontFamily: "var(--font-head)", fontSize: 18, color: "var(--blue)", letterSpacing: "1px", fontWeight: 600, marginBottom: 4 }}>{title}</div>
+            />          ) : (
+            <div style={{ fontSize: 56, marginBottom: 6, opacity: 0.4, color: "var(--text3)" }}>{getFallbackEmoji()}</div>
+          )}
+          {/* Заголовок */}
+          <div style={{ textAlign: "center", marginBottom: 6 }}>
+            <div style={{ fontFamily: "var(--font-head)", fontSize: 16, color: "var(--blue)", letterSpacing: "0.5px", fontWeight: 600 }}>{title}</div>
           </div>
-          {/* Слой 3: Дополнительный контент (если есть) */}
+          {/* Контент (гибкий, помещается полностью) */}
           {frontContent && (
-            <div style={{ position: "relative", zIndex: 2, padding: "10px 20px", width: "100%", textAlign: "center", marginTop: 10 }}>
+            <div style={{ width: "100%", textAlign: "center", flex: 1, overflow: "hidden", display: "flex", flexDirection: "column", justifyContent: "center" }}>
               {frontContent}
             </div>
           )}
-          {/* Подсказка, если нет доп. контента */}
+          {/* Подсказка */}
           {!frontContent && (
-            <div style={{ position: "relative", zIndex: 2, fontSize: 11, color: "var(--text3)", marginTop: 12, fontFamily: "var(--font-mono)" }}>Нажмите для деталей</div>
+            <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 4, fontFamily: "var(--font-mono)" }}>Нажмите для деталей</div>
           )}
         </div>
         {/* ОБОРОТНАЯ СТОРОНА */}
-        <div style={{ position: "absolute", inset: 0, backfaceVisibility: "hidden", transform: "rotateY(180deg)", borderRadius: 12, overflow: "hidden", background: "#fff", border: "1.5px solid rgba(0,112,192,0.25)", padding: 18, display: "flex", flexDirection: "column" }}>
-          <h3 style={{ fontFamily: "var(--font-head)", fontSize: 15, color: "var(--blue)", margin: "0 0 14px 0", borderBottom: "1px solid var(--line)", paddingBottom: 10 }}>{title}</h3>
-          <div style={{ overflowY: "auto", flex: 1, fontSize: 14, lineHeight: 1.7, color: "var(--text2)" }}>{children}</div>
+        <div style={{ position: "absolute", inset: 0, backfaceVisibility: "hidden", transform: "rotateY(180deg)", borderRadius: 12, overflow: "hidden", background: "#fff", border: "1.5px solid rgba(0,112,192,0.25)", padding: 14, display: "flex", flexDirection: "column" }}>
+          <h3 style={{ fontFamily: "var(--font-head)", fontSize: 14, color: "var(--blue)", margin: "0 0 10px 0", borderBottom: "1px solid var(--line)", paddingBottom: 6 }}>{title}</h3>
+          <div style={{ overflowY: "auto", flex: 1, fontSize: 13, lineHeight: 1.6, color: "var(--text2)" }}>{children}</div>
         </div>
       </div>
     </div>
@@ -148,8 +145,7 @@ function YearModal({ year, currentAge, onClose }) {
             <div key={k} style={{ marginBottom: 4, fontSize: 13 }}><strong>{k}:</strong> {v}</div>
           ))}
         </InnerAccordion>
-      </div>
-    </div>
+      </div>    </div>
   );
 }
 
@@ -173,7 +169,7 @@ function SyncRadialChart() {
         <circle cx="100" cy="110" r="35" fill="none" stroke="var(--success)" strokeWidth="2" opacity="0.9">
           <animate attributeName="r" values="35;37;35" dur="3s" repeatCount="indefinite" />
         </circle>
-        <text x="100" y="115" textAnchor="middle" fontSize="8" fill="var(--success)" fontFamily="var(--font-mono)">ЛУНА</text>
+        <text x="100" y="115" textAnchor="middle" fontSize="8" fill="var(--success)" fontFamily="var(--font-mono)">ЛУНА (28 дней)</text>
         <circle r="4" fill="var(--blue)" filter="url(#glow)">
           <animateMotion dur="10s" repeatCount="indefinite" path="M100,25 A85,85 0 1,1 100,195 A85,85 0 1,1 100,25" />
         </circle>
@@ -198,8 +194,7 @@ function RecommendationsChecklist({ insights }) {
       <img src="/assets/avatars-icons/recommendations-checklist.png" alt="Rec" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", opacity: 0.2 }} />
       <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", gap: 8, justifyContent: "center", height: "100%" }}>
         {spheres.map((sphere, idx) => (
-          <div key={sphere.key} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12 }}>
-            <span style={{ fontSize: 14 }}>{sphere.icon}</span>
+          <div key={sphere.key} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12 }}>            <span style={{ fontSize: 14 }}>{sphere.icon}</span>
             <span style={{ width: 70, color: "var(--text2)", fontWeight: 500 }}>{sphere.label}</span>
             <div style={{ flex: 1, height: 8, background: "rgba(0,112,192,0.1)", borderRadius: 4, overflow: "hidden" }}>
               <div style={{ width: `${sphere.value}%`, height: "100%", background: "linear-gradient(90deg, var(--blue), var(--gold))", borderRadius: 4, animation: `slideIn 1s ease-out ${idx * 0.1}s both` }} />
@@ -248,8 +243,7 @@ function AttentionZonesOrgans({ zodiac }) {
 
 // ─── ГРАФИК ЖИЗНЕННОГО ЦИКЛА ───
 function CycleTimeline({ dob, onYearSelect }) {
-  const age = useMemo(() => {
-    if (!dob) return 0;
+  const age = useMemo(() => {    if (!dob) return 0;
     const today = new Date();
     const birthDate = new Date(dob);
     let ageVal = today.getFullYear() - birthDate.getFullYear();
@@ -298,8 +292,7 @@ function CycleTimeline({ dob, onYearSelect }) {
         <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
           <path d="M40 0 L0 0 0 40" fill="none" stroke="rgba(0,112,192,0.08)" strokeWidth="0.5" />
         </pattern>
-        <rect width="100%" height="100%" fill="url(#grid)" />
-        {Object.entries(stagePower).map(([key, vals]) => {
+        <rect width="100%" height="100%" fill="url(#grid)" />        {Object.entries(stagePower).map(([key, vals]) => {
           const d = vals.map((v, i) => `${i === 0 ? 'M' : 'L'}${X(i)},${Y(v)}`).join(' ');
           const fill = `${d} L${X(19)},${height - PY} L${PX},${height - PY} Z`;
           return (
@@ -348,8 +341,7 @@ function CycleTimeline({ dob, onYearSelect }) {
                 </div>
               );
             })}
-          </div>
-          <div style={{ marginTop: 8, fontSize: 10, color: "var(--text3)", textAlign: "center" }}>Кликните для детализации периода</div>
+          </div>          <div style={{ marginTop: 8, fontSize: 10, color: "var(--text3)", textAlign: "center" }}>Кликните для детализации периода</div>
         </div>
       )}
     </div>
@@ -393,16 +385,15 @@ export function ProfileSection() {
       
       {activeTab === 'main' && (
         <>
-          <FlipCardBlock title="Профиль" frontImage={isMale ? '/assets/avatars-icons/male-avatar.png' : '/assets/avatars-icons/female-avatar.png'} accentColor="var(--blue)" minHeight={360}
+          <FlipCardBlock title="Профиль" frontImage={isMale ? '/assets/avatars-icons/male-avatar.png' : '/assets/avatars-icons/female-avatar.png'} accentColor="var(--blue)" minHeight={280}
             frontContent={
-              <div style={{ textAlign: "center", marginTop: 10 }}>
-                <h2 style={{ fontFamily: "var(--font-head)", fontSize: 22, color: "var(--text1)", margin: "0 0 8px 0" }}>{profile.name || "Пользователь"}</h2>
-                <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap", marginBottom: 8 }}>
-                  <span className="badge bgr">🎂 {age ?? "—"} лет</span>
-                  {profile.chronotype && <span className="badge bt">⏱ {profile.chronotype}</span>}
+              <div style={{ textAlign: "center" }}>
+                <h2 style={{ fontFamily: "var(--font-head)", fontSize: 20, color: "var(--text1)", margin: "0 0 6px 0" }}>{profile.name || "Пользователь"}</h2>
+                <div style={{ display: "flex", gap: 6, justifyContent: "center", flexWrap: "wrap", marginBottom: 6 }}>
+                  <span className="badge bgr">🎂 {age ?? "—"} лет</span>                  {profile.chronotype && <span className="badge bt">⏱ {profile.chronotype}</span>}
                   {insights?.zodiac && <span className="badge bm">♈ {insights.zodiac}</span>}
                 </div>
-                <div style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.5, padding: "8px 12px", background: "rgba(0,112,192,0.05)", borderRadius: 8, borderLeft: "3px solid var(--gold)", textAlign: "left" }}>
+                <div style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.4, padding: "6px 10px", background: "rgba(0,112,192,0.05)", borderRadius: 6, borderLeft: "2px solid var(--gold)", textAlign: "left" }}>
                   <strong style={{ color: "var(--gold-dark)" }}>Сводка:</strong> {insights?.zodiac || "—"} ({insights?.zodiacElement || "Воздух"}) · {insights?.eastern || "—"} ({insights?.easternElement || "Вода"}) · Градус: <strong style={{ color: "var(--gold)" }}>{destiny.degree}°</strong>
                 </div>
               </div>
@@ -418,9 +409,9 @@ export function ProfileSection() {
             frontImage={getSafeImagePath('zodiac', insights?.zodiac, 'gemini')}
             accentColor="var(--blue)"
             frontContent={
-              <div style={{ fontSize: 13, lineHeight: 1.6, color: "var(--text2)", padding: "0 10px" }}>
-                <p style={{ marginBottom: 8, fontWeight: 500 }}>
-                  <strong style={{ color: "var(--blue)", fontSize: 15 }}>{insights?.zodiac || "—"}</strong> <span>({insights?.zodiacElement || "Воздух"}) под управлением {insights?.rulingPlanet || "Меркурия"}.</span>
+              <div style={{ fontSize: 12, lineHeight: 1.5, color: "var(--text2)", padding: "0 6px" }}>
+                <p style={{ marginBottom: 6, fontWeight: 500 }}>
+                  <strong style={{ color: "var(--blue)", fontSize: 14 }}>{insights?.zodiac || "—"}</strong> <span>({insights?.zodiacElement || "Воздух"}) под управлением {insights?.rulingPlanet || "Меркурия"}.</span>
                 </p>
                 <InnerAccordion title="Сильные стороны" defaultOpen={true}>
                   {insights?.zodiacStrengths || "Коммуникация, адаптивность, интеллект"}
@@ -432,7 +423,7 @@ export function ProfileSection() {
               {insights?.zodiacWeaknesses || "Лёгкие, бронхи, плечи, нервная система"}
             </InnerAccordion>
             <InnerAccordion title="Как использовать">
-              <ul style={{ margin: "0 0 0 18px", lineHeight: 1.7 }}>
+              <ul style={{ margin: "0 0 0 16px", lineHeight: 1.6, fontSize: 12 }}>
                 <li>Планируй важные дела на {chronoPeaks.focus?.hours || "утро"}</li>
                 <li>Избегай многозадачности</li>
                 <li>Дыхательные практики укрепляют слабые зоны</li>
@@ -445,11 +436,10 @@ export function ProfileSection() {
             frontImage={getSafeImagePath('eastern', insights?.eastern, 'rabbit')}
             accentColor="var(--gold)"
             frontContent={
-              <div style={{ fontSize: 13, lineHeight: 1.6, color: "var(--text2)", padding: "0 10px" }}>
-                <p style={{ marginBottom: 8, fontWeight: 500 }}>
-                  <strong style={{ color: "var(--gold-dark)", fontSize: 15 }}>{insights?.eastern || "—"}</strong> <span>({insights?.easternElement || "Вода"}).</span>
-                </p>
-                <InnerAccordion title="Энергетический портрет" defaultOpen={true}>
+              <div style={{ fontSize: 12, lineHeight: 1.5, color: "var(--text2)", padding: "0 6px" }}>
+                <p style={{ marginBottom: 6, fontWeight: 500 }}>
+                  <strong style={{ color: "var(--gold-dark)", fontSize: 14 }}>{insights?.eastern || "—"}</strong> <span>({insights?.easternElement || "Вода"}).</span>
+                </p>                <InnerAccordion title="Энергетический портрет" defaultOpen={true}>
                   {insights?.easternTraits || "Честность и терпимость"}. Твоя стихия наделяет тебя глубокой интуицией.
                 </InnerAccordion>
               </div>
@@ -459,7 +449,7 @@ export function ProfileSection() {
               {insights?.easternKarma || "Научиться говорить 'нет' без чувства вины"}. Выстраивай границы, не теряя эмпатии.
             </InnerAccordion>
             <InnerAccordion title="Рекомендации">
-              <ul style={{ margin: "0 0 0 18px", lineHeight: 1.7 }}>
+              <ul style={{ margin: "0 0 0 16px", lineHeight: 1.6, fontSize: 12 }}>
                 <li>Используй спады энергии для восстановления</li>
                 <li>Доверяй интуиции в финансовых вопросах</li>
                 <li>Избегай токсичных связей</li>
@@ -469,17 +459,17 @@ export function ProfileSection() {
 
           <FlipCardBlock title="Градус Судьбы" frontImage="/assets/avatars-icons/front-destiny.png" accentColor="var(--gold)"
             frontContent={
-              <div style={{ textAlign: "center", padding: "0 10px" }}>
-                <div style={{ fontFamily: "var(--font-head)", fontSize: 28, color: "var(--gold)", fontWeight: 600, letterSpacing: "2.5px" }}>{destiny.degree || 241}°</div>
-                <div style={{ fontFamily: "var(--font-italic)", fontSize: 14, color: "var(--text2)", marginTop: 4, fontStyle: "italic" }}>{destiny.interpretation || "Интеграция опыта"}</div>
-                <InnerAccordion title="Описание" defaultOpen={true} style={{ marginTop: 12, textAlign: "left" }}>
+              <div style={{ textAlign: "center", padding: "0 6px" }}>
+                <div style={{ fontFamily: "var(--font-head)", fontSize: 24, color: "var(--gold)", fontWeight: 600, letterSpacing: "2px" }}>{destiny.degree || 241}°</div>
+                <div style={{ fontFamily: "var(--font-italic)", fontSize: 13, color: "var(--text2)", marginTop: 2, fontStyle: "italic" }}>{destiny.interpretation || "Интеграция опыта"}</div>
+                <InnerAccordion title="Описание" defaultOpen={true} style={{ marginTop: 8, textAlign: "left" }}>
                   Твой градус {destiny.degree}° указывает на текущую фазу жизненного цикла. {destiny.degree < 120 ? "Активное созидание. " : destiny.degree < 240 ? "Структурирование роста. " : "Интеграция опыта. "}
                 </InnerAccordion>
               </div>
             }
           >
             <InnerAccordion title="Как использовать">
-              <ul style={{ margin: "0 0 0 18px", lineHeight: 1.7 }}>
+              <ul style={{ margin: "0 0 0 16px", lineHeight: 1.6, fontSize: 12 }}>
                 <li>Доверяй интуиции, проверяй фактами</li>
                 <li>Веди дневник наблюдений</li>
               </ul>
@@ -488,23 +478,22 @@ export function ProfileSection() {
 
           <FlipCardBlock title="Хроно-тип" frontImage={`/assets/avatars-icons/front-chrono-${profile.chronotype?.toLowerCase().includes('жаворонок') ? 'lark' : profile.chronotype?.toLowerCase().includes('сова') ? 'owl' : 'pigeon'}.png`} accentColor="var(--blue)"
             frontContent={
-              <div style={{ fontSize: 13, lineHeight: 1.6, color: "var(--text2)", padding: "0 10px" }}>
-                <p style={{ marginBottom: 10, fontWeight: 500 }}>
-                  <strong style={{ color: "var(--blue)", fontSize: 15 }}>{profile.chronotype || "🕊️ Голубь"}</strong>
+              <div style={{ fontSize: 12, lineHeight: 1.5, color: "var(--text2)", padding: "0 6px" }}>
+                <p style={{ marginBottom: 8, fontWeight: 500 }}>
+                  <strong style={{ color: "var(--blue)", fontSize: 14 }}>{profile.chronotype || "🕊️ Голубь"}</strong>
                 </p>
-                <div style={{ padding: 10, background: "rgba(45,106,79,0.08)", borderRadius: 8, borderLeft: "3px solid var(--success)", marginBottom: 10 }}>
-                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--success)", letterSpacing: 1, marginBottom: 4 }}>🧠 ПИК КОНЦЕНТРАЦИИ</div>
-                  <p style={{ margin: 0, fontSize: 12 }}>{chronoPeaks.focus?.tip || "Самые сложные задачи — в это время."}</p>
+                <div style={{ padding: 8, background: "rgba(45,106,79,0.08)", borderRadius: 6, borderLeft: "2px solid var(--success)", marginBottom: 8 }}>
+                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--success)", letterSpacing: 1, marginBottom: 2 }}>🧠 ПИК КОНЦЕНТРАЦИИ</div>
+                  <p style={{ margin: 0, fontSize: 11 }}>{chronoPeaks.focus?.tip || "Самые сложные задачи — в это время."}</p>
                 </div>
               </div>
             }
-          >
-            <div style={{ padding: 10, background: "rgba(139,32,32,0.06)", borderRadius: 8, borderLeft: "3px solid var(--error)", marginBottom: 12 }}>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--error)", letterSpacing: 1, marginBottom: 4 }}>⚡ ПРОВАЛ ЭНЕРГИИ</div>
-              <p style={{ margin: 0, fontSize: 12 }}>{chronoPeaks.rest?.tip || "Идеально для рутины."}</p>
+          >            <div style={{ padding: 8, background: "rgba(139,32,32,0.06)", borderRadius: 6, borderLeft: "2px solid var(--error)", marginBottom: 10 }}>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--error)", letterSpacing: 1, marginBottom: 2 }}>⚡ ПРОВАЛ ЭНЕРГИИ</div>
+              <p style={{ margin: 0, fontSize: 11 }}>{chronoPeaks.rest?.tip || "Идеально для рутины."}</p>
             </div>
             <InnerAccordion title="Как использовать" defaultOpen={true}>
-              <ul style={{ margin: "0 0 0 18px", lineHeight: 1.7 }}>
+              <ul style={{ margin: "0 0 0 16px", lineHeight: 1.6, fontSize: 12 }}>
                 <li>Синхронизируй расписание с биоритмами — КПД +30–40%</li>
                 <li>Сложные решения — только в пиковые часы</li>
                 <li>Соблюдай режим сна: {chronoPeaks.sleep?.hours || "22:30–23:30"}</li>
@@ -549,7 +538,6 @@ export function ProfileSection() {
                   <li>Избегать терапии в запрещенные дни</li>
                 </ul>
               </div>
-
               {/* ✅ АНИМАЦИЯ ДОБАВЛЕНА: Зоны внимания */}
               <div style={{ background: "#fff", padding: 16, borderRadius: 8, border: "1px solid var(--line)", borderTop: "3px solid var(--error)", animation: "fadeInUp 0.8s ease-out 0.15s both" }}>
                 <h4 style={{ fontFamily: "var(--font-head)", fontSize: 14, color: "var(--error)", margin: "0 0 8px 0" }}>Зоны внимания</h4>
@@ -593,4 +581,4 @@ export function ProfileSection() {
       {selectedYear !== null && <YearModal year={selectedYear} currentAge={age} onClose={() => setSelectedYear(null)} />}
     </div>
   );
-}
+                }
