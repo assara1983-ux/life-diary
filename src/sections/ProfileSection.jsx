@@ -3,6 +3,7 @@ import React, { useState, useMemo } from "react";
 import { useApp } from "../store/AppContext";
 import { getProfileInsights } from "../utils/knowledgeEngine";
 import { getMeridianInfo, getChronotypePeaks } from "../data/profileKnowledge";
+
 // ─── БАЗА ДАННЫХ ЦЯЦЗЫ (12 СТАДИЙ) ───
 const JIAZI_STAGES = [
   { name: 'Рождение', spheres: { health: 'Иммунитет', career: 'Обучение', relations: 'Семья', spirit: 'Поиск смысла', finance: 'Накопление' }, tips: 'Закладка фундамента.', critical: 'Формирование реакций.' },
@@ -18,6 +19,7 @@ const JIAZI_STAGES = [
   { name: 'Зачатие', spheres: { health: 'Подготовка', career: 'Идеи', relations: 'Новые знакомства', spirit: 'Намерение', finance: 'Планирование' }, tips: 'Задавай вектор.', critical: 'Решение о запуске.' },
   { name: 'Созревание', spheres: { health: 'Активация', career: 'Запуск', relations: 'Переговоры', spirit: 'Фокус', finance: 'Капитал' }, tips: 'Действуй решительно.', critical: 'Момент истины.' }
 ];
+
 // ─── УТИЛИТЫ ДЛЯ ПУТЕЙ К КАРТИНКАМ ───
 const ZODIAC_SLUGS = {
   'овен': 'aries', 'телец': 'taurus', 'близнецы': 'gemini', 'рак': 'cancer',
@@ -29,12 +31,14 @@ const EASTERN_SLUGS = {
   'дракон': 'dragon', 'змея': 'snake', 'лошадь': 'horse', 'коза': 'goat', 'овца': 'goat',
   'обезьяна': 'monkey', 'петух': 'rooster', 'собака': 'dog', 'свинья': 'pig'
 };
+
 function getSafeImagePath(type, name, fallback) {
   const map = type === 'zodiac' ? ZODIAC_SLUGS : type === 'eastern' ? EASTERN_SLUGS : {};
   const raw = name ? name.toLowerCase().trim() : fallback;
   const slug = map[raw] || raw.replace(/\s+/g, '-');
   return `/assets/avatars-icons/front-${type}-${slug}.png`;
 }
+
 // ─── ВСПОМОГАТЕЛЬНЫЕ КОМПОНЕНТЫ ───
 function ProfileTabs({ activeTab, setActiveTab }) {
   const tabs = [{ id: 'main', label: 'ОСНОВНОЙ' }, { id: 'deep', label: 'ГЛУБОКИЙ АНАЛИЗ' }];
@@ -54,6 +58,7 @@ function ProfileTabs({ activeTab, setActiveTab }) {
     </div>
   );
 }
+
 function InnerAccordion({ title, children, defaultOpen = false }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
@@ -66,7 +71,8 @@ function InnerAccordion({ title, children, defaultOpen = false }) {
     </div>
   );
 }
-// ✅ FlipCardBlock: Убраны фильтры и прозрачность. Теперь только оригинальный цвет и размер.
+
+// ✅ FlipCardBlock: Изображение сверху → Заголовок → Контент. Оригинальный цвет, нормальный поток.
 function FlipCardBlock({ title, frontImage, accentColor = "var(--blue)", children, minHeight = 340, frontContent }) {
   const [flipped, setFlipped] = useState(false);
   const [imgError, setImgError] = useState(false);
@@ -78,37 +84,36 @@ function FlipCardBlock({ title, frontImage, accentColor = "var(--blue)", childre
     if (title.includes("Профиль")) return "👤";
     return "📄";
   };
+
   return (
     <div style={{ perspective: "1200px", marginBottom: 28 }}>
       <div onClick={() => setFlipped(!flipped)} style={{ position: "relative", width: "100%", minHeight, transformStyle: "preserve-3d", transition: "transform 0.6s", transform: flipped ? "rotateY(180deg)" : "none", cursor: "pointer", borderRadius: 12 }}>
         {/* ЛИЦЕВАЯ СТОРОНА */}
-        <div style={{ position: "absolute", inset: 0, backfaceVisibility: "hidden", borderRadius: 12, overflow: "hidden", background: "linear-gradient(135deg, #f8f4e8 0%, #e8d8c0 100%)", border: "2px solid var(--gold)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-          {/* Слой 1: Фоновое изображение (БЕЗ фильтров, ОРИГИНАЛЬНЫЙ ЦВЕТ) */}
+        <div style={{ position: "absolute", inset: 0, backfaceVisibility: "hidden", borderRadius: 12, overflow: "hidden", background: "linear-gradient(135deg, #f8f4e8 0%, #e8d8c0 100%)", border: "2px solid var(--gold)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-start", paddingTop: 16, boxSizing: "border-box" }}>
+          {/* Слой 1: Изображение сверху */}
           {!imgError && frontImage ? (
             <img
               src={frontImage}
               alt={title}
-              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain" }}
+              style={{ width: "100%", maxWidth: 180, height: "auto", objectFit: "contain", marginBottom: 12 }}
               onError={() => setImgError(true)}
             />
           ) : (
-            <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", opacity: 0.4, fontSize: 90, color: "var(--text3)", background: "rgba(248,244,232,0.9)" }}>
-              {getFallbackEmoji()}
-            </div>
+            <div style={{ fontSize: 72, marginBottom: 12, opacity: 0.4, color: "var(--text3)" }}>{getFallbackEmoji()}</div>
           )}
-          {/* Слой 2: Заголовок (ВСЕГДА виден) */}
-          <div style={{ position: "relative", zIndex: 2, textAlign: "center", padding: "0 10px", background: "rgba(248, 244, 232, 0.85)", borderRadius: 8, boxShadow: "0 2px 8px rgba(0,0,0,0.05)", marginTop: frontContent ? "-40px" : "0" }}>
-            <div style={{ fontFamily: "var(--font-head)", fontSize: 18, color: "var(--blue)", letterSpacing: "1px", fontWeight: 600, marginBottom: 4 }}>{title}</div>
+          {/* Слой 2: Заголовок под изображением */}
+          <div style={{ textAlign: "center", marginBottom: 8, padding: "0 10px" }}>
+            <div style={{ fontFamily: "var(--font-head)", fontSize: 18, color: "var(--blue)", letterSpacing: "1px", fontWeight: 600 }}>{title}</div>
           </div>
-          {/* Слой 3: Дополнительный контент (если есть) */}
+          {/* Слой 3: Дополнительный контент под заголовком */}
           {frontContent && (
-            <div style={{ position: "relative", zIndex: 2, padding: "10px 20px", width: "100%", textAlign: "center", marginTop: 10 }}>
+            <div style={{ width: "100%", textAlign: "center", padding: "0 10px" }}>
               {frontContent}
             </div>
           )}
           {/* Подсказка, если нет доп. контента */}
           {!frontContent && (
-            <div style={{ position: "relative", zIndex: 2, fontSize: 11, color: "var(--text3)", marginTop: 12, fontFamily: "var(--font-mono)" }}>Нажмите для деталей</div>
+            <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 8, fontFamily: "var(--font-mono)" }}>Нажмите для деталей</div>
           )}
         </div>
         {/* ОБОРОТНАЯ СТОРОНА */}
@@ -120,6 +125,7 @@ function FlipCardBlock({ title, frontImage, accentColor = "var(--blue)", childre
     </div>
   );
 }
+
 function YearModal({ year, currentAge, onClose }) {
   const stageIndex = Math.floor((year % 60) / 5) % 12;
   const stage = JIAZI_STAGES[stageIndex];
@@ -145,6 +151,7 @@ function YearModal({ year, currentAge, onClose }) {
     </div>
   );
 }
+
 // ─── SVG КОМПОНЕНТЫ С АНИМАЦИЕЙ ───
 function SyncRadialChart() {
   return (
@@ -176,6 +183,7 @@ function SyncRadialChart() {
     </div>
   );
 }
+
 function RecommendationsChecklist({ insights }) {
   const spheres = [
     { key: 'health', label: 'Здоровье', icon: '❤️', value: 75 },
@@ -203,6 +211,7 @@ function RecommendationsChecklist({ insights }) {
     </div>
   );
 }
+
 function AttentionZonesOrgans({ zodiac }) {
   const weakZones = {
     'Овен': ['head', 'eyes'], 'Телец': ['throat', 'neck'], 'Близнецы': ['lungs', 'arms'],
@@ -235,6 +244,7 @@ function AttentionZonesOrgans({ zodiac }) {
     </div>
   );
 }
+
 // ─── ГРАФИК ЖИЗНЕННОГО ЦИКЛА ───
 function CycleTimeline({ dob, onYearSelect }) {
   const age = useMemo(() => {
@@ -344,6 +354,7 @@ function CycleTimeline({ dob, onYearSelect }) {
     </div>
   );
 }
+
 // ─── ОСНОВНОЙ КОМПОНЕНТ ───
 export function ProfileSection() {
   const { profile, setProfile, notify } = useApp();
@@ -574,4 +585,4 @@ export function ProfileSection() {
       {selectedYear !== null && <YearModal year={selectedYear} currentAge={age} onClose={() => setSelectedYear(null)} />}
     </div>
   );
-}
+}с
