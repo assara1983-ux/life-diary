@@ -292,8 +292,7 @@ function CycleTimeline({ dob, onYearSelect }) {
     return ageVal;
   }, [dob]);
   
-  const [hoverYear, setHoverYear] = useState(null);
-  const stagePower = {
+  const [hoverYear, setHoverYear] = useState(null);  const stagePower = {
     health: [30, 40, 55, 70, 90, 80, 60, 40, 35, 45, 55, 65],
     career: [20, 35, 50, 70, 90, 75, 55, 35, 40, 55, 70, 80],
     relations: [40, 50, 60, 70, 80, 90, 70, 50, 60, 70, 80, 90],
@@ -341,8 +340,8 @@ function CycleTimeline({ dob, onYearSelect }) {
               </g>
             );
           })}
-                    {/* Текущая линия */}
-          <line x1={X(Math.min(age / 5, 19))} y1={PY} x2={X(Math.min(age / 5, 19))} y2={height - PY} stroke="var(--gold)" strokeWidth="2" strokeDasharray="5,4" />
+          
+          {/* Текущая линия */}          <line x1={X(Math.min(age / 5, 19))} y1={PY} x2={X(Math.min(age / 5, 19))} y2={height - PY} stroke="var(--gold)" strokeWidth="2" strokeDasharray="5,4" />
           <text x={X(Math.min(age / 5, 19))} y={PY - 8} textAnchor="middle" fontSize="11" fill="var(--gold)" fontWeight="600" fontFamily="var(--font-mono)">
             {`ВЫ (${age})`}
           </text>
@@ -390,8 +389,8 @@ function CycleTimeline({ dob, onYearSelect }) {
   );
 }
 
-// ─── ОСНОВНОЙ КОМПОНЕНТ ───export function ProfileSection() {
-  const { profile, setProfile, notify } = useApp();
+// ─── ОСНОВНОЙ КОМПОНЕНТ ───
+export function ProfileSection() {  const { profile, setProfile, notify } = useApp();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState('main');
   const [selectedYear, setSelectedYear] = useState(null);
@@ -439,8 +438,8 @@ function CycleTimeline({ dob, onYearSelect }) {
                   <strong style={{ color: "var(--gold-dark)" }}>Сводка:</strong> {insights?.zodiac || "—"} ({insights?.zodiacElement || "Воздух"}) · {insights?.eastern || "—"} ({insights?.easternElement || "Вода"}) · Градус: <strong style={{ color: "var(--gold)" }}>{destiny.degree}°</strong>
                 </div>
               </div>
-            }          >
-            <div style={{ textAlign: "center", color: "var(--text3)", marginTop: 40, fontSize: 12 }}>
+            }
+          >            <div style={{ textAlign: "center", color: "var(--text3)", marginTop: 40, fontSize: 12 }}>
               <p>Подробная информация доступна в настройках приложения.</p>
             </div>
           </FlipCardBlock>
@@ -488,8 +487,8 @@ function CycleTimeline({ dob, onYearSelect }) {
           <FlipCardBlock title="Градус Судьбы" frontImage="/assets/avatars-icons/front-destiny.png" accentColor="var(--gold)"
             frontContent={
               <div style={{ textAlign: "center", padding: "0 6px" }}>
-                <div style={{ fontFamily: "var(--font-head)", fontSize: 24, color: "var(--gold)", fontWeight: 600, letterSpacing: "2px" }}>{destiny.degree || 241}°</div>                <div style={{ fontFamily: "var(--font-italic)", fontSize: 13, color: "var(--text2)", marginTop: 2, fontStyle: "italic" }}>{destiny.interpretation || "Интеграция опыта"}</div>
-                <InnerAccordion title="Описание" defaultOpen={true} style={{ marginTop: 8, textAlign: "left" }}>
+                <div style={{ fontFamily: "var(--font-head)", fontSize: 24, color: "var(--gold)", fontWeight: 600, letterSpacing: "2px" }}>{destiny.degree || 241}°</div>
+                <div style={{ fontFamily: "var(--font-italic)", fontSize: 13, color: "var(--text2)", marginTop: 2, fontStyle: "italic" }}>{destiny.interpretation || "Интеграция опыта"}</div>                <InnerAccordion title="Описание" defaultOpen={true} style={{ marginTop: 8, textAlign: "left" }}>
                   Твой градус {destiny.degree}° указывает на текущую фазу жизненного цикла. {destiny.degree < 120 ? "Активное созидание. " : destiny.degree < 240 ? "Структурирование роста. " : "Интеграция опыта. "}
                 </InnerAccordion>
               </div>
@@ -537,8 +536,8 @@ function CycleTimeline({ dob, onYearSelect }) {
           <div style={{ background: "rgba(0,112,192,0.03)", borderRadius: 10, padding: 18, border: "1px solid var(--line)", marginBottom: 24 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, paddingBottom: 10, borderBottom: "1px solid var(--line)" }}>
               <div style={{ width: 4, height: 24, background: "var(--blue)", borderRadius: 2 }} />
-              <h3 style={{ fontFamily: "var(--font-head)", fontSize: 16, color: "var(--blue)", margin: 0, letterSpacing: 1 }}>🔍 Глубокий анализ профиля</h3>            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
+              <h3 style={{ fontFamily: "var(--font-head)", fontSize: 16, color: "var(--blue)", margin: 0, letterSpacing: 1 }}>🔍 Глубокий анализ профиля</h3>
+            </div>            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
               
               {/* СИНХРОНИЗАЦИЯ + РАСШИФРОВКА */}
               <div style={{ background: "#fff", padding: 16, borderRadius: 8, border: "1px solid var(--line)", borderTop: "3px solid var(--gold)" }}>
@@ -603,4 +602,4 @@ function CycleTimeline({ dob, onYearSelect }) {
       {selectedYear !== null && <YearModal year={selectedYear} currentAge={age} onClose={() => setSelectedYear(null)} />}
     </div>
   );
-}
+                           }
