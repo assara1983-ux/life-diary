@@ -33,6 +33,32 @@ function daysUntil(dateStr) {
   return Math.ceil((target - today) / 86400000);
 }
 
+// ─── Вычисление дедлайна: конец периода + N дней ───
+function calcDeadline(frequency, daysAfter) {
+  const n = parseInt(daysAfter);
+  if (!n || n <= 0) return '';
+  const now = new Date();
+  let periodEnd;
+  if (frequency === 'monthly') {
+    // Последний день текущего месяца
+    periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  } else if (frequency === 'quarterly') {
+    // Последний день текущего квартала
+    const qEndMonths = [2, 5, 8, 11]; // март, июнь, сентябрь, декабрь (0-based)
+    const currentMonth = now.getMonth();
+    const qEndMonth = qEndMonths.find(m => m >= currentMonth) ?? 11;
+    periodEnd = new Date(now.getFullYear(), qEndMonth + 1, 0);
+  } else if (frequency === 'annual') {
+    // 31 декабря текущего года
+    periodEnd = new Date(now.getFullYear(), 11, 31);
+  } else {
+    return '';
+  }
+  const deadline = new Date(periodEnd);
+  deadline.setDate(deadline.getDate() + n);
+  return localDateStr(deadline);
+}
+
 // ─── SVG ИЛЛЮСТРАЦИЯ ───
 function WorkIllustration() {
   return (
@@ -84,7 +110,7 @@ export function WorkSection() {
   const [catalogOpen, setCatalogOpen] = useState(false);
   const [myReportsOpen, setMyReportsOpen] = useState(true);
   const [showCustomModal, setShowCustomModal] = useState(false);
-  const [customForm, setCustomForm] = useState({ name: '', frequency: 'quarterly', deadline: '' });
+  const [customForm, setCustomForm] = useState({ name: '', frequency: 'quarterly', deadline: '', daysAfter: '' });
   const [aiLoading, setAiLoading] = useState(false);
   const [expandedRecId, setExpandedRecId] = useState(null);
   const [savedRecs, setSavedRecs] = useState(() => {
@@ -198,27 +224,6 @@ export function WorkSection() {
     notify('📨 Тест отправлен');
   };
 
-  // ─── Автоподстановка дедлайна по периодичности ───
-  const getAutoDeadline = (freq) => {
-    const now = new Date();
-    if (freq === 'monthly') {
-      const next = new Date(now.getFullYear(), now.getMonth() + 1, 15);
-      return localDateStr(next);
-    }
-    if (freq === 'quarterly') {
-      const qEnd = [3, 6, 9, 12];
-      const month = now.getMonth() + 1;
-      const nextQMonth = qEnd.find(m => m > month) || 12;
-      const next = new Date(now.getFullYear(), nextQMonth - 1, 15);
-      return localDateStr(next);
-    }
-    if (freq === 'annual') {
-      const next = new Date(now.getFullYear() + 1, 2, 31);
-      return localDateStr(next);
-    }
-    return '';
-  };
-
   const TABS = [
     { id: 'tasks', label: '📋 Задачи' },
     { id: 'reports', label: '📊 Отчёты' },
@@ -227,9 +232,9 @@ export function WorkSection() {
   ];
 
   const FREQ_OPTIONS = [
-    { v: 'monthly',   l: 'Ежемесячно',    hint: 'До 15-го след. месяца' },
-    { v: 'quarterly', l: 'Ежеквартально', hint: 'Раз в 3 месяца' },
-    { v: 'annual',    l: 'Ежегодно',       hint: '31 марта след. года' },
+    { v: 'monthly',   l: 'Ежемесячно',    hint: 'Конец месяца + N дней' },
+    { v: 'quarterly', l: 'Ежеквартально', hint: 'Конец квартала + N дней' },
+    { v: 'annual',    l: 'Ежегодно',       hint: '31 декабря + N дней' },
   ];
 
   return (
@@ -395,14 +400,15 @@ export function WorkSection() {
                           <div style={{ fontSize: 13, color: T.text1 }}>{r.name}</div>
                           <div style={{ fontSize: 10, color: T.text3, fontFamily: "'JetBrains Mono',monospace" }}>
                             {freqLabel(r.frequency)} · до {r.deadline}
+                            {r.daysAfter && <span style={{ marginLeft: 4, color: T.text3 }}>({r.daysAfter} дн. после периода)</span>}
                             {daysUntil(r.deadline) !== null && (
                               <span style={{ marginLeft: 6, color: daysUntil(r.deadline) <= 3 ? 'var(--error)' : T.text3 }}>
-                                ({daysUntil(r.deadline) <= 0 ? 'просрочен' : `${daysUntil(r.deadline)} дн.`})
+                                · {daysUntil(r.deadline) <= 0 ? '⚠ просрочен' : `${daysUntil(r.deadline)} дн.`}
                               </span>
                             )}
                           </div>
                         </div>
-                        <span className="badge bt">{r.frequency}</span>
+                        <span className="badge bt">{freqLabel(r.frequency)}</span>
                       </div>
                     ))}
                   </div>
@@ -659,7 +665,11 @@ export function WorkSection() {
                   return (
                     <div
                       key={v}
-                      onClick={() => setCustomForm(p => ({ ...p, frequency: v, deadline: getAutoDeadline(v) }))}
+                      onClick={() => setCustomForm(p => ({
+                        ...p,
+                        frequency: v,
+                        deadline: calcDeadline(v, p.daysAfter),
+                      }))}
                       style={{
                         padding: '8px 14px',
                         borderRadius: 10,
@@ -679,35 +689,86 @@ export function WorkSection() {
             </div>
 
             <div className="fld">
-              <label>Срок сдачи</label>
-              <input
-                type="date"
-                value={customForm.deadline}
-                onChange={e => setCustomForm(p => ({ ...p, deadline: e.target.value }))}
-              />
-              {customForm.deadline && (
-                <div style={{ fontSize: 11, marginTop: 4, fontFamily: "'JetBrains Mono',monospace", color: daysUntil(customForm.deadline) !== null && daysUntil(customForm.deadline) <= 7 ? 'var(--error)' : T.text3 }}>
-                  {daysUntil(customForm.deadline) === 0 ? '⚠ Сегодня!' :
-                   daysUntil(customForm.deadline) < 0 ? '⚠ Срок прошёл' :
-                   `До срока: ${daysUntil(customForm.deadline)} дн.`}
+              <label>Дней после окончания периода</label>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                <input
+                  type="number"
+                  min="1"
+                  max="365"
+                  placeholder="Например: 15"
+                  value={customForm.daysAfter}
+                  onChange={e => {
+                    const daysAfter = e.target.value;
+                    const deadline = calcDeadline(customForm.frequency, daysAfter);
+                    setCustomForm(p => ({ ...p, daysAfter, deadline }));
+                  }}
+                  style={{ width: 120 }}
+                />
+                {/* Быстрые варианты */}
+                {[15, 30, 60, 90].map(n => (
+                  <div
+                    key={n}
+                    onClick={() => {
+                      const daysAfter = String(n);
+                      const deadline = calcDeadline(customForm.frequency, daysAfter);
+                      setCustomForm(p => ({ ...p, daysAfter, deadline }));
+                    }}
+                    style={{
+                      padding: '5px 12px',
+                      borderRadius: 8,
+                      cursor: 'pointer',
+                      fontSize: 12,
+                      userSelect: 'none',
+                      border: `1px solid ${customForm.daysAfter === String(n) ? '#0070c0' : T.bdr}`,
+                      background: customForm.daysAfter === String(n) ? 'rgba(0,112,192,0.1)' : 'transparent',
+                      color: customForm.daysAfter === String(n) ? '#0070c0' : T.text2,
+                      transition: 'all 0.15s',
+                    }}
+                  >
+                    {n}
+                  </div>
+                ))}
+              </div>
+
+              {/* Вычисленный срок */}
+              {customForm.deadline && customForm.daysAfter && (
+                <div style={{ marginTop: 10, padding: '10px 12px', background: 'rgba(0,112,192,0.06)', borderRadius: 8, borderLeft: '3px solid rgba(0,112,192,0.4)' }}>
+                  <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, color: T.text3, marginBottom: 4, letterSpacing: 1 }}>СРОК СДАЧИ</div>
+                  <div style={{ fontSize: 16, color: '#0070c0', fontWeight: 700 }}>{customForm.deadline}</div>
+                  <div style={{ fontSize: 11, color: T.text3, marginTop: 3 }}>
+                    {(() => {
+                      const days = daysUntil(customForm.deadline);
+                      if (days === null) return '';
+                      if (days < 0) return '⚠ Срок уже прошёл';
+                      if (days === 0) return '⚠ Сегодня!';
+                      return `До срока: ${days} дн.`;
+                    })()}
+                  </div>
                 </div>
               )}
             </div>
 
             <div className="modal-foot">
               <button className="btn btn-ghost" onClick={() => setShowCustomModal(false)}>Отмена</button>
-              <button className="btn btn-primary" onClick={() => {
-                if (!customForm.name.trim() || !customForm.deadline) return;
-                addCustomGroup('Мои отчеты');
-                addCustomReport('custom-default', {
-                  name: customForm.name,
-                  frequency: customForm.frequency,
-                  deadline: customForm.deadline,
-                });
-                setShowCustomModal(false);
-                setCustomForm({ name: '', frequency: 'quarterly', deadline: '' });
-                notify('📋 Отчёт добавлен');
-              }}>Сохранить</button>
+              <button
+                className="btn btn-primary"
+                disabled={!customForm.name.trim() || !customForm.deadline || !customForm.daysAfter}
+                onClick={() => {
+                  if (!customForm.name.trim() || !customForm.deadline) return;
+                  addCustomGroup('Мои отчеты');
+                  addCustomReport('custom-default', {
+                    name: customForm.name,
+                    frequency: customForm.frequency,
+                    deadline: customForm.deadline,
+                    daysAfter: customForm.daysAfter,
+                  });
+                  setShowCustomModal(false);
+                  setCustomForm({ name: '', frequency: 'quarterly', deadline: '', daysAfter: '' });
+                  notify('📋 Отчёт добавлен');
+                }}
+              >
+                Сохранить
+              </button>
             </div>
           </div>
         </div>
