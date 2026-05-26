@@ -43,7 +43,6 @@ function useStorageState(key, defaultValue) {
 export function AppProvider({ children }) {
   const [profile, setProfile] = useStorageState('ld_pf_v3', null);
   
-  // ✅ ИСПРАВЛЕНО: Убраны пробелы в ID и названиях
   const [sections, setSections] = useStorageState('ld_sec_v3', [
     { id: "today", emoji: "☀️", name: "Сегодня", vis: true },
     { id: "schedule", emoji: "🗓️", name: "Расписание", vis: true },
@@ -61,18 +60,14 @@ export function AppProvider({ children }) {
     { id: "profile", emoji: "👤", name: "Профиль", vis: true },
   ]);
 
-  // ═══ МИГРАЦИЯ: Убираем health_mental и mental, оставляем health ═══
   useEffect(() => {
     try {
       const raw = localStorage.getItem('ld_sec_v3');
       if (!raw) return;
       const parsed = JSON.parse(raw);
-      // Удаляем старые разделы
       const cleaned = parsed.filter(s => s.id !== 'health_mental' && s.id !== 'mental' && s.id !== 'health_mental_ru');
-      // Если health нет, добавляем его
       const hasHealth = cleaned.some(s => s.id === 'health');
       if (!hasHealth) cleaned.push({ id: "health", emoji: "🫁", name: "Здоровье", vis: true });
-      
       if (cleaned.length !== parsed.length || !hasHealth) {
         localStorage.setItem('ld_sec_v3', JSON.stringify(cleaned));
         setSections(cleaned);
@@ -87,62 +82,47 @@ export function AppProvider({ children }) {
   const [trips, setTrips] = useStorageState('ld_trips_v3', []);
   const [hobbies, setHobbies] = useStorageState('ld_hobbies_v3', []);
   const [reportGroups, setReportGroups] = useStorageState('ld_report_groups', []);
-  const [reports, setReports] = useStorageState('ld_reports_v2', []); 
+  const [reports, setReports] = useStorageState('ld_reports_v2', []);
   const [checkResults, setCheckResults] = useStorageState('ld_deadline_checks', {});
   const [workTools, setWorkTools] = useStorageState('ld_work_tools', []);
-  
-  // ✅ ИСПРАВЛЕНО: Опечатки в именах переменных
   const [customReportGroups, setCustomReportGroups] = useStorageState('ld_custom_report_groups', []);
   const [selectedReports, setSelectedReports] = useStorageState('ld_selected_reports', []);
   const [collapsedSections, setCollapsedSections] = useStorageState('ld_collapsed_sections', {});
   const [aiRecommendations, setAiRecommendations] = useStorageState('ld_ai_recommendations', []);
-  
   const [mentalMood, setMentalMood] = useStorageState('mental_mood', 3);
   const [mentalStress, setMentalStress] = useStorageState('mental_stress', 5);
   const [mentalLog, setMentalLog] = useStorageState('mental_log', []);
   const [mentalRecoveryPlan, setMentalRecoveryPlan] = useStorageState('mental_recovery_plan', '');
   const [customPractices, setCustomPractices] = useStorageState('custom_practices', []);
-  
   const [aiNotes, setAiNotes] = useStorageState('ld_ai_notes', []);
   const [aiJournal, setAiJournal] = useStorageState('ld_ai_journal', []);
-  
   const [workOpenWeek, setWorkOpenWeek] = useStorageState('ld_work_open_week', true);
   const [workOpenUpcoming, setWorkOpenUpcoming] = useStorageState('ld_work_open_upcoming', true);
   const [workOpenGroups, setWorkOpenGroups] = useStorageState('ld_work_open_groups', true);
   const [workOpenTasks, setWorkOpenTasks] = useStorageState('ld_work_open_tasks', true);
   const [workOpenAdvice, setWorkOpenAdvice] = useStorageState('ld_work_open_advice', true);
-  
   const [shopAdvice, setShopAdvice] = useStorageState('ld_shop_advice', true);
   const [shopListOpen, setShopListOpen] = useStorageState('ld_shop_list', true);
-  
   const [petsAdvice, setPetsAdvice] = useStorageState('ld_pets_advice', true);
   const [petsFeed, setPetsFeed] = useStorageState('ld_pets_feed', true);
   const [petsCare, setPetsCare] = useStorageState('ld_pets_care', true);
-  
   const [homeAdvice, setHomeAdvice] = useStorageState('ld_home_open_advice', true);
   const [homeTasks, setHomeTasks] = useStorageState('ld_home_open_tasks', true);
-  
   const [hobbyAdvice, setHobbyAdvice] = useStorageState('ld_hobby_advice', true);
   const [hobbyList, setHobbyList] = useStorageState('ld_hobby_list', true);
-  
   const [travelAdvice, setTravelAdvice] = useStorageState('ld_travel_advice', true);
   const [travelTrips, setTravelTrips] = useStorageState('ld_travel_trips', true);
-  
   const [journalPrompts, setJournalPrompts] = useStorageState('ld_journal_prompts', true);
   const [journalHistory, setJournalHistory] = useStorageState('ld_journal_history', true);
-  
   const [carAdvice, setCarAdvice] = useStorageState('ld_car_advice', true);
-  const [carTasks, setCarTasks] = useStorageState('ld_car_tasks', true); 
-  
+  const [carTasks, setCarTasks] = useStorageState('ld_car_tasks', true);
   const [beautyProcs, setBeautyProcs] = useStorageState('ld_beauty_procs', {});
   const [beautyTopics, setBeautyTopics] = useStorageState('ld_beauty_topics', []);
   const [beautyProcsOpen, setBeautyProcsOpen] = useStorageState('ld_beauty_procs_open', true);
   const [beautyTodayOpen, setBeautyTodayOpen] = useStorageState('ld_beauty_today_open', true);
   const [beautyChooseOpen, setBeautyChooseOpen] = useStorageState('ld_beauty_choose_open', true);
-  
   const [healthAdvice, setHealthAdvice] = useStorageState('ld_health_advice', true);
   const [healthHabits, setHealthHabits] = useStorageState('ld_health_habits', true);
-  
   const [toastMsg, setToastMsg] = useState('');
 
   const notify = useCallback((msg) => {
@@ -162,7 +142,27 @@ export function AppProvider({ children }) {
   const addCustomGroup = (name) => setCustomReportGroups(prev => [...prev, { id: 'g-' + Date.now(), name, reports: [] }]);
   const deleteGroup = (groupId) => setCustomReportGroups(prev => prev.filter(g => g.id !== groupId));
   const addCustomReport = (groupId, reportData) => setCustomReportGroups(prev => prev.map(g => g.id === groupId ? { ...g, reports: [...g.reports, { id: 'r-' + Date.now(), ...reportData }] } : g));
-  
+
+  // ─── НОВАЯ ФУНКЦИЯ: атомарное добавление отчёта в группу "Мои отчеты" ───
+  // Создаёт группу если её нет, или добавляет в существующую — за один setCustomReportGroups
+  const addReportToMyGroup = useCallback((reportData) => {
+    setCustomReportGroups(prev => {
+      const existing = prev.find(g => g.name === 'Мои отчеты');
+      const newReport = { id: 'r-' + Date.now(), ...reportData };
+      if (existing) {
+        // Группа есть — добавляем отчёт в неё
+        return prev.map(g =>
+          g.name === 'Мои отчеты'
+            ? { ...g, reports: [...g.reports, newReport] }
+            : g
+        );
+      } else {
+        // Группы нет — создаём с отчётом
+        return [...prev, { id: 'g-' + Date.now(), name: 'Мои отчеты', reports: [newReport] }];
+      }
+    });
+  }, []);
+
   const toggleReport = (reportId) => setSelectedReports(prev => prev.includes(reportId) ? prev.filter(id => id !== reportId) : [...prev, reportId]);
   const toggleSection = (id) => setCollapsedSections(prev => ({ ...prev, [id]: !prev[id] }));
 
@@ -187,16 +187,10 @@ export function AppProvider({ children }) {
             const taskId = `report-task-${reportId}-${deadlineStr}`;
             if (!existingIds.has(taskId)) {
               newTasks.push({
-                id: taskId,
-                type: 'report',
-                source: 'catalog',
-                reportId,
-                title: `📋 ${reportData.name}`,
-                section: 'work',
-                deadline: deadlineStr,
-                priority: 'h',
-                notes: `Срок: ${deadlineStr}`,
-                doneDate: null,
+                id: taskId, type: 'report', source: 'catalog', reportId,
+                title: `📋 ${reportData.name}`, section: 'work',
+                deadline: deadlineStr, priority: 'h',
+                notes: `Срок: ${deadlineStr}`, doneDate: null,
                 createdAt: new Date().toISOString()
               });
               changed = true;
@@ -211,16 +205,10 @@ export function AppProvider({ children }) {
             const taskId = `custom-task-${report.id}-${report.deadline}`;
             if (!existingIds.has(taskId)) {
               newTasks.push({
-                id: taskId,
-                type: 'report',
-                source: 'custom',
-                reportId: report.id,
-                title: `📋 ${report.name}`,
-                section: 'work',
-                deadline: report.deadline,
-                priority: 'h',
-                notes: `Срок: ${report.deadline}`,
-                doneDate: null,
+                id: taskId, type: 'report', source: 'custom', reportId: report.id,
+                title: `📋 ${report.name}`, section: 'work',
+                deadline: report.deadline, priority: 'h',
+                notes: `Срок: ${report.deadline}`, doneDate: null,
                 createdAt: new Date().toISOString()
               });
               changed = true;
@@ -241,14 +229,17 @@ export function AppProvider({ children }) {
     workTools, setWorkTools, addWorkTool, deleteWorkTool, updateWorkToolStep,
     checkResults, setCheckResults,
     customReportGroups, addCustomGroup, deleteGroup, addCustomReport,
+    // ✅ НОВОЕ: атомарное добавление отчёта в группу
+    addReportToMyGroup,
     selectedReports, toggleReport,
     collapsedSections, toggleSection,
     aiRecommendations, setAiRecommendations,
     mentalMood, setMentalMood, mentalStress, setMentalStress, mentalLog, setMentalLog,
     mentalRecoveryPlan, setMentalRecoveryPlan, customPractices, setCustomPractices,
     aiNotes, setAiNotes, aiJournal, setAiJournal,
-    workOpenWeek, setWorkOpenWeek, workOpenUpcoming, setWorkOpenUpcoming, workOpenGroups, setWorkOpenGroups,
-    workOpenTasks, setWorkOpenTasks, workOpenAdvice, setWorkOpenAdvice,
+    workOpenWeek, setWorkOpenWeek, workOpenUpcoming, setWorkOpenUpcoming,
+    workOpenGroups, setWorkOpenGroups, workOpenTasks, setWorkOpenTasks,
+    workOpenAdvice, setWorkOpenAdvice,
     shopAdvice, setShopAdvice, shopListOpen, setShopListOpen,
     petsAdvice, setPetsAdvice, petsFeed, setPetsFeed, petsCare, setPetsCare,
     homeAdvice, setHomeAdvice, homeTasks, setHomeTasks,
