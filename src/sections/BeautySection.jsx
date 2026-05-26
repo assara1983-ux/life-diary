@@ -50,41 +50,127 @@ function timeSlot(time) {
 
 const SLOT_LABELS = { утро: '🌅 Утро', день: '☀️ День', вечер: '🌙 Вечер' };
 
-// ─── SVG ИЛЛЮСТРАЦИЯ ───
-function BeautyIllustration() {
+// ─── АНИМИРОВАННЫЙ ЛОТОС ───
+function LotusHeader({ isOpen, onToggle }) {
   return (
-    <svg viewBox="0 0 360 140" style={{ width: '100%', height: 'auto', display: 'block', marginBottom: 20 }}>
-      <defs>
-        <radialGradient id="bbg" cx="50%" cy="50%" r="60%">
-          <stop offset="0%" stopColor="rgba(184,107,93,0.15)" />
-          <stop offset="100%" stopColor="rgba(184,107,93,0)" />
-        </radialGradient>
-      </defs>
-      <ellipse cx="180" cy="70" rx="160" ry="60" fill="url(#bbg)" />
-      {/* Зеркало */}
-      <ellipse cx="180" cy="65" rx="38" ry="44" fill="none" stroke="rgba(184,107,93,0.5)" strokeWidth="2" />
-      <ellipse cx="180" cy="63" rx="30" ry="36" fill="rgba(184,107,93,0.06)" stroke="rgba(184,107,93,0.3)" strokeWidth="1" />
-      <line x1="180" y1="109" x2="180" y2="125" stroke="rgba(184,107,93,0.4)" strokeWidth="2" />
-      <ellipse cx="180" cy="128" rx="14" ry="4" fill="none" stroke="rgba(184,107,93,0.3)" strokeWidth="1.5" />
-      {/* Блики */}
-      <ellipse cx="165" cy="52" rx="5" ry="8" fill="rgba(255,255,255,0.25)" transform="rotate(-20 165 52)" />
-      {/* Искры */}
-      {[[60,30],[300,25],[40,95],[320,90],[130,18],[230,18]].map(([x,y],i) => (
-        <circle key={i} cx={x} cy={y} r="2" fill="rgba(184,107,93,0.6)">
-          <animate attributeName="opacity" values="0;1;0" dur={`${1.5+i*0.3}s`} begin={`${i*0.2}s`} repeatCount="indefinite" />
+    <div
+      onClick={onToggle}
+      style={{ position: 'relative', width: '100%', height: 160, cursor: 'pointer', overflow: 'hidden', borderRadius: isOpen ? '14px 14px 0 0' : 14, userSelect: 'none' }}
+    >
+      {/* PNG фон */}
+      <img
+        src="/assets/avatars-icons/beauty-lotus.png"
+        alt="Beauty"
+        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 30%', opacity: 0.9 }}
+      />
+
+      {/* Затемняющий градиент снизу */}
+      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(244,236,216,0) 30%, rgba(244,236,216,0.85) 100%)' }} />
+
+      {/* SVG лепестки поверх — анимация раскрытия */}
+      <svg
+        viewBox="0 0 360 160"
+        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <defs>
+          <filter id="lglow">
+            <feGaussianBlur stdDeviation="2" result="blur" />
+            <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+          </filter>
+        </defs>
+
+        {/* Внешнее кольцо — появляется при открытии */}
+        <ellipse cx="180" cy="80" rx="150" ry="65"
+          fill="none"
+          stroke="rgba(200,164,90,0.5)"
+          strokeWidth="1"
+          strokeDasharray="6,4"
+          opacity={isOpen ? 1 : 0}
+          style={{ transition: 'opacity 0.6s ease' }}
+        >
+          {isOpen && (
+            <animateTransform attributeName="transform" type="rotate"
+              from="0 180 80" to="360 180 80" dur="30s" repeatCount="indefinite" />
+          )}
+        </ellipse>
+
+        {/* Среднее кольцо */}
+        <ellipse cx="180" cy="80" rx="100" ry="44"
+          fill="none"
+          stroke="rgba(200,164,90,0.35)"
+          strokeWidth="1"
+          strokeDasharray="4,5"
+          opacity={isOpen ? 1 : 0}
+          style={{ transition: 'opacity 0.5s ease 0.1s' }}
+        >
+          {isOpen && (
+            <animateTransform attributeName="transform" type="rotate"
+              from="360 180 80" to="0 180 80" dur="20s" repeatCount="indefinite" />
+          )}
+        </ellipse>
+
+        {/* Лепестки SVG — раскрываются из центра */}
+        {[0, 36, 72, 108, 144, 180, 216, 252, 288, 324].map((angle, i) => {
+          const rad = (angle * Math.PI) / 180;
+          const r = isOpen ? 55 : 20;
+          const cx = 180 + r * Math.cos(rad);
+          const cy = 80 + (r * 0.45) * Math.sin(rad);
+          const size = isOpen ? 14 : 5;
+          return (
+            <ellipse
+              key={i}
+              cx={cx}
+              cy={cy}
+              rx={size * 0.6}
+              ry={size}
+              fill="rgba(200,164,90,0.25)"
+              stroke="rgba(200,164,90,0.6)"
+              strokeWidth="0.8"
+              filter="url(#lglow)"
+              transform={`rotate(${angle} ${cx} ${cy})`}
+              style={{ transition: `cx 0.6s ease ${i * 0.04}s, cy 0.6s ease ${i * 0.04}s, rx 0.6s ease ${i * 0.04}s, ry 0.6s ease ${i * 0.04}s, opacity 0.4s ease` }}
+              opacity={isOpen ? 0.9 : 0.3}
+            />
+          );
+        })}
+
+        {/* Центральный круг */}
+        <circle cx="180" cy="80" r={isOpen ? 18 : 10}
+          fill="rgba(200,164,90,0.15)"
+          stroke="rgba(200,164,90,0.7)"
+          strokeWidth="1.5"
+          filter="url(#lglow)"
+          style={{ transition: 'r 0.5s ease' }}
+        >
+          {isOpen && <animate attributeName="r" values="17;20;17" dur="3s" repeatCount="indefinite" />}
         </circle>
-      ))}
-      {/* Цветы */}
-      {[[80,85],[280,80]].map(([cx,cy],fi) => (
-        <g key={fi}>
-          {[0,60,120,180,240,300].map((a,pi) => (
-            <ellipse key={pi} cx={cx + 10*Math.cos(a*Math.PI/180)} cy={cy + 10*Math.sin(a*Math.PI/180)} rx="5" ry="3" fill="rgba(184,107,93,0.25)" transform={`rotate(${a} ${cx + 10*Math.cos(a*Math.PI/180)} ${cy + 10*Math.sin(a*Math.PI/180)})`} />
-          ))}
-          <circle cx={cx} cy={cy} r="4" fill="rgba(200,164,90,0.5)" />
-        </g>
-      ))}
-      <text x="180" y="72" textAnchor="middle" fontSize="11" fill="rgba(184,107,93,0.7)" fontFamily="'Cormorant Infant',serif" fontStyle="italic">Beauty Journal</text>
-    </svg>
+
+        {/* Искры при открытом состоянии */}
+        {isOpen && [30, 90, 150, 210, 270, 330].map((a, i) => {
+          const rad = (a * Math.PI) / 180;
+          return (
+            <circle key={i}
+              cx={180 + 130 * Math.cos(rad)}
+              cy={80 + 58 * Math.sin(rad)}
+              r="2.5"
+              fill="rgba(200,164,90,0.7)"
+            >
+              <animate attributeName="opacity" values="0;1;0"
+                dur={`${1.4 + i * 0.25}s`} begin={`${i * 0.2}s`} repeatCount="indefinite" />
+            </circle>
+          );
+        })}
+      </svg>
+
+      {/* Текст и стрелка */}
+      <div style={{ position: 'absolute', bottom: 12, left: 0, right: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+        <span style={{ fontFamily: "'Cormorant Infant',serif", fontSize: 16, color: '#3d2817', fontWeight: 600, letterSpacing: 1, textShadow: '0 1px 4px rgba(255,255,255,0.8)' }}>
+          Каталог процедур
+        </span>
+        <span style={{ fontSize: 12, color: '#5d4a3a', transform: isOpen ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.4s ease', display: 'inline-block' }}>▼</span>
+      </div>
+    </div>
   );
 }
 
@@ -105,7 +191,7 @@ function ProgressRing({ done, total, size = 56 }) {
   );
 }
 
-// ─── КОМПОНЕНТ: Inline-форма настройки процедуры ───
+// ─── INLINE-ФОРМА НАСТРОЙКИ ПРОЦЕДУРЫ ───
 function ProcSettingsForm({ item, value, onChange }) {
   const isSliding = item.freq && item.freq.startsWith('every:') && parseInt(item.freq.split(':')[1]) > 0;
   const isWeekly = item.freq && item.freq.startsWith('weekly:');
@@ -172,21 +258,22 @@ export function BeautySection() {
   const beautyTopics = app.beautyTopics || [];
   const setBeautyTopics = app.setBeautyTopics || (() => {});
 
-  const [modal, setModal] = useState(null);
+  const beautyTasks = tasks.filter(t => t.section === 'beauty');
+
+  // Умная логика: если ритуалов нет — каталог открыт по умолчанию
+  const [chooseOpen, setChooseOpen] = useState(beautyTasks.length === 0);
   const [openCats, setOpenCats] = useState({});
   const [settingsOpen, setSettingsOpen] = useState({});
   const [pendingSettings, setPendingSettings] = useState({});
   const [myProcsOpen, setMyProcsOpen] = useState(true);
-  const [chooseOpen, setChooseOpen] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
+  const [modal, setModal] = useState(null);
 
   const isMale = profile.gender === 'Мужской';
   const today = new Date().toISOString().split('T')[0];
-  const beautyTasks = tasks.filter(t => t.section === 'beauty');
   const due = beautyTasks.filter(t => isDue(t, today));
   const doneToday = beautyTasks.filter(t => t.doneDate === today).length;
 
-  // ─── Рекомендации по типу кожи ───
   const skinTips = {
     'Сухая': 'Увлажнение — приоритет. Избегай спиртосодержащих средств.',
     'Жирная': 'Лёгкие некомедогенные текстуры. Кислотное очищение 2×/нед.',
@@ -260,10 +347,7 @@ export function BeautySection() {
     const duration = s.duration || item.dur || 10;
     const startDate = s.startDate || today;
     const weekDay = s.weekDay || '';
-
-    const freq = weekDay && item.freq.startsWith('weekly:')
-      ? `weekly:${weekDay}`
-      : item.freq;
+    const freq = weekDay && item.freq.startsWith('weekly:') ? `weekly:${weekDay}` : item.freq;
 
     setTasks(p => {
       const without = p.filter(t => !(t.section === 'beauty' && t.beautyId === item.id));
@@ -299,23 +383,16 @@ export function BeautySection() {
     }
   };
 
-  // Группировка моих процедур по времени суток
   const groupedBySlot = useMemo(() => {
     const groups = { утро: [], день: [], вечер: [] };
-    beautyTasks.forEach(t => {
-      const slot = timeSlot(t.preferredTime);
-      groups[slot].push(t);
-    });
-    Object.keys(groups).forEach(k => {
-      groups[k].sort((a, b) => (a.preferredTime || '').localeCompare(b.preferredTime || ''));
-    });
+    beautyTasks.forEach(t => { const slot = timeSlot(t.preferredTime); groups[slot].push(t); });
+    Object.keys(groups).forEach(k => { groups[k].sort((a, b) => (a.preferredTime || '').localeCompare(b.preferredTime || '')); });
     return groups;
   }, [beautyTasks]);
 
   return (
     <div>
       <SectionHero sectionId="beauty" />
-      <BeautyIllustration />
 
       {/* ─── Шапка: прогресс + рекомендация по коже ─── */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 18, alignItems: 'center' }}>
@@ -332,127 +409,71 @@ export function BeautySection() {
         </div>
       </div>
 
-      {/* ─── Мои процедуры — сгруппированы по времени суток ─── */}
+      {/* ─── КАТАЛОГ ПРОЦЕДУР (лотос + аккордеон) ─── */}
       <div style={{ marginBottom: 14 }}>
-        <div
-          onClick={() => setMyProcsOpen(o => !o)}
-          style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', borderRadius: myProcsOpen ? '12px 12px 0 0' : '12px', cursor: 'pointer', background: 'rgba(184,107,93,0.06)', border: '1px solid rgba(184,107,93,0.2)' }}
-        >
-          <span style={{ fontSize: 16 }}>✨</span>
-          <span style={{ flex: 1, fontSize: 14, fontFamily: "'Crimson Pro',serif", color: 'rgba(184,107,93,1)', fontWeight: 500 }}>
-            Мои ритуалы ({beautyTasks.length})
-          </span>
-          <span style={{ fontSize: 11, color: T.text3 }}>{myProcsOpen ? '▲' : '▼'}</span>
-        </div>
-
-        {myProcsOpen && (
-          <div style={{ border: '1px solid rgba(184,107,93,0.15)', borderTop: 'none', borderRadius: '0 0 12px 12px', padding: 12 }}>
-            {beautyTasks.length === 0 && (
-              <div style={{ textAlign: 'center', padding: '20px 0', color: T.text3, fontSize: 13, fontStyle: 'italic' }}>
-                Выбери процедуры из каталога ниже
-              </div>
-            )}
-            {Object.entries(SLOT_LABELS).map(([slot, label]) => {
-              const items = groupedBySlot[slot];
-              if (!items?.length) return null;
-              return (
-                <div key={slot} style={{ marginBottom: 14 }}>
-                  <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, color: 'rgba(184,107,93,0.8)', letterSpacing: 1.5, marginBottom: 8 }}>{label}</div>
-                  {items.map(task => {
-                    const itemDef = allItems.find(i => i.id === task.beautyId);
-                    const isDueToday = isDue(task, today);
-                    return (
-                      <div key={task.id} style={{ padding: '8px 10px', marginBottom: 6, background: task.doneDate === today ? 'rgba(45,106,79,0.06)' : 'rgba(255,255,255,0.02)', border: `1px solid ${task.doneDate === today ? 'rgba(45,106,79,0.2)' : 'rgba(184,107,93,0.12)'}`, borderRadius: 8 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          {/* Чекбокс */}
-                          <div
-                            onClick={() => setTasks(p => p.map(t => t.id === task.id ? { ...t, doneDate: t.doneDate === today ? null : today, lastDone: t.doneDate === today ? t.lastDone : today } : t))}
-                            style={{ width: 20, height: 20, borderRadius: '50%', border: `1.5px solid ${task.doneDate === today ? 'rgba(45,106,79,0.6)' : 'rgba(184,107,93,0.4)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', background: task.doneDate === today ? 'rgba(45,106,79,0.15)' : 'transparent', flexShrink: 0 }}
-                          >
-                            {task.doneDate === today && <span style={{ fontSize: 11, color: '#2d6a4f' }}>✓</span>}
-                          </div>
-                          <span style={{ fontSize: 16 }}>{itemDef?.icon || '✨'}</span>
-                          <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: 13, color: task.doneDate === today ? T.text3 : T.text1, textDecoration: task.doneDate === today ? 'line-through' : 'none' }}>{task.title}</div>
-                            <div style={{ fontSize: 10, color: T.text3, fontFamily: "'JetBrains Mono',monospace" }}>
-                              {task.preferredTime} · {task.beautyDuration} мин · {freqLabel(task.freq)}
-                              {!isDueToday && <span style={{ marginLeft: 6, color: 'rgba(184,107,93,0.5)' }}>· не сегодня</span>}
-                            </div>
-                          </div>
-                          {/* Редактировать время */}
-                          <input
-                            type="time"
-                            value={task.preferredTime || ''}
-                            onChange={e => updateProcTime(task, e.target.value)}
-                            style={{ width: 80, padding: '3px 6px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(184,107,93,0.2)', borderRadius: 6, color: T.text2, fontFamily: "'JetBrains Mono',monospace", fontSize: 11, outline: 'none' }}
-                          />
-                          {/* Удалить */}
-                          <span onClick={() => removeProc(task.beautyId)} style={{ fontSize: 12, color: T.text3, cursor: 'pointer', opacity: 0.5, padding: '0 4px' }}>✕</span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* ─── Каталог процедур (аккордеон) ─── */}
-      <div style={{ marginBottom: 14 }}>
-        <div
-          onClick={() => setChooseOpen(o => !o)}
-          style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', borderRadius: chooseOpen ? '12px 12px 0 0' : '12px', cursor: 'pointer', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)' }}
-        >
-          <span style={{ fontSize: 16 }}>📋</span>
-          <span style={{ flex: 1, fontSize: 14, fontFamily: "'Crimson Pro',serif", color: T.text1, fontWeight: 500 }}>Каталог процедур</span>
-          <span style={{ fontSize: 11, color: T.text3 }}>{chooseOpen ? '▲' : '▼'}</span>
-        </div>
+        <LotusHeader isOpen={chooseOpen} onToggle={() => setChooseOpen(o => !o)} />
 
         {chooseOpen && (
-          <div style={{ border: '1px solid rgba(255,255,255,0.06)', borderTop: 'none', borderRadius: '0 0 12px 12px', padding: 12 }}>
+          <div style={{ border: '1px solid rgba(184,107,93,0.2)', borderTop: 'none', borderRadius: '0 0 14px 14px', padding: 12, background: 'rgba(244,236,216,0.3)' }}>
             {TOPICS.map(cat => {
               const isCatOpen = openCats[cat.cat];
+              const confirmedInCat = cat.items.filter(i => beautyProcs[i.id]?.confirmed).length;
               return (
                 <div key={cat.cat} style={{ marginBottom: 8 }}>
+                  {/* Заголовок категории */}
                   <div
                     onClick={() => setOpenCats(p => ({ ...p, [cat.cat]: !p[cat.cat] }))}
-                    style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', background: 'rgba(184,107,93,0.06)', borderRadius: isCatOpen ? '8px 8px 0 0' : 8, cursor: 'pointer', border: '1px solid rgba(184,107,93,0.15)' }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px', background: isCatOpen ? 'rgba(184,107,93,0.12)' : 'rgba(184,107,93,0.06)', borderRadius: isCatOpen ? '8px 8px 0 0' : 8, cursor: 'pointer', border: '1px solid rgba(184,107,93,0.18)' }}
                   >
-                    <span style={{ flex: 1, fontSize: 13, color: 'rgba(184,107,93,0.9)', fontFamily: "'Crimson Pro',serif", fontWeight: 500 }}>{cat.cat}</span>
-                    <span style={{ fontSize: 11, color: T.text3 }}>{isCatOpen ? '▲' : '▼'}</span>
+                    <span style={{ flex: 1, fontSize: 13, color: 'rgba(184,107,93,0.95)', fontFamily: "'Crimson Pro',serif", fontWeight: 600 }}>{cat.cat}</span>
+                    {confirmedInCat > 0 && (
+                      <span style={{ fontSize: 10, color: '#2d6a4f', fontFamily: "'JetBrains Mono',monospace", background: 'rgba(45,106,79,0.1)', padding: '2px 7px', borderRadius: 10 }}>
+                        ✓ {confirmedInCat}
+                      </span>
+                    )}
+                    <span style={{ fontSize: 11, color: T.text3, transform: isCatOpen ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.25s', display: 'inline-block' }}>▼</span>
                   </div>
 
+                  {/* Список процедур */}
                   {isCatOpen && (
-                    <div style={{ border: '1px solid rgba(184,107,93,0.1)', borderTop: 'none', borderRadius: '0 0 8px 8px', padding: '4px 0' }}>
-                      {cat.items.map(item => {
+                    <div style={{ border: '1px solid rgba(184,107,93,0.12)', borderTop: 'none', borderRadius: '0 0 8px 8px' }}>
+                      {cat.items.map((item, idx) => {
                         const confirmed = beautyProcs[item.id]?.confirmed;
                         const isSettOpen = settingsOpen[item.id];
                         return (
-                          <div key={item.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', padding: '8px 10px' }}>
+                          <div
+                            key={item.id}
+                            style={{ padding: '9px 12px', borderBottom: idx < cat.items.length - 1 ? '1px solid rgba(184,107,93,0.08)' : 'none' }}
+                          >
                             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                              <span style={{ fontSize: 18 }}>{item.icon}</span>
+                              <span style={{ fontSize: 18, flexShrink: 0 }}>{item.icon}</span>
                               <div style={{ flex: 1 }}>
-                                <div style={{ fontSize: 13, color: confirmed ? '#2d6a4f' : T.text1, fontWeight: confirmed ? 600 : 400 }}>{item.name}</div>
+                                <div style={{ fontSize: 13, color: confirmed ? '#2d6a4f' : T.text1, fontWeight: confirmed ? 600 : 400 }}>
+                                  {item.name}
+                                </div>
                                 <div style={{ fontSize: 10, color: T.text3, fontFamily: "'JetBrains Mono',monospace" }}>
                                   {freqLabel(item.freq)} · {item.dur} мин
+                                  {item.note && <span style={{ marginLeft: 6, color: 'rgba(184,107,93,0.6)' }}>· {item.note}</span>}
                                 </div>
                               </div>
-                              {confirmed
-                                ? <span style={{ fontSize: 13, color: '#2d6a4f' }}>✓ Добавлено</span>
-                                : (
-                                  <button
-                                    onClick={() => setSettingsOpen(p => ({ ...p, [item.id]: !p[item.id] }))}
-                                    style={{ padding: '4px 12px', borderRadius: 8, border: '1px solid rgba(184,107,93,0.4)', background: isSettOpen ? 'rgba(184,107,93,0.15)' : 'transparent', color: 'rgba(184,107,93,0.9)', cursor: 'pointer', fontSize: 12 }}
-                                  >
-                                    {isSettOpen ? 'Скрыть' : '+ Добавить'}
-                                  </button>
-                                )
-                              }
+                              {confirmed ? (
+                                <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                                  <span style={{ fontSize: 12, color: '#2d6a4f' }}>✓</span>
+                                  <span
+                                    onClick={() => removeProc(item.id)}
+                                    style={{ fontSize: 11, color: T.text3, cursor: 'pointer', opacity: 0.5, padding: '0 4px' }}
+                                  >✕</span>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={() => setSettingsOpen(p => ({ ...p, [item.id]: !p[item.id] }))}
+                                  style={{ padding: '4px 12px', borderRadius: 8, border: '1px solid rgba(184,107,93,0.4)', background: isSettOpen ? 'rgba(184,107,93,0.15)' : 'transparent', color: 'rgba(184,107,93,0.9)', cursor: 'pointer', fontSize: 12, whiteSpace: 'nowrap' }}
+                                >
+                                  {isSettOpen ? 'Скрыть' : '+ Добавить'}
+                                </button>
+                              )}
                             </div>
 
-                            {/* Inline-форма настройки */}
                             {isSettOpen && !confirmed && (
                               <>
                                 <ProcSettingsForm
@@ -480,7 +501,71 @@ export function BeautySection() {
         )}
       </div>
 
-      {/* ─── ИИ-рекомендации ─── */}
+      {/* ─── МОИ РИТУАЛЫ ─── */}
+      <div style={{ marginBottom: 14 }}>
+        <div
+          onClick={() => setMyProcsOpen(o => !o)}
+          style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', borderRadius: myProcsOpen ? '12px 12px 0 0' : '12px', cursor: 'pointer', background: 'rgba(184,107,93,0.06)', border: '1px solid rgba(184,107,93,0.2)' }}
+        >
+          <span style={{ fontSize: 16 }}>✨</span>
+          <span style={{ flex: 1, fontSize: 14, fontFamily: "'Crimson Pro',serif", color: 'rgba(184,107,93,1)', fontWeight: 500 }}>
+            Мои ритуалы ({beautyTasks.length})
+          </span>
+          <span style={{ fontSize: 11, color: T.text3 }}>{myProcsOpen ? '▲' : '▼'}</span>
+        </div>
+
+        {myProcsOpen && (
+          <div style={{ border: '1px solid rgba(184,107,93,0.15)', borderTop: 'none', borderRadius: '0 0 12px 12px', padding: 12 }}>
+            {beautyTasks.length === 0 && (
+              <div style={{ textAlign: 'center', padding: '20px 0', color: T.text3, fontSize: 13, fontStyle: 'italic' }}>
+                Выбери процедуры из каталога выше
+              </div>
+            )}
+            {Object.entries(SLOT_LABELS).map(([slot, label]) => {
+              const items = groupedBySlot[slot];
+              if (!items?.length) return null;
+              return (
+                <div key={slot} style={{ marginBottom: 14 }}>
+                  <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, color: 'rgba(184,107,93,0.8)', letterSpacing: 1.5, marginBottom: 8 }}>{label}</div>
+                  {items.map(task => {
+                    const itemDef = allItems.find(i => i.id === task.beautyId);
+                    const isDueToday = isDue(task, today);
+                    return (
+                      <div key={task.id} style={{ padding: '8px 10px', marginBottom: 6, background: task.doneDate === today ? 'rgba(45,106,79,0.06)' : 'rgba(255,255,255,0.02)', border: `1px solid ${task.doneDate === today ? 'rgba(45,106,79,0.2)' : 'rgba(184,107,93,0.12)'}`, borderRadius: 8 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <div
+                            onClick={() => setTasks(p => p.map(t => t.id === task.id ? { ...t, doneDate: t.doneDate === today ? null : today, lastDone: t.doneDate === today ? t.lastDone : today } : t))}
+                            style={{ width: 20, height: 20, borderRadius: '50%', border: `1.5px solid ${task.doneDate === today ? 'rgba(45,106,79,0.6)' : 'rgba(184,107,93,0.4)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', background: task.doneDate === today ? 'rgba(45,106,79,0.15)' : 'transparent', flexShrink: 0 }}
+                          >
+                            {task.doneDate === today && <span style={{ fontSize: 11, color: '#2d6a4f' }}>✓</span>}
+                          </div>
+                          <span style={{ fontSize: 16 }}>{itemDef?.icon || '✨'}</span>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: 13, color: task.doneDate === today ? T.text3 : T.text1, textDecoration: task.doneDate === today ? 'line-through' : 'none' }}>{task.title}</div>
+                            <div style={{ fontSize: 10, color: T.text3, fontFamily: "'JetBrains Mono',monospace" }}>
+                              {task.preferredTime} · {task.beautyDuration} мин · {freqLabel(task.freq)}
+                              {!isDueToday && <span style={{ marginLeft: 6, color: 'rgba(184,107,93,0.4)' }}>· не сегодня</span>}
+                            </div>
+                          </div>
+                          <input
+                            type="time"
+                            value={task.preferredTime || ''}
+                            onChange={e => updateProcTime(task, e.target.value)}
+                            style={{ width: 80, padding: '3px 6px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(184,107,93,0.2)', borderRadius: 6, color: T.text2, fontFamily: "'JetBrains Mono',monospace", fontSize: 11, outline: 'none' }}
+                          />
+                          <span onClick={() => removeProc(task.beautyId)} style={{ fontSize: 12, color: T.text3, cursor: 'pointer', opacity: 0.5, padding: '0 4px' }}>✕</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* ─── ИИ-РЕКОМЕНДАЦИИ ─── */}
       <div>
         <div
           onClick={() => setAiOpen(o => !o)}
@@ -493,8 +578,8 @@ export function BeautySection() {
         {aiOpen && (
           <div style={{ border: '1px solid rgba(255,255,255,0.06)', borderTop: 'none', borderRadius: '0 0 12px 12px', overflow: 'hidden' }}>
             <AiBox
-              kb={`Профиль: ${profile.name || '—'}, ${profile.gender || '—'}. Тип кожи: ${profile.skinType || '—'}. Тип волос: ${profile.hairType || '—'}. Приоритет ухода: ${profile.beautyPriority || '—'}. Маникюр: ${profile.nailFreq || '—'}. ТКМ-конституция: температура ${profile.tcmTemp || '—'}, влажность ${profile.tcmMoisture || '—'}, эмоции ${profile.tcmEmotion || '—'}.`}
-              prompt={`Тип кожи: ${profile.skinType || '—'}. Тип волос: ${profile.hairType || '—'}. Приоритет: ${profile.beautyPriority || '—'}. ТКМ: ${profile.tcmTemp || '—'}, ${profile.tcmMoisture || '—'}. Выбранные процедуры: ${beautyTasks.map(t => t.title).join(', ') || 'не выбраны'}.\n\nДай персональные рекомендации:\n1. Что добавить в рутину исходя из типа кожи и ТКМ-профиля\n2. Какие процедуры лучше делать по У-Син в текущий сезон\n3. Три простых лайфхака для усиления эффекта выбранных процедур`}
+              kb={`Профиль: ${profile.name || '—'}, ${profile.gender || '—'}. Тип кожи: ${profile.skinType || '—'}. Тип волос: ${profile.hairType || '—'}. Приоритет ухода: ${profile.beautyPriority || '—'}. ТКМ: ${profile.tcmTemp || '—'}, ${profile.tcmMoisture || '—'}.`}
+              prompt={`Тип кожи: ${profile.skinType || '—'}. Тип волос: ${profile.hairType || '—'}. Приоритет: ${profile.beautyPriority || '—'}. ТКМ: ${profile.tcmTemp || '—'}, ${profile.tcmMoisture || '—'}. Выбранные процедуры: ${beautyTasks.map(t => t.title).join(', ') || 'не выбраны'}.\n\nДай персональные рекомендации:\n1. Что добавить в рутину исходя из типа кожи и ТКМ-профиля\n2. Какие процедуры лучше делать по У-Син в текущий сезон\n3. Три лайфхака для усиления эффекта выбранных процедур`}
               label="Персональный уход"
               btnText="✦ Получить рекомендации"
               placeholder="Анализирую профиль и составляю план ухода..."
