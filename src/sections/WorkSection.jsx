@@ -95,7 +95,6 @@ export function WorkSection() {
     profile, tasks, setTasks,
     selectedReports, toggleReport,
     customReportGroups,
-    // ✅ ИСПРАВЛЕНО: используем новую атомарную функцию
     addReportToMyGroup,
     workTools, addWorkTool, updateWorkToolStep,
     aiRecommendations, setAiRecommendations,
@@ -109,7 +108,11 @@ export function WorkSection() {
   const [catalogOpen, setCatalogOpen] = useState(false);
   const [myReportsOpen, setMyReportsOpen] = useState(true);
   const [showCustomModal, setShowCustomModal] = useState(false);
-  const [customForm, setCustomForm] = useState({ name: '', frequency: 'quarterly', deadline: '', daysAfter: '' });
+
+  // ✅ daysAfter по умолчанию '30' — кнопка сохранить сразу активна после ввода названия
+  const EMPTY_FORM = { name: '', frequency: 'quarterly', deadline: calcDeadline('quarterly', '30'), daysAfter: '30' };
+  const [customForm, setCustomForm] = useState(EMPTY_FORM);
+
   const [aiLoading, setAiLoading] = useState(false);
   const [expandedRecId, setExpandedRecId] = useState(null);
   const [savedRecs, setSavedRecs] = useState(() => {
@@ -664,11 +667,16 @@ export function WorkSection() {
                   return (
                     <div
                       key={v}
-                      onClick={() => setCustomForm(p => ({
-                        ...p,
-                        frequency: v,
-                        deadline: calcDeadline(v, p.daysAfter),
-                      }))}
+                      onClick={() => setCustomForm(p => {
+                        // Если дни не указаны — подставляем 30 по умолчанию
+                        const daysAfter = p.daysAfter || '30';
+                        return {
+                          ...p,
+                          frequency: v,
+                          daysAfter,
+                          deadline: calcDeadline(v, daysAfter),
+                        };
+                      })}
                       style={{
                         padding: '8px 14px', borderRadius: 10, cursor: 'pointer', userSelect: 'none',
                         border: `1.5px solid ${isActive ? '#0070c0' : T.bdr}`,
@@ -739,13 +747,12 @@ export function WorkSection() {
             </div>
 
             <div className="modal-foot">
-              <button className="btn btn-ghost" onClick={() => setShowCustomModal(false)}>Отмена</button>
+              <button className="btn btn-ghost" onClick={() => { setShowCustomModal(false); setCustomForm(EMPTY_FORM); }}>Отмена</button>
               <button
                 className="btn btn-primary"
-                disabled={!customForm.name.trim() || !customForm.deadline || !customForm.daysAfter}
+                disabled={!customForm.name.trim() || !customForm.deadline}
                 onClick={() => {
                   if (!customForm.name.trim() || !customForm.deadline) return;
-                  // ✅ ИСПРАВЛЕНО: атомарное добавление через новую функцию
                   addReportToMyGroup({
                     name: customForm.name,
                     frequency: customForm.frequency,
@@ -753,7 +760,7 @@ export function WorkSection() {
                     daysAfter: customForm.daysAfter,
                   });
                   setShowCustomModal(false);
-                  setCustomForm({ name: '', frequency: 'quarterly', deadline: '', daysAfter: '' });
+                  setCustomForm(EMPTY_FORM);
                   notify('📋 Отчёт добавлен');
                 }}
               >
