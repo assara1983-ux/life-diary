@@ -7,7 +7,6 @@ export function ChatView() {
   const [inputValue, setInputValue] = useState('');
   const messagesEndRef = useRef(null);
 
-  // Автоматическая прокрутка к последнему сообщению
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -18,7 +17,6 @@ export function ChatView() {
 
   const handleSend = () => {
     if (!inputValue.trim() || isLoading) return;
-    
     sendMessage(inputValue.trim());
     setInputValue('');
   };
@@ -33,8 +31,8 @@ export function ChatView() {
   return (
     <section style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 120px)' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-        <h2 style={{ margin: 0, fontSize: 18 }}>💬 Чат с ИИ (Gemini)</h2>
-        <button 
+        <h2 style={{ margin: 0, fontSize: 18 }}>💬 Чат с ИИ</h2>
+        <button
           onClick={clearChat}
           style={{
             padding: '4px 8px',
@@ -47,7 +45,8 @@ export function ChatView() {
           }}
         >
           Очистить
-        </button>      </div>
+        </button>
+      </div>
 
       {/* Окно сообщений */}
       <div style={{
@@ -67,7 +66,7 @@ export function ChatView() {
             borderRadius: 8,
             fontSize: 13
           }}>
-            ️ {error}
+            ⚠️ {error}
           </div>
         )}
 
@@ -90,20 +89,21 @@ export function ChatView() {
               maxWidth: '80%',
               padding: '10px 14px',
               borderRadius: '12px',
-              background: msg.role === 'user' 
-                ? 'var(--tg-theme-button-color, #3390ec)' 
+              background: msg.role === 'user'
+                ? 'var(--tg-theme-button-color, #3390ec)'
                 : 'var(--tg-theme-bg-color, #fff)',
-              color: msg.role === 'user' 
-                ? 'var(--tg-theme-button-text-color, #fff)' 
+              color: msg.role === 'user'
+                ? 'var(--tg-theme-button-text-color, #fff)'
                 : 'var(--tg-theme-text-color, #000)',
-              boxShadow: '0 1px 2px rgba(0,0,0,0.1)',              whiteSpace: 'pre-wrap',
+              boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+              whiteSpace: 'pre-wrap',
               lineHeight: 1.4
             }}>
               {msg.content}
             </div>
           </div>
         ))}
-        
+
         {isLoading && (
           <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'flex-start' }}>
             <div style={{
@@ -119,7 +119,7 @@ export function ChatView() {
             </div>
           </div>
         )}
-        
+
         <div ref={messagesEndRef} />
       </div>
 
@@ -145,15 +145,16 @@ export function ChatView() {
             fontSize: 15
           }}
         />
-        <button          onClick={handleSend}
+        <button
+          onClick={handleSend}
           disabled={isLoading || !inputValue.trim()}
           style={{
             width: 44,
             height: 44,
             borderRadius: '50%',
             border: 'none',
-            background: (isLoading || !inputValue.trim()) 
-              ? 'var(--tg-theme-hint-color, #ccc)' 
+            background: (isLoading || !inputValue.trim())
+              ? 'var(--tg-theme-hint-color, #ccc)'
               : 'var(--tg-theme-button-color, #3390ec)',
             color: 'var(--tg-theme-button-text-color, #fff)',
             cursor: (isLoading || !inputValue.trim()) ? 'not-allowed' : 'pointer',
