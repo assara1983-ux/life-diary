@@ -11,6 +11,8 @@ export function TaskModal({ task, onSave, onClose, defaultSection = 'tasks' }) {
     deadline: '',
     notes: '',
     preferredTime: '',
+    beautyStartDate: '',
+    beautyWeekDay: '',
     lastDone: '',
   });
 
@@ -30,6 +32,15 @@ export function TaskModal({ task, onSave, onClose, defaultSection = 'tasks' }) {
     ['weekly:6,0', 'выходные'],
   ];
 
+  const weekDays = [
+    ['1', 'Пн'], ['2', 'Вт'], ['3', 'Ср'],
+    ['4', 'Чт'], ['5', 'Пт'], ['6', 'Сб'], ['0', 'Вс'],
+  ];
+
+  const isBeauty = t.section === 'beauty';
+  const isSliding = t.freq && t.freq.startsWith('every:');
+  const isWeekly = t.freq && t.freq.startsWith('weekly:');
+
   const openGCal = (title, date, desc = '') => {
     const s = new Date(date),
       e = new Date(s.getTime() + 3600000),
@@ -45,9 +56,10 @@ export function TaskModal({ task, onSave, onClose, defaultSection = 'tasks' }) {
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <span className="modal-x" onClick={onClose}>✕</span>
         <div className="modal-title">{task ? 'Редактировать задачу' : 'Новая задача'}</div>
-        
+
         <div className="fld">
-          <label>Название</label>          <input
+          <label>Название</label>
+          <input
             autoFocus
             placeholder="Что нужно сделать?"
             value={t.title}
@@ -96,7 +108,8 @@ export function TaskModal({ task, onSave, onClose, defaultSection = 'tasks' }) {
 
         <div className="fld">
           <label>Повторение</label>
-          <div className="chips">            {freqs.map(([v, l]) => (
+          <div className="chips">
+            {freqs.map(([v, l]) => (
               <div
                 key={v}
                 className={`chip ${t.freq === v ? 'on' : ''}`}
@@ -108,25 +121,68 @@ export function TaskModal({ task, onSave, onClose, defaultSection = 'tasks' }) {
           </div>
         </div>
 
+        {/* Поля только для раздела Уход */}
+        {isBeauty && isWeekly && (
+          <div className="fld">
+            <label>День недели</label>
+            <div className="chips">
+              {weekDays.map(([v, l]) => (
+                <div
+                  key={v}
+                  className={`chip ${t.beautyWeekDay === v ? 'on' : ''}`}
+                  onClick={() => u('beautyWeekDay', v)}
+                >
+                  {l}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {isBeauty && isSliding && (
+          <div className="fld">
+            <label>Дата начала</label>
+            <input
+              type="date"
+              value={t.beautyStartDate || ''}
+              onChange={(e) => u('beautyStartDate', e.target.value)}
+            />
+          </div>
+        )}
+
         <div className="fld-row">
           <div className="fld">
             <label>Дедлайн</label>
-            <input type="datetime-local" value={t.deadline} onChange={(e) => u('deadline', e.target.value)} />
+            <input
+              type="datetime-local"
+              value={t.deadline}
+              onChange={(e) => u('deadline', e.target.value)}
+            />
           </div>
           <div className="fld">
-            <label>Удобное время</label>
-            <input type="time" value={t.preferredTime} onChange={(e) => u('preferredTime', e.target.value)} />
+            <label>Время</label>
+            <input
+              type="time"
+              value={t.preferredTime}
+              onChange={(e) => u('preferredTime', e.target.value)}
+            />
           </div>
         </div>
 
         <div className="fld">
           <label>Заметка</label>
-          <textarea value={t.notes} onChange={(e) => u('notes', e.target.value)} />
+          <textarea
+            value={t.notes}
+            onChange={(e) => u('notes', e.target.value)}
+          />
         </div>
 
         <div className="modal-foot">
           {t.deadline && (
-            <button className="btn btn-ghost btn-sm" onClick={() => openGCal(t.title, t.deadline, t.notes)}>
+            <button
+              className="btn btn-ghost btn-sm"
+              onClick={() => openGCal(t.title, t.deadline, t.notes)}
+            >
               📅 Google Cal
             </button>
           )}
