@@ -6,9 +6,14 @@ import { TaskModal } from '../components/TaskModal';
 import { T } from '../utils/theme';
 import { SectionHero } from '../components/SectionHero';
 
+// ─── УТИЛИТА: локальная дата без UTC-сдвига ───
+function localDateStr(date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
 // ─── УТИЛИТЫ ───
 function isDueOnDay(task, dStr) {
-  const d = new Date(dStr); d.setHours(0, 0, 0, 0);
+  const d = new Date(dStr + 'T00:00:00');
   if (!task.freq) return false;
   if (task.freq === 'daily') return true;
   if (task.freq === 'workdays') { const dn = d.getDay(); return dn >= 1 && dn <= 5; }
@@ -19,7 +24,9 @@ function isDueOnDay(task, dStr) {
     const n = parseInt(task.freq.split(':')[1]);
     const start = task.beautyStartDate || task.createdAt?.split('T')[0] || dStr;
     if (dStr < start) return false;
-    const diffDays = Math.floor((d - new Date(start)) / 86400000);
+    const diffDays = Math.floor(
+      (new Date(dStr + 'T00:00:00') - new Date(start + 'T00:00:00')) / 86400000
+    );
     return diffDays >= 0 && diffDays % n === 0;
   }
   if (task.freq.startsWith('monthly:')) {
@@ -48,7 +55,8 @@ export function ScheduleSection() {
   const [selectedDay, setSelectedDay] = useState(null);
   const [taskModal, setTaskModal] = useState(null);
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  // ─── ЛОКАЛЬНАЯ дата сегодня — без UTC-сдвига ───
+  const todayStr = localDateStr(new Date());
 
   const changeOffset = (newOffset) => {
     setOffset(newOffset);
@@ -113,7 +121,8 @@ export function ScheduleSection() {
           {/* Сетка дней */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
             {weekDays.map((d, i) => {
-              const dStr = d.toISOString().split('T')[0];
+              // ─── ЛОКАЛЬНАЯ дата ячейки — без UTC-сдвига ───
+              const dStr = localDateStr(d);
               const isToday = dStr === todayStr;
               const isSelected = selectedDay === dStr;
               const isWork = (profile.workDaysList || [1,2,3,4,5]).includes(d.getDay());
@@ -196,7 +205,6 @@ export function ScheduleSection() {
                   {/* Единый хронологический список */}
                   {visibleEvents.map((event, ei) => {
 
-                    // Якорное событие — без чекбокса
                     if (event.type === 'anchor') {
                       return (
                         <div key={`a-${ei}`} style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 3 }}>
@@ -206,7 +214,6 @@ export function ScheduleSection() {
                       );
                     }
 
-                    // Обычная задача — с чекбоксом
                     if (event.type === 'task') {
                       const t = event.task;
                       const done = t.doneDate === dStr;
@@ -224,7 +231,6 @@ export function ScheduleSection() {
                       );
                     }
 
-                    // Beauty-блок — с чекбоксом
                     if (event.type === 'beauty') {
                       const done = event.allDone;
                       return (
@@ -260,7 +266,7 @@ export function ScheduleSection() {
           {selectedDay && (
             <div className="card" style={{ marginTop: 12, borderLeft: `3px solid ${T.teal}` }}>
               <div style={{ fontFamily: "'Cormorant Infant',serif", fontSize: 20, color: T.text0, marginBottom: 12 }}>
-                {new Date(selectedDay).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}
+                {new Date(selectedDay + 'T00:00:00').toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}
               </div>
               <button className="btn btn-ghost btn-sm" onClick={() => setTaskModal({})}>+ Добавить событие</button>
               <div style={{ marginTop: 8, fontSize: 12, color: T.text3 }}>
