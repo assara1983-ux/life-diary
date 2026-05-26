@@ -4,24 +4,26 @@ import { useApp } from "../store/AppContext";
 import { Icon } from "../components/Icon";
 import { getProfileInsights, getMoonDay, getCurrentMeridian } from "../utils/knowledgeEngine";
 
-// ─── УТИЛИТА: проверка задачи на сегодня ───
-function isDue(task, today) {
-  const last = task.lastDone;
-  const d = new Date(today); d.setHours(0, 0, 0, 0);
+// ─── УТИЛИТА: единая логика проверки задачи на день ───
+// Идентична isDueOnDay в ScheduleSection — синхронизация между разделами
+function isDueOnDay(task, dStr) {
+  const d = new Date(dStr); d.setHours(0, 0, 0, 0);
   if (!task.freq) return false;
-  if (task.doneDate === today) return false;
-  if (task.freq === 'daily') return last !== today;
-  if (task.freq === 'workdays') { const dn = d.getDay(); return dn >= 1 && dn <= 5 && last !== today; }
-  if (task.freq.startsWith('weekly:')) return task.freq.split(':')[1].split(',').map(Number).includes(d.getDay()) && last !== today;
+  if (task.freq === 'daily') return true;
+  if (task.freq === 'workdays') { const dn = d.getDay(); return dn >= 1 && dn <= 5; }
+  if (task.freq.startsWith('weekly:')) {
+    return task.freq.split(':')[1].split(',').map(Number).includes(d.getDay());
+  }
   if (task.freq.startsWith('every:')) {
     const n = parseInt(task.freq.split(':')[1]);
-    if (!last) {
-      if (task.beautyStartDate) return today >= task.beautyStartDate;
-      return true;
-    }
-    return Math.floor((d - new Date(last)) / 86400000) >= n;
+    const start = task.beautyStartDate || task.createdAt?.split('T')[0] || dStr;
+    if (dStr < start) return false;
+    const diffDays = Math.floor((d - new Date(start)) / 86400000);
+    return diffDays >= 0 && diffDays % n === 0;
   }
-  if (task.freq.startsWith('monthly:')) return task.freq.split(':')[1].split(',').map(Number).includes(d.getDate()) && last !== today;
+  if (task.freq.startsWith('monthly:')) {
+    return task.freq.split(':')[1].split(',').map(Number).includes(d.getDate());
+  }
   return false;
 }
 
@@ -39,7 +41,6 @@ function groupBeautyTasks(tasks) {
   const sorted = [...tasks].sort((a, b) => (a.preferredTime || '').localeCompare(b.preferredTime || ''));
   const blocks = [];
   let current = [sorted[0]];
-
   for (let i = 1; i < sorted.length; i++) {
     const prev = current[current.length - 1];
     const prevEnd = addMinutes(prev.preferredTime, prev.beautyDuration || 10);
@@ -79,7 +80,7 @@ export function TodaySection() {
     const regularTasks = tasks.filter(t =>
       t.section !== 'beauty' &&
       t.preferredTime &&
-      (isDue(t, today) || t.doneDate === today)
+      (isDueOnDay(t, today) || t.doneDate === today)
     );
     regularTasks.forEach(t => result.push({ type: 'task', time: t.preferredTime, task: t }));
 
@@ -87,7 +88,7 @@ export function TodaySection() {
     const beautyDue = tasks.filter(t =>
       t.section === 'beauty' &&
       t.preferredTime &&
-      (isDue(t, today) || t.doneDate === today)
+      (isDueOnDay(t, today) || t.doneDate === today)
     );
     const beautyBlocks = groupBeautyTasks(beautyDue);
     beautyBlocks.forEach(block => {
@@ -99,13 +100,13 @@ export function TodaySection() {
     });
 
     // Якорные события из профиля
-    if (profile?.wake) result.push({ type: 'anchor', time: profile.wake, title: '☀️ Подъём', anchor: true });
-    if (profile?.sleep) result.push({ type: 'anchor', time: profile.sleep, title: '🌙 Отбой', anchor: true });
+    if (profile?.wake) result.push({ type: 'anchor', time: profile.wake, title: '☀️ Подъём' });
+    if (profile?.sleep) result.push({ type: 'anchor', time: profile.sleep, title: '🌙 Отбой' });
     const isWorkDay = (profile?.workDaysList || [1, 2, 3, 4, 5]).includes(now.getDay());
-    if (isWorkDay && profile?.workStart) result.push({ type: 'anchor', time: profile.workStart, title: '💼 Работа', anchor: true });
-    if (isWorkDay && profile?.workEnd) result.push({ type: 'anchor', time: profile.workEnd, title: '💼 Конец работы', anchor: true });
+    if (isWorkDay && profile?.workStart) result.push({ type: 'anchor', time: profile.workStart, title: '💼 Работа' });
+    if (isWorkDay && profile?.workEnd) result.push({ type: 'anchor', time: profile.workEnd, title: '💼 Конец работы' });
 
-    // Сортировка по времени
+    // Сортировка строго по времени
     return result.sort((a, b) => (a.time || '').localeCompare(b.time || ''));
   }, [tasks, today, profile, now]);
 
@@ -149,18 +150,26 @@ export function TodaySection() {
           <div style={{ fontFamily: "var(--font-serif)", fontSize: 16, fontWeight: 600, color: "var(--text1)" }}>
             Меридиан {meridian.name}
           </div>
-          <div style={{ fontFamily: "var(--font-italic)", fontSize: 12, color: "var(--text2)", marginTop: 4 }}>({meridian.sign})</div>
+          <div style={{ fontFamily: "var(--font-italic)", fontSize: 12, color: "var(--text2)", marginTop: 4 }}>
+            ({meridian.sign})
+          </div>
           <div className="ai-box" style={{ marginTop: 8, padding: 8 }}>
-            <div style={{ fontSize: 11, color: "var(--text2)", lineHeight: 1.4 }}>💡 <strong>Совет:</strong> {meridian.advice}</div>
+            <div style={{ fontSize: 11, color: "var(--text2)", lineHeight: 1.4 }}>
+              💡 <strong>Совет:</strong> {meridian.advice}
+            </div>
           </div>
         </div>
 
         <div className="card" style={{ borderLeft: restriction !== "Нет строгих запретов" ? "3px solid var(--error)" : "3px solid var(--gold)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
             <Icon name="mental" size={20} color="var(--gold)" />
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--text3)", letterSpacing: 1 }}>ЛУННЫЙ ЦИКЛ</span>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--text3)", letterSpacing: 1 }}>
+              ЛУННЫЙ ЦИКЛ
+            </span>
           </div>
-          <div style={{ fontFamily: "var(--font-serif)", fontSize: 16, fontWeight: 600, color: "var(--text1)" }}>{moonDay}-й день</div>
+          <div style={{ fontFamily: "var(--font-serif)", fontSize: 16, fontWeight: 600, color: "var(--text1)" }}>
+            {moonDay}-й день
+          </div>
           <div style={{ marginTop: 6, padding: 6, borderRadius: 4, background: restriction !== "Нет строгих запретов" ? "rgba(139,32,32,0.05)" : "rgba(200,164,90,0.05)", fontSize: 11, color: restriction !== "Нет строгих запретов" ? "var(--error)" : "var(--text2)", lineHeight: 1.4 }}>
             ⚠️ <strong>Запрет:</strong> {restriction}
           </div>
@@ -183,7 +192,8 @@ export function TodaySection() {
         <div className="card-hd">
           <div className="card-title">📅 План на сегодня</div>
           <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--text3)" }}>
-            {todayItems.filter(i => i.type === 'task' && i.task?.doneDate === today).length + todayItems.filter(i => i.type === 'beauty' && i.allDone).length} / {todayItems.filter(i => i.type !== 'anchor').length} выполнено
+            {todayItems.filter(i => i.type === 'task' && i.task?.doneDate === today).length +
+             todayItems.filter(i => i.type === 'beauty' && i.allDone).length} / {todayItems.filter(i => i.type !== 'anchor').length} выполнено
           </span>
         </div>
 
@@ -195,7 +205,8 @@ export function TodaySection() {
           )}
 
           {todayItems.map((item, idx) => {
-            // Якорное событие
+
+            // Якорное событие — разделитель без чекбокса
             if (item.type === 'anchor') {
               return (
                 <div key={`anchor-${idx}`} style={{ display: 'flex', alignItems: 'center', gap: 10, opacity: 0.55 }}>
@@ -212,11 +223,17 @@ export function TodaySection() {
               const done = t.doneDate === today;
               return (
                 <div key={t.id} className="task-row" style={{ opacity: done ? 0.5 : 1 }}>
-                  <div className={`chk ${done ? "done" : ""}`} onClick={() => toggleTask(t.id)} style={{ cursor: 'pointer' }}>
+                  <div
+                    className={`chk ${done ? "done" : ""}`}
+                    onClick={() => toggleTask(t.id)}
+                    style={{ cursor: 'pointer' }}
+                  >
                     {done && "✓"}
                   </div>
                   <div className="task-body">
-                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--text3)", marginBottom: 2 }}>{t.preferredTime}</div>
+                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--text3)", marginBottom: 2 }}>
+                      {t.preferredTime}
+                    </div>
                     <div className={`task-name ${done ? "done" : ""}`}>{t.title}</div>
                   </div>
                 </div>
@@ -227,7 +244,10 @@ export function TodaySection() {
             if (item.type === 'beauty') {
               const allDone = item.block.every(t => t.doneDate === today);
               return (
-                <div key={`beauty-${idx}`} style={{ padding: '8px 10px', borderRadius: 8, background: allDone ? 'rgba(45,106,79,0.06)' : 'rgba(184,107,93,0.06)', border: `1px solid ${allDone ? 'rgba(45,106,79,0.2)' : 'rgba(184,107,93,0.2)'}` }}>
+                <div
+                  key={`beauty-${idx}`}
+                  style={{ padding: '8px 10px', borderRadius: 8, background: allDone ? 'rgba(45,106,79,0.06)' : 'rgba(184,107,93,0.06)', border: `1px solid ${allDone ? 'rgba(45,106,79,0.2)' : 'rgba(184,107,93,0.2)'}` }}
+                >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <div
                       onClick={() => toggleBeautyBlock(item.block)}
@@ -252,6 +272,7 @@ export function TodaySection() {
                 </div>
               );
             }
+
             return null;
           })}
         </div>
