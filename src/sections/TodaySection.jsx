@@ -4,10 +4,14 @@ import { useApp } from "../store/AppContext";
 import { Icon } from "../components/Icon";
 import { getProfileInsights, getMoonDay, getCurrentMeridian } from "../utils/knowledgeEngine";
 
+// ─── УТИЛИТА: локальная дата без UTC-сдвига ───
+function localDateStr(date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
 // ─── УТИЛИТА: единая логика проверки задачи на день ───
-// Идентична isDueOnDay в ScheduleSection — синхронизация между разделами
 function isDueOnDay(task, dStr) {
-  const d = new Date(dStr); d.setHours(0, 0, 0, 0);
+  const d = new Date(dStr + 'T00:00:00');
   if (!task.freq) return false;
   if (task.freq === 'daily') return true;
   if (task.freq === 'workdays') { const dn = d.getDay(); return dn >= 1 && dn <= 5; }
@@ -18,7 +22,7 @@ function isDueOnDay(task, dStr) {
     const n = parseInt(task.freq.split(':')[1]);
     const start = task.beautyStartDate || task.createdAt?.split('T')[0] || dStr;
     if (dStr < start) return false;
-    const diffDays = Math.floor((d - new Date(start)) / 86400000);
+    const diffDays = Math.floor((new Date(dStr + 'T00:00:00') - new Date(start + 'T00:00:00')) / 86400000);
     return diffDays >= 0 && diffDays % n === 0;
   }
   if (task.freq.startsWith('monthly:')) {
@@ -70,13 +74,13 @@ export function TodaySection() {
     return () => clearInterval(timer);
   }, []);
 
-  const today = now.toISOString().split('T')[0];
+  // ─── ЛОКАЛЬНАЯ дата — без UTC-сдвига ───
+  const today = localDateStr(now);
 
   // ─── Формируем план на сегодня ───
   const todayItems = useMemo(() => {
     const result = [];
 
-    // Обычные задачи (не beauty) с временем
     const regularTasks = tasks.filter(t =>
       t.section !== 'beauty' &&
       t.preferredTime &&
@@ -84,7 +88,6 @@ export function TodaySection() {
     );
     regularTasks.forEach(t => result.push({ type: 'task', time: t.preferredTime, task: t }));
 
-    // Beauty-задачи: группируем в блоки
     const beautyDue = tasks.filter(t =>
       t.section === 'beauty' &&
       t.preferredTime &&
@@ -99,14 +102,12 @@ export function TodaySection() {
       result.push({ type: 'beauty', time: startTime, endTime, block, allDone });
     });
 
-    // Якорные события из профиля
     if (profile?.wake) result.push({ type: 'anchor', time: profile.wake, title: '☀️ Подъём' });
     if (profile?.sleep) result.push({ type: 'anchor', time: profile.sleep, title: '🌙 Отбой' });
     const isWorkDay = (profile?.workDaysList || [1, 2, 3, 4, 5]).includes(now.getDay());
     if (isWorkDay && profile?.workStart) result.push({ type: 'anchor', time: profile.workStart, title: '💼 Работа' });
     if (isWorkDay && profile?.workEnd) result.push({ type: 'anchor', time: profile.workEnd, title: '💼 Конец работы' });
 
-    // Сортировка строго по времени
     return result.sort((a, b) => (a.time || '').localeCompare(b.time || ''));
   }, [tasks, today, profile, now]);
 
@@ -206,7 +207,6 @@ export function TodaySection() {
 
           {todayItems.map((item, idx) => {
 
-            // Якорное событие — разделитель без чекбокса
             if (item.type === 'anchor') {
               return (
                 <div key={`anchor-${idx}`} style={{ display: 'flex', alignItems: 'center', gap: 10, opacity: 0.55 }}>
@@ -217,7 +217,6 @@ export function TodaySection() {
               );
             }
 
-            // Обычная задача
             if (item.type === 'task') {
               const t = item.task;
               const done = t.doneDate === today;
@@ -240,7 +239,6 @@ export function TodaySection() {
               );
             }
 
-            // Beauty-блок
             if (item.type === 'beauty') {
               const allDone = item.block.every(t => t.doneDate === today);
               return (
