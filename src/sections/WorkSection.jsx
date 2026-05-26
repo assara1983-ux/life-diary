@@ -1,19 +1,24 @@
 // src/sections/WorkSection.jsx
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useApp } from '../store/AppContext';
 import { KGD_CATALOG, BNS_CATALOG } from '../data/reportsCatalog';
 import { TaskModal } from '../components/TaskModal';
 import { SectionHero } from '../components/SectionHero';
+import { AiBox } from '../components/AiBox';
+import { T } from '../utils/theme';
+import { requestPermission, subscribeUser, sendPush } from '../utils/pushManager';
 
-// --- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ---
-function toDay(d = new Date()) { return d.toISOString().split('T')[0]; }
+// ─── УТИЛИТЫ ───
+function localDateStr(date = new Date()) {
+  return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+}
 
 function freqLabel(f) {
   if (!f || f === 'once') return 'разово';
   if (f === 'daily') return 'ежедневно';
   if (f === 'workdays') return 'пн–пт';
   if (f.startsWith('weekly:')) {
-    const m = { 0: 'вс', 1: 'пн', 2: 'вт', 3: 'ср', 4: 'чт', 5: 'пт', 6: 'сб' };
+    const m = { 0:'вс',1:'пн',2:'вт',3:'ср',4:'чт',5:'пт',6:'сб' };
     return f.split(':')[1].split(',').map(n => m[n]).join(', ');
   }
   if (f.startsWith('every:')) return `каждые ${f.split(':')[1]} дн.`;
@@ -21,635 +26,674 @@ function freqLabel(f) {
   return f;
 }
 
-// --- КОМПОНЕНТ АККОРДЕОНА (СТИЛЬ СТАРИННОЙ КНИГИ) ---
-const Accordion = ({ id, title, icon, count, children, onAdd }) => {
-  const { collapsedSections, toggleSection } = useApp();
-  const isOpen = !collapsedSections[id];
+function daysUntil(dateStr) {
+  if (!dateStr) return null;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const target = new Date(dateStr + 'T00:00:00');
+  return Math.ceil((target - today) / 86400000);
+}
 
+// ─── SVG ИЛЛЮСТРАЦИЯ ───
+function WorkIllustration() {
   return (
-    <div style={{ 
-      marginBottom: 12, 
-      borderRadius: 8, 
-      border: `1px solid #5c4033`, 
-      background: 'linear-gradient(180deg, #1a1208 0%, #2c1810 100%)',
-      boxShadow: 'inset 0 1px 0 rgba(200,164,90,0.1), 0 2px 8px rgba(0,0,0,0.3)'
-    }}>
-      <div 
-        onClick={() => toggleSection(id)}
-        style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'space-between', 
-          padding: '12px 14px', 
-          cursor: 'pointer', 
-          borderBottom: isOpen ? `1px solid #5c4033` : 'none',
-          fontFamily: "'Crimson Pro', Georgia, serif"
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ fontSize: 18 }}>{icon}</span>
-          <span style={{ fontSize: 15, fontWeight: 600, color: '#f5e6d3', letterSpacing: '0.02em' }}>{title}</span>          {count > 0 && (
-            <span style={{ 
-              fontSize: 11, 
-              background: '#c8a45a', 
-              color: '#1a1208', 
-              padding: '2px 8px', 
-              borderRadius: 10, 
-              fontWeight: 700,
-              fontFamily: 'system-ui, sans-serif'
-            }}>
-              {count}
-            </span>
-          )}
-        </div>
-        <span style={{ fontSize: 12, color: '#c8a45a', transition: 'transform 0.2s', transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
-      </div>
-      
-      {isOpen && (
-        <div style={{ padding: '10px 14px' }}>
-          {children}
-          {onAdd && (
-            <button onClick={(e) => { e.stopPropagation(); onAdd(); }} 
-              style={{ 
-                marginTop: 8, 
-                width: '100%', 
-                padding: '8px', 
-                borderRadius: 6, 
-                border: `1px dashed #c8a45a`, 
-                background: 'transparent', 
-                color: '#c8a45a', 
-                fontSize: 13, 
-                cursor: 'pointer', 
-                fontWeight: 500,
-                fontFamily: "'Crimson Pro', Georgia, serif"
-              }}>
-              ✚ Добавить форму
-            </button>
-          )}
-        </div>
-      )}
-    </div>
+    <svg viewBox="0 0 360 120" style={{ width: '100%', height: 'auto', display: 'block', marginBottom: 20 }}>
+      <defs>
+        <radialGradient id="wbg" cx="50%" cy="50%" r="60%">
+          <stop offset="0%" stopColor="rgba(0,112,192,0.12)" />
+          <stop offset="100%" stopColor="rgba(0,112,192,0)" />
+        </radialGradient>
+      </defs>
+      <ellipse cx="180" cy="60" rx="160" ry="50" fill="url(#wbg)" />
+      {/* Портфель */}
+      <rect x="152" y="42" width="56" height="40" rx="6" fill="none" stroke="rgba(0,112,192,0.5)" strokeWidth="2" />
+      <rect x="163" y="36" width="34" height="10" rx="4" fill="none" stroke="rgba(0,112,192,0.5)" strokeWidth="1.5" />
+      <line x1="152" y1="58" x2="208" y2="58" stroke="rgba(0,112,192,0.4)" strokeWidth="1.5" />
+      <line x1="180" y1="42" x2="180" y2="82" stroke="rgba(0,112,192,0.3)" strokeWidth="1" />
+      {/* Документы */}
+      {[[60,25],[270,28],[80,75],[280,72]].map(([x,y],i) => (
+        <g key={i}>
+          <rect x={x} y={y} width="28" height="36" rx="3" fill="none" stroke="rgba(200,164,90,0.4)" strokeWidth="1.2" />
+          <line x1={x+5} y1={y+10} x2={x+23} y2={y+10} stroke="rgba(200,164,90,0.3)" strokeWidth="1" />
+          <line x1={x+5} y1={y+16} x2={x+23} y2={y+16} stroke="rgba(200,164,90,0.3)" strokeWidth="1" />
+          <line x1={x+5} y1={y+22} x2={x+18} y2={y+22} stroke="rgba(200,164,90,0.3)" strokeWidth="1" />
+        </g>
+      ))}
+      {/* Искры */}
+      {[[130,20],[230,18],[110,90],[250,88]].map(([x,y],i) => (
+        <circle key={i} cx={x} cy={y} r="2" fill="rgba(0,112,192,0.6)">
+          <animate attributeName="opacity" values="0;1;0" dur={`${1.5+i*0.3}s`} begin={`${i*0.2}s`} repeatCount="indefinite" />
+        </circle>
+      ))}
+      <text x="180" y="108" textAnchor="middle" fontSize="10" fill="rgba(0,112,192,0.5)" fontFamily="'JetBrains Mono',monospace" letterSpacing="2">РАБОЧЕЕ ПРОСТРАНСТВО</text>
+    </svg>
   );
-};
+}
 
+// ─── ОСНОВНОЙ КОМПОНЕНТ ───
 export function WorkSection() {
-  const { 
-    profile, tasks, setTasks, 
-    selectedReports, toggleReport, 
+  const {
+    profile, tasks, setTasks,
+    selectedReports, toggleReport,
     customReportGroups, addCustomGroup, addCustomReport,
-    workTools, addWorkTool, updateWorkToolStep,    aiRecommendations, setAiRecommendations
+    workTools, addWorkTool, updateWorkToolStep,
+    aiRecommendations, setAiRecommendations,
+    notify,
   } = useApp();
 
-  const [workTab, setWorkTab] = useState('reports');
+  const [workTab, setWorkTab] = useState('tasks');
   const [modal, setModal] = useState(null);
-  
-  const [showCatalog, setShowCatalog] = useState(false);
   const [catalogTab, setCatalogTab] = useState('kgd');
   const [searchQuery, setSearchQuery] = useState('');
-  
+  const [catalogOpen, setCatalogOpen] = useState(false);
+  const [myReportsOpen, setMyReportsOpen] = useState(true);
+  const [toolsOpen, setToolsOpen] = useState(true);
+  const [aiOpen, setAiOpen] = useState(true);
   const [showCustomModal, setShowCustomModal] = useState(false);
   const [customForm, setCustomForm] = useState({ name: '', frequency: 'quarterly', deadline: '' });
-
   const [aiLoading, setAiLoading] = useState(false);
   const [expandedRecId, setExpandedRecId] = useState(null);
+  const [savedRecs, setSavedRecs] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('work_saved_recs') || '[]'); } catch { return []; }
+  });
+  const [pushStatus, setPushStatus] = useState('unknown');
+  const [addToolModal, setAddToolModal] = useState(false);
+  const [newTool, setNewTool] = useState({ title: '', description: '', steps: [''] });
 
-  const today = toDay();
+  const today = localDateStr();
 
-  // --- ЛОГИКА КАТАЛОГА ---
+  // ─── Push-статус при загрузке ───
+  useEffect(() => {
+    if (!('Notification' in window)) { setPushStatus('unsupported'); return; }
+    setPushStatus(Notification.permission);
+  }, []);
+
+  // ─── Каталог ───
   const fullCatalog = catalogTab === 'kgd' ? KGD_CATALOG : BNS_CATALOG;
-  const filteredCatalog = fullCatalog.filter(r => 
-    r.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+  const filteredCatalog = fullCatalog.filter(r =>
+    r.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     r.id.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
   const selectedKgd = useMemo(() => KGD_CATALOG.filter(r => selectedReports.includes(r.id)), [selectedReports]);
   const selectedBns = useMemo(() => BNS_CATALOG.filter(r => selectedReports.includes(r.id)), [selectedReports]);
 
-  // --- ЛОГИКА РЕКОМЕНДАЦИЙ (AI) ---
+  // ─── Рабочие задачи ───
+  const workTasks = tasks.filter(t => t.section === 'work');
+  const todayWorkTasks = workTasks.filter(t => {
+    if (t.doneDate === today) return true;
+    if (!t.freq || !t.preferredTime) return false;
+    const d = new Date(today + 'T00:00:00');
+    if (t.freq === 'daily') return true;
+    if (t.freq === 'workdays') { const dn = d.getDay(); return dn >= 1 && dn <= 5; }
+    if (t.freq.startsWith('weekly:')) return t.freq.split(':')[1].split(',').map(Number).includes(d.getDay());
+    return false;
+  });
+
+  // ─── Ближайшие дедлайны из каталога ───
+  const upcomingDeadlines = useMemo(() => {
+    const result = [];
+    const allSelected = [...selectedKgd, ...selectedBns];
+    allSelected.forEach(r => {
+      (r.deadlines2026 || []).forEach(dl => {
+        const days = daysUntil(dl);
+        if (days !== null && days >= 0 && days <= 14) {
+          result.push({ name: r.name, deadline: dl, days, id: r.id });
+        }
+      });
+    });
+    return result.sort((a, b) => a.days - b.days);
+  }, [selectedKgd, selectedBns]);
+
+  // ─── AI Рекомендации ───
   const handleGetAI = async () => {
     setAiLoading(true);
     setAiRecommendations([]);
     try {
       const systemPrompt = `Ты строгий AI-консультант для бухгалтера/ИП в РК.
-ПРАВИЛА ОТВЕТА:
-1. Отвечай ТОЛЬКО валидным JSON массивом объектов. Никакого текста до или после JSON.
-2. Формат каждого объекта строго:
-   {
-     "id": "rec_1",
-     "title": "Краткое название",
-     "summary": "Суть и польза (1-2 предложения)",
-     "details": "Подробное описание",
-     "source": "Источник (НК РК, 1C Docs, Microsoft, официальные методики)",
-     "tool": { "title": "Название инструмента", "description": "Назначение", "steps": ["Шаг 1", "Шаг 2"] }
-   }
-3. СТРУКТУРА ОТВЕТА: ВЕРНИ СТРОГО 3 РЕКОМЕНДАЦИИ. Обязательно по одной из каждой сферы:
-   • Сфера 1: Бухгалтерия/Налоги РК (отчётность, проводки, СНР, дедлайны)
-   • Сфера 2: 1С 8.3 / Excel / Автоматизация (формулы, шаблоны, горячие клавиши, макросы)
-   • Сфера 3: Тайм-менеджмент / Продуктивность / Лайфхаки (методы планирования, запоминания, организации процессов)
-4. Минимум фантазии. Только проверенные методы на 2026 год. Без воды.5. Если данных недостаточно — верни пустой массив [].`;
+ПРАВИЛА:
+1. Отвечай ТОЛЬКО валидным JSON массивом. Никакого текста до или после.
+2. Формат объекта:
+   {"id":"rec_1","title":"Название","summary":"Суть (1-2 предл.)","details":"Подробно","source":"Источник","tool":{"title":"Инструмент","description":"Назначение","steps":["Шаг 1","Шаг 2"]}}
+3. Верни ровно 3 рекомендации по сферам:
+   • Бухгалтерия/Налоги РК
+   • 1С 8.3 / Excel / Автоматизация
+   • Тайм-менеджмент / Продуктивность`;
 
-      const prof = profile?.profession || 'Бухгалтер';
-      const userPrompt = `Профиль: ${prof}. Сгенерируй 3 рекомендации строго по указанным сферам.`;
-
+      const userPrompt = `Профиль: ${profile?.profession || 'Бухгалтер'}. Сгенерируй 3 рекомендации.`;
       const res = await fetch('/api/ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ system: systemPrompt, user: userPrompt, maxTokens: 2048 })
       });
-
       const data = await res.json();
       if (data?.text) {
-        let clean = data.text.replace(/```json/g, '').replace(/```/g, '').trim();
+        const clean = data.text.replace(/```json/g,'').replace(/```/g,'').trim();
         const parsed = JSON.parse(clean);
-        if (Array.isArray(parsed) && parsed.length >= 3) {
-          setAiRecommendations(parsed);
-        } else if (Array.isArray(parsed)) {
-          // Если AI вернул меньше 3, дополняем плейсхолдерами для сохранения структуры UI
-          const fallbacks = [
-            { id: 'fb-1', title: 'Бухгалтерия: Проверка дедлайнов', summary: 'Сверьте сроки сдачи ФНО с календарём КГД.', details: 'Используйте встроенный каталог для отслеживания.', source: 'КГД МФ РК', tool: null },
-            { id: 'fb-2', title: 'Excel: ВПР для сверок', summary: 'Используйте =ВПР() для сравнения выписок.', details: 'Синтаксис: =ВПР(искомое; таблица; 2; 0)', source: 'Microsoft Support', tool: { title: 'Шаблон сверки', description: 'Автоматическая сверка актов', steps: ['Подготовьте таблицы', 'Вставьте формулу ВПР', 'Отфильтруйте несовпадения'] } },
-            { id: 'fb-3', title: 'Продуктивность: Метод 2 минут', summary: 'Если задача занимает <2 мин, сделайте сразу.', details: 'Снижает когнитивную нагрузку и ускоряет закрытие рутины.', source: 'David Allen (GTD)', tool: null }
-          ];
-          setAiRecommendations([...parsed, ...fallbacks.slice(0, 3 - parsed.length)]);
-        } else {
-          throw new Error('Неверная структура');
-        }
+        if (Array.isArray(parsed)) setAiRecommendations(parsed);
       }
     } catch (e) {
-      console.error(e);
-      setAiRecommendations([
-        { id: 'err-1', title: 'Ошибка соединения', summary: 'Проверьте интернет или API ключ', details: 'Рекомендации не загружены.', source: '', tool: null },
-        { id: 'err-2', title: 'Бухгалтерия: Чек-лист закрытия месяца', summary: 'Сверьте остатки по счетам 2710, 3010, 6310.', details: 'Стандартная процедура для избежания расхождений.', source: 'Методика БНС', tool: { title: 'Чек-лист', description: 'Пошаговая сверка', steps: ['Выгрузить ОСВ', 'Сверить с банком', 'Сформировать справки'] } },
-        { id: 'err-3', title: 'Тайм-менеджмент: Блокировка времени', summary: 'Выделяйте 90 мин на глубокую работу без отвлечений.', details: 'Повышает фокус на сложных отчётах.', source: 'Cal Newport', tool: null }
-      ]);
-    } finally {
-      setAiLoading(false);
+      notify('Ошибка загрузки рекомендаций');
+    }
+    setAiLoading(false);
+  };
+
+  const saveRec = (rec) => {
+    const updated = savedRecs.find(r => r.id === rec.id)
+      ? savedRecs.filter(r => r.id !== rec.id)
+      : [...savedRecs, rec];
+    setSavedRecs(updated);
+    localStorage.setItem('work_saved_recs', JSON.stringify(updated));
+    notify(savedRecs.find(r => r.id === rec.id) ? '🗑 Удалено из сохранённых' : '✅ Сохранено');
+  };
+
+  const addToolFromRec = (tool) => {
+    if (!tool) return;
+    addWorkTool({ title: tool.title, description: tool.description, steps: tool.steps.map(s => ({ text: s, completed: false })) });
+    notify(`🔧 Инструмент «${tool.title}» добавлен`);
+  };
+
+  // ─── Push-уведомления ───
+  const handleEnablePush = async () => {
+    const granted = await requestPermission();
+    if (!granted) { notify('❌ Разрешение отклонено'); setPushStatus('denied'); return; }
+    const sub = await subscribeUser();
+    if (sub) {
+      setPushStatus('granted');
+      notify('🔔 Уведомления включены');
+      await sendPush('Life Diary', 'Уведомления успешно подключены! ✅', 'setup');
+    } else {
+      notify('❌ Ошибка подписки');
     }
   };
 
-  const handleCreateToolFromAI = (rec) => {
-    if (rec.tool) {
-      addWorkTool({
-        title: rec.tool.title,
-        description: rec.tool.description || rec.summary,
-        steps: (rec.tool.steps || ['Шаг 1']).map(s => ({ text: s, completed: false }))
-      });
-      setExpandedRecId(null);
-    }  };
+  const handleTestPush = async () => {
+    await sendPush('Life Diary · Работа', 'Тестовое уведомление работает! 🎉', 'test');
+    notify('📨 Тест отправлен');
+  };
+
+  const TABS = [
+    { id: 'tasks', label: '📋 Задачи' },
+    { id: 'reports', label: '📊 Отчёты' },
+    { id: 'tools', label: '🔧 Инструменты' },
+    { id: 'ai', label: '✨ ИИ' },
+  ];
 
   return (
     <div>
       <SectionHero sectionId="work" />
-      {/* Шапка */}
-      <div style={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        gap: 8, 
-        padding: '8px 12px', 
-        background: 'linear-gradient(180deg, #2c1810 0%, #1a1208 100%)',
-        borderRadius: 8, 
-        marginBottom: 12, 
-        flexWrap: 'wrap',
-        border: '1px solid #5c4033',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
-      }}>
-        {profile.profession && <span style={{ fontSize: 13, color: '#d4c4a8', fontWeight: 500, fontFamily: "'Crimson Pro', Georgia, serif" }}>💼 {profile.profession}</span>}
-        <span style={{ fontSize: 12, color: '#c8a45a', marginLeft: 'auto', fontFamily: "'Crimson Pro', Georgia, serif" }}>🕐 {profile.workStart || '09:00'}–{profile.workEnd || '18:00'}</span>
-      </div>
+      <WorkIllustration />
 
-      {/* Вкладки */}
-      <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
-        {[{ id: 'reports', label: '📋 Отчётность' }, { id: 'tools', label: ' Инструменты' }].map(tab => (
-          <button key={tab.id} onClick={() => setWorkTab(tab.id)}
-            style={{ 
-              flex: 1, 
-              padding: '8px 10px', 
-              borderRadius: 6, 
-              border: `1px solid ${workTab === tab.id ? '#c8a45a' : '#5c4033'}`, 
-              background: workTab === tab.id ? 'linear-gradient(180deg, #c8a45a 0%, #a8843a 100%)' : 'rgba(44,24,16,0.5)', 
-              color: workTab === tab.id ? '#1a1208' : '#d4c4a8', 
-              fontSize: 13, 
-              cursor: 'pointer', 
-              fontFamily: "'Crimson Pro', Georgia, serif",
-              fontWeight: workTab === tab.id ? 600 : 400,
-              boxShadow: workTab === tab.id ? '0 2px 6px rgba(200,164,90,0.3)' : 'none'
-            }}>
-            {tab.label}
-          </button>
+      {/* ─── Вкладки ─── */}
+      <div style={{ display: 'flex', gap: 2, background: 'rgba(0,112,192,0.05)', border: `1px solid ${T.bdr}`, borderRadius: 12, padding: 4, marginBottom: 20 }}>
+        {TABS.map(tab => (
+          <div key={tab.id} onClick={() => setWorkTab(tab.id)}
+            style={{ flex: 1, padding: '7px 4px', borderRadius: 9, cursor: 'pointer', textAlign: 'center', fontSize: 12, background: workTab === tab.id ? 'rgba(0,112,192,0.15)' : 'transparent', color: workTab === tab.id ? T.gold : T.text2, transition: 'all .18s', fontFamily: "'JetBrains Mono',monospace", letterSpacing: 0.3 }}
+          >{tab.label}</div>
         ))}
       </div>
 
-      {/* - ВКЛАДКА: ОТЧЁТНОСТЬ - */}
+      {/* ════════════════════════════════════
+          ВКЛАДКА: ЗАДАЧИ
+      ════════════════════════════════════ */}
+      {workTab === 'tasks' && (
+        <div>
+          {/* Сводка дня */}
+          {todayWorkTasks.length > 0 && (
+            <div style={{ padding: '12px 14px', background: 'rgba(0,112,192,0.05)', border: `1px solid rgba(0,112,192,0.2)`, borderRadius: 10, marginBottom: 14 }}>
+              <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, color: T.info || '#0070c0', letterSpacing: 2, marginBottom: 8 }}>СЕГОДНЯ · РАБОТА</div>
+              {todayWorkTasks.map(t => (
+                <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                  <div
+                    onClick={() => setTasks(p => p.map(x => x.id === t.id ? { ...x, doneDate: x.doneDate === today ? null : today } : x))}
+                    style={{ width: 18, height: 18, borderRadius: 4, border: `1.5px solid ${t.doneDate === today ? T.success : T.bdr}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', background: t.doneDate === today ? 'rgba(45,106,79,0.15)' : 'transparent', flexShrink: 0 }}
+                  >
+                    {t.doneDate === today && <span style={{ fontSize: 11, color: '#2d6a4f' }}>✓</span>}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <span style={{ fontSize: 13, color: t.doneDate === today ? T.text3 : T.text1, textDecoration: t.doneDate === today ? 'line-through' : 'none' }}>{t.title}</span>
+                    {t.preferredTime && <span style={{ marginLeft: 8, fontSize: 10, color: T.text3, fontFamily: "'JetBrains Mono',monospace" }}>{t.preferredTime}</span>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Ближайшие дедлайны */}
+          {upcomingDeadlines.length > 0 && (
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, color: 'var(--error)', letterSpacing: 2, marginBottom: 8 }}>⚠ БЛИЖАЙШИЕ ДЕДЛАЙНЫ</div>
+              {upcomingDeadlines.map((dl, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', marginBottom: 6, background: dl.days <= 3 ? 'rgba(139,32,32,0.06)' : 'rgba(0,112,192,0.04)', border: `1px solid ${dl.days <= 3 ? 'rgba(139,32,32,0.3)' : 'rgba(0,112,192,0.15)'}`, borderRadius: 8 }}>
+                  <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, color: dl.days <= 3 ? 'var(--error)' : T.text3, minWidth: 50 }}>
+                    {dl.days === 0 ? 'СЕГОДНЯ' : dl.days === 1 ? 'ЗАВТРА' : `${dl.days} дн.`}
+                  </div>
+                  <div style={{ flex: 1, fontSize: 13, color: T.text1 }}>{dl.name}</div>
+                  <span className="badge bm">{dl.deadline}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Все задачи раздела */}
+          <div style={{ marginBottom: 14 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+              <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, color: T.text3, letterSpacing: 2 }}>ВСЕ ЗАДАЧИ · {workTasks.length}</div>
+              <button className="btn btn-ghost btn-sm" onClick={() => setModal({})}>+ Добавить</button>
+            </div>
+            {workTasks.length === 0 && (
+              <div className="empty"><span className="empty-ico">💼</span><p>Нет рабочих задач</p></div>
+            )}
+            {workTasks.map(t => (
+              <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', marginBottom: 6, background: 'rgba(0,112,192,0.03)', border: `1px solid ${T.bdr}`, borderRadius: 8 }}>
+                <div
+                  onClick={() => setTasks(p => p.map(x => x.id === t.id ? { ...x, doneDate: x.doneDate === today ? null : today } : x))}
+                  style={{ width: 18, height: 18, borderRadius: 4, border: `1.5px solid ${t.doneDate === today ? T.success : T.bdr}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', background: t.doneDate === today ? 'rgba(45,106,79,0.15)' : 'transparent', flexShrink: 0 }}
+                >
+                  {t.doneDate === today && <span style={{ fontSize: 11, color: '#2d6a4f' }}>✓</span>}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 13, color: t.doneDate === today ? T.text3 : T.text1, textDecoration: t.doneDate === today ? 'line-through' : 'none' }}>{t.title}</div>
+                  <div style={{ fontSize: 10, color: T.text3, fontFamily: "'JetBrains Mono',monospace" }}>
+                    {freqLabel(t.freq)}{t.preferredTime ? ` · ${t.preferredTime}` : ''}{t.deadline ? ` · до ${t.deadline.split('T')[0]}` : ''}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <span onClick={() => setModal(t)} style={{ fontSize: 13, color: T.text3, cursor: 'pointer', opacity: 0.6 }}>✏️</span>
+                  <span onClick={() => setTasks(p => p.filter(x => x.id !== t.id))} style={{ fontSize: 13, color: T.text3, cursor: 'pointer', opacity: 0.5 }}>✕</span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Push-уведомления */}
+          <div style={{ padding: '12px 14px', background: 'rgba(0,112,192,0.04)', border: `1px solid rgba(0,112,192,0.15)`, borderRadius: 10 }}>
+            <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, color: T.info || '#0070c0', letterSpacing: 2, marginBottom: 10 }}>🔔 PUSH-УВЕДОМЛЕНИЯ</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+              <div style={{ flex: 1, fontSize: 12, color: T.text2 }}>
+                Статус: <strong style={{ color: pushStatus === 'granted' ? '#2d6a4f' : pushStatus === 'denied' ? 'var(--error)' : T.gold }}>
+                  {pushStatus === 'granted' ? '✅ Включены' : pushStatus === 'denied' ? '❌ Заблокированы' : pushStatus === 'unsupported' ? '⚠️ Не поддерживается' : '⏳ Не настроены'}
+                </strong>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {pushStatus !== 'granted' && pushStatus !== 'denied' && pushStatus !== 'unsupported' && (
+                <button className="btn btn-ghost btn-sm" onClick={handleEnablePush}>🔔 Включить уведомления</button>
+              )}
+              {pushStatus === 'granted' && (
+                <button className="btn btn-ghost btn-sm" onClick={handleTestPush}>📨 Тест</button>
+              )}
+              {pushStatus === 'denied' && (
+                <div style={{ fontSize: 12, color: 'var(--error)', lineHeight: 1.5 }}>
+                  Уведомления заблокированы в настройках браузера. Разрешите их вручную в настройках сайта.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ════════════════════════════════════
+          ВКЛАДКА: ОТЧЁТЫ
+      ════════════════════════════════════ */}
       {workTab === 'reports' && (
         <div>
           {/* Мои отчёты */}
-          <Accordion id="custom-reports" title="Мои отчёты" icon="📝" count={customReportGroups.length} onAdd={() => setShowCustomModal(true)}>
-            {customReportGroups.length === 0 ? (
-              <div style={{ fontSize: 12, color: '#a89080', textAlign: 'center', padding: '10px 0', fontFamily: "'Crimson Pro', Georgia, serif" }}>Список пуст. Создайте свою группу отчетов.</div>            ) : customReportGroups.map(group => (
-              <div key={group.id} style={{ marginBottom: 10 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: '#f5e6d3', marginBottom: 4, fontFamily: "'Crimson Pro', Georgia, serif" }}>📂 {group.name}</div>
-                {group.reports.map(r => (
-                  <div key={r.id} style={{ padding: '6px 0', borderBottom: `1px solid #3d2b1f`, fontSize: 13, color: '#d4c4a8' }}>
-                    • {r.name} <span style={{fontSize: 10, color: '#a89080'}}>({freqLabel(r.frequency)})</span>
-                  </div>
-                ))}
-              </div>
-            ))}
-          </Accordion>
-
-          {/* КГД */}
-          <Accordion id="kgd-reports" title="🏛 КГД" icon="🏛" count={selectedKgd.length} onAdd={() => { setCatalogTab('kgd'); setShowCatalog(true); }}>
-            {selectedKgd.length === 0 ? (
-              <div style={{ fontSize: 12, color: '#a89080', textAlign: 'center', padding: '10px 0', fontFamily: "'Crimson Pro', Georgia, serif" }}>Нет выбранных форм.</div>
-            ) : selectedKgd.map(r => (
-              <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: `1px solid #3d2b1f` }}>
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 500, color: '#f5e6d3', fontFamily: "'Crimson Pro', Georgia, serif" }}>{r.name}</div>
-                  <div style={{ fontSize: 10, color: '#a89080' }}>{r.id} • {freqLabel(r.frequency)}</div>
-                </div>
-                <button onClick={() => toggleReport(r.id)} style={{ color: '#c8a45a', background: 'none', border: 'none', cursor: 'pointer', fontSize: 16 }}>✕</button>
-              </div>
-            ))}
-          </Accordion>
-
-          {/* БНС */}
-          <Accordion id="bns-reports" title="📊 БНС" icon="" count={selectedBns.length} onAdd={() => { setCatalogTab('bns'); setShowCatalog(true); }}>
-            {selectedBns.length === 0 ? (
-              <div style={{ fontSize: 12, color: '#a89080', textAlign: 'center', padding: '10px 0', fontFamily: "'Crimson Pro', Georgia, serif" }}>Нет выбранных форм.</div>
-            ) : selectedBns.map(r => (
-              <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: `1px solid #3d2b1f` }}>
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 500, color: '#f5e6d3', fontFamily: "'Crimson Pro', Georgia, serif" }}>{r.name}</div>
-                  <div style={{ fontSize: 10, color: '#a89080' }}>{r.id} • {freqLabel(r.frequency)}</div>
-                </div>
-                <button onClick={() => toggleReport(r.id)} style={{ color: '#c8a45a', background: 'none', border: 'none', cursor: 'pointer', fontSize: 16 }}>✕</button>
-              </div>
-            ))}
-          </Accordion>
-
-          {/* Задачи */}
-          <div style={{ marginBottom: 12, marginTop: 20 }}>
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: 8, 
-              padding: '10px 14px', 
-              borderRadius: 8,               cursor: 'pointer', 
-              background: 'linear-gradient(180deg, #2c1810 0%, #1a1208 100%)', 
-              border: `1px solid #5c4033`,
-              boxShadow: '0 2px 6px rgba(0,0,0,0.2)'
-            }} onClick={() => setModal({})}>
+          <div style={{ marginBottom: 14 }}>
+            <div
+              onClick={() => setMyReportsOpen(o => !o)}
+              style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', borderRadius: myReportsOpen ? '12px 12px 0 0' : 12, cursor: 'pointer', background: 'rgba(0,112,192,0.05)', border: `1px solid rgba(0,112,192,0.2)` }}
+            >
               <span style={{ fontSize: 16 }}>📋</span>
-              <span style={{ flex: 1, fontSize: 14, fontFamily: "'Crimson Pro', Georgia, serif", color: '#d4c4a8', fontWeight: 500 }}>Обычные задачи</span>
-              <button style={{ fontSize: 12, padding: '2px 8px', color: '#c8a45a', background: 'none', border: 'none', cursor: 'pointer' }}>+</button>
+              <span style={{ flex: 1, fontSize: 14, fontFamily: "'Crimson Pro',serif", color: T.info || '#0070c0', fontWeight: 500 }}>
+                Мои отчёты ({selectedKgd.length + selectedBns.length})
+              </span>
+              <span style={{ fontSize: 11, color: T.text3 }}>{myReportsOpen ? '▲' : '▼'}</span>
             </div>
-            <div style={{ 
-              background: 'rgba(26,18,8,0.8)', 
-              border: `1px solid #5c4033`, 
-              borderTop: 'none', 
-              borderRadius: '0 0 8px 8px', 
-              padding: '4px 0' 
-            }}>
-              {tasks.filter(t => t.section === 'work' && t.type !== 'report').slice(0, 5).map(task => (
-                <div key={task.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 14px', borderBottom: `1px solid #3d2b1f` }}>
-                  <div style={{ width: 16, height: 16, borderRadius: 4, border: `1px solid ${task.doneDate === today ? '#c8a45a' : '#5c4033'}`, background: task.doneDate === today ? '#c8a45a' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#1a1208' }}>
-                    {task.doneDate === today ? '✓' : ''}
+            {myReportsOpen && (
+              <div style={{ border: `1px solid rgba(0,112,192,0.15)`, borderTop: 'none', borderRadius: '0 0 12px 12px', padding: 12 }}>
+                {selectedKgd.length === 0 && selectedBns.length === 0 && (
+                  <div className="empty"><span className="empty-ico">📊</span><p>Выберите отчёты из каталога</p></div>
+                )}
+                {selectedKgd.length > 0 && (
+                  <div style={{ marginBottom: 12 }}>
+                    <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, color: T.text3, letterSpacing: 2, marginBottom: 8 }}>КГД</div>
+                    {selectedKgd.map(r => {
+                      const nearest = (r.deadlines2026 || []).find(dl => daysUntil(dl) >= 0);
+                      const days = nearest ? daysUntil(nearest) : null;
+                      return (
+                        <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', marginBottom: 4, background: 'rgba(0,112,192,0.03)', border: `1px solid ${T.bdr}`, borderRadius: 8 }}>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: 13, color: T.text1 }}>{r.name}</div>
+                            <div style={{ fontSize: 10, color: T.text3, fontFamily: "'JetBrains Mono',monospace" }}>{r.id}</div>
+                          </div>
+                          {days !== null && (
+                            <span className={`badge ${days <= 3 ? 'bgr' : 'bm'}`}>{days === 0 ? 'Сегодня' : `${days} дн.`}</span>
+                          )}
+                          <span onClick={() => toggleReport(r.id)} style={{ fontSize: 12, color: T.text3, cursor: 'pointer', opacity: 0.5 }}>✕</span>
+                        </div>
+                      );
+                    })}
                   </div>
-                  <div style={{ flex: 1, fontSize: 13, color: task.doneDate === today ? '#a89080' : '#f5e6d3', textDecoration: task.doneDate === today ? 'line-through' : 'none', fontFamily: "'Crimson Pro', Georgia, serif" }}>{task.title}</div>
-                </div>
-              ))}
-              {tasks.filter(t => t.section === 'work' && t.type !== 'report').length === 0 && <div style={{ padding: 10, fontSize: 12, color: '#a89080', textAlign: 'center', fontFamily: "'Crimson Pro', Georgia, serif" }}>Задач нет</div>}
-            </div>
+                )}
+                {selectedBns.length > 0 && (
+                  <div>
+                    <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, color: T.text3, letterSpacing: 2, marginBottom: 8 }}>БНС</div>
+                    {selectedBns.map(r => (
+                      <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', marginBottom: 4, background: 'rgba(0,112,192,0.03)', border: `1px solid ${T.bdr}`, borderRadius: 8 }}>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: 13, color: T.text1 }}>{r.name}</div>
+                          <div style={{ fontSize: 10, color: T.text3, fontFamily: "'JetBrains Mono',monospace" }}>{r.id}</div>
+                        </div>
+                        <span onClick={() => toggleReport(r.id)} style={{ fontSize: 12, color: T.text3, cursor: 'pointer', opacity: 0.5 }}>✕</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {customReportGroups.map(g => g.reports.map(r => (
+                  <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', marginBottom: 4, background: 'rgba(200,164,90,0.04)', border: `1px solid rgba(200,164,90,0.2)`, borderRadius: 8 }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 13, color: T.text1 }}>{r.name}</div>
+                      <div style={{ fontSize: 10, color: T.text3, fontFamily: "'JetBrains Mono',monospace" }}>{freqLabel(r.frequency)} · до {r.deadline}</div>
+                    </div>
+                    <span className="badge bt">{r.frequency}</span>
+                  </div>
+                )))}
+                <button className="btn btn-ghost btn-sm" style={{ marginTop: 8 }} onClick={() => setShowCustomModal(true)}>+ Добавить свой отчёт</button>
+              </div>
+            )}
           </div>
 
-          {/* Рекомендации */}
-          <div style={{ marginBottom: 12 }}>
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: 8, 
-              padding: '10px 14px', 
-              borderRadius: 8, 
-              background: 'linear-gradient(180deg, #2c1810 0%, #1a1208 100%)', 
-              border: `1px solid #5c4033`,
-              boxShadow: '0 2px 6px rgba(0,0,0,0.2)'
-            }}>
-              <span style={{ fontSize: 16 }}>💡</span>
-              <span style={{ flex: 1, fontSize: 14, fontFamily: "'Crimson Pro', Georgia, serif", color: '#c8a45a', fontWeight: 500 }}>Рекомендации</span>
+          {/* Каталог КГД/БНС */}
+          <div style={{ marginBottom: 14 }}>
+            <div
+              onClick={() => setCatalogOpen(o => !o)}
+              style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', borderRadius: catalogOpen ? '12px 12px 0 0' : 12, cursor: 'pointer', background: 'rgba(255,255,255,0.02)', border: `1px solid ${T.bdr}` }}
+            >
+              <span style={{ fontSize: 16 }}>🏛</span>
+              <span style={{ flex: 1, fontSize: 14, fontFamily: "'Crimson Pro',serif", color: T.text1, fontWeight: 500 }}>Каталог форм КГД / БНС</span>
+              <span style={{ fontSize: 11, color: T.text3 }}>{catalogOpen ? '▲' : '▼'}</span>
             </div>
-            <div style={{ 
-              border: `1px solid #5c4033`, 
-              borderTop: 'none', 
-              borderRadius: '0 0 8px 8px', 
-              overflow: 'hidden', 
-              background: 'rgba(26,18,8,0.8)' 
-            }}>              <div style={{ padding: 14 }}>
-                <p style={{ fontSize: 13, color: '#d4c4a8', margin: '0 0 12px', lineHeight: 1.5, fontFamily: "'Crimson Pro', Georgia, serif" }}>
-                  Генерируются по сферам: Налоги • 1С/Excel • Продуктивность
-                </p>
-                <button 
-                  onClick={handleGetAI}
-                  disabled={aiLoading}
-                  style={{ 
-                    width: '100%', 
-                    padding: '10px 14px', 
-                    borderRadius: 6, 
-                    border: 'none', 
-                    background: aiLoading ? '#5c4033' : 'linear-gradient(180deg, #c8a45a 0%, #a8843a 100%)', 
-                    color: aiLoading ? '#a89080' : '#1a1208', 
-                    fontWeight: 600, 
-                    cursor: aiLoading ? 'wait' : 'pointer',
-                    fontFamily: "'Crimson Pro', Georgia, serif"
-                  }}
-                >
-                  {aiLoading ? ' Генерация...' : '✨ Получить рекомендации'}
-                </button>
-              </div>
-
-              {aiRecommendations?.length > 0 && (
-                <div style={{ borderTop: `1px solid #3d2b1f` }}>
-                  {aiRecommendations.map(rec => {
-                    const isExpanded = expandedRecId === rec.id;
+            {catalogOpen && (
+              <div style={{ border: `1px solid ${T.bdr}`, borderTop: 'none', borderRadius: '0 0 12px 12px', padding: 12 }}>
+                {/* Вкладки КГД/БНС */}
+                <div style={{ display: 'flex', gap: 2, background: 'rgba(0,0,0,0.04)', borderRadius: 8, padding: 3, marginBottom: 10 }}>
+                  {[['kgd','🏛 КГД'],['bns','📊 БНС']].map(([v,l]) => (
+                    <div key={v} onClick={() => setCatalogTab(v)}
+                      style={{ flex: 1, padding: '6px', borderRadius: 6, cursor: 'pointer', textAlign: 'center', fontSize: 13, background: catalogTab === v ? 'rgba(0,112,192,0.15)' : 'transparent', color: catalogTab === v ? T.gold : T.text2, transition: 'all .15s' }}
+                    >{l}</div>
+                  ))}
+                </div>
+                <input
+                  placeholder="Поиск по названию или коду..."
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  style={{ width: '100%', padding: '8px 12px', marginBottom: 10, background: 'rgba(255,255,255,0.03)', border: `1px solid ${T.bdr}`, borderRadius: 8, color: T.text0, fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
+                />
+                <div style={{ maxHeight: 300, overflowY: 'auto' }}>
+                  {filteredCatalog.map(r => {
+                    const isSelected = selectedReports.includes(r.id);
                     return (
-                      <div key={rec.id} style={{ borderBottom: `1px solid #3d2b1f` }}>
-                        <div 
-                          onClick={() => setExpandedRecId(isExpanded ? null : rec.id)}
-                          style={{ padding: '12px 14px', cursor: 'pointer', background: isExpanded ? 'rgba(200,164,90,0.05)' : 'transparent' }}
-                        >
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
-                            <div style={{ flex: 1 }}>
-                              <div style={{ fontSize: 14, fontWeight: 600, color: '#f5e6d3', marginBottom: 4, fontFamily: "'Crimson Pro', Georgia, serif" }}>{rec.title}</div>
-                              <div style={{ fontSize: 12, color: '#d4c4a8' }}>{rec.summary}</div>
-                            </div>
-                            <span style={{ fontSize: 12, color: '#c8a45a' }}>{isExpanded ? '▲' : '▼'}</span>
-                          </div>
+                      <div key={r.id} onClick={() => toggleReport(r.id)}
+                        style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: `1px solid rgba(255,255,255,0.04)`, cursor: 'pointer' }}
+                      >
+                        <div style={{ width: 16, height: 16, borderRadius: 3, border: `1.5px solid ${isSelected ? T.success : T.bdr}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: T.success, flexShrink: 0, background: isSelected ? 'rgba(45,106,79,0.15)' : 'transparent' }}>
+                          {isSelected ? '✓' : ''}
                         </div>
-                        {isExpanded && (
-                          <div style={{ padding: '0 14px 14px', fontSize: 13, color: '#d4c4a8', lineHeight: 1.5 }}>
-                            <div style={{ marginBottom: 8, padding: 8, borderRadius: 6, background: 'rgba(44,24,16,0.5)', borderLeft: `2px solid #c8a45a` }}>
-                              <strong style={{color: '#f5e6d3'}}>📖 Подробно:</strong> {rec.details}
-                            </div>
-                            {rec.source && <div style={{ fontSize: 11, color: '#a89080', marginBottom: 10, fontStyle: 'italic' }}>📚 Источник: {rec.source}</div>}
-                            {rec.tool && (
-                              <button 
-                                onClick={() => handleCreateToolFromAI(rec)}                                style={{ 
-                                  width: '100%', 
-                                  padding: '8px 12px', 
-                                  borderRadius: 6, 
-                                  border: `1px solid #c8a45a`, 
-                                  background: 'transparent', 
-                                  color: '#c8a45a', 
-                                  fontSize: 12, 
-                                  fontWeight: 600, 
-                                  cursor: 'pointer',
-                                  fontFamily: "'Crimson Pro', Georgia, serif"
-                                }}
-                              >
-                                ✦ Создать инструмент: {rec.tool.title}
-                              </button>
-                            )}
-                          </div>
-                        )}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 13, color: T.text1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</div>
+                          <div style={{ fontSize: 10, color: T.text3, fontFamily: "'JetBrains Mono',monospace" }}>{r.id}</div>
+                        </div>
                       </div>
                     );
                   })}
+                  {filteredCatalog.length === 0 && (
+                    <div style={{ padding: '20px 0', textAlign: 'center', color: T.text3, fontSize: 13 }}>Ничего не найдено</div>
+                  )}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
       )}
 
-      {/* - ВКЛАДКА: ИНСТРУМЕНТЫ - */}
+      {/* ════════════════════════════════════
+          ВКЛАДКА: ИНСТРУМЕНТЫ
+      ════════════════════════════════════ */}
       {workTab === 'tools' && (
         <div>
-          {workTools.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: 40, color: '#a89080', fontFamily: "'Crimson Pro', Georgia, serif" }}>
-              <div style={{ fontSize: 32, marginBottom: 10 }}></div>
-              <div>Инструментов пока нет.</div>
-            </div>
-          ) : workTools.map(tool => (
-            <div key={tool.id} style={{ marginBottom: 10, padding: 14, borderRadius: 8, border: `1px solid #5c4033`, background: 'linear-gradient(180deg, #1a1208 0%, #2c1810 100%)', boxShadow: '0 2px 6px rgba(0,0,0,0.2)' }}>
-              <div style={{ fontSize: 14, fontWeight: 600, color: '#f5e6d3', marginBottom: 6, fontFamily: "'Crimson Pro', Georgia, serif" }}>{tool.title}</div>
-              <div style={{ fontSize: 12, color: '#d4c4a8', marginBottom: 8 }}>{tool.description}</div>
-              {tool.steps?.map((step, idx) => (
-                <label key={idx} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: '#d4c4a8', marginBottom: 4, cursor: 'pointer', fontFamily: "'Crimson Pro', Georgia, serif" }}>
-                  <input 
-                    type="checkbox" 
-                    checked={step.completed || false} 
-                    onChange={(e) => updateWorkToolStep(tool.id, idx, e.target.checked)}
-                    style={{ width: 14, height: 14, cursor: 'pointer', accentColor: '#c8a45a' }}
-                  />
-                  <span style={{ textDecoration: step.completed ? 'line-through' : 'none', color: step.completed ? '#a89080' : '#f5e6d3' }}>
-                    {typeof step === 'string' ? step : step.text}                  </span>
-                </label>
-              ))}
-              {tool.steps?.length > 0 && (
-                <div style={{ marginTop: 8, fontSize: 10, color: '#c8a45a', fontFamily: "'Crimson Pro', Georgia, serif" }}>
-                  Прогресс: {tool.steps.filter(s => (typeof s === 'string' ? false : s.completed)).length} / {tool.steps.length}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+            <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, color: T.text3, letterSpacing: 2 }}>АКТИВНЫЕ ИНСТРУМЕНТЫ · {workTools.length}</div>
+            <button className="btn btn-ghost btn-sm" onClick={() => setAddToolModal(true)}>+ Добавить</button>
+          </div>
+
+          {workTools.length === 0 && (
+            <div className="empty"><span className="empty-ico">🔧</span><p>Нет инструментов. Добавьте вручную или из ИИ-рекомендаций.</p></div>
+          )}
+
+          {workTools.map(tool => {
+            const doneSteps = (tool.steps || []).filter(s => s.completed).length;
+            const totalSteps = (tool.steps || []).length;
+            const pct = totalSteps > 0 ? Math.round(doneSteps / totalSteps * 100) : 0;
+            return (
+              <div key={tool.id} style={{ padding: '12px 14px', marginBottom: 10, background: 'rgba(0,112,192,0.04)', border: `1px solid rgba(0,112,192,0.15)`, borderRadius: 10 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
+                  <div style={{ fontFamily: "'Cormorant Infant',serif", fontSize: 16, color: T.text0 }}>🔧 {tool.title}</div>
+                  <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, color: pct === 100 ? '#2d6a4f' : T.gold }}>{pct}%</span>
                 </div>
-              )}
+                {tool.description && (
+                  <div style={{ fontSize: 12, color: T.text2, marginBottom: 8, lineHeight: 1.5 }}>{tool.description}</div>
+                )}
+                {totalSteps > 0 && (
+                  <>
+                    <div style={{ height: 4, background: 'rgba(0,112,192,0.1)', borderRadius: 3, marginBottom: 8, overflow: 'hidden' }}>
+                      <div style={{ width: `${pct}%`, height: '100%', background: `linear-gradient(90deg, var(--blue, #0070c0), ${T.gold})`, borderRadius: 3, transition: 'width 0.4s' }} />
+                    </div>
+                    {(tool.steps || []).map((step, si) => (
+                      <div key={si} onClick={() => updateWorkToolStep(tool.id, si, !step.completed)}
+                        style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 0', cursor: 'pointer', borderBottom: si < tool.steps.length - 1 ? `1px solid rgba(255,255,255,0.04)` : 'none' }}
+                      >
+                        <div style={{ width: 15, height: 15, borderRadius: 3, border: `1.5px solid ${step.completed ? T.success : T.bdr}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, color: T.success, flexShrink: 0, background: step.completed ? 'rgba(45,106,79,0.15)' : 'transparent' }}>
+                          {step.completed ? '✓' : ''}
+                        </div>
+                        <span style={{ fontSize: 12, color: step.completed ? T.text3 : T.text2, textDecoration: step.completed ? 'line-through' : 'none' }}>
+                          {typeof step === 'string' ? step : step.text}
+                        </span>
+                      </div>
+                    ))}
+                  </>
+                )}
+              </div>
+            );
+          })}
+
+          {/* Сохранённые рекомендации */}
+          {savedRecs.length > 0 && (
+            <div style={{ marginTop: 20 }}>
+              <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, color: T.text3, letterSpacing: 2, marginBottom: 10 }}>💾 СОХРАНЁННЫЕ РЕКОМЕНДАЦИИ · {savedRecs.length}</div>
+              {savedRecs.map(rec => (
+                <div key={rec.id} style={{ padding: '10px 12px', marginBottom: 8, background: 'rgba(200,164,90,0.05)', border: `1px solid rgba(200,164,90,0.2)`, borderRadius: 8 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
+                    <div style={{ fontSize: 13, color: T.text1, fontWeight: 500 }}>{rec.title}</div>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      {rec.tool && <button className="btn btn-ghost btn-sm" style={{ fontSize: 10 }} onClick={() => addToolFromRec(rec.tool)}>+ В инструменты</button>}
+                      <span onClick={() => saveRec(rec)} style={{ fontSize: 12, color: T.text3, cursor: 'pointer', opacity: 0.5 }}>✕</span>
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 12, color: T.text2, lineHeight: 1.5 }}>{rec.summary}</div>
+                  <div style={{ fontSize: 10, color: T.text3, fontFamily: "'JetBrains Mono',monospace", marginTop: 4 }}>{rec.source}</div>
+                </div>
+              ))}
             </div>
-          ))}
+          )}
         </div>
       )}
 
-      {/* --- МОДАЛЬНЫЕ ОКНА (СТИЛЬ РУКОПИСИ) --- */}
-      
-      {/* 1. Каталог форм */}
-      {showCatalog && (
-        <div 
-          style={{ 
-            position: 'fixed', 
-            inset: 0, 
-            background: 'rgba(0,0,0,0.8)', 
-            zIndex: 1000, 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'center', 
-            padding: 16 
-          }} 
-          onClick={() => setShowCatalog(false)}
-        >
-          <div 
-            style={{ 
-              background: '#f5e6d3', 
-              width: '100%', 
-              maxWidth: 500, 
-              maxHeight: '85vh', 
-              borderRadius: 12, 
-              padding: 24, 
-              display: 'flex', 
-              flexDirection: 'column',
-              zIndex: 1001,
-              border: `2px solid #5c4033`,
-              boxShadow: '0 4px 20px rgba(0,0,0,0.5), inset 0 0 20px rgba(92,64,51,0.1)',
-              backgroundImage: 'linear-gradient(to bottom, #f5e6d3 0%, #f0deb4 100%)'
-            }} 
-            onClick={e => e.stopPropagation()}
+      {/* ════════════════════════════════════
+          ВКЛАДКА: ИИ
+      ════════════════════════════════════ */}
+      {workTab === 'ai' && (
+        <div>
+          {/* Кнопка генерации */}
+          <button
+            className="btn btn-primary"
+            onClick={handleGetAI}
+            disabled={aiLoading}
+            style={{ width: '100%', marginBottom: 16, opacity: aiLoading ? 0.7 : 1 }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-              <h3 style={{ margin: 0, color: '#2c1810', fontWeight: 700, fontFamily: "'Crimson Pro', Georgia, serif", fontSize: 20, letterSpacing: '0.02em' }}>Каталог форм</h3>
-              <button onClick={() => setShowCatalog(false)} style={{ background: 'none', border: 'none', color: '#5c4033', fontSize: 22, cursor: 'pointer', fontWeight: 'bold' }}>✕</button>            </div>
-            <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-              <button onClick={() => setCatalogTab('kgd')} style={{ flex: 1, padding: 8, borderRadius: 6, border: `2px solid ${catalogTab === 'kgd' ? '#2c1810' : '#5c4033'}`, background: catalogTab === 'kgd' ? '#2c1810' : 'transparent', color: catalogTab === 'kgd' ? '#f5e6d3' : '#5c4033', cursor: 'pointer', fontFamily: "'Crimson Pro', Georgia, serif", fontWeight: 600 }}>🏛 КГД</button>
-              <button onClick={() => setCatalogTab('bns')} style={{ flex: 1, padding: 8, borderRadius: 6, border: `2px solid ${catalogTab === 'bns' ? '#2c1810' : '#5c4033'}`, background: catalogTab === 'bns' ? '#2c1810' : 'transparent', color: catalogTab === 'bns' ? '#f5e6d3' : '#5c4033', cursor: 'pointer', fontFamily: "'Crimson Pro', Georgia, serif", fontWeight: 600 }}>📊 БНС</button>
-            </div>
-            <input 
-              placeholder="Поиск..." 
-              value={searchQuery} 
-              onChange={e => setSearchQuery(e.target.value)} 
-              style={{ 
-                width: '100%', 
-                padding: 10, 
-                marginBottom: 12, 
-                borderRadius: 6, 
-                border: `2px solid #5c4033`, 
-                background: '#fff', 
-                color: '#2c1810',
-                outline: 'none',
-                fontFamily: 'system-ui, sans-serif',
-                fontSize: 14
-              }} 
-            />
-            <div style={{ overflowY: 'auto', flex: 1, paddingRight: 4 }}>
-              {filteredCatalog.map(r => {
-                const isSelected = selectedReports.includes(r.id);
+            {aiLoading ? '✦ Генерирую рекомендации...' : '✨ Получить рекомендации'}
+          </button>
+
+          {/* Рекомендации */}
+          {aiRecommendations.length > 0 && (
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, color: T.text3, letterSpacing: 2, marginBottom: 10 }}>РЕКОМЕНДАЦИИ ИИ</div>
+              {aiRecommendations.map(rec => {
+                const isExpanded = expandedRecId === rec.id;
+                const isSaved = savedRecs.find(r => r.id === rec.id);
                 return (
-                  <div key={r.id} onClick={() =>
-(r.id)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0', borderBottom: `1px solid #d4c4a8`, cursor: 'pointer' }}>
-                    <div style={{ width: 18, height: 18, borderRadius: 4, border: `2px solid ${isSelected ? '#2c1810' : '#8b7355'}`, background: isSelected ? '#2c1810' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f5e6d3', fontSize: 12, flexShrink: 0 }}>{isSelected && '✓'}</div>
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ fontSize: 13, color: '#2c1810', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontFamily: "'Crimson Pro', Georgia, serif" }}>{r.name}</div>
-                      <div style={{ fontSize: 10, color: '#5c4033' }}>{r.id}</div>
+                  <div key={rec.id} style={{ marginBottom: 10, padding: '12px 14px', background: 'rgba(0,112,192,0.04)', border: `1px solid rgba(0,112,192,0.15)`, borderRadius: 10 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
+                      <div style={{ fontFamily: "'Cormorant Infant',serif", fontSize: 15, color: T.text0, flex: 1, paddingRight: 8 }}>{rec.title}</div>
+                      <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                        <button
+                          onClick={() => saveRec(rec)}
+                          style={{ padding: '3px 8px', borderRadius: 6, border: `1px solid ${isSaved ? T.gold : T.bdr}`, background: isSaved ? 'rgba(200,164,90,0.15)' : 'transparent', color: isSaved ? T.gold : T.text3, cursor: 'pointer', fontSize: 11 }}
+                        >{isSaved ? '✅' : '💾'}</button>
+                        {rec.tool && (
+                          <button
+                            onClick={() => addToolFromRec(rec.tool)}
+                            style={{ padding: '3px 8px', borderRadius: 6, border: `1px solid rgba(0,112,192,0.3)`, background: 'rgba(0,112,192,0.08)', color: T.info || '#0070c0', cursor: 'pointer', fontSize: 11 }}
+                          >🔧</button>
+                        )}
+                      </div>
                     </div>
+                    <div style={{ fontSize: 12, color: T.text2, lineHeight: 1.5, marginBottom: 6 }}>{rec.summary}</div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: 10, color: T.text3, fontFamily: "'JetBrains Mono',monospace" }}>{rec.source}</span>
+                      <span onClick={() => setExpandedRecId(isExpanded ? null : rec.id)}
+                        style={{ fontSize: 11, color: T.gold, cursor: 'pointer' }}>
+                        {isExpanded ? '▲ Скрыть' : '▼ Подробнее'}
+                      </span>
+                    </div>
+                    {isExpanded && (
+                      <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid rgba(255,255,255,0.06)` }}>
+                        <div style={{ fontSize: 12, color: T.text2, lineHeight: 1.6, marginBottom: rec.tool ? 10 : 0 }}>{rec.details}</div>
+                        {rec.tool && (
+                          <div style={{ padding: '8px 10px', background: 'rgba(0,112,192,0.06)', borderRadius: 8, borderLeft: `3px solid rgba(0,112,192,0.4)` }}>
+                            <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, color: T.info || '#0070c0', letterSpacing: 1, marginBottom: 4 }}>🔧 {rec.tool.title}</div>
+                            <div style={{ fontSize: 12, color: T.text2, marginBottom: 6 }}>{rec.tool.description}</div>
+                            {(rec.tool.steps || []).map((step, si) => (
+                              <div key={si} style={{ fontSize: 12, color: T.text2, marginBottom: 3, paddingLeft: 8 }}>
+                                <span style={{ color: T.gold, marginRight: 6 }}>{si + 1}.</span>{step}
+                              </div>
+                            ))}
+                            <button className="btn btn-ghost btn-sm" style={{ marginTop: 8 }} onClick={() => addToolFromRec(rec.tool)}>
+                              + Добавить в инструменты
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 );
               })}
-              {filteredCatalog.length === 0 && (
-                <div style={{ padding: 20, textAlign: 'center', color: '#5c4033', fontSize: 13, fontFamily: "'Crimson Pro', Georgia, serif" }}>
-                  Ничего не найдено
+            </div>
+          )}
+
+          {/* AiBox для свободных вопросов */}
+          <AiBox
+            kb={`Профессия: ${profile?.profession || 'Бухгалтер'}. РК, 2026 год.`}
+            prompt={`Профессия: ${profile?.profession || 'Бухгалтер'}. Задай мне вопрос по рабочим процессам или ответь на мой запрос.`}
+            label="Спросить ИИ"
+            btnText="Задать вопрос"
+            placeholder="Анализирую рабочий профиль..."
+          />
+        </div>
+      )}
+
+      {/* ─── Модалка добавления инструмента ─── */}
+      {addToolModal && (
+        <div className="overlay" onClick={() => setAddToolModal(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <span className="modal-x" onClick={() => setAddToolModal(false)}>✕</span>
+            <div className="modal-title">Новый инструмент</div>
+            <div className="fld">
+              <label>Название</label>
+              <input placeholder="Шаблон сверки, чек-лист..." value={newTool.title} onChange={e => setNewTool(p => ({ ...p, title: e.target.value }))} />
+            </div>
+            <div className="fld">
+              <label>Описание</label>
+              <textarea value={newTool.description} onChange={e => setNewTool(p => ({ ...p, description: e.target.value }))} placeholder="Для чего этот инструмент..." />
+            </div>
+            <div className="fld">
+              <label>Шаги</label>
+              {newTool.steps.map((step, si) => (
+                <div key={si} style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
+                  <input value={step} onChange={e => setNewTool(p => ({ ...p, steps: p.steps.map((s, i) => i === si ? e.target.value : s) }))} placeholder={`Шаг ${si + 1}`} style={{ flex: 1 }} />
+                  {newTool.steps.length > 1 && <span onClick={() => setNewTool(p => ({ ...p, steps: p.steps.filter((_, i) => i !== si) }))} style={{ cursor: 'pointer', color: T.text3, alignSelf: 'center' }}>✕</span>}
                 </div>
-              )}
+              ))}
+              <button className="btn btn-ghost btn-sm" onClick={() => setNewTool(p => ({ ...p, steps: [...p.steps, ''] }))}>+ Добавить шаг</button>
+            </div>
+            <div className="modal-foot">
+              <button className="btn btn-ghost" onClick={() => setAddToolModal(false)}>Отмена</button>
+              <button className="btn btn-primary" onClick={() => {
+                if (!newTool.title.trim()) return;
+                addWorkTool({ title: newTool.title, description: newTool.description, steps: newTool.steps.filter(s => s.trim()).map(s => ({ text: s, completed: false })) });
+                setAddToolModal(false);
+                setNewTool({ title: '', description: '', steps: [''] });
+                notify('🔧 Инструмент добавлен');
+              }}>Сохранить</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* 2. Добавить отчет */}
+      {/* ─── Модалка добавления своего отчёта ─── */}
       {showCustomModal && (
-        <div 
-          style={{ 
-            position: 'fixed',             inset: 0, 
-            background: 'rgba(0,0,0,0.8)', 
-            zIndex: 1000, 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'center', 
-            padding: 16 
-          }} 
-          onClick={() => setShowCustomModal(false)}
-        >
-          <div 
-            style={{ 
-              background: '#f5e6d3', 
-              width: '100%', 
-              maxWidth: 400, 
-              borderRadius: 12, 
-              padding: 24, 
-              zIndex: 1001, 
-              border: `2px solid #5c4033`,
-              boxShadow: '0 4px 20px rgba(0,0,0,0.5), inset 0 0 20px rgba(92,64,51,0.1)',
-              backgroundImage: 'linear-gradient(to bottom, #f5e6d3 0%, #f0deb4 100%)'
-            }} 
-            onClick={e => e.stopPropagation()}
-          >
-            <h3 style={{ margin: '0 0 16px', color: '#2c1810', fontWeight: 700, fontFamily: "'Crimson Pro', Georgia, serif", fontSize: 20, letterSpacing: '0.02em' }}>Добавить отчет</h3>
-            <input 
-              placeholder="Название формы" 
-              value={customForm.name} 
-              onChange={e => setCustomForm(p => ({...p, name: e.target.value}))} 
-              style={{ 
-                width: '100%', 
-                padding: 10, 
-                marginBottom: 10, 
-                borderRadius: 6, 
-                border: `2px solid #5c4033`, 
-                background: '#fff', 
-                color: '#2c1810', 
-                outline: 'none',
-                fontFamily: 'system-ui, sans-serif',
-                fontSize: 14
-              }} 
-            />
-            <select 
-              value={customForm.frequency} 
-              onChange={e => setCustomForm(p => ({...p, frequency: e.target.value}))} 
-              style={{ 
-                width: '100%', 
-                padding: 10, 
-                marginBottom: 10, 
-                borderRadius: 6,                 border: `2px solid #5c4033`, 
-                background: '#fff', 
-                color: '#2c1810', 
-                outline: 'none',
-                fontFamily: 'system-ui, sans-serif',
-                fontSize: 14,
-                cursor: 'pointer'
-              }}
-            >
-              <option value="monthly">Ежемесячно</option>
-              <option value="quarterly">Ежеквартально</option>
-              <option value="annual">Ежегодно</option>
-            </select>
-            <input 
-              type="date" 
-              value={customForm.deadline} 
-              onChange={e => setCustomForm(p => ({...p, deadline: e.target.value}))} 
-              style={{ 
-                width: '100%', 
-                padding: 10, 
-                marginBottom: 16, 
-                borderRadius: 6, 
-                border: `2px solid #5c4033`, 
-                background: '#fff', 
-                color: '#2c1810', 
-                outline: 'none',
-                fontFamily: 'system-ui, sans-serif',
-                fontSize: 14
-              }} 
-            />
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button onClick={() => setShowCustomModal(false)} style={{ flex: 1, padding: 10, borderRadius: 6, border: `2px solid #5c4033`, background: 'transparent', color: '#5c4033', cursor: 'pointer', fontFamily: "'Crimson Pro', Georgia, serif", fontWeight: 600 }}>Отмена</button>
-              <button 
-                onClick={() => { 
-                  if(!customForm.name || !customForm.deadline) return; 
-                  const groupId = 'custom-default'; 
-                  addCustomGroup('Мои отчеты'); 
-                  addCustomReport(groupId, { name: customForm.name, frequency: customForm.frequency, deadline: customForm.deadline }); 
-                  setShowCustomModal(false); 
-                  setCustomForm({ name: '', frequency: 'quarterly', deadline: '' }); 
-                }} 
-                style={{ 
-                  flex: 1, 
-                  padding: 10, 
-                  borderRadius: 6, 
-                  border: 'none', 
-                  background: 'linear-gradient(180deg, #c8a45a 0%, #a8843a 100%)', 
-                  color: '#1a1208', 
-                  fontWeight: 700, 
-                  cursor: 'pointer',                  fontFamily: "'Crimson Pro', Georgia, serif",
-                  boxShadow: '0 2px 6px rgba(200,164,90,0.3)'
-                }}
-              >
-                Сохранить
-              </button>
+        <div className="overlay" onClick={() => setShowCustomModal(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <span className="modal-x" onClick={() => setShowCustomModal(false)}>✕</span>
+            <div className="modal-title">Добавить отчёт</div>
+            <div className="fld">
+              <label>Название формы</label>
+              <input placeholder="Название отчёта..." value={customForm.name} onChange={e => setCustomForm(p => ({ ...p, name: e.target.value }))} />
+            </div>
+            <div className="fld">
+              <label>Периодичность</label>
+              <div className="chips">
+                {[['monthly','Ежемесячно'],['quarterly','Ежеквартально'],['annual','Ежегодно']].map(([v,l]) => (
+                  <div key={v} className={`chip ${customForm.frequency === v ? 'on' : ''}`} onClick={() => setCustomForm(p => ({ ...p, frequency: v }))}>{l}</div>
+                ))}
+              </div>
+            </div>
+            <div className="fld">
+              <label>Срок сдачи</label>
+              <input type="date" value={customForm.deadline} onChange={e => setCustomForm(p => ({ ...p, deadline: e.target.value }))} />
+            </div>
+            <div className="modal-foot">
+              <button className="btn btn-ghost" onClick={() => setShowCustomModal(false)}>Отмена</button>
+              <button className="btn btn-primary" onClick={() => {
+                if (!customForm.name || !customForm.deadline) return;
+                const groupId = 'custom-default';
+                addCustomGroup('Мои отчеты');
+                addCustomReport(groupId, { name: customForm.name, frequency: customForm.frequency, deadline: customForm.deadline });
+                setShowCustomModal(false);
+                setCustomForm({ name: '', frequency: 'quarterly', deadline: '' });
+                notify('📋 Отчёт добавлен');
+              }}>Сохранить</button>
             </div>
           </div>
         </div>
       )}
 
-      {modal !== null && <TaskModal task={modal?.id ? modal : null} defaultSection="work" onSave={(t) => { setTasks(p => modal?.id ? p.map(x => x.id === t.id ? t : x) : [...p, t]); setModal(null); }} onClose={() => setModal(null)} />}
+      {modal !== null && (
+        <TaskModal
+          task={modal?.id ? modal : null}
+          defaultSection="work"
+          onSave={t => { setTasks(p => modal?.id ? p.map(x => x.id === t.id ? t : x) : [...p, t]); setModal(null); }}
+          onClose={() => setModal(null)}
+        />
+      )}
     </div>
   );
-                }
+}
