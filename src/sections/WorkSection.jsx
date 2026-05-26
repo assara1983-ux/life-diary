@@ -40,16 +40,13 @@ function calcDeadline(frequency, daysAfter) {
   const now = new Date();
   let periodEnd;
   if (frequency === 'monthly') {
-    // Последний день текущего месяца
     periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
   } else if (frequency === 'quarterly') {
-    // Последний день текущего квартала
-    const qEndMonths = [2, 5, 8, 11]; // март, июнь, сентябрь, декабрь (0-based)
+    const qEndMonths = [2, 5, 8, 11];
     const currentMonth = now.getMonth();
     const qEndMonth = qEndMonths.find(m => m >= currentMonth) ?? 11;
     periodEnd = new Date(now.getFullYear(), qEndMonth + 1, 0);
   } else if (frequency === 'annual') {
-    // 31 декабря текущего года
     periodEnd = new Date(now.getFullYear(), 11, 31);
   } else {
     return '';
@@ -97,7 +94,9 @@ export function WorkSection() {
   const {
     profile, tasks, setTasks,
     selectedReports, toggleReport,
-    customReportGroups, addCustomGroup, addCustomReport,
+    customReportGroups,
+    // ✅ ИСПРАВЛЕНО: используем новую атомарную функцию
+    addReportToMyGroup,
     workTools, addWorkTool, updateWorkToolStep,
     aiRecommendations, setAiRecommendations,
     notify,
@@ -347,7 +346,7 @@ export function WorkSection() {
               style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', borderRadius: myReportsOpen ? '12px 12px 0 0' : 12, cursor: 'pointer', background: 'rgba(0,112,192,0.05)', border: `1px solid rgba(0,112,192,0.2)` }}>
               <span style={{ fontSize: 16 }}>📋</span>
               <span style={{ flex: 1, fontSize: 14, fontFamily: "'Crimson Pro',serif", color: T.info || '#0070c0', fontWeight: 500 }}>
-                Мои отчёты ({selectedKgd.length + selectedBns.length})
+                Мои отчёты ({selectedKgd.length + selectedBns.length + customReportGroups.reduce((acc, g) => acc + g.reports.length, 0)})
               </span>
               <span style={{ fontSize: 11, color: T.text3 }}>{myReportsOpen ? '▲' : '▼'}</span>
             </div>
@@ -400,7 +399,7 @@ export function WorkSection() {
                           <div style={{ fontSize: 13, color: T.text1 }}>{r.name}</div>
                           <div style={{ fontSize: 10, color: T.text3, fontFamily: "'JetBrains Mono',monospace" }}>
                             {freqLabel(r.frequency)} · до {r.deadline}
-                            {r.daysAfter && <span style={{ marginLeft: 4, color: T.text3 }}>({r.daysAfter} дн. после периода)</span>}
+                            {r.daysAfter && <span style={{ marginLeft: 4 }}>({r.daysAfter} дн. после периода)</span>}
                             {daysUntil(r.deadline) !== null && (
                               <span style={{ marginLeft: 6, color: daysUntil(r.deadline) <= 3 ? 'var(--error)' : T.text3 }}>
                                 · {daysUntil(r.deadline) <= 0 ? '⚠ просрочен' : `${daysUntil(r.deadline)} дн.`}
@@ -671,10 +670,7 @@ export function WorkSection() {
                         deadline: calcDeadline(v, p.daysAfter),
                       }))}
                       style={{
-                        padding: '8px 14px',
-                        borderRadius: 10,
-                        cursor: 'pointer',
-                        userSelect: 'none',
+                        padding: '8px 14px', borderRadius: 10, cursor: 'pointer', userSelect: 'none',
                         border: `1.5px solid ${isActive ? '#0070c0' : T.bdr}`,
                         background: isActive ? 'rgba(0,112,192,0.1)' : 'rgba(255,255,255,0.02)',
                         transition: 'all 0.15s',
@@ -704,7 +700,6 @@ export function WorkSection() {
                   }}
                   style={{ width: 120 }}
                 />
-                {/* Быстрые варианты */}
                 {[15, 30, 60, 90].map(n => (
                   <div
                     key={n}
@@ -714,11 +709,7 @@ export function WorkSection() {
                       setCustomForm(p => ({ ...p, daysAfter, deadline }));
                     }}
                     style={{
-                      padding: '5px 12px',
-                      borderRadius: 8,
-                      cursor: 'pointer',
-                      fontSize: 12,
-                      userSelect: 'none',
+                      padding: '5px 12px', borderRadius: 8, cursor: 'pointer', fontSize: 12, userSelect: 'none',
                       border: `1px solid ${customForm.daysAfter === String(n) ? '#0070c0' : T.bdr}`,
                       background: customForm.daysAfter === String(n) ? 'rgba(0,112,192,0.1)' : 'transparent',
                       color: customForm.daysAfter === String(n) ? '#0070c0' : T.text2,
@@ -730,7 +721,6 @@ export function WorkSection() {
                 ))}
               </div>
 
-              {/* Вычисленный срок */}
               {customForm.deadline && customForm.daysAfter && (
                 <div style={{ marginTop: 10, padding: '10px 12px', background: 'rgba(0,112,192,0.06)', borderRadius: 8, borderLeft: '3px solid rgba(0,112,192,0.4)' }}>
                   <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, color: T.text3, marginBottom: 4, letterSpacing: 1 }}>СРОК СДАЧИ</div>
@@ -755,8 +745,8 @@ export function WorkSection() {
                 disabled={!customForm.name.trim() || !customForm.deadline || !customForm.daysAfter}
                 onClick={() => {
                   if (!customForm.name.trim() || !customForm.deadline) return;
-                  addCustomGroup('Мои отчеты');
-                  addCustomReport('custom-default', {
+                  // ✅ ИСПРАВЛЕНО: атомарное добавление через новую функцию
+                  addReportToMyGroup({
                     name: customForm.name,
                     frequency: customForm.frequency,
                     deadline: customForm.deadline,
