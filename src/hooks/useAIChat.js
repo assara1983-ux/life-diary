@@ -1,5 +1,6 @@
+// src/hooks/useAIChat.js
 import { useState, useCallback, useRef } from 'react';
-import { sendToGemini } from '../services/aiClient'; // Изменено: Grok → Gemini
+import { sendToGroq, askViaServer } from '../services/aiClient';
 
 export function useAIChat(initialMessages = []) {
   const [messages, setMessages] = useState(Array.isArray(initialMessages) ? initialMessages : []);
@@ -10,7 +11,6 @@ export function useAIChat(initialMessages = []) {
   const sendMessage = useCallback(async (userContent, options = {}) => {
     if (!userContent?.trim() || isLoading) return;
 
-    // Отменяем предыдущий запрос, если он ещё выполняется
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
@@ -24,7 +24,24 @@ export function useAIChat(initialMessages = []) {
     setMessages(newMessages);
 
     try {
-      const aiResponse = await sendToGemini(newMessages, { ...options }); // Изменено: вызов sendToGemini
+      let aiResponse;
+
+      // Пробуем Groq напрямую (если есть VITE_GROQ_API_KEY)
+      const groqKey = import.meta.env.VITE_GROQ_API_KEY;
+      if (groqKey) {
+        try {
+          aiResponse = await sendToGroq(newMessages, options);
+        } catch (groqErr) {
+          console.warn('[useAIChat] Groq failed, falling back to server:', groqErr.message);
+          // Фолбэк: последнее сообщение пользователя через сервер
+          aiResponse = await askViaServer('', userContent.trim());
+        }
+      } else {
+        // Нет VITE_GROQ_API_KEY — сразу через сервер (там Groq + Gemini фолбэк)
+        aiResponse = await askViaServer('', userContent.trim());
+      }
+
+      if (controller.signal.aborted) return;
       setMessages(prev => [...prev, { role: 'assistant', content: aiResponse }]);
     } catch (err) {
       if (err.name === 'AbortError') return;
