@@ -9,8 +9,6 @@ import { SectionHero } from '../components/SectionHero';
 // ─── УТИЛИТЫ ───
 function isDueOnDay(task, dStr) {
   const d = new Date(dStr); d.setHours(0, 0, 0, 0);
-  const last = task.lastDone;
-  const done = task.doneDate;
   if (!task.freq) return false;
   if (task.freq === 'daily') return true;
   if (task.freq === 'workdays') { const dn = d.getDay(); return dn >= 1 && dn <= 5; }
@@ -120,13 +118,9 @@ export function ScheduleSection() {
               const isSelected = selectedDay === dStr;
               const isWork = (profile.workDaysList || [1,2,3,4,5]).includes(d.getDay());
 
-              // ─── Собираем ВСЕ события дня в единый список ───
-
-              // 1. Якорные события профиля
+              // 1. Якорные события — только подъём и отбой
               const anchors = [];
               if (profile.wake) anchors.push({ type: 'anchor', time: profile.wake, label: '☀️ Подъём' });
-              if (isWork && profile.workStart) anchors.push({ type: 'anchor', time: profile.workStart, label: '💼 Работа' });
-              if (isWork && profile.workEnd) anchors.push({ type: 'anchor', time: profile.workEnd, label: '💼 Конец работы' });
               if (profile.sleep) anchors.push({ type: 'anchor', time: profile.sleep, label: '🌙 Отбой' });
 
               // 2. Обычные задачи (не beauty)
@@ -134,14 +128,13 @@ export function ScheduleSection() {
                 .filter(t => t.section !== 'beauty' && t.preferredTime && (isDueOnDay(t, dStr) || t.doneDate === dStr))
                 .map(t => ({ type: 'task', time: t.preferredTime, task: t }));
 
-              // 3. Beauty-блок
+              // 3. Beauty-блок — группируем подряд идущие
               const beautyDue = tasks.filter(t =>
                 t.section === 'beauty' &&
                 t.preferredTime &&
                 (isDueOnDay(t, dStr) || t.doneDate === dStr)
               );
 
-              // Группируем beauty по времени — подряд идущие в один блок
               const beautyBlocks = [];
               if (beautyDue.length > 0) {
                 const sorted = [...beautyDue].sort((a, b) => (a.preferredTime || '').localeCompare(b.preferredTime || ''));
@@ -164,16 +157,17 @@ export function ScheduleSection() {
                 return { type: 'beauty', time: startTime, endTime, block, allDone };
               });
 
-              // 4. Объединяем и сортируем строго по времени
+              // 4. Объединяем и сортируем по времени
               const allEvents = [...anchors, ...regularTasks, ...beautyItems]
                 .sort((a, b) => timeToMinutes(a.time) - timeToMinutes(b.time));
 
-              // Для счётчика выполненных
+              // Счётчик выполненных (якоря не считаем)
               const totalTaskCount = regularTasks.length + beautyItems.length;
-              const doneCount = regularTasks.filter(e => e.task.doneDate === dStr).length
-                + beautyItems.filter(e => e.allDone).length;
+              const doneCount =
+                regularTasks.filter(e => e.task.doneDate === dStr).length +
+                beautyItems.filter(e => e.allDone).length;
 
-              // Показываем максимум 4 строки в ячейке
+              // Максимум 4 строки в ячейке
               const visibleEvents = allEvents.slice(0, 4);
               const hiddenCount = allEvents.length - visibleEvents.length;
 
