@@ -7,6 +7,7 @@ import { SectionHero } from '../components/SectionHero';
 import { AiBox } from '../components/AiBox';
 import { T } from '../utils/theme';
 import { requestPermission, subscribeUser, sendPush } from '../utils/pushManager';
+import { ToolsHub } from '../components/work/ToolsHub';
 
 // ─── УТИЛИТЫ ───
 function localDateStr(date = new Date()) {
@@ -33,7 +34,6 @@ function daysUntil(dateStr) {
   return Math.ceil((target - today) / 86400000);
 }
 
-// ─── Вычисление дедлайна: конец периода + N дней ───
 function calcDeadline(frequency, daysAfter) {
   const n = parseInt(daysAfter);
   if (!n || n <= 0) return '';
@@ -108,11 +108,8 @@ export function WorkSection() {
   const [catalogOpen, setCatalogOpen] = useState(false);
   const [myReportsOpen, setMyReportsOpen] = useState(true);
   const [showCustomModal, setShowCustomModal] = useState(false);
-
-  // ✅ daysAfter по умолчанию '30' — кнопка сохранить сразу активна после ввода названия
   const EMPTY_FORM = { name: '', frequency: 'quarterly', deadline: calcDeadline('quarterly', '30'), daysAfter: '30' };
   const [customForm, setCustomForm] = useState(EMPTY_FORM);
-
   const [aiLoading, setAiLoading] = useState(false);
   const [expandedRecId, setExpandedRecId] = useState(null);
   const [savedRecs, setSavedRecs] = useState(() => {
@@ -227,10 +224,10 @@ export function WorkSection() {
   };
 
   const TABS = [
-    { id: 'tasks', label: '📋 Задачи' },
+    { id: 'tasks',   label: '📋 Задачи' },
     { id: 'reports', label: '📊 Отчёты' },
-    { id: 'tools', label: '🔧 Инструменты' },
-    { id: 'ai', label: '✨ ИИ' },
+    { id: 'tools',   label: '🔧 Инструменты' },
+    { id: 'ai',      label: '✨ ИИ' },
   ];
 
   const FREQ_OPTIONS = [
@@ -333,7 +330,7 @@ export function WorkSection() {
               )}
               {pushStatus === 'denied' && (
                 <div style={{ fontSize: 12, color: 'var(--error)', lineHeight: 1.5 }}>
-                  Разрешите уведомления вручную в настройках браузера для этого сайта.
+                  Разрешите уведомления вручную в настройках браузера.
                 </div>
               )}
             </div>
@@ -469,70 +466,8 @@ export function WorkSection() {
         </div>
       )}
 
-      {/* ════ ВКЛАДКА: ИНСТРУМЕНТЫ ════ */}
-      {workTab === 'tools' && (
-        <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-            <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, color: T.text3, letterSpacing: 2 }}>АКТИВНЫЕ ИНСТРУМЕНТЫ · {workTools.length}</div>
-            <button className="btn btn-ghost btn-sm" onClick={() => setAddToolModal(true)}>+ Добавить</button>
-          </div>
-          {workTools.length === 0 && (
-            <div className="empty"><span className="empty-ico">🔧</span><p>Нет инструментов. Добавьте вручную или из ИИ-рекомендаций.</p></div>
-          )}
-          {workTools.map(tool => {
-            const doneSteps = (tool.steps || []).filter(s => s.completed).length;
-            const totalSteps = (tool.steps || []).length;
-            const pct = totalSteps > 0 ? Math.round(doneSteps / totalSteps * 100) : 0;
-            return (
-              <div key={tool.id} style={{ padding: '12px 14px', marginBottom: 10, background: 'rgba(0,112,192,0.04)', border: `1px solid rgba(0,112,192,0.15)`, borderRadius: 10 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
-                  <div style={{ fontFamily: "'Cormorant Infant',serif", fontSize: 16, color: T.text0 }}>🔧 {tool.title}</div>
-                  <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, color: pct === 100 ? '#2d6a4f' : T.gold }}>{pct}%</span>
-                </div>
-                {tool.description && (
-                  <div style={{ fontSize: 12, color: T.text2, marginBottom: 8, lineHeight: 1.5 }}>{tool.description}</div>
-                )}
-                {totalSteps > 0 && (
-                  <>
-                    <div style={{ height: 4, background: 'rgba(0,112,192,0.1)', borderRadius: 3, marginBottom: 8, overflow: 'hidden' }}>
-                      <div style={{ width: `${pct}%`, height: '100%', background: `linear-gradient(90deg, #0070c0, ${T.gold})`, borderRadius: 3, transition: 'width 0.4s' }} />
-                    </div>
-                    {(tool.steps || []).map((step, si) => (
-                      <div key={si} onClick={() => updateWorkToolStep(tool.id, si, !step.completed)}
-                        style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 0', cursor: 'pointer', borderBottom: si < tool.steps.length - 1 ? `1px solid rgba(255,255,255,0.04)` : 'none' }}>
-                        <div style={{ width: 15, height: 15, borderRadius: 3, border: `1.5px solid ${step.completed ? T.success : T.bdr}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, color: T.success, flexShrink: 0, background: step.completed ? 'rgba(45,106,79,0.15)' : 'transparent' }}>
-                          {step.completed ? '✓' : ''}
-                        </div>
-                        <span style={{ fontSize: 12, color: step.completed ? T.text3 : T.text2, textDecoration: step.completed ? 'line-through' : 'none' }}>
-                          {typeof step === 'string' ? step : step.text}
-                        </span>
-                      </div>
-                    ))}
-                  </>
-                )}
-              </div>
-            );
-          })}
-          {savedRecs.length > 0 && (
-            <div style={{ marginTop: 20 }}>
-              <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, color: T.text3, letterSpacing: 2, marginBottom: 10 }}>💾 СОХРАНЁННЫЕ РЕКОМЕНДАЦИИ · {savedRecs.length}</div>
-              {savedRecs.map(rec => (
-                <div key={rec.id} style={{ padding: '10px 12px', marginBottom: 8, background: 'rgba(200,164,90,0.05)', border: `1px solid rgba(200,164,90,0.2)`, borderRadius: 8 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
-                    <div style={{ fontSize: 13, color: T.text1, fontWeight: 500 }}>{rec.title}</div>
-                    <div style={{ display: 'flex', gap: 8 }}>
-                      {rec.tool && <button className="btn btn-ghost btn-sm" style={{ fontSize: 10 }} onClick={() => addToolFromRec(rec.tool)}>+ В инструменты</button>}
-                      <span onClick={() => saveRec(rec)} style={{ fontSize: 12, color: T.text3, cursor: 'pointer', opacity: 0.5 }}>✕</span>
-                    </div>
-                  </div>
-                  <div style={{ fontSize: 12, color: T.text2, lineHeight: 1.5 }}>{rec.summary}</div>
-                  <div style={{ fontSize: 10, color: T.text3, fontFamily: "'JetBrains Mono',monospace", marginTop: 4 }}>{rec.source}</div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+      {/* ════ ВКЛАДКА: ИНСТРУМЕНТЫ — ToolsHub ════ */}
+      {workTab === 'tools' && <ToolsHub />}
 
       {/* ════ ВКЛАДКА: ИИ ════ */}
       {workTab === 'ai' && (
@@ -605,44 +540,6 @@ export function WorkSection() {
         </div>
       )}
 
-      {/* ─── Модалка добавления инструмента ─── */}
-      {addToolModal && (
-        <div className="overlay" onClick={() => setAddToolModal(false)}>
-          <div className="modal" onClick={e => e.stopPropagation()}>
-            <span className="modal-x" onClick={() => setAddToolModal(false)}>✕</span>
-            <div className="modal-title">Новый инструмент</div>
-            <div className="fld">
-              <label>Название</label>
-              <input placeholder="Шаблон сверки, чек-лист..." value={newTool.title} onChange={e => setNewTool(p => ({ ...p, title: e.target.value }))} />
-            </div>
-            <div className="fld">
-              <label>Описание</label>
-              <textarea value={newTool.description} onChange={e => setNewTool(p => ({ ...p, description: e.target.value }))} placeholder="Для чего этот инструмент..." />
-            </div>
-            <div className="fld">
-              <label>Шаги</label>
-              {newTool.steps.map((step, si) => (
-                <div key={si} style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
-                  <input value={step} onChange={e => setNewTool(p => ({ ...p, steps: p.steps.map((s, i) => i === si ? e.target.value : s) }))} placeholder={`Шаг ${si + 1}`} style={{ flex: 1 }} />
-                  {newTool.steps.length > 1 && <span onClick={() => setNewTool(p => ({ ...p, steps: p.steps.filter((_, i) => i !== si) }))} style={{ cursor: 'pointer', color: T.text3, alignSelf: 'center' }}>✕</span>}
-                </div>
-              ))}
-              <button className="btn btn-ghost btn-sm" onClick={() => setNewTool(p => ({ ...p, steps: [...p.steps, ''] }))}>+ Добавить шаг</button>
-            </div>
-            <div className="modal-foot">
-              <button className="btn btn-ghost" onClick={() => setAddToolModal(false)}>Отмена</button>
-              <button className="btn btn-primary" onClick={() => {
-                if (!newTool.title.trim()) return;
-                addWorkTool({ title: newTool.title, description: newTool.description, steps: newTool.steps.filter(s => s.trim()).map(s => ({ text: s, completed: false })) });
-                setAddToolModal(false);
-                setNewTool({ title: '', description: '', steps: [''] });
-                notify('🔧 Инструмент добавлен');
-              }}>Сохранить</button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* ─── Модалка добавления своего отчёта ─── */}
       {showCustomModal && (
         <div className="overlay" onClick={() => setShowCustomModal(false)}>
@@ -668,14 +565,8 @@ export function WorkSection() {
                     <div
                       key={v}
                       onClick={() => setCustomForm(p => {
-                        // Если дни не указаны — подставляем 30 по умолчанию
                         const daysAfter = p.daysAfter || '30';
-                        return {
-                          ...p,
-                          frequency: v,
-                          daysAfter,
-                          deadline: calcDeadline(v, daysAfter),
-                        };
+                        return { ...p, frequency: v, daysAfter, deadline: calcDeadline(v, daysAfter) };
                       })}
                       style={{
                         padding: '8px 14px', borderRadius: 10, cursor: 'pointer', userSelect: 'none',
@@ -696,9 +587,7 @@ export function WorkSection() {
               <label>Дней после окончания периода</label>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                 <input
-                  type="number"
-                  min="1"
-                  max="365"
+                  type="number" min="1" max="365"
                   placeholder="Например: 15"
                   value={customForm.daysAfter}
                   onChange={e => {
@@ -709,8 +598,7 @@ export function WorkSection() {
                   style={{ width: 120 }}
                 />
                 {[15, 30, 60, 90].map(n => (
-                  <div
-                    key={n}
+                  <div key={n}
                     onClick={() => {
                       const daysAfter = String(n);
                       const deadline = calcDeadline(customForm.frequency, daysAfter);
@@ -723,12 +611,9 @@ export function WorkSection() {
                       color: customForm.daysAfter === String(n) ? '#0070c0' : T.text2,
                       transition: 'all 0.15s',
                     }}
-                  >
-                    {n}
-                  </div>
+                  >{n}</div>
                 ))}
               </div>
-
               {customForm.deadline && customForm.daysAfter && (
                 <div style={{ marginTop: 10, padding: '10px 12px', background: 'rgba(0,112,192,0.06)', borderRadius: 8, borderLeft: '3px solid rgba(0,112,192,0.4)' }}>
                   <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, color: T.text3, marginBottom: 4, letterSpacing: 1 }}>СРОК СДАЧИ</div>
@@ -781,4 +666,4 @@ export function WorkSection() {
       )}
     </div>
   );
-}
+                                 }
