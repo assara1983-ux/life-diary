@@ -56,38 +56,7 @@ function calcDeadline(frequency, daysAfter) {
   return localDateStr(deadline);
 }
 
-// ─── SVG ИЛЛЮСТРАЦИЯ ───
-function WorkIllustration() {
-  return (
-    <svg viewBox="0 0 360 120" style={{ width: '100%', height: 'auto', display: 'block', marginBottom: 20 }}>
-      <defs>
-        <radialGradient id="wbg" cx="50%" cy="50%" r="60%">
-          <stop offset="0%" stopColor="rgba(0,112,192,0.12)" />
-          <stop offset="100%" stopColor="rgba(0,112,192,0)" />
-        </radialGradient>
-      </defs>
-      <ellipse cx="180" cy="60" rx="160" ry="50" fill="url(#wbg)" />
-      <rect x="152" y="42" width="56" height="40" rx="6" fill="none" stroke="rgba(0,112,192,0.5)" strokeWidth="2" />
-      <rect x="163" y="36" width="34" height="10" rx="4" fill="none" stroke="rgba(0,112,192,0.5)" strokeWidth="1.5" />
-      <line x1="152" y1="58" x2="208" y2="58" stroke="rgba(0,112,192,0.4)" strokeWidth="1.5" />
-      <line x1="180" y1="42" x2="180" y2="82" stroke="rgba(0,112,192,0.3)" strokeWidth="1" />
-      {[[60,25],[270,28],[80,75],[280,72]].map(([x,y],i) => (
-        <g key={i}>
-          <rect x={x} y={y} width="28" height="36" rx="3" fill="none" stroke="rgba(200,164,90,0.4)" strokeWidth="1.2" />
-          <line x1={x+5} y1={y+10} x2={x+23} y2={y+10} stroke="rgba(200,164,90,0.3)" strokeWidth="1" />
-          <line x1={x+5} y1={y+16} x2={x+23} y2={y+16} stroke="rgba(200,164,90,0.3)" strokeWidth="1" />
-          <line x1={x+5} y1={y+22} x2={x+18} y2={y+22} stroke="rgba(200,164,90,0.3)" strokeWidth="1" />
-        </g>
-      ))}
-      {[[130,20],[230,18],[110,90],[250,88]].map(([x,y],i) => (
-        <circle key={i} cx={x} cy={y} r="2" fill="rgba(0,112,192,0.6)">
-          <animate attributeName="opacity" values="0;1;0" dur={`${1.5+i*0.3}s`} begin={`${i*0.2}s`} repeatCount="indefinite" />
-        </circle>
-      ))}
-      <text x="180" y="108" textAnchor="middle" fontSize="10" fill="rgba(0,112,192,0.5)" fontFamily="'JetBrains Mono',monospace" letterSpacing="2">РАБОЧЕЕ ПРОСТРАНСТВО</text>
-    </svg>
-  );
-}
+// ✅ WorkIllustration УДАЛЕНА
 
 // ─── ОСНОВНОЙ КОМПОНЕНТ ───
 export function WorkSection() {
@@ -239,7 +208,7 @@ export function WorkSection() {
   return (
     <div>
       <SectionHero sectionId="work" />
-      <WorkIllustration />
+      {/* ✅ WorkIllustration убрана */}
 
       {/* ─── Вкладки ─── */}
       <div style={{ display: 'flex', gap: 2, background: 'rgba(0,112,192,0.05)', border: `1px solid ${T.bdr}`, borderRadius: 12, padding: 4, marginBottom: 20 }}>
@@ -466,7 +435,7 @@ export function WorkSection() {
         </div>
       )}
 
-      {/* ════ ВКЛАДКА: ИНСТРУМЕНТЫ — ToolsHub ════ */}
+      {/* ════ ВКЛАДКА: ИНСТРУМЕНТЫ ════ */}
       {workTab === 'tools' && <ToolsHub />}
 
       {/* ════ ВКЛАДКА: ИИ ════ */}
@@ -562,8 +531,7 @@ export function WorkSection() {
                 {FREQ_OPTIONS.map(({ v, l, hint }) => {
                   const isActive = customForm.frequency === v;
                   return (
-                    <div
-                      key={v}
+                    <div key={v}
                       onClick={() => setCustomForm(p => {
                         const daysAfter = p.daysAfter || '30';
                         return { ...p, frequency: v, daysAfter, deadline: calcDeadline(v, daysAfter) };
@@ -666,4 +634,4 @@ export function WorkSection() {
       )}
     </div>
   );
-                                 }
+}
