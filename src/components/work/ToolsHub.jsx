@@ -8,13 +8,11 @@ import { LateralThinking } from './tools/LateralThinking';
 import { DecisionHub } from './tools/DecisionHub';
 import { VEDAssistant } from './tools/VEDAssistant';
 import { DocumentTemplates } from './tools/DocumentTemplates';
-import { AccountantNewsFeed } from './tools/AccountantNewsFeed';
-import { AkashaLedger } from './tools/AkashaLedger';
 import { FractalMindAccountant } from './tools/FractalMindAccountant';
 import { EchoLedgerNeuralSymphony } from './tools/EchoLedgerNeuralSymphony';
-import { RecursiveSoulIndex } from './tools/RecursiveSoulIndex';
 import { HotkeysGuide } from './tools/HotkeysGuide';
 
+// ✅ Скрытые инструменты: AccountantNewsFeed, AkashaLedger, RecursiveSoulIndex
 const TOOLS = [
   {
     id: 'kanban',
@@ -81,22 +79,6 @@ const TOOLS = [
     component: DocumentTemplates,
   },
   {
-    id: 'news',
-    icon: '📊',
-    title: 'Бухгалтерский дашборд',
-    subtitle: 'Новости • Аналитика • Отчёты',
-    category: 'analytics',
-    component: AccountantNewsFeed,
-  },
-  {
-    id: 'akasha',
-    icon: '🗃',
-    title: 'Акаша Леджер',
-    subtitle: 'Умный архив документов',
-    category: 'docs',
-    component: AkashaLedger,
-  },
-  {
     id: 'fractal',
     icon: '🔮',
     title: 'Фрактальный ум',
@@ -113,14 +95,6 @@ const TOOLS = [
     component: EchoLedgerNeuralSymphony,
   },
   {
-    id: 'soul',
-    icon: '✨',
-    title: 'Recursive Soul Index',
-    subtitle: 'Рефлексия и инсайты',
-    category: 'focus',
-    component: RecursiveSoulIndex,
-  },
-  {
     id: 'hotkeys',
     icon: '⌨️',
     title: 'Автоматизация',
@@ -131,188 +105,166 @@ const TOOLS = [
 ];
 
 const CATEGORY_COLORS = {
-  tasks:     { bg: 'rgba(0,112,192,0.15)',    border: 'rgba(0,112,192,0.4)',    label: 'Задачи' },
-  ai:        { bg: 'rgba(168,85,247,0.12)',   border: 'rgba(168,85,247,0.4)',   label: 'ИИ' },
-  analytics: { bg: 'rgba(34,197,94,0.1)',     border: 'rgba(34,197,94,0.35)',   label: 'Аналитика' },
-  docs:      { bg: 'rgba(200,164,90,0.12)',   border: 'rgba(200,164,90,0.4)',   label: 'Документы' },
-  focus:     { bg: 'rgba(249,115,22,0.1)',    border: 'rgba(249,115,22,0.35)',  label: 'Концентрация' },
+  tasks:     { bg: 'rgba(0,112,192,0.08)',   border: 'rgba(0,112,192,0.25)',   label: 'Задачи',       accent: '#0070c0' },
+  ai:        { bg: 'rgba(168,85,247,0.07)',  border: 'rgba(168,85,247,0.25)',  label: 'ИИ',           accent: '#a855f7' },
+  analytics: { bg: 'rgba(34,197,94,0.07)',   border: 'rgba(34,197,94,0.25)',   label: 'Аналитика',    accent: '#22c55e' },
+  docs:      { bg: 'rgba(200,164,90,0.08)',  border: 'rgba(200,164,90,0.25)',  label: 'Документы',    accent: '#c8a45a' },
+  focus:     { bg: 'rgba(249,115,22,0.07)',  border: 'rgba(249,115,22,0.25)', label: 'Концентрация', accent: '#f97316' },
 };
-
-// Мистический SVG фон
-function MysticBackground() {
-  return (
-    <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', opacity: 0.18 }} viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice">
-      {/* Гексагоны */}
-      {[[60,60],[340,60],[60,240],[340,240],[200,150]].map(([cx,cy],i) => (
-        <polygon key={i}
-          points={Array.from({length:6},(_,k)=>`${cx+28*Math.cos(k*Math.PI/3-Math.PI/6)},${cy+28*Math.sin(k*Math.PI/3-Math.PI/6)}`).join(' ')}
-          fill="none" stroke="rgba(200,164,90,0.6)" strokeWidth="0.8"
-        >
-          <animate attributeName="opacity" values="0.3;0.7;0.3" dur={`${3+i*0.7}s`} repeatCount="indefinite" />
-        </polygon>
-      ))}
-      {/* Линии сакральной геометрии */}
-      <line x1="60" y1="60" x2="340" y2="240" stroke="rgba(200,164,90,0.3)" strokeWidth="0.5" />
-      <line x1="340" y1="60" x2="60" y2="240" stroke="rgba(200,164,90,0.3)" strokeWidth="0.5" />
-      <circle cx="200" cy="150" r="80" fill="none" stroke="rgba(0,112,192,0.3)" strokeWidth="0.6" />
-      <circle cx="200" cy="150" r="50" fill="none" stroke="rgba(200,164,90,0.2)" strokeWidth="0.5" />
-      {/* Частицы */}
-      {[[80,40],[320,80],[150,260],[260,30],[100,200]].map(([x,y],i) => (
-        <circle key={i} cx={x} cy={y} r="2" fill="rgba(200,164,90,0.8)">
-          <animate attributeName="opacity" values="0;1;0" dur={`${2+i*0.4}s`} begin={`${i*0.3}s`} repeatCount="indefinite" />
-        </circle>
-      ))}
-    </svg>
-  );
-}
 
 export function ToolsHub() {
   const [activeTool, setActiveTool] = useState(null);
 
   const tool = TOOLS.find(t => t.id === activeTool);
 
-  // ─── Полноэкранный режим инструмента ───
+  // ─── Открытый инструмент ───
   if (tool) {
     const ToolComponent = tool.component;
+    const cat = CATEGORY_COLORS[tool.category];
     return (
-      <div style={{ position: 'relative' }}>
+      <div>
         {/* Кнопка Назад */}
         <div
           onClick={() => setActiveTool(null)}
           style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 8,
-            padding: '8px 16px',
-            marginBottom: 16,
-            background: 'rgba(200,164,90,0.1)',
-            border: '1px solid rgba(200,164,90,0.3)',
-            borderRadius: 20,
-            cursor: 'pointer',
-            fontSize: 13,
-            color: 'rgba(200,164,90,0.9)',
-            fontFamily: "'JetBrains Mono',monospace",
-            letterSpacing: 1,
+            display: 'inline-flex', alignItems: 'center', gap: 8,
+            padding: '7px 16px', marginBottom: 20,
+            background: 'rgba(0,112,192,0.06)',
+            border: '1px solid rgba(0,112,192,0.2)',
+            borderRadius: 20, cursor: 'pointer',
+            fontSize: 12, color: 'var(--text2)',
+            fontFamily: "'JetBrains Mono',monospace", letterSpacing: 1,
+            transition: 'all 0.15s',
           }}
         >
           ← ИНСТРУМЕНТЫ
         </div>
+
+        {/* Заголовок инструмента */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 12,
+          padding: '14px 16px', marginBottom: 20,
+          background: cat.bg,
+          border: `1px solid ${cat.border}`,
+          borderRadius: 12,
+        }}>
+          <span style={{ fontSize: 24 }}>{tool.icon}</span>
+          <div>
+            <div style={{
+              fontSize: 16, fontWeight: 600, color: 'var(--text0)',
+              fontFamily: "'Cormorant Infant',serif",
+            }}>{tool.title}</div>
+            <div style={{
+              fontSize: 11, color: 'var(--text3)',
+              fontFamily: "'JetBrains Mono',monospace",
+            }}>{tool.subtitle}</div>
+          </div>
+          <div style={{
+            marginLeft: 'auto',
+            padding: '3px 10px', borderRadius: 10,
+            fontSize: 9, fontFamily: "'JetBrains Mono',monospace",
+            letterSpacing: 1, background: cat.bg,
+            color: cat.accent, border: `1px solid ${cat.border}`,
+          }}>
+            {cat.label.toUpperCase()}
+          </div>
+        </div>
+
         <ToolComponent />
       </div>
     );
   }
 
-  // ─── Главная сетка карточек ───
+  // ─── Сетка карточек — основная стилистика приложения ───
   return (
     <div>
-      {/* Заголовок с мистическим фоном */}
+      {/* Заголовок */}
       <div style={{
-        position: 'relative',
-        overflow: 'hidden',
-        borderRadius: 16,
-        marginBottom: 20,
-        padding: '24px 20px',
-        background: 'linear-gradient(135deg, #0a0f1e 0%, #050810 100%)',
-        border: '1px solid rgba(200,164,90,0.25)',
-        minHeight: 120,
+        padding: '16px 18px', marginBottom: 20,
+        background: 'rgba(0,112,192,0.04)',
+        border: '1px solid rgba(0,112,192,0.15)',
+        borderRadius: 12,
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
-        <MysticBackground />
-        <div style={{ position: 'relative', zIndex: 1, textAlign: 'center' }}>
+        <div>
           <div style={{
-            fontSize: 11,
-            fontFamily: "'JetBrains Mono',monospace",
-            letterSpacing: 4,
-            color: 'rgba(200,164,90,0.6)',
-            marginBottom: 8,
+            fontSize: 10, fontFamily: "'JetBrains Mono',monospace",
+            letterSpacing: 3, color: 'var(--text3)', marginBottom: 4,
           }}>РАБОЧЕЕ ПРОСТРАНСТВО</div>
           <div style={{
-            fontSize: 22,
-            fontFamily: "'Cormorant Infant',serif",
-            background: 'linear-gradient(90deg, #c8a45a, #f0d080, #c8a45a)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            letterSpacing: 2,
+            fontSize: 18, fontFamily: "'Cormorant Infant',serif",
+            color: 'var(--text0)',
           }}>Инструменты Бухгалтера</div>
-          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', marginTop: 6 }}>
-            {TOOLS.length} инструментов · выберите для открытия
-          </div>
+        </div>
+        <div style={{
+          fontSize: 11, color: 'var(--text3)',
+          fontFamily: "'JetBrains Mono',monospace",
+          background: 'rgba(0,112,192,0.08)',
+          border: '1px solid rgba(0,112,192,0.15)',
+          borderRadius: 8, padding: '4px 10px',
+        }}>
+          {TOOLS.length} инструментов
         </div>
       </div>
 
       {/* Сетка карточек */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
-        gap: 12,
+        gridTemplateColumns: 'repeat(auto-fill, minmax(155px, 1fr))',
+        gap: 10,
       }}>
-        {TOOLS.map(tool => {
-          const cat = CATEGORY_COLORS[tool.category];
+        {TOOLS.map(t => {
+          const cat = CATEGORY_COLORS[t.category];
           return (
             <div
-              key={tool.id}
-              onClick={() => setActiveTool(tool.id)}
+              key={t.id}
+              onClick={() => setActiveTool(t.id)}
               style={{
+                padding: '16px 12px',
+                background: 'var(--bg, rgba(255,255,255,0.98))',
+                border: `1px solid ${cat.border}`,
+                borderRadius: 12,
+                cursor: 'pointer',
+                transition: 'all 0.18s',
+                textAlign: 'center',
                 position: 'relative',
                 overflow: 'hidden',
-                padding: '18px 14px',
-                background: `linear-gradient(135deg, ${cat.bg}, rgba(5,8,16,0.8))`,
-                border: `1px solid ${cat.border}`,
-                borderRadius: 14,
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                backdropFilter: 'blur(8px)',
-                textAlign: 'center',
               }}
             >
-              {/* Мини-свечение */}
+              {/* Цветная полоска сверху */}
               <div style={{
-                position: 'absolute',
-                top: -20, left: '50%',
-                transform: 'translateX(-50%)',
-                width: 60, height: 60,
-                borderRadius: '50%',
-                background: cat.border,
-                filter: 'blur(20px)',
-                opacity: 0.3,
-                pointerEvents: 'none',
+                position: 'absolute', top: 0, left: 0, right: 0,
+                height: 3, background: cat.accent, borderRadius: '12px 12px 0 0',
+                opacity: 0.7,
               }} />
 
-              <div style={{ fontSize: 28, marginBottom: 8, position: 'relative', zIndex: 1 }}>
-                {tool.icon}
+              <div style={{ fontSize: 26, marginBottom: 8, marginTop: 4 }}>
+                {t.icon}
               </div>
               <div style={{
-                fontSize: 13,
+                fontSize: 13, fontWeight: 600,
+                color: 'var(--text0)',
+                marginBottom: 4, lineHeight: 1.3,
                 fontFamily: "'Cormorant Infant',serif",
-                color: 'rgba(255,255,255,0.9)',
-                marginBottom: 4,
-                fontWeight: 600,
-                lineHeight: 1.3,
-                position: 'relative', zIndex: 1,
               }}>
-                {tool.title}
+                {t.title}
               </div>
               <div style={{
-                fontSize: 10,
-                color: 'rgba(255,255,255,0.45)',
-                lineHeight: 1.4,
-                position: 'relative', zIndex: 1,
+                fontSize: 10, color: 'var(--text3)',
+                lineHeight: 1.4, marginBottom: 10,
               }}>
-                {tool.subtitle}
+                {t.subtitle}
               </div>
 
               {/* Категория */}
               <div style={{
-                marginTop: 10,
                 display: 'inline-block',
-                padding: '2px 8px',
-                borderRadius: 20,
-                fontSize: 9,
-                fontFamily: "'JetBrains Mono',monospace",
+                padding: '2px 8px', borderRadius: 10,
+                fontSize: 9, fontFamily: "'JetBrains Mono',monospace",
                 letterSpacing: 1,
                 background: cat.bg,
-                color: cat.border,
+                color: cat.accent,
                 border: `1px solid ${cat.border}`,
-                position: 'relative', zIndex: 1,
               }}>
                 {cat.label.toUpperCase()}
               </div>
