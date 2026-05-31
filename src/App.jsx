@@ -7,20 +7,21 @@ import { Icon } from './components/Icon';
 import { getSectionGraphic } from './config/sectionGraphics';
 import { SyncPanel } from './components/SyncPanel';
 import './index.css';
-import { TodaySection } from './sections/TodaySection';
+import { TodaySection }    from './sections/TodaySection';
 import { ScheduleSection } from './sections/ScheduleSection';
-import { WorkSection } from './sections/WorkSection';
-import { HomeSection } from './sections/HomeSection';
+import { WorkSection }     from './sections/WorkSection';
+import { HomeSection }     from './sections/HomeSection';
 import { ShoppingSection } from './sections/ShoppingSection';
-import { PetsSection } from './sections/PetsSection';
-import { CarSection } from './sections/CarSection';
-import { HealthSection } from './sections/HealthSection';
-import { BeautySection } from './sections/BeautySection';
-import { HobbiesSection } from './sections/HobbiesSection';
-import { GoalsSection } from './sections/GoalsSection';
-import { TravelSection } from './sections/TravelSection';
-import { JournalSection } from './sections/JournalSection';
-import { ProfileSection } from './sections/ProfileSection';
+import { PetsSection }     from './sections/PetsSection';
+import { CarSection }      from './sections/CarSection';
+import { HealthSection }   from './sections/HealthSection';
+import { BeautySection }   from './sections/BeautySection';
+import { HobbiesSection }  from './sections/HobbiesSection';
+import { TravelSection }   from './sections/TravelSection';
+import { JournalSection }  from './sections/JournalSection';
+import { ProfileSection }  from './sections/ProfileSection';
+
+// ✅ GoalsSection удалена
 
 const DEF_SECTIONS = [
   { id: "today",    name: "Сегодня",   vis: true },
@@ -33,10 +34,10 @@ const DEF_SECTIONS = [
   { id: "health",   name: "Здоровье",  vis: true },
   { id: "beauty",   name: "Уход",      vis: true },
   { id: "hobbies",  name: "Хобби",     vis: true },
-  { id: "goals",    name: "Мои цели",  vis: true },
   { id: "travel",   name: "Поездки",   vis: true },
   { id: "journal",  name: "Журнал",    vis: true },
   { id: "profile",  name: "Профиль",   vis: true },
+  // ✅ goals удалён
 ];
 
 function AppContent() {
@@ -48,7 +49,7 @@ function AppContent() {
   useEffect(() => {
     if (!profile) return;
     const current = sections.length > 0 ? sections : DEF_SECTIONS;
-    const merged  = [...current];
+    const merged  = [...current].filter(s => s.id !== 'goals'); // убираем goals если был
     let changed   = sections.length === 0;
     DEF_SECTIONS.forEach(def => {
       if (!merged.find(s => s.id === def.id)) {
@@ -84,7 +85,6 @@ function AppContent() {
       height: '100vh',
       overflow: 'hidden',
     }}>
-      {/* Фоновое изображение раздела */}
       {bgUrl && bgLoaded && (
         <div style={{
           position: 'fixed', inset: 0, zIndex: 0,
@@ -99,7 +99,6 @@ function AppContent() {
         }} />
       )}
 
-      {/* Toast уведомление */}
       {toastMsg && (
         <div style={{
           position: 'fixed', bottom: 24, left: '50%',
@@ -115,8 +114,7 @@ function AppContent() {
         </div>
       )}
 
-      {/* Боковая навигация */}
-      <nav className="sidebar-wide" style={{
+      <nav style={{
         gridColumn: '1 / 2',
         background: 'rgba(245,240,225,0.95)',
         borderRight: '1px solid rgba(0,112,192,0.15)',
@@ -124,7 +122,7 @@ function AppContent() {
         alignItems: 'center', padding: '12px 0', gap: 6,
         overflowY: 'auto', zIndex: 10,
       }}>
-        <div className="s-logo" style={{
+        <div style={{
           fontSize: 16, fontWeight: 700,
           color: '#0070c0', marginBottom: 12,
         }}>LD</div>
@@ -138,12 +136,8 @@ function AppContent() {
               display: 'flex', flexDirection: 'column',
               alignItems: 'center', justifyContent: 'center', gap: 4,
               cursor: 'pointer',
-              background: active === s.id
-                ? 'rgba(0,112,192,0.12)'
-                : 'transparent',
-              border: active === s.id
-                ? '1px solid #0070c0'
-                : '1px solid transparent',
+              background: active === s.id ? 'rgba(0,112,192,0.12)' : 'transparent',
+              border: active === s.id ? '1px solid #0070c0' : '1px solid transparent',
               transition: 'all 0.2s',
             }}
           >
@@ -159,51 +153,36 @@ function AppContent() {
         ))}
       </nav>
 
-      {/* Основной контент */}
-      <main className="main" style={{
+      <main style={{
         gridColumn: '2 / 3',
         display: 'flex', flexDirection: 'column',
         overflow: 'hidden', position: 'relative', zIndex: 1,
       }}>
-        {/* Шапка */}
-        <div className="hdr" style={{
+        <div style={{
           padding: '16px 24px',
           background: 'rgba(245,240,225,0.9)',
           borderBottom: '1px solid rgba(0,112,192,0.15)',
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         }}>
           <div>
-            <div className="hdr-title" style={{
-              fontSize: 20, fontWeight: 600, color: '#0070c0',
-            }}>
+            <div style={{ fontSize: 20, fontWeight: 600, color: '#0070c0' }}>
               {activeSection?.name}
             </div>
-            <div className="hdr-sub" style={{ fontSize: 12, color: '#5c4a30' }}>
+            <div style={{ fontSize: 12, color: '#5c4a30' }}>
               {new Date().toLocaleDateString('ru-RU', {
                 weekday: 'long', day: 'numeric', month: 'long',
               })}
             </div>
           </div>
-          <div className="hdr-r" style={{
-            display: 'flex', gap: 12, alignItems: 'center',
-          }}>
-            <div className="moon-tag" style={{ fontSize: 12, color: '#5c4a30' }}>
-              {moon.e} {moon.n}
-            </div>
-            <div className="date-tag" style={{
-              fontSize: 12,
-              fontFamily: "'JetBrains Mono'",
-              color: '#0070c0',
-            }}>
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+            <div style={{ fontSize: 12, color: '#5c4a30' }}>{moon.e} {moon.n}</div>
+            <div style={{ fontSize: 12, fontFamily: "'JetBrains Mono'", color: '#0070c0' }}>
               {today}
             </div>
           </div>
         </div>
 
-        {/* Страница раздела */}
-        <div className="page" style={{
-          flex: 1, overflowY: 'auto', padding: 24,
-        }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: 24 }}>
           {active === 'today'    && <TodaySection />}
           {active === 'schedule' && <ScheduleSection />}
           {active === 'work'     && <WorkSection />}
@@ -214,14 +193,13 @@ function AppContent() {
           {active === 'health'   && <HealthSection />}
           {active === 'beauty'   && <BeautySection />}
           {active === 'hobbies'  && <HobbiesSection />}
-          {active === 'goals'    && <GoalsSection />}
           {active === 'travel'   && <TravelSection />}
           {active === 'journal'  && <JournalSection />}
           {active === 'profile'  && <ProfileSection />}
+          {/* ✅ goals удалён */}
         </div>
       </main>
 
-      {/* ✅ Панель синхронизации */}
       <SyncPanel />
     </div>
   );
