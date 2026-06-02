@@ -174,58 +174,70 @@ function FlipCardBlock({ title, frontImage, accentColor, children, minHeight = 2
           cursor:'pointer', borderRadius:12,
         }}
       >
-        {/* ── ЛИЦЕВАЯ СТОРОНА — только картинка + название ── */}
+        {/* ── ЛИЦЕВАЯ СТОРОНА — картинка на весь блок, название снизу ── */}
         <div style={{
           position:'absolute', inset:0,
           backfaceVisibility:'hidden',
           borderRadius:12, overflow:'hidden',
-          background:`linear-gradient(160deg, ${C.bgCard} 0%, ${C.bgCard2} 100%)`,
-          border:`2px solid ${C.line}`,
-          boxShadow:`0 4px 16px rgba(10,37,64,0.12), inset 0 1px 0 rgba(255,255,255,0.9)`,
-          display:'flex', flexDirection:'column',
-          alignItems:'center', justifyContent:'center',
-          padding:'16px 12px 14px', boxSizing:'border-box',
+          background: C.navyMid,
+          boxShadow:`0 4px 16px rgba(10,37,64,0.18), 0 0 0 1.5px ${C.line}`,
         }}>
-          {/* Угловые маркеры */}
-          <div style={{ position:'absolute', top:6, left:6, width:12, height:12,
-            borderTop:`2px solid ${C.gold}`, borderLeft:`2px solid ${C.gold}`, opacity:0.8 }} />
-          <div style={{ position:'absolute', bottom:6, right:6, width:12, height:12,
-            borderBottom:`2px solid ${C.gold}`, borderRight:`2px solid ${C.gold}`, opacity:0.8 }} />
-
-          {/* Хинт */}
-          <div style={{
-            position:'absolute', top:8, right:10,
-            fontFamily:"'JetBrains Mono',monospace",
-            fontSize:7, color:`rgba(10,37,64,0.35)`,
-            letterSpacing:1.5, textTransform:'uppercase',
-          }}>подробнее →</div>
-
-          {/* ✅ Картинка — крупная, без мелкого контента рядом */}
+          {/* Картинка — на весь фон */}
           {!imgError && frontImage ? (
             <img
               src={frontImage} alt={title}
               style={{
-                width:'100%', maxWidth:180, height:'auto',
-                objectFit:'contain', marginBottom:14,
-                flexShrink:0, pointerEvents:'none',
+                position:'absolute', inset:0,
+                width:'100%', height:'100%',
+                objectFit:'cover',
+                pointerEvents:'none',
               }}
               onError={() => setImgError(true)}
             />
           ) : (
-            <div style={{ fontSize:64, marginBottom:14, opacity:0.5, color:C.text3 }}>
+            <div style={{
+              position:'absolute', inset:0,
+              display:'flex', alignItems:'center', justifyContent:'center',
+              fontSize:72, opacity:0.35, color:'#fff',
+            }}>
               {getFallbackEmoji()}
             </div>
           )}
 
-          {/* ✅ Только название — крупно и красиво */}
+          {/* Градиент снизу — как на карточках главного экрана */}
           <div style={{
-            fontFamily:"'Cinzel',serif",
-            fontSize:16, color:C.navy,
-            letterSpacing:2, fontWeight:700,
-            textTransform:'uppercase',
-            textAlign:'center',
-            lineHeight:1.3,
-          }}>{title}</div>
+            position:'absolute', inset:0,
+            background:'linear-gradient(to top, rgba(10,25,45,0.88) 0%, rgba(10,25,45,0.28) 55%, transparent 100%)',
+          }} />
+
+          {/* Угловые маркеры */}
+          <div style={{ position:'absolute', top:7, left:7, width:11, height:11,
+            borderTop:`2px solid ${C.gold}`, borderLeft:`2px solid ${C.gold}`, opacity:0.85 }} />
+          <div style={{ position:'absolute', bottom:7, right:7, width:11, height:11,
+            borderBottom:`2px solid ${C.gold}`, borderRight:`2px solid ${C.gold}`, opacity:0.85 }} />
+
+          {/* Хинт */}
+          <div style={{
+            position:'absolute', top:9, right:11,
+            fontFamily:"'JetBrains Mono',monospace",
+            fontSize:7, color:`rgba(212,175,55,0.65)`,
+            letterSpacing:1.5, textTransform:'uppercase',
+          }}>подробнее →</div>
+
+          {/* Название снизу поверх градиента */}
+          <div style={{
+            position:'absolute', bottom:0, left:0, right:0,
+            padding:'10px 13px 13px',
+          }}>
+            <div style={{
+              fontFamily:"'Cinzel',serif",
+              fontSize:15, fontWeight:700,
+              color:'#fff', letterSpacing:2.5,
+              textTransform:'uppercase',
+              textShadow:'0 2px 6px rgba(0,0,0,0.7)',
+              lineHeight:1.2,
+            }}>{title}</div>
+          </div>
         </div>
 
         {/* ── ОБОРОТНАЯ СТОРОНА — пергамент, читаемый текст ── */}
@@ -589,7 +601,7 @@ function CycleTimeline({ dob, onYearSelect }) {
           padding:'8px 12px',
           background:`rgba(10,37,64,0.04)`,
           border:`1px solid ${C.lineS}`,
-          borderRadius:6, fontSize:11, color:C.text2,
+          borderRadius:6, fontSize:14, color:C.text2, fontFamily:"'Crimson Pro',serif",
         }}>
           <span>⬛ Прошлое</span>
           <span style={{ color:C.gold, fontWeight:700 }}>▶ Сейчас</span>
@@ -637,10 +649,10 @@ function CycleTimeline({ dob, onYearSelect }) {
                     )}
                   </div>
                   <div style={{
-                    fontFamily:"'JetBrains Mono',monospace", fontSize:9,
+                    fontFamily:"'JetBrains Mono',monospace", fontSize:11,
                     color: p.isCurrent ? C.gold : C.text3,
                     marginTop:4, textAlign:'center',
-                    fontWeight: p.isCurrent ? 700 : 400, lineHeight:1.2,
+                    fontWeight: p.isCurrent ? 700 : 500, lineHeight:1.2,
                   }}>{p.startAge}–{p.endAge}</div>
                 </div>
 
@@ -659,10 +671,10 @@ function CycleTimeline({ dob, onYearSelect }) {
                   <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
                     <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                       <span style={{
-                        fontFamily:"'Cinzel',serif", fontSize:13,
+                        fontFamily:"'Cinzel',serif", fontSize:17,
                         color: p.isCurrent ? C.gold : p.isPast ? C.text1 : C.text2,
-                        fontWeight: p.isCurrent ? 700 : 500,
-                        letterSpacing:1,
+                        fontWeight: p.isCurrent ? 700 : 600,
+                        letterSpacing:1.5,
                       }}>
                         {p.isCurrent && '▶ '}{p.stage?.name}
                       </span>
@@ -681,18 +693,18 @@ function CycleTimeline({ dob, onYearSelect }) {
                     }}>▾</span>
                   </div>
 
-                  <div style={{ fontSize:11, color:C.text2, marginTop:4, lineHeight:1.4 }}>
+                  <div style={{ fontFamily:"'Crimson Pro',serif", fontSize:15, color:C.text1, marginTop:6, lineHeight:1.5 }}>
                     {p.stage?.tips}
                     {p.stage?.critical && (
-                      <span style={{ marginLeft:6, color:C.error, fontSize:10 }}>⚠ {p.stage.critical}</span>
+                      <span style={{ display:'block', marginTop:4, color:C.error, fontSize:13, fontFamily:"'Crimson Pro',serif" }}>⚠ {p.stage.critical}</span>
                     )}
                   </div>
 
                   <div style={{ display:'flex', gap:4, marginTop:8, flexWrap:'wrap' }}>
                     {Object.entries(SPHERE_LABELS).map(([key,meta]) => (
-                      <div key={key} style={{ display:'flex', alignItems:'center', gap:3, fontSize:10, color:C.text3 }}>
-                        <span style={{ fontSize:11 }}>{meta.icon}</span>
-                        <span style={{ color:meta.color, fontWeight:500 }}>{p.stage?.spheres?.[key]}</span>
+                      <div key={key} style={{ display:'flex', alignItems:'center', gap:4, fontSize:13, color:C.text2 }}>
+                        <span style={{ fontSize:15 }}>{meta.icon}</span>
+                        <span style={{ color:meta.color, fontWeight:600, fontSize:13 }}>{p.stage?.spheres?.[key]}</span>
                       </div>
                     ))}
                   </div>
@@ -709,10 +721,10 @@ function CycleTimeline({ dob, onYearSelect }) {
                             borderRadius:6, border:`1px solid ${meta.color}30`,
                             borderLeft:`3px solid ${meta.color}`,
                           }}>
-                            <div style={{ fontSize:11, fontWeight:600, color:meta.color, marginBottom:2 }}>
+                            <div style={{ fontSize:13, fontWeight:700, color:meta.color, marginBottom:3 }}>
                               {meta.icon} {meta.label}
                             </div>
-                            <div style={{ fontSize:12, color:C.text1, lineHeight:1.4 }}>
+                            <div style={{ fontSize:14, color:C.text1, lineHeight:1.5, fontFamily:"'Crimson Pro',serif" }}>
                               {p.stage?.spheres?.[key]}
                             </div>
                           </div>
@@ -722,8 +734,8 @@ function CycleTimeline({ dob, onYearSelect }) {
                         background:'rgba(107,16,16,0.04)', borderRadius:6,
                         borderLeft:`3px solid ${C.error}` }}>
                         <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9,
-                          color:C.error, marginBottom:2, letterSpacing:1 }}>⚠ КРИТИЧЕСКИЙ МОМЕНТ</div>
-                        <div style={{ fontSize:12, color:C.text2 }}>{p.stage?.critical}</div>
+                          color:C.error, marginBottom:4, letterSpacing:1 }}>⚠ КРИТИЧЕСКИЙ МОМЕНТ</div>
+                        <div style={{ fontSize:14, color:C.text2, fontFamily:"'Crimson Pro',serif", lineHeight:1.5 }}>{p.stage?.critical}</div>
                       </div>
                       <div style={{ marginTop:6, padding:'8px 10px',
                         background:`rgba(10,37,64,0.04)`, borderRadius:6,
@@ -1151,4 +1163,4 @@ export function ProfileSection() {
       )}
     </div>
   );
-          }
+    }
