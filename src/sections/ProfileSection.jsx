@@ -145,7 +145,8 @@ function InnerAccordion({ title, children, defaultOpen = false }) {
   );
 }
 
-// ─── FLIP CARD — blueprint стиль с сохранёнными картинками ───
+// ─── FLIP CARD — лицевая: только картинка + название
+//                оборот: пергаментный фон, читаемый текст ───
 function FlipCardBlock({ title, frontImage, accentColor, children, minHeight = 260, frontContent }) {
   const [flipped, setFlipped] = useState(false);
   const [imgError, setImgError] = useState(false);
@@ -173,7 +174,7 @@ function FlipCardBlock({ title, frontImage, accentColor, children, minHeight = 2
           cursor:'pointer', borderRadius:12,
         }}
       >
-        {/* ── ЛИЦЕВАЯ СТОРОНА ── */}
+        {/* ── ЛИЦЕВАЯ СТОРОНА — только картинка + название ── */}
         <div style={{
           position:'absolute', inset:0,
           backfaceVisibility:'hidden',
@@ -182,13 +183,8 @@ function FlipCardBlock({ title, frontImage, accentColor, children, minHeight = 2
           border:`2px solid ${C.line}`,
           boxShadow:`0 4px 16px rgba(10,37,64,0.12), inset 0 1px 0 rgba(255,255,255,0.9)`,
           display:'flex', flexDirection:'column',
-          alignItems:'center', justifyContent:'flex-start',
-          padding:12, boxSizing:'border-box',
-          // Горизонтальные линейки как на пергаменте
-          backgroundImage:`
-            linear-gradient(160deg, ${C.bgCard} 0%, ${C.bgCard2} 100%),
-            repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(10,37,64,0.04) 28px)
-          `,
+          alignItems:'center', justifyContent:'center',
+          padding:'16px 12px 14px', boxSizing:'border-box',
         }}>
           {/* Угловые маркеры */}
           <div style={{ position:'absolute', top:6, left:6, width:12, height:12,
@@ -202,67 +198,53 @@ function FlipCardBlock({ title, frontImage, accentColor, children, minHeight = 2
             fontFamily:"'JetBrains Mono',monospace",
             fontSize:7, color:`rgba(10,37,64,0.35)`,
             letterSpacing:1.5, textTransform:'uppercase',
-          }}>перевернуть →</div>
+          }}>подробнее →</div>
 
-          {/* Картинка — без изменений */}
+          {/* ✅ Картинка — крупная, без мелкого контента рядом */}
           {!imgError && frontImage ? (
             <img
               src={frontImage} alt={title}
-              style={{ width:'100%', maxWidth:200, height:'auto', objectFit:'contain', marginBottom:8, flexShrink:0, pointerEvents:'none', marginTop:16 }}
+              style={{
+                width:'100%', maxWidth:180, height:'auto',
+                objectFit:'contain', marginBottom:14,
+                flexShrink:0, pointerEvents:'none',
+              }}
               onError={() => setImgError(true)}
             />
           ) : (
-            <div style={{ fontSize:52, marginBottom:8, opacity:0.35, color:C.text3, marginTop:16 }}>
+            <div style={{ fontSize:64, marginBottom:14, opacity:0.5, color:C.text3 }}>
               {getFallbackEmoji()}
             </div>
           )}
 
-          {/* Заголовок */}
-          <div style={{ textAlign:'center', marginBottom:8, width:'100%' }}>
-            <div style={{
-              fontFamily:"'Cinzel',serif",
-              fontSize:15, color:C.navy,
-              letterSpacing:1.5, fontWeight:700,
-              textTransform:'uppercase',
-              borderBottom:`1px solid ${C.lineS}`,
-              paddingBottom:6, marginBottom:6,
-            }}>{title}</div>
-          </div>
-
-          {/* Контент лицевой */}
-          {frontContent && (
-            <div style={{ width:'100%', textAlign:'center', flex:1, overflow:'hidden',
-              display:'flex', flexDirection:'column', justifyContent:'center' }}>
-              {frontContent}
-            </div>
-          )}
-          {!frontContent && (
-            <div style={{
-              fontSize:10, color:C.text3, marginTop:4,
-              fontFamily:"'JetBrains Mono',monospace",
-              letterSpacing:1,
-            }}>Нажмите для деталей</div>
-          )}
+          {/* ✅ Только название — крупно и красиво */}
+          <div style={{
+            fontFamily:"'Cinzel',serif",
+            fontSize:16, color:C.navy,
+            letterSpacing:2, fontWeight:700,
+            textTransform:'uppercase',
+            textAlign:'center',
+            lineHeight:1.3,
+          }}>{title}</div>
         </div>
 
-        {/* ── ОБОРОТНАЯ СТОРОНА ── */}
+        {/* ── ОБОРОТНАЯ СТОРОНА — пергамент, читаемый текст ── */}
         <div style={{
           position:'absolute', inset:0,
           backfaceVisibility:'hidden',
           transform:'rotateY(180deg)',
           borderRadius:12, overflow:'hidden',
-          background:`linear-gradient(160deg, ${C.navy} 0%, ${C.navyMid} 100%)`,
+          // ✅ Светлый пергаментный фон вместо тёмно-синего
+          background:`linear-gradient(160deg, ${C.bgCard} 0%, ${C.bgCard2} 100%)`,
           border:`2px solid ${C.goldDeep}`,
           padding:16,
           display:'flex', flexDirection:'column',
           backgroundImage:`
-            linear-gradient(160deg, ${C.navy} 0%, ${C.navyMid} 100%),
-            linear-gradient(rgba(212,175,55,0.06) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(212,175,55,0.06) 1px, transparent 1px)
+            linear-gradient(160deg, ${C.bgCard} 0%, ${C.bgCard2} 100%),
+            repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(10,37,64,0.04) 28px)
           `,
-          backgroundSize:'100%, 20px 20px, 20px 20px',
         }}>
-          {/* Угловые маркеры */}
+          {/* Угловые маркеры золотые */}
           <div style={{ position:'absolute', top:6, left:6, width:12, height:12,
             borderTop:`2px solid ${C.gold}`, borderLeft:`2px solid ${C.gold}` }} />
           <div style={{ position:'absolute', bottom:6, right:6, width:12, height:12,
@@ -272,20 +254,27 @@ function FlipCardBlock({ title, frontImage, accentColor, children, minHeight = 2
           <div style={{
             position:'absolute', top:8, right:10,
             fontFamily:"'JetBrains Mono',monospace",
-            fontSize:7, color:`rgba(212,175,55,0.45)`,
+            fontSize:7, color:`rgba(10,37,64,0.35)`,
             letterSpacing:1.5, textTransform:'uppercase',
-          }}>← вернуть</div>
+          }}>← назад</div>
 
+          {/* Заголовок оборота — navy на пергаменте */}
           <h3 style={{
             fontFamily:"'Cinzel',serif",
-            fontSize:14, color:C.goldPale,
+            fontSize:14, color:C.navy,
             margin:'0 0 12px 0',
             paddingBottom:8,
-            borderBottom:`1px solid rgba(212,175,55,0.25)`,
+            borderBottom:`1.5px solid ${C.line}`,
             letterSpacing:1.5, textTransform:'uppercase',
           }}>{title}</h3>
 
-          <div style={{ overflowY:'auto', flex:1, fontSize:13, lineHeight:1.65, color:'rgba(240,220,144,0.85)' }}>
+          {/* ✅ Весь контент — frontContent + children — на обороте */}
+          <div style={{ overflowY:'auto', flex:1, fontSize:13, lineHeight:1.65, color:C.text1 }}>
+            {frontContent && (
+              <div style={{ marginBottom: children ? 14 : 0 }}>
+                {frontContent}
+              </div>
+            )}
             {children}
           </div>
         </div>
@@ -1162,4 +1151,4 @@ export function ProfileSection() {
       )}
     </div>
   );
-      }
+          }
