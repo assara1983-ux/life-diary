@@ -123,7 +123,7 @@ function FlipCard({ front, back }) {
               position:'absolute', inset:0,
               width:'100%', height:'100%',
               objectFit:'cover',
-              opacity: 0.55, // ✅ было 0.35 — теперь видна
+              opacity: 0.85,
             }}
             onError={e => { e.target.style.display = 'none'; }}
           />
@@ -131,9 +131,9 @@ function FlipCard({ front, back }) {
           {/* ✅ Пергаментный оверлей — более прозрачный чтобы картинка просвечивала */}
           <div style={{
             position:'absolute', inset:0,
-            background:'linear-gradient(160deg, rgba(245,232,199,0.72) 0%, rgba(232,217,184,0.68) 100%)',
+            background:'linear-gradient(160deg, rgba(245,232,199,0.45) 0%, rgba(232,217,184,0.42) 100%)',
             backgroundImage:`
-              linear-gradient(160deg, rgba(245,232,199,0.72) 0%, rgba(232,217,184,0.68) 100%),
+              linear-gradient(160deg, rgba(245,232,199,0.45) 0%, rgba(232,217,184,0.42) 100%),
               linear-gradient(rgba(10,37,64,0.04) 1px, transparent 1px),
               linear-gradient(90deg, rgba(10,37,64,0.04) 1px, transparent 1px)
             `,
@@ -173,7 +173,7 @@ function FlipCard({ front, back }) {
               position:'absolute', inset:0,
               width:'100%', height:'100%',
               objectFit:'cover',
-              opacity:0.40, // ✅ было 0.25
+              opacity:0.75,
             }}
             onError={e => { e.target.style.display = 'none'; }}
           />
@@ -181,9 +181,9 @@ function FlipCard({ front, back }) {
           {/* Тёмно-синий фон */}
           <div style={{
             position:'absolute', inset:0,
-            background:'linear-gradient(160deg, rgba(10,37,64,0.85) 0%, rgba(30,58,95,0.80) 100%)',
+            background:'linear-gradient(160deg, rgba(10,37,64,0.60) 0%, rgba(30,58,95,0.55) 100%)',
             backgroundImage:`
-              linear-gradient(160deg, rgba(10,37,64,0.85) 0%, rgba(30,58,95,0.80) 100%),
+              linear-gradient(160deg, rgba(10,37,64,0.60) 0%, rgba(30,58,95,0.55) 100%),
               linear-gradient(rgba(212,175,55,0.06) 1px, transparent 1px),
               linear-gradient(90deg, rgba(212,175,55,0.06) 1px, transparent 1px)
             `,
@@ -251,7 +251,7 @@ function ScheduleBlock({ todayItems, today, tasks, setTasks, profile, now }) {
             position:'absolute', inset:0,
             width:'100%', height:'100%',
             objectFit:'cover',
-            opacity:0.35, // ✅ было 0.12 — теперь видна
+            opacity:0.70,
           }}
         />
       )}
@@ -259,7 +259,7 @@ function ScheduleBlock({ todayItems, today, tasks, setTasks, profile, now }) {
       {/* ✅ Пергаментный фон — более прозрачный */}
       <div style={{
         position:'absolute', inset:0,
-        background:'linear-gradient(160deg, rgba(250,243,224,0.82) 0%, rgba(240,230,205,0.80) 100%)',
+        background:'linear-gradient(160deg, rgba(250,243,224,0.55) 0%, rgba(240,230,205,0.52) 100%)',
       }} />
 
       {/* Содержимое */}
