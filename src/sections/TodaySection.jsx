@@ -4,277 +4,739 @@ import { useApp } from "../store/AppContext";
 import { Icon } from "../components/Icon";
 import { getProfileInsights, getMoonDay, getCurrentMeridian } from "../utils/knowledgeEngine";
 
-// ─── УТИЛИТА: локальная дата без UTC-сдвига ───
+// ─── УТИЛИТЫ ───
 function localDateStr(date) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
 }
 
-// ─── УТИЛИТА: единая логика проверки задачи на день ───
 function isDueOnDay(task, dStr) {
   const d = new Date(dStr + 'T00:00:00');
   if (!task.freq) return false;
   if (task.freq === 'daily') return true;
   if (task.freq === 'workdays') { const dn = d.getDay(); return dn >= 1 && dn <= 5; }
-  if (task.freq.startsWith('weekly:')) {
-    return task.freq.split(':')[1].split(',').map(Number).includes(d.getDay());
-  }
+  if (task.freq.startsWith('weekly:')) return task.freq.split(':')[1].split(',').map(Number).includes(d.getDay());
   if (task.freq.startsWith('every:')) {
     const n = parseInt(task.freq.split(':')[1]);
     const start = task.beautyStartDate || task.createdAt?.split('T')[0] || dStr;
     if (dStr < start) return false;
-    const diffDays = Math.floor((new Date(dStr + 'T00:00:00') - new Date(start + 'T00:00:00')) / 86400000);
+    const diffDays = Math.floor((new Date(dStr+'T00:00:00') - new Date(start+'T00:00:00')) / 86400000);
     return diffDays >= 0 && diffDays % n === 0;
   }
-  if (task.freq.startsWith('monthly:')) {
-    return task.freq.split(':')[1].split(',').map(Number).includes(d.getDate());
-  }
+  if (task.freq.startsWith('monthly:')) return task.freq.split(':')[1].split(',').map(Number).includes(d.getDate());
   return false;
 }
 
-// ─── УТИЛИТА: добавить минуты к времени ───
 function addMinutes(time, mins) {
   if (!time) return '';
   const [h, m] = time.split(':').map(Number);
   const total = h * 60 + m + mins;
-  return `${String(Math.floor(total / 60) % 24).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
+  return `${String(Math.floor(total/60)%24).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`;
 }
 
-// ─── УТИЛИТА: группировка beauty-задач в блоки «Уход» ───
 function groupBeautyTasks(tasks) {
   if (!tasks.length) return [];
-  const sorted = [...tasks].sort((a, b) => (a.preferredTime || '').localeCompare(b.preferredTime || ''));
+  const sorted = [...tasks].sort((a,b) => (a.preferredTime||'').localeCompare(b.preferredTime||''));
   const blocks = [];
   let current = [sorted[0]];
   for (let i = 1; i < sorted.length; i++) {
-    const prev = current[current.length - 1];
-    const prevEnd = addMinutes(prev.preferredTime, prev.beautyDuration || 10);
+    const prev = current[current.length-1];
+    const prevEnd = addMinutes(prev.preferredTime, prev.beautyDuration||10);
     const gap = (() => {
       if (!prev.preferredTime || !sorted[i].preferredTime) return 999;
-      const [ph, pm] = prevEnd.split(':').map(Number);
-      const [nh, nm] = sorted[i].preferredTime.split(':').map(Number);
-      return (nh * 60 + nm) - (ph * 60 + pm);
+      const [ph,pm] = prevEnd.split(':').map(Number);
+      const [nh,nm] = sorted[i].preferredTime.split(':').map(Number);
+      return (nh*60+nm)-(ph*60+pm);
     })();
-    if (gap <= 15) { current.push(sorted[i]); }
+    if (gap <= 15) current.push(sorted[i]);
     else { blocks.push(current); current = [sorted[i]]; }
   }
   blocks.push(current);
   return blocks;
 }
 
+// ─── ЛУННЫЕ ФАЗЫ ───
+const MOON_PHASES = [
+  { days:[1],      phase:'Новолуние',       energy:'🌑', color:'#1E3A5F',
+    rec:'Начинайте новые проекты. Ставьте намерения на месяц.',
+    forbid:'Хирургические операции, большие финансовые решения.' },
+  { days:[2,3,4],  phase:'Растущий серп',   energy:'🌒', color:'#2C4F7A',
+    rec:'Активно действуйте, учитесь новому, налаживайте контакты.',
+    forbid:'Откладывать важные дела, пассивность.' },
+  { days:[5,6,7],  phase:'Первая четверть', energy:'🌓', color:'#3D6B9C',
+    rec:'Решайте конфликты, принимайте решения, действуйте решительно.',
+    forbid:'Избегать конфронтации, быть нерешительным.' },
+  { days:[8,9,10,11], phase:'Прибывающая', energy:'🌔', color:'#4A7AB5',
+    rec:'Максимум активности, переговоры, творческая работа.',
+    forbid:'Переедание — всё хорошо усваивается, лишнее тоже.' },
+  { days:[12,13,14,15,16], phase:'Полнолуние', energy:'🌕', color:'#D4AF37',
+    rec:'Медитация, творчество, интуиция на пике. Завершайте дела.',
+    forbid:'Алкоголь, ссоры — эмоции обострены.' },
+  { days:[17,18,19,20], phase:'Убывающая',  energy:'🌖', color:'#8B6914',
+    rec:'Избавляйтесь от лишнего, очищение, анализ прошедшего.',
+    forbid:'Начинать новое, брать кредиты.' },
+  { days:[21,22,23], phase:'Последняя четверть', energy:'🌗', color:'#6B7E8F',
+    rec:'Отдых, завершение, прощание с ненужным.',
+    forbid:'Важные начинания, операции.' },
+  { days:[24,25,26,27,28,29,30], phase:'Старый месяц', energy:'🌘', color:'#4A6480',
+    rec:'Глубокий отдых, медитация, подготовка к новому циклу.',
+    forbid:'Важные решения, хирургия, большие траты.' },
+];
+
+function getMoonPhase(day) {
+  return MOON_PHASES.find(p => p.days.includes(day)) || MOON_PHASES[0];
+}
+
+// ─── ЧАСЫ РАСПИСАНИЯ ───
+const SCHEDULE_HOURS = [
+  '06:00','07:00','08:00','09:00','10:00','11:00',
+  '12:00','13:00','14:00','15:00','16:00','17:00',
+  '18:00','19:00','20:00','21:00','22:00','23:00',
+];
+
+// ─── КАРТОЧКА-ПЕРЕВЁРТЫШ ───
+function FlipCard({ front, back }) {
+  const [flipped, setFlipped] = useState(false);
+
+  return (
+    <div
+      onClick={() => setFlipped(f => !f)}
+      style={{
+        perspective: 1000,
+        cursor: 'pointer',
+        marginBottom: 16,
+        userSelect: 'none',
+      }}
+    >
+      <div style={{
+        position: 'relative',
+        transformStyle: 'preserve-3d',
+        transition: 'transform 0.7s cubic-bezier(0.4, 0.2, 0.2, 1)',
+        transform: flipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
+        minHeight: 280,
+      }}>
+        {/* Лицевая сторона */}
+        <div style={{
+          position: 'absolute', inset: 0,
+          backfaceVisibility: 'hidden',
+          WebkitBackfaceVisibility: 'hidden',
+          borderRadius: 14,
+          overflow: 'hidden',
+          boxShadow: '0 6px 24px rgba(10,37,64,0.18), 0 0 0 1.5px rgba(10,37,64,0.22)',
+        }}>
+          {/* Фоновое фото */}
+          <img
+            src="/sections/today-front.jpg"
+            alt=""
+            style={{
+              position: 'absolute', inset: 0,
+              width: '100%', height: '100%',
+              objectFit: 'cover', opacity: 0.35,
+            }}
+            onError={e => e.target.style.opacity = 0}
+          />
+          {/* Пергаментный оверлей */}
+          <div style={{
+            position: 'absolute', inset: 0,
+            background: 'linear-gradient(160deg, rgba(245,232,199,0.92) 0%, rgba(232,217,184,0.90) 100%)',
+            backgroundImage: `
+              linear-gradient(160deg, rgba(245,232,199,0.92) 0%, rgba(232,217,184,0.90) 100%),
+              linear-gradient(rgba(10,37,64,0.05) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(10,37,64,0.05) 1px, transparent 1px)
+            `,
+            backgroundSize: '100%, 20px 20px, 20px 20px',
+          }} />
+
+          {/* Угловые маркеры */}
+          {[{t:8,l:8,bt:true,bl:true},{b:8,r:8,bb:true,br:true}].map((s,i) => (
+            <div key={i} style={{
+              position:'absolute', top:s.t, left:s.l, bottom:s.b, right:s.r,
+              width:14, height:14,
+              borderTop:    s.bt ? '2px solid #D4AF37' : undefined,
+              borderLeft:   s.bl ? '2px solid #D4AF37' : undefined,
+              borderBottom: s.bb ? '2px solid #D4AF37' : undefined,
+              borderRight:  s.br ? '2px solid #D4AF37' : undefined,
+              opacity: 0.8, pointerEvents: 'none',
+            }} />
+          ))}
+
+          {/* Хинт переворота */}
+          <div style={{
+            position: 'absolute', top: 10, right: 14,
+            fontFamily: "'JetBrains Mono', monospace",
+            fontSize: 8, color: 'rgba(10,37,64,0.45)',
+            letterSpacing: 1.5, textTransform: 'uppercase',
+          }}>перевернуть →</div>
+
+          {front}
+        </div>
+
+        {/* Оборотная сторона */}
+        <div style={{
+          position: 'absolute', inset: 0,
+          backfaceVisibility: 'hidden',
+          WebkitBackfaceVisibility: 'hidden',
+          transform: 'rotateY(180deg)',
+          borderRadius: 14,
+          overflow: 'hidden',
+          boxShadow: '0 6px 24px rgba(10,37,64,0.22), 0 0 0 2px rgba(212,175,55,0.4)',
+        }}>
+          {/* Тёмно-синий фон как на картинке */}
+          <img
+            src="/sections/today-back.jpg"
+            alt=""
+            style={{
+              position: 'absolute', inset: 0,
+              width: '100%', height: '100%',
+              objectFit: 'cover', opacity: 0.25,
+            }}
+            onError={e => e.target.style.opacity = 0}
+          />
+          <div style={{
+            position: 'absolute', inset: 0,
+            background: 'linear-gradient(160deg, #0A2540 0%, #1E3A5F 100%)',
+            backgroundImage: `
+              linear-gradient(160deg, #0A2540 0%, #1E3A5F 100%),
+              linear-gradient(rgba(212,175,55,0.07) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(212,175,55,0.07) 1px, transparent 1px)
+            `,
+            backgroundSize: '100%, 20px 20px, 20px 20px',
+          }} />
+
+          {/* Золотые угловые маркеры */}
+          {[{t:8,l:8,bt:true,bl:true},{b:8,r:8,bb:true,br:true}].map((s,i) => (
+            <div key={i} style={{
+              position:'absolute', top:s.t, left:s.l, bottom:s.b, right:s.r,
+              width:14, height:14,
+              borderTop:    s.bt ? '2px solid #D4AF37' : undefined,
+              borderLeft:   s.bl ? '2px solid #D4AF37' : undefined,
+              borderBottom: s.bb ? '2px solid #D4AF37' : undefined,
+              borderRight:  s.br ? '2px solid #D4AF37' : undefined,
+              pointerEvents: 'none',
+            }} />
+          ))}
+
+          {/* Хинт */}
+          <div style={{
+            position: 'absolute', top: 10, right: 14,
+            fontFamily: "'JetBrains Mono', monospace",
+            fontSize: 8, color: 'rgba(212,175,55,0.5)',
+            letterSpacing: 1.5, textTransform: 'uppercase',
+          }}>← вернуть</div>
+
+          {back}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── РАСПИСАНИЕ ───
+function ScheduleBlock({ todayItems, today, tasks, setTasks, profile, now }) {
+  const [notes, setNotes] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(`ld_schedule_${today}`) || '{}'); }
+    catch { return {}; }
+  });
+  const [imgOk, setImgOk] = useState(true);
+
+  const saveNote = (hour, val) => {
+    const next = { ...notes, [hour]: val };
+    setNotes(next);
+    try { localStorage.setItem(`ld_schedule_${today}`, JSON.stringify(next)); } catch {}
+  };
+
+  // Сопоставляем задачи с часами
+  const getItemsForHour = (hour) => {
+    const h = parseInt(hour);
+    return todayItems.filter(item => {
+      if (!item.time) return false;
+      const ih = parseInt(item.time.split(':')[0]);
+      return ih === h;
+    });
+  };
+
+  const currentHour = now.getHours();
+
+  return (
+    <div style={{
+      position: 'relative',
+      borderRadius: 14,
+      overflow: 'hidden',
+      border: '2px solid rgba(10,37,64,0.28)',
+      boxShadow: '0 6px 24px rgba(10,37,64,0.14)',
+      marginBottom: 16,
+    }}>
+      {/* Фон — расписание-картинка */}
+      {imgOk && (
+        <img
+          src="/sections/today-schedule.jpg"
+          alt=""
+          onError={() => setImgOk(false)}
+          style={{
+            position: 'absolute', inset: 0,
+            width: '100%', height: '100%',
+            objectFit: 'cover', opacity: 0.12,
+          }}
+        />
+      )}
+
+      {/* Пергаментный фон */}
+      <div style={{
+        position: 'absolute', inset: 0,
+        background: 'linear-gradient(160deg, rgba(250,243,224,0.97) 0%, rgba(240,230,205,0.97) 100%)',
+      }} />
+
+      {/* Содержимое */}
+      <div style={{ position: 'relative', zIndex: 1 }}>
+
+        {/* Заголовок */}
+        <div style={{
+          padding: '16px 18px 12px',
+          borderBottom: '2px solid rgba(10,37,64,0.18)',
+          background: 'rgba(10,37,64,0.04)',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        }}>
+          <div>
+            <div style={{
+              fontFamily: "'JetBrains Mono', monospace",
+              fontSize: 9, letterSpacing: 3,
+              color: 'rgba(10,37,64,0.45)',
+              textTransform: 'uppercase', marginBottom: 3,
+            }}>Daily Schedule</div>
+            <div style={{
+              fontFamily: "'Cinzel', serif",
+              fontSize: 18, fontWeight: 700,
+              color: '#0A2540', letterSpacing: 2.5,
+              textTransform: 'uppercase',
+            }}>Расписание дня</div>
+          </div>
+          {/* Компас-иконка */}
+          <div style={{
+            width: 40, height: 40,
+            border: '2px solid rgba(10,37,64,0.25)',
+            borderRadius: '50%',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 20, color: '#D4AF37',
+            boxShadow: '0 2px 8px rgba(10,37,64,0.10)',
+          }}>🧭</div>
+        </div>
+
+        {/* Золотая линия */}
+        <div style={{
+          height: 1.5,
+          background: 'linear-gradient(90deg, transparent, #D4AF37 20%, #D4AF37 80%, transparent)',
+          opacity: 0.5,
+        }} />
+
+        {/* Строки расписания */}
+        <div style={{ padding: '8px 0 16px' }}>
+          {SCHEDULE_HOURS.map((hour, i) => {
+            const items = getItemsForHour(hour);
+            const isNow = parseInt(hour) === currentHour;
+            const isPast = parseInt(hour) < currentHour;
+            const hasNote = notes[hour]?.trim();
+
+            return (
+              <div key={hour} style={{
+                display: 'flex', alignItems: 'stretch',
+                borderBottom: i < SCHEDULE_HOURS.length - 1
+                  ? '1px solid rgba(10,37,64,0.10)'
+                  : 'none',
+                background: isNow
+                  ? 'rgba(212,175,55,0.08)'
+                  : 'transparent',
+                transition: 'background 0.2s',
+              }}>
+                {/* Час */}
+                <div style={{
+                  width: 52, flexShrink: 0,
+                  padding: '10px 8px 10px 16px',
+                  fontFamily: "'JetBrains Mono', monospace",
+                  fontSize: isNow ? 12 : 11,
+                  fontWeight: isNow ? 700 : 400,
+                  color: isNow ? '#D4AF37' : isPast ? 'rgba(10,37,64,0.30)' : 'rgba(10,37,64,0.55)',
+                  letterSpacing: 0.5,
+                  display: 'flex', alignItems: 'center',
+                  borderRight: `2px solid ${isNow ? 'rgba(212,175,55,0.6)' : 'rgba(10,37,64,0.12)'}`,
+                }}>
+                  {hour}
+                </div>
+
+                {/* Содержимое строки */}
+                <div style={{
+                  flex: 1, padding: '6px 14px',
+                  display: 'flex', flexDirection: 'column', gap: 3,
+                  minHeight: 42,
+                  justifyContent: 'center',
+                }}>
+                  {/* Задачи из плана */}
+                  {items.map((item, j) => {
+                    if (item.type === 'anchor') return (
+                      <div key={j} style={{
+                        fontSize: 12, color: 'rgba(10,37,64,0.45)',
+                        fontFamily: "'Cormorant Infant', serif",
+                        fontStyle: 'italic',
+                      }}>{item.title}</div>
+                    );
+                    if (item.type === 'task') {
+                      const done = item.task.doneDate === today;
+                      return (
+                        <div key={j} style={{
+                          display: 'flex', alignItems: 'center', gap: 6,
+                        }}>
+                          <div style={{
+                            width: 14, height: 14, borderRadius: 3, flexShrink: 0,
+                            border: `1.5px solid ${done ? '#2D5A3D' : 'rgba(10,37,64,0.30)'}`,
+                            background: done ? '#2D5A3D' : 'transparent',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: 9, color: '#fff',
+                          }}>
+                            {done ? '✓' : ''}
+                          </div>
+                          <span style={{
+                            fontSize: 13,
+                            color: done ? 'rgba(10,37,64,0.35)' : '#0A2540',
+                            textDecoration: done ? 'line-through' : 'none',
+                            fontFamily: "'Crimson Pro', serif",
+                          }}>{item.task.title}</span>
+                        </div>
+                      );
+                    }
+                    if (item.type === 'beauty') return (
+                      <div key={j} style={{
+                        fontSize: 12, color: '#6B1E3A',
+                        fontFamily: "'Crimson Pro', serif",
+                      }}>✨ {item.block.length > 1 ? `Уход (${item.block.length})` : item.block[0].title}</div>
+                    );
+                    return null;
+                  })}
+
+                  {/* Поле для заметки */}
+                  {items.length === 0 && (
+                    <input
+                      value={notes[hour] || ''}
+                      onChange={e => saveNote(hour, e.target.value)}
+                      placeholder="·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·"
+                      onClick={e => e.stopPropagation()}
+                      style={{
+                        border: 'none', outline: 'none',
+                        background: 'transparent',
+                        fontFamily: "'Crimson Pro', serif",
+                        fontSize: 13,
+                        color: isPast ? 'rgba(10,37,64,0.30)' : '#0A2540',
+                        width: '100%',
+                        '::placeholder': { color: 'rgba(10,37,64,0.15)' },
+                      }}
+                    />
+                  )}
+
+                  {/* Если есть задачи И хочется добавить заметку */}
+                  {items.length > 0 && hasNote && (
+                    <div style={{
+                      fontSize: 11, color: 'rgba(10,37,64,0.45)',
+                      fontFamily: "'Cormorant Infant', serif",
+                      fontStyle: 'italic',
+                    }}>{notes[hour]}</div>
+                  )}
+                </div>
+
+                {/* Текущий час — маркер */}
+                {isNow && (
+                  <div style={{
+                    width: 6, flexShrink: 0,
+                    background: 'linear-gradient(180deg, #D4AF37, rgba(212,175,55,0.3))',
+                  }} />
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Лотос снизу */}
+        <div style={{
+          textAlign: 'center', padding: '8px 0 14px',
+          borderTop: '1px solid rgba(10,37,64,0.10)',
+        }}>
+          <div style={{ fontSize: 20, opacity: 0.25 }}>🪷</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── ГЛАВНЫЙ КОМПОНЕНТ ───
 export function TodaySection() {
   const { profile, tasks, setTasks } = useApp();
   const [now, setNow] = useState(new Date());
 
-  const insights = getProfileInsights(profile) || {};
-  const moonDay = getMoonDay(now) || 1;
-  const meridian = getCurrentMeridian(now);
+  const insights   = getProfileInsights(profile) || {};
+  const moonDay    = getMoonDay(now) || 1;
+  const meridian   = getCurrentMeridian(now);
+  const moonPhase  = getMoonPhase(moonDay);
 
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 60000);
     return () => clearInterval(timer);
   }, []);
 
-  // ─── ЛОКАЛЬНАЯ дата — без UTC-сдвига ───
   const today = localDateStr(now);
 
-  // ─── Формируем план на сегодня ───
   const todayItems = useMemo(() => {
     const result = [];
-
     const regularTasks = tasks.filter(t =>
-      t.section !== 'beauty' &&
-      t.preferredTime &&
+      t.section !== 'beauty' && t.preferredTime &&
       (isDueOnDay(t, today) || t.doneDate === today)
     );
-    regularTasks.forEach(t => result.push({ type: 'task', time: t.preferredTime, task: t }));
+    regularTasks.forEach(t => result.push({ type:'task', time:t.preferredTime, task:t }));
 
     const beautyDue = tasks.filter(t =>
-      t.section === 'beauty' &&
-      t.preferredTime &&
+      t.section === 'beauty' && t.preferredTime &&
       (isDueOnDay(t, today) || t.doneDate === today)
     );
     const beautyBlocks = groupBeautyTasks(beautyDue);
     beautyBlocks.forEach(block => {
       const startTime = block[0].preferredTime;
-      const lastTask = block[block.length - 1];
-      const endTime = addMinutes(lastTask.preferredTime, lastTask.beautyDuration || 10);
-      const allDone = block.every(t => t.doneDate === today);
-      result.push({ type: 'beauty', time: startTime, endTime, block, allDone });
+      const lastTask  = block[block.length-1];
+      const endTime   = addMinutes(lastTask.preferredTime, lastTask.beautyDuration||10);
+      const allDone   = block.every(t => t.doneDate === today);
+      result.push({ type:'beauty', time:startTime, endTime, block, allDone });
     });
 
-    if (profile?.wake) result.push({ type: 'anchor', time: profile.wake, title: '☀️ Подъём' });
-    if (profile?.sleep) result.push({ type: 'anchor', time: profile.sleep, title: '🌙 Отбой' });
-    const isWorkDay = (profile?.workDaysList || [1, 2, 3, 4, 5]).includes(now.getDay());
-    if (isWorkDay && profile?.workStart) result.push({ type: 'anchor', time: profile.workStart, title: '💼 Работа' });
-    if (isWorkDay && profile?.workEnd) result.push({ type: 'anchor', time: profile.workEnd, title: '💼 Конец работы' });
+    if (profile?.wake)      result.push({ type:'anchor', time:profile.wake,      title:'☀️ Подъём' });
+    if (profile?.sleep)     result.push({ type:'anchor', time:profile.sleep,     title:'🌙 Отбой' });
+    const isWorkDay = (profile?.workDaysList||[1,2,3,4,5]).includes(now.getDay());
+    if (isWorkDay && profile?.workStart) result.push({ type:'anchor', time:profile.workStart, title:'💼 Работа' });
+    if (isWorkDay && profile?.workEnd)   result.push({ type:'anchor', time:profile.workEnd,   title:'💼 Конец работы' });
 
-    return result.sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+    return result.sort((a,b) => (a.time||'').localeCompare(b.time||''));
   }, [tasks, today, profile, now]);
 
   const getChronoAdvice = () => {
-    const type = profile?.chronotype || "🕊️ Голубь";
+    const type = profile?.chronotype || '🕊️ Голубь';
     const hour = now.getHours();
-    if (type.includes("Сова")) return hour >= 14 ? "Сейчас ваш пик! Беритесь за сложные задачи." : "Утро для рутины. Пик энергии наступит вечером.";
-    if (type.includes("Жаворонок")) return hour < 12 ? "Идеальное время для аналитики и решений." : "Сложные дела на завтра. Время для отдыха.";
-    return "Сбалансированный ритм. Распределяйте нагрузку равномерно.";
+    if (type.includes('Сова'))       return hour >= 14 ? 'Сейчас ваш пик! Беритесь за сложные задачи.' : 'Утро для рутины. Пик энергии наступит вечером.';
+    if (type.includes('Жаворонок')) return hour < 12  ? 'Идеальное время для аналитики и решений.'    : 'Сложные дела на завтра. Время для отдыха.';
+    return 'Сбалансированный ритм. Распределяйте нагрузку равномерно.';
   };
 
-  const restriction = insights.moonRestriction?.forbidden || "Нет строгих запретов";
+  const restriction = insights.moonRestriction?.forbidden || 'Нет строгих запретов';
 
-  const toggleTask = (taskId) => {
-    setTasks(p => p.map(t => t.id === taskId
-      ? { ...t, doneDate: t.doneDate === today ? null : today, lastDone: t.doneDate === today ? t.lastDone : today }
-      : t
-    ));
-  };
+  // ─── ЛИЦЕВАЯ СТОРОНА ───
+  const frontContent = (
+    <div style={{ position:'relative', zIndex:1, padding:'24px 18px 20px' }}>
 
-  const toggleBeautyBlock = (block) => {
-    const allDone = block.every(t => t.doneDate === today);
-    setTasks(p => p.map(t => {
-      if (!block.find(b => b.id === t.id)) return t;
-      return { ...t, doneDate: allDone ? null : today, lastDone: allDone ? t.lastDone : today };
-    }));
-  };
+      {/* Лунный день */}
+      <div style={{
+        marginBottom: 18,
+        padding: '14px 16px',
+        background: `linear-gradient(135deg, ${moonPhase.color}18, ${moonPhase.color}08)`,
+        border: `1.5px solid ${moonPhase.color}44`,
+        borderRadius: 10,
+      }}>
+        <div style={{
+          fontFamily: "'JetBrains Mono', monospace",
+          fontSize: 9, letterSpacing: 3,
+          color: moonPhase.color, textTransform: 'uppercase',
+          marginBottom: 6, opacity: 0.8,
+        }}>Лунный цикл</div>
 
-  return (
-    <div className="page" style={{ position: "relative" }}>
-
-      {/* ─── 1. ВИТАЛ-СТАТУС ─── */}
-      <div className="g2" style={{ marginBottom: 16 }}>
-        <div className="card" style={{ borderLeft: "3px solid var(--blue)" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-            <Icon name="health" size={20} color="var(--blue)" />
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--text3)", letterSpacing: 1 }}>
-              АКТИВЕН СЕЙЧАС ({meridian.time})
-            </span>
-          </div>
-          <div style={{ fontFamily: "var(--font-serif)", fontSize: 16, fontWeight: 600, color: "var(--text1)" }}>
-            Меридиан {meridian.name}
-          </div>
-          <div style={{ fontFamily: "var(--font-italic)", fontSize: 12, color: "var(--text2)", marginTop: 4 }}>
-            ({meridian.sign})
-          </div>
-          <div className="ai-box" style={{ marginTop: 8, padding: 8 }}>
-            <div style={{ fontSize: 11, color: "var(--text2)", lineHeight: 1.4 }}>
-              💡 <strong>Совет:</strong> {meridian.advice}
+        <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom: 10 }}>
+          <span style={{ fontSize: 28 }}>{moonPhase.energy}</span>
+          <div>
+            <div style={{
+              fontFamily: "'Cinzel', serif",
+              fontSize: 18, fontWeight: 700,
+              color: '#0A2540', letterSpacing: 1.5,
+            }}>
+              {moonDay}-й лунный день
+            </div>
+            <div style={{
+              fontFamily: "'Cormorant Infant', serif",
+              fontSize: 14, fontStyle:'italic', color:'#1E3A5F',
+            }}>
+              {moonPhase.phase}
             </div>
           </div>
         </div>
 
-        <div className="card" style={{ borderLeft: restriction !== "Нет строгих запретов" ? "3px solid var(--error)" : "3px solid var(--gold)" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-            <Icon name="mental" size={20} color="var(--gold)" />
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--text3)", letterSpacing: 1 }}>
-              ЛУННЫЙ ЦИКЛ
-            </span>
+        {/* Полоска фазы */}
+        <div style={{
+          height: 4, background:'rgba(10,37,64,0.10)',
+          borderRadius: 2, overflow:'hidden', marginBottom: 10,
+        }}>
+          <div style={{
+            height:'100%',
+            width: `${Math.round((moonDay/30)*100)}%`,
+            background: `linear-gradient(90deg, ${moonPhase.color}, ${moonPhase.color}88)`,
+            borderRadius: 2,
+          }} />
+        </div>
+
+        <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+          <div style={{
+            padding:'7px 10px', borderRadius:7,
+            background:'rgba(45,90,61,0.08)',
+            border:'1px solid rgba(45,90,61,0.20)',
+            fontSize:12, lineHeight:1.5, color:'#1A4D2E',
+          }}>
+            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, letterSpacing:1.5, display:'block', marginBottom:2 }}>✦ РЕКОМЕНДУЮ</span>
+            {moonPhase.rec}
           </div>
-          <div style={{ fontFamily: "var(--font-serif)", fontSize: 16, fontWeight: 600, color: "var(--text1)" }}>
-            {moonDay}-й день
-          </div>
-          <div style={{ marginTop: 6, padding: 6, borderRadius: 4, background: restriction !== "Нет строгих запретов" ? "rgba(139,32,32,0.05)" : "rgba(200,164,90,0.05)", fontSize: 11, color: restriction !== "Нет строгих запретов" ? "var(--error)" : "var(--text2)", lineHeight: 1.4 }}>
-            ⚠️ <strong>Запрет:</strong> {restriction}
+          <div style={{
+            padding:'7px 10px', borderRadius:7,
+            background:'rgba(107,16,16,0.07)',
+            border:'1px solid rgba(107,16,16,0.18)',
+            fontSize:12, lineHeight:1.5, color:'#6B1010',
+          }}>
+            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, letterSpacing:1.5, display:'block', marginBottom:2 }}>⚠ ЗАПРЕТ</span>
+            {moonPhase.forbid}
           </div>
         </div>
       </div>
 
-      {/* ─── 2. ХРОНОТИП ─── */}
-      <div className="card" style={{ borderLeft: "3px solid var(--success)", marginBottom: 16 }}>
-        <div className="card-hd">
-          <div className="card-title">⏰ Окно продуктивности</div>
-          <span className="badge bgr">{profile?.chronotype || "🕊️ Голубь"}</span>
+      {/* Меридиан */}
+      <div style={{
+        padding:'14px 16px',
+        background:'rgba(10,37,64,0.05)',
+        border:'1.5px solid rgba(10,37,64,0.18)',
+        borderRadius:10,
+      }}>
+        <div style={{
+          fontFamily:"'JetBrains Mono',monospace",
+          fontSize:9, letterSpacing:3,
+          color:'rgba(10,37,64,0.50)', textTransform:'uppercase',
+          marginBottom:6,
+        }}>
+          Активный меридиан · {meridian.time}
         </div>
-        <div style={{ fontFamily: "var(--font-italic)", fontSize: 14, color: "var(--text1)", lineHeight: 1.5 }}>
+        <div style={{
+          fontFamily:"'Cinzel',serif",
+          fontSize:16, fontWeight:700, color:'#0A2540', letterSpacing:1.5,
+          marginBottom:4,
+        }}>
+          {meridian.name}
+        </div>
+        <div style={{
+          fontFamily:"'Cormorant Infant',serif",
+          fontSize:13, fontStyle:'italic', color:'#3A4E63',
+          marginBottom:8,
+        }}>
+          {meridian.sign}
+        </div>
+        <div style={{
+          padding:'7px 10px', borderRadius:7,
+          background:'rgba(212,175,55,0.10)',
+          border:'1px solid rgba(212,175,55,0.30)',
+          fontSize:12, lineHeight:1.5, color:'#1A2D40',
+        }}>
+          💡 {meridian.advice}
+        </div>
+      </div>
+    </div>
+  );
+
+  // ─── ОБОРОТНАЯ СТОРОНА ───
+  const backContent = (
+    <div style={{ position:'relative', zIndex:1, padding:'24px 18px 20px' }}>
+
+      <div style={{
+        fontFamily:"'JetBrains Mono',monospace",
+        fontSize:9, letterSpacing:3.5,
+        color:'rgba(212,175,55,0.60)', textTransform:'uppercase',
+        marginBottom:16,
+      }}>⚡ Окно продуктивности</div>
+
+      {/* Хронотип */}
+      <div style={{ marginBottom:16 }}>
+        <div style={{
+          display:'flex', alignItems:'center', gap:10, marginBottom:10,
+        }}>
+          <div style={{
+            padding:'5px 12px', borderRadius:20,
+            background:'rgba(212,175,55,0.15)',
+            border:'1px solid rgba(212,175,55,0.40)',
+            fontFamily:"'JetBrains Mono',monospace",
+            fontSize:10, color:'#D4AF37', letterSpacing:1.5,
+          }}>
+            {profile?.chronotype || '🕊️ Голубь'}
+          </div>
+        </div>
+
+        <div style={{
+          fontFamily:"'Cormorant Infant',serif",
+          fontSize:16, color:'rgba(245,232,199,0.90)',
+          lineHeight:1.6, marginBottom:14,
+          fontStyle:'italic',
+        }}>
           {getChronoAdvice()}
         </div>
       </div>
 
-      {/* ─── 3. ПЛАН НА СЕГОДНЯ ─── */}
-      <div className="card">
-        <div className="card-hd">
-          <div className="card-title">📅 План на сегодня</div>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--text3)" }}>
-            {todayItems.filter(i => i.type === 'task' && i.task?.doneDate === today).length +
-             todayItems.filter(i => i.type === 'beauty' && i.allDone).length} / {todayItems.filter(i => i.type !== 'anchor').length} выполнено
-          </span>
-        </div>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 12 }}>
-          {todayItems.length === 0 && (
-            <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--text3)', fontSize: 13 }}>
-              Задач на сегодня нет
+      {/* Лучшие часы */}
+      <div style={{
+        padding:'12px 14px',
+        background:'rgba(212,175,55,0.08)',
+        border:'1px solid rgba(212,175,55,0.25)',
+        borderRadius:10, marginBottom:14,
+      }}>
+        <div style={{
+          fontFamily:"'JetBrains Mono',monospace",
+          fontSize:9, letterSpacing:2, color:'rgba(212,175,55,0.60)',
+          textTransform:'uppercase', marginBottom:8,
+        }}>Пиковые часы</div>
+        {[
+          { time: profile?.chronotype?.includes('Сова') ? '14:00–18:00' : profile?.chronotype?.includes('Жаворонок') ? '06:00–10:00' : '09:00–12:00', label:'Аналитика, решения', icon:'🧠' },
+          { time: profile?.chronotype?.includes('Сова') ? '10:00–13:00' : profile?.chronotype?.includes('Жаворонок') ? '11:00–13:00' : '14:00–16:00', label:'Рутина, встречи',    icon:'📋' },
+          { time: profile?.chronotype?.includes('Сова') ? '20:00–23:00' : profile?.chronotype?.includes('Жаворонок') ? '08:00–10:00' : '16:00–19:00', label:'Творчество',         icon:'✨' },
+        ].map((p,i) => (
+          <div key={i} style={{
+            display:'flex', alignItems:'center', gap:10,
+            padding:'6px 0',
+            borderBottom: i < 2 ? '1px solid rgba(212,175,55,0.12)' : 'none',
+          }}>
+            <span style={{ fontSize:16 }}>{p.icon}</span>
+            <div style={{ flex:1 }}>
+              <div style={{
+                fontFamily:"'JetBrains Mono',monospace",
+                fontSize:12, color:'#D4AF37', fontWeight:600,
+              }}>{p.time}</div>
+              <div style={{
+                fontSize:12, color:'rgba(245,232,199,0.65)',
+                fontFamily:"'Crimson Pro',serif",
+              }}>{p.label}</div>
             </div>
-          )}
-
-          {todayItems.map((item, idx) => {
-
-            if (item.type === 'anchor') {
-              return (
-                <div key={`anchor-${idx}`} style={{ display: 'flex', alignItems: 'center', gap: 10, opacity: 0.55 }}>
-                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--text3)", width: 42, flexShrink: 0 }}>{item.time}</div>
-                  <div style={{ height: 1, flex: 1, background: 'var(--line)' }} />
-                  <div style={{ fontSize: 12, color: "var(--text2)", whiteSpace: 'nowrap' }}>{item.title}</div>
-                </div>
-              );
-            }
-
-            if (item.type === 'task') {
-              const t = item.task;
-              const done = t.doneDate === today;
-              return (
-                <div key={t.id} className="task-row" style={{ opacity: done ? 0.5 : 1 }}>
-                  <div
-                    className={`chk ${done ? "done" : ""}`}
-                    onClick={() => toggleTask(t.id)}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    {done && "✓"}
-                  </div>
-                  <div className="task-body">
-                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--text3)", marginBottom: 2 }}>
-                      {t.preferredTime}
-                    </div>
-                    <div className={`task-name ${done ? "done" : ""}`}>{t.title}</div>
-                  </div>
-                </div>
-              );
-            }
-
-            if (item.type === 'beauty') {
-              const allDone = item.block.every(t => t.doneDate === today);
-              return (
-                <div
-                  key={`beauty-${idx}`}
-                  style={{ padding: '8px 10px', borderRadius: 8, background: allDone ? 'rgba(45,106,79,0.06)' : 'rgba(184,107,93,0.06)', border: `1px solid ${allDone ? 'rgba(45,106,79,0.2)' : 'rgba(184,107,93,0.2)'}` }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <div
-                      onClick={() => toggleBeautyBlock(item.block)}
-                      style={{ width: 20, height: 20, borderRadius: '50%', border: `1.5px solid ${allDone ? 'rgba(45,106,79,0.6)' : 'rgba(184,107,93,0.5)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', background: allDone ? 'rgba(45,106,79,0.15)' : 'transparent', flexShrink: 0 }}
-                    >
-                      {allDone && <span style={{ fontSize: 11, color: '#2d6a4f' }}>✓</span>}
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--text3)", marginBottom: 2 }}>
-                        {item.block.length > 1 ? `${item.time} – ${item.endTime}` : item.time}
-                      </div>
-                      <div style={{ fontSize: 13, color: allDone ? 'var(--text3)' : 'var(--text1)', textDecoration: allDone ? 'line-through' : 'none', fontWeight: 500 }}>
-                        ✨ Уход {item.block.length > 1 ? `(${item.block.length} процедуры)` : `· ${item.block[0].title}`}
-                      </div>
-                      {item.block.length > 1 && (
-                        <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 2 }}>
-                          {item.block.map(t => t.title).join(' · ')}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            }
-
-            return null;
-          })}
-        </div>
+          </div>
+        ))}
       </div>
+
+      {/* Золотая цитата */}
+      <div style={{
+        textAlign:'center',
+        fontFamily:"'Cormorant Infant',serif",
+        fontSize:13, fontStyle:'italic',
+        color:'rgba(212,175,55,0.50)',
+        lineHeight:1.6,
+      }}>
+        «Знай своё время — и время будет твоим»
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="page" style={{ position:'relative' }}>
+
+      {/* ─── Карточка-перевёртыш ─── */}
+      <FlipCard front={frontContent} back={backContent} />
+
+      {/* ─── Расписание ─── */}
+      <ScheduleBlock
+        todayItems={todayItems}
+        today={today}
+        tasks={tasks}
+        setTasks={setTasks}
+        profile={profile}
+        now={now}
+      />
+
     </div>
   );
 }
