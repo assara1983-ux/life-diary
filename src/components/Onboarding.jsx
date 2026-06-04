@@ -52,7 +52,6 @@ const STEP_ICONS = {
   tcm: <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="32" cy="32" r="20"/><path d="M32 12 Q42 12 42 32 Q42 52 32 52" fill="currentColor" opacity="0.3"/><circle cx="32" cy="22" r="4" fill="currentColor"/><circle cx="32" cy="42" r="4" fill="#fff"/></svg>,
   beauty: <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="1.5"><polygon points="32,8 36,24 52,24 40,36 44,52 32,42 20,52 24,36 12,24 28,24 Z" fill="#c8a45a" fillOpacity="0.3"/><circle cx="32" cy="32" r="8"/></svg>,
   shopping: <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 20 L16 48 Q17 52 22 52 L42 52 Q47 52 48 48 L52 20"/><circle cx="24" cy="52" r="3"/><circle cx="40" cy="52" r="3"/></svg>,
-  hobbies: <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="12" y="12" width="40" height="40" rx="2" transform="rotate(15 32 32)"/><circle cx="24" cy="24" r="4" fill="#c8a45a" stroke="none"/></svg>,
   travel: <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 44 L32 16 L52 44 L32 40 Z"/><path d="M20 36 Q32 52 44 36" opacity="0.6"/></svg>,
   goals: <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="32" cy="32" r="20"/><circle cx="32" cy="32" r="14" opacity="0.6"/><circle cx="32" cy="32" r="8" opacity="0.8"/><circle cx="32" cy="32" r="3" fill="currentColor"/></svg>,
   done: <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="1.5"><polygon points="32,6 36,26 56,26 40,38 46,58 32,46 18,58 24,38 8,26 28,26 Z" fill="#c8a45a" fillOpacity="0.4"/><path d="M24 32 L30 38 L42 26" strokeLinecap="round" strokeLinejoin="round" stroke="#fff" strokeWidth="3"/></svg>,
@@ -82,7 +81,6 @@ const OB_STEPS = [
   { id: "tcm", title: "ТКМ-диагностика", sub: "5 вопросов для профиля по традиционной китайской медицине." },
   { id: "beauty", title: "Уход за собой", sub: "Кожа, волосы, процедуры — поставим в график." },
   { id: "shopping", title: "Продукты и покупки", sub: "Когда и как закупаешься — напомним вовремя." },
-  { id: "hobbies", title: "Хобби и увлечения", sub: "Увлечения заслуживают места в жизни." },
   { id: "travel", title: "Путешествия", sub: "Куда хочешь поехать? Спланируем мягко, шаг за шагом." },
   { id: "goals", title: "Цели", sub: "Чего хочешь достичь? Приложение будет напоминать и поддерживать." },
   { id: "done", title: "Профиль готов", sub: "Life Diary держит всё в голове вместо тебя." },
@@ -94,7 +92,7 @@ export function Onboarding() {
   
   // ✅ ДОБАВЛЕНЫ НОВЫЕ ПОЛЯ ДЛЯ АВТОМОБИЛЯ
   const [d, setD] = useState({
-    pets: [], trips: [], hobbies: [],
+    pets: [], trips: [],
     wake: "07:00", sleep: "23:00",
     workStart: "09:00", workEnd: "18:00",    workDaysList: [1, 2, 3, 4, 5],
     // Авто
@@ -163,7 +161,6 @@ export function Onboarding() {
     setProfile({
       ...d,
       trips: d.trips || [],
-      hobbies: d.hobbies || [],
       pets: d.pets || [],
       wake: d.wake || "07:00",
       sleep: d.sleep || "23:00",
@@ -654,19 +651,6 @@ export function Onboarding() {
             </>
           )}
 
-          {s.id === "hobbies" && (
-            <>
-              <div className="fld">
-                <label>Хобби</label>
-                <div className="chips">{["Чтение", "Фотография", "Музыка", "Готовка", "Садоводство", "Кино", "Путешествия", "Спорт", "Рисование", "Блогинг", "Языки", "Рукоделие", "Игры", "Туризм"].map(v => <div key={v} className={`chip ${(d.hobbies || []).includes(v) ? "on" : ""}`} onClick={() => tog("hobbies", v)}>{v}</div>)}</div>
-              </div>
-              <div className="fld"><label>Хобби-проект</label><input placeholder="Освоить гитару, прочитать 12 книг..." value={d.hobbyProject || ""} onChange={e => set("hobbyProject", e.target.value)} /></div>
-              <div className="fld">
-                <label>Частота занятий</label>
-                <div className="chips">{["Почти никогда", "Раз в месяц", "Раз в неделю", "Несколько раз", "Каждый день"].map(v => <div key={v} className={`chip ${d.hobbyFreq === v ? "on" : ""}`} onClick={() => set("hobbyFreq", v)}>{v}</div>)}</div>
-              </div>
-            </>
-          )}
 
           {s.id === "travel" && (
             <>
@@ -728,4 +712,4 @@ export function Onboarding() {
       </div>
     </div>
   );
-                }
+                      }
