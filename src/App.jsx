@@ -39,7 +39,7 @@ const C = {
 
 // ─── РАЗДЕЛЫ — «Сегодня» первый ───
 const SECTIONS = [
-  { id: 'today',    name: 'Сегодня',    emoji: '☀️', color: '#0A2540', img: '/sections/today.jpg',    wide: true },
+  { id: 'today',    name: 'Сегодня',    emoji: '☀️', color: '#0A2540', img: '/sections/today.jpg' },
   { id: 'schedule', name: 'Расписание', emoji: '🗓', color: '#1E3A5F', img: '/sections/schedule.jpg' },
   { id: 'work',     name: 'Работа',     emoji: '💼', color: '#0A2540', img: '/sections/work.jpg' },
   { id: 'home',     name: 'Дом',        emoji: '🏠', color: '#2D5A3D', img: '/sections/home.jpg' },
@@ -555,4 +555,4 @@ export default function App() {
       <AppContent />
     </AppProvider>
   );
-                }
+      }
