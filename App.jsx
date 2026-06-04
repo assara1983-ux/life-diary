@@ -14,7 +14,6 @@ import { PetsSection }     from './sections/PetsSection';
 import { CarSection }      from './sections/CarSection';
 import { HealthSection }   from './sections/HealthSection';
 import { BeautySection }   from './sections/BeautySection';
-import { HobbiesSection }  from './sections/HobbiesSection';
 import { TravelSection }   from './sections/TravelSection';
 import { JournalSection }  from './sections/JournalSection';
 import { ProfileSection }  from './sections/ProfileSection';
@@ -49,7 +48,6 @@ const SECTIONS = [
   { id: 'car',      name: 'Авто',       emoji: '🚗', color: '#2C3E4A', img: '/sections/car.jpg' },
   { id: 'health',   name: 'Здоровье',   emoji: '💚', color: '#1B4D2A', img: '/sections/health.jpg' },
   { id: 'beauty',   name: 'Уход',       emoji: '✨', color: '#6B1E3A', img: '/sections/beauty.jpg' },
-  { id: 'hobbies',  name: 'Хобби',      emoji: '🎨', color: '#7A3B1E', img: '/sections/hobbies.jpg' },
   { id: 'travel',   name: 'Поездки',    emoji: '✈️', color: '#1E4A6B', img: '/sections/travel.jpg' },
   { id: 'journal',  name: 'Журнал',     emoji: '📖', color: '#3A1E6B', img: '/sections/journal.jpg' },
   { id: 'profile',  name: 'Профиль',    emoji: '👤', color: '#8B6914', img: '/sections/profile.jpg' },
@@ -388,7 +386,6 @@ function SectionScreen({ sectionId, onBack }) {
     car:      CarSection,
     health:   HealthSection,
     beauty:   BeautySection,
-    hobbies:  HobbiesSection,
     travel:   TravelSection,
     journal:  JournalSection,
     profile:  ProfileSection,
@@ -558,4 +555,4 @@ export default function App() {
       <AppContent />
     </AppProvider>
   );
-}
+      }
