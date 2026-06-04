@@ -901,10 +901,9 @@ export function ProfileSection() {
           <FlipCardBlock title="Зоны внимания"
             frontImage="/assets/avatars-icons/profile-attention.jpg"
             minHeight={320}>
-            <AttentionZonesOrgans zodiac={insights?.zodiac} insights={insights} />
-            <div style={{ fontFamily:"'Crimson Pro',serif", fontSize:16, color:C.text2, lineHeight:1.6 }}>
-              <p style={{ margin:'0 0 6px 0' }}><strong>Знак:</strong> {insights?.zodiac||'—'}</p>
-              <p style={{ margin:'0 0 6px 0' }}><strong>Уязвимости:</strong> {insights?.zodiacWeaknesses||'Нет данных'}</p>
+            <div style={{ fontFamily:"'Crimson Pro',serif", fontSize:16, color:C.text2, lineHeight:1.7 }}>
+              <p style={{ margin:'0 0 10px 0' }}><strong>Знак:</strong> {insights?.zodiac||'—'}</p>
+              <p style={{ margin:'0 0 10px 0' }}><strong>Уязвимые зоны:</strong> {insights?.zodiacWeaknesses||'Нет данных'}</p>
               <p style={{ margin:0, color:C.navyMid }}><strong>Меридиан:</strong> {meridianInfo?.tip||'Следите за балансом'}</p>
             </div>
           </FlipCardBlock>
@@ -941,4 +940,4 @@ export function ProfileSection() {
       )}
     </div>
   );
-          }
+                                   }
