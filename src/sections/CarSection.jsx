@@ -87,6 +87,140 @@ function Btn({ children, onClick, variant='primary', size='md', disabled=false, 
   return <button onClick={disabled?undefined:onClick} style={{...base,...variants[variant]}}>{children}</button>;
 }
 
+
+// ─── FLIP SECTION — лицевая: картинка+название, оборот: контент ───
+function FlipSection({ title, image, children, minHeight = 280, badge }) {
+  const [flipped, setFlipped] = useState(false);
+  const [imgOk, setImgOk] = useState(true);
+
+  return (
+    <div style={{ perspective:'1200px', marginBottom:14, userSelect:'none' }}>
+      <div
+        onClick={() => setFlipped(!flipped)}
+        style={{
+          position:'relative', width:'100%', minHeight,
+          transformStyle:'preserve-3d',
+          transition:'transform 0.65s cubic-bezier(0.4,0.2,0.2,1)',
+          transform: flipped ? 'rotateY(180deg)' : 'none',
+          cursor:'pointer', borderRadius:14,
+          aspectRatio:'4/3',
+        }}
+      >
+        {/* ── ЛИЦЕВАЯ — картинка на весь блок ── */}
+        <div style={{
+          position:'absolute', inset:0,
+          backfaceVisibility:'hidden', WebkitBackfaceVisibility:'hidden',
+          borderRadius:14, overflow:'hidden',
+          background: C.navyMid,
+          boxShadow:`0 5px 20px rgba(10,37,64,0.20), 0 0 0 1.5px rgba(10,37,64,0.22)`,
+        }}>
+          {imgOk ? (
+            <img src={image} alt={title}
+              style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover', pointerEvents:'none' }}
+              onError={() => setImgOk(false)}
+            />
+          ) : (
+            <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', fontSize:80, opacity:0.2 }}>🚗</div>
+          )}
+
+          {/* Градиент снизу */}
+          <div style={{ position:'absolute', inset:0,
+            background:'linear-gradient(to top, rgba(10,25,45,0.90) 0%, rgba(10,25,45,0.20) 55%, transparent 100%)' }} />
+
+          {/* Угловые маркеры */}
+          <div style={{ position:'absolute', top:8, left:8, width:13, height:13,
+            borderTop:`2px solid ${C.gold}`, borderLeft:`2px solid ${C.gold}`, opacity:0.9 }} />
+          <div style={{ position:'absolute', bottom:8, right:8, width:13, height:13,
+            borderBottom:`2px solid ${C.gold}`, borderRight:`2px solid ${C.gold}`, opacity:0.9 }} />
+
+          {/* Хинт */}
+          <div style={{ position:'absolute', top:10, right:12,
+            fontFamily:"'JetBrains Mono',monospace",
+            fontSize:8, color:`rgba(212,175,55,0.70)`, letterSpacing:1.5, textTransform:'uppercase' }}>
+            подробнее →
+          </div>
+
+          {/* Бейдж (напр. статус документа) */}
+          {badge && (
+            <div style={{ position:'absolute', top:10, left:12,
+              padding:'4px 10px', borderRadius:20,
+              background: badge.color === 'error' ? 'rgba(107,16,16,0.85)' :
+                          badge.color === 'warn'  ? 'rgba(196,155,42,0.85)' :
+                          badge.color === 'ok'    ? 'rgba(26,77,46,0.85)' : 'rgba(10,37,64,0.85)',
+              border:`1px solid rgba(255,255,255,0.2)`,
+              fontFamily:"'JetBrains Mono',monospace",
+              fontSize:9, color:'#fff', letterSpacing:1, fontWeight:600 }}>
+              {badge.text}
+            </div>
+          )}
+
+          {/* Название снизу */}
+          <div style={{ position:'absolute', bottom:0, left:0, right:0, padding:'12px 16px 16px' }}>
+            <div style={{
+              fontFamily:"'Cinzel',serif",
+              fontSize:18, fontWeight:700, color:'#fff',
+              letterSpacing:2.5, textTransform:'uppercase',
+              textShadow:'0 2px 8px rgba(0,0,0,0.8)', lineHeight:1.2,
+            }}>{title}</div>
+          </div>
+        </div>
+
+        {/* ── ОБОРОТ — пергамент с фоном ── */}
+        <div style={{
+          position:'absolute', inset:0,
+          backfaceVisibility:'hidden', WebkitBackfaceVisibility:'hidden',
+          transform:'rotateY(180deg)',
+          borderRadius:14, overflow:'hidden',
+          border:`2px solid ${C.goldDeep}`,
+          display:'flex', flexDirection:'column',
+        }}>
+          {/* Размытый фон */}
+          {imgOk && (
+            <img src={image} alt=""
+              style={{ position:'absolute', inset:0, width:'100%', height:'100%',
+                objectFit:'cover', opacity:0.10, filter:'blur(3px)', pointerEvents:'none' }}
+            />
+          )}
+          {/* Пергаментный фон */}
+          <div style={{ position:'absolute', inset:0,
+            background:`linear-gradient(160deg, rgba(250,243,224,0.97) 0%, rgba(240,230,205,0.96) 100%)`,
+            backgroundImage:`repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(10,37,64,0.04) 28px)`,
+          }} />
+
+          {/* Угловые маркеры */}
+          <div style={{ position:'absolute', top:7, left:7, width:12, height:12,
+            borderTop:`2px solid ${C.gold}`, borderLeft:`2px solid ${C.gold}` }} />
+          <div style={{ position:'absolute', bottom:7, right:7, width:12, height:12,
+            borderBottom:`2px solid ${C.gold}`, borderRight:`2px solid ${C.gold}` }} />
+
+          {/* Хинт */}
+          <div style={{ position:'absolute', top:10, right:12,
+            fontFamily:"'JetBrains Mono',monospace",
+            fontSize:8, color:`rgba(10,37,64,0.40)`, letterSpacing:1.5, textTransform:'uppercase' }}>
+            ← назад
+          </div>
+
+          {/* Заголовок оборота */}
+          <div style={{ position:'relative', zIndex:1, padding:'18px 18px 0' }}>
+            <h3 style={{ fontFamily:"'Cinzel',serif",
+              fontSize:15, color:C.navy, margin:'0 0 12px 0',
+              paddingBottom:10, borderBottom:`1.5px solid rgba(10,37,64,0.18)`,
+              letterSpacing:2, textTransform:'uppercase' }}>{title}</h3>
+          </div>
+
+          {/* Контент */}
+          <div style={{ position:'relative', zIndex:1, overflowY:'auto', flex:1,
+            padding:'0 18px 18px',
+            fontFamily:"'Crimson Pro',serif", fontSize:15, lineHeight:1.65, color:C.text1 }}
+            onClick={e => e.stopPropagation()}>
+            {children}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── УТИЛИТЫ ───
 function daysLeft(dateStr) {
   if (!dateStr) return null;
@@ -1148,11 +1282,21 @@ export function CarSection() {
   return (
     <div className="page" style={{paddingBottom:80}}>
       <CarHero profile={profile}/>
-      <CarInfoCard profile={profile} setProfile={setProfile} notify={notify}/>
-      <CarDocuments profile={profile} setProfile={setProfile} tasks={tasks} setTasks={setTasks} notify={notify}/>
-      <ServiceBook profile={profile} tasks={tasks} setTasks={setTasks} notify={notify}/>
-      <AiMaintenancePlanner profile={profile} tasks={tasks} setTasks={setTasks} notify={notify}/>
-      <CarTips profile={profile} notify={notify}/>
+      <FlipSection title="Данные автомобиля" image="/car/car-hero.jpg">
+        <CarInfoCard profile={profile} setProfile={setProfile} notify={notify}/>
+      </FlipSection>
+      <FlipSection title="Документы" image="/car/car-insurance.jpg">
+        <CarDocuments profile={profile} setProfile={setProfile} tasks={tasks} setTasks={setTasks} notify={notify}/>
+      </FlipSection>
+      <FlipSection title="Сервисная книжка" image="/car/car-logbook.jpg">
+        <ServiceBook profile={profile} tasks={tasks} setTasks={setTasks} notify={notify}/>
+      </FlipSection>
+      <FlipSection title="План ТО" image="/car/car-maintenance.jpg">
+        <AiMaintenancePlanner profile={profile} tasks={tasks} setTasks={setTasks} notify={notify}/>
+      </FlipSection>
+      <FlipSection title="Советы и лайфхаки" image="/car/car-tips.jpg">
+        <CarTips profile={profile} notify={notify}/>
+      </FlipSection>
     </div>
   );
-                }
+        }
