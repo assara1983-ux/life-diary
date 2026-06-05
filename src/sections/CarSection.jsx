@@ -407,6 +407,9 @@ function CarInfoCard({ profile, setProfile, notify }) {
                 ))}
               </div>
             </Field>
+            <Field label="Последнее ТО (дата)">
+              <Inp value={form.carLastTO} onChange={e=>setForm(p=>({...p,carLastTO:e.target.value}))} type="date"/>
+            </Field>
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
               <Field label="Страховка до"><Inp value={form.carInsurance} onChange={e=>setForm(p=>({...p,carInsurance:e.target.value}))} type="date"/></Field>
               <Field label="Техосмотр до"><Inp value={form.carTechCheck} onChange={e=>setForm(p=>({...p,carTechCheck:e.target.value}))} type="date"/></Field>
@@ -1248,6 +1251,247 @@ function CarDocuments({ profile, setProfile, tasks, setTasks, notify }) {
   );
 }
 
+
+// ─── ПРИКРЕПЛЕНИЕ ДОКУМЕНТОВ ───
+function DocAttachments({ notify }) {
+  const STORAGE_KEY = 'ld_car_docs';
+
+  // Загружаем сохранённые документы (только base64 + мета)
+  const [docs, setDocs] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); }
+    catch { return {}; }
+  });
+  const [viewing, setViewing] = useState(null); // {key, doc}
+
+  const DOC_TYPES = [
+    { key: 'techPassport', label: 'Технический паспорт', emoji: '📄', accept: 'image/*,application/pdf' },
+    { key: 'insurance',    label: 'Страховка (ОС/КАСКО)', emoji: '🛡️', accept: 'image/*,application/pdf' },
+    { key: 'techCheck',    label: 'Техосмотр',            emoji: '🔍', accept: 'image/*,application/pdf' },
+    { key: 'driveLicense', label: 'Водительское удост.',  emoji: '🪪', accept: 'image/*,application/pdf' },
+  ];
+
+  const handleFile = (key, file) => {
+    if (!file) return;
+    // Ограничение 4MB
+    if (file.size > 4 * 1024 * 1024) {
+      notify?.('⚠️ Файл слишком большой. Максимум 4MB');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const next = {
+        ...docs,
+        [key]: {
+          name: file.name,
+          type: file.type,
+          data: e.target.result, // base64
+          size: (file.size / 1024).toFixed(0) + ' KB',
+          date: new Date().toLocaleDateString('ru-RU'),
+        }
+      };
+      setDocs(next);
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch(err) {
+        notify?.('⚠️ Не удалось сохранить — файл слишком большой для хранилища');
+      }
+      notify?.('✅ Документ сохранён');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removeDoc = (key) => {
+    const next = { ...docs };
+    delete next[key];
+    setDocs(next);
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch {}
+    notify?.('🗑️ Документ удалён');
+  };
+
+  const isPdf = (doc) => doc?.type === 'application/pdf';
+
+  return (
+    <>
+      <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+        {DOC_TYPES.map(dt => {
+          const doc = docs[dt.key];
+          return (
+            <div key={dt.key} style={{
+              padding:'14px 16px',
+              borderRadius:10,
+              background: doc ? 'rgba(26,77,46,0.07)' : 'rgba(10,37,64,0.04)',
+              border: `1.5px solid ${doc ? 'rgba(26,77,46,0.25)' : C.lineS}`,
+              borderLeft: `3px solid ${doc ? C.success : C.gold}`,
+              display:'flex', alignItems:'center', gap:12,
+            }}>
+              <span style={{ fontSize:24, flexShrink:0 }}>{dt.emoji}</span>
+
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{
+                  fontFamily:"'Cinzel',serif", fontSize:14,
+                  color: C.navy, fontWeight:600, letterSpacing:1, marginBottom:3
+                }}>{dt.label}</div>
+
+                {doc ? (
+                  <div style={{
+                    fontFamily:"'JetBrains Mono',monospace", fontSize:11,
+                    color: C.success, letterSpacing:0.5
+                  }}>
+                    ✓ {doc.name} · {doc.size} · {doc.date}
+                  </div>
+                ) : (
+                  <div style={{
+                    fontFamily:"'JetBrains Mono',monospace", fontSize:11,
+                    color: C.text3, letterSpacing:0.5
+                  }}>не прикреплён</div>
+                )}
+              </div>
+
+              <div style={{ display:'flex', gap:8, flexShrink:0 }}>
+                {doc && (
+                  <button
+                    onClick={() => setViewing({ key: dt.key, doc, label: dt.label })}
+                    style={{
+                      padding:'7px 12px', borderRadius:7, border:'none', cursor:'pointer',
+                      fontFamily:"'Cinzel',serif", fontSize:10, letterSpacing:1.5,
+                      background: `linear-gradient(135deg,${C.navyMid},${C.navy})`,
+                      color: C.goldPale, textTransform:'uppercase',
+                    }}>
+                    👁 Открыть
+                  </button>
+                )}
+
+                <label style={{
+                  padding:'7px 12px', borderRadius:7, cursor:'pointer',
+                  fontFamily:"'Cinzel',serif", fontSize:10, letterSpacing:1.5,
+                  background: doc ? 'rgba(10,37,64,0.08)' : `linear-gradient(135deg,${C.gold},${C.goldDeep})`,
+                  color: doc ? C.text2 : '#fff',
+                  border: doc ? `1.5px dashed ${C.lineS}` : 'none',
+                  textTransform:'uppercase', display:'inline-block',
+                  boxShadow: doc ? 'none' : '0 2px 8px rgba(212,175,55,0.25)',
+                }}>
+                  {doc ? '🔄' : '📎 Добавить'}
+                  <input
+                    type="file"
+                    accept={dt.accept}
+                    style={{ display:'none' }}
+                    onChange={e => handleFile(dt.key, e.target.files?.[0])}
+                  />
+                </label>
+
+                {doc && (
+                  <button
+                    onClick={() => removeDoc(dt.key)}
+                    style={{
+                      padding:'7px 10px', borderRadius:7, border:'none', cursor:'pointer',
+                      background:'rgba(107,16,16,0.08)', color:C.error, fontSize:16,
+                    }}>×</button>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Просмотрщик */}
+      {viewing && (
+        <div
+          onClick={() => setViewing(null)}
+          style={{
+            position:'fixed', inset:0, zIndex:9999,
+            background:'rgba(10,25,45,0.80)',
+            display:'flex', alignItems:'center', justifyContent:'center',
+            padding:16, backdropFilter:'blur(4px)',
+          }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: C.bgCard, borderRadius:14, overflow:'hidden',
+              width:'100%', maxWidth:500, maxHeight:'90vh',
+              border:`2px solid ${C.goldDeep}`,
+              boxShadow:'0 20px 60px rgba(0,0,0,0.4)',
+              display:'flex', flexDirection:'column',
+              position:'relative',
+            }}
+          >
+            {/* Угловые маркеры */}
+            <div style={{ position:'absolute',top:7,left:7,width:12,height:12,
+              borderTop:`2px solid ${C.gold}`,borderLeft:`2px solid ${C.gold}` }} />
+            <div style={{ position:'absolute',bottom:7,right:7,width:12,height:12,
+              borderBottom:`2px solid ${C.gold}`,borderRight:`2px solid ${C.gold}` }} />
+
+            {/* Шапка */}
+            <div style={{
+              padding:'16px 18px', display:'flex', justifyContent:'space-between', alignItems:'center',
+              borderBottom:`1.5px solid ${C.line}`,
+              background:`rgba(10,37,64,0.04)`,
+            }}>
+              <div style={{ fontFamily:"'Cinzel',serif", fontSize:15, color:C.navy,
+                fontWeight:700, letterSpacing:1.5, textTransform:'uppercase' }}>
+                {viewing.label}
+              </div>
+              <button onClick={() => setViewing(null)}
+                style={{ background:'none', border:'none', fontSize:22, color:C.text3, cursor:'pointer' }}>
+                ✕
+              </button>
+            </div>
+
+            {/* Содержимое */}
+            <div style={{ flex:1, overflow:'auto', padding:16, textAlign:'center' }}>
+              {isPdf(viewing.doc) ? (
+                // PDF — показываем в iframe
+                <div>
+                  <div style={{
+                    fontFamily:"'Crimson Pro',serif", fontSize:15, color:C.text2,
+                    marginBottom:12, fontStyle:'italic',
+                  }}>
+                    📄 PDF-документ: {viewing.doc.name}
+                  </div>
+                  <iframe
+                    src={viewing.doc.data}
+                    style={{ width:'100%', height:400, border:'none', borderRadius:8 }}
+                    title={viewing.label}
+                  />
+                </div>
+              ) : (
+                // Изображение
+                <img
+                  src={viewing.doc.data}
+                  alt={viewing.label}
+                  style={{
+                    maxWidth:'100%', maxHeight:'70vh',
+                    borderRadius:8, objectFit:'contain',
+                    boxShadow:'0 4px 16px rgba(10,37,64,0.15)',
+                  }}
+                  onError={e => {
+                    e.target.style.display = 'none';
+                    e.target.nextSibling.style.display = 'block';
+                  }}
+                />
+              )}
+              <div style={{ display:'none', padding:20,
+                fontFamily:"'Crimson Pro',serif", fontSize:16, color:C.error }}>
+                Не удалось открыть файл
+              </div>
+            </div>
+
+            {/* Мета */}
+            <div style={{
+              padding:'10px 18px', borderTop:`1px solid ${C.lineS}`,
+              fontFamily:"'JetBrains Mono',monospace", fontSize:10,
+              color:C.text3, letterSpacing:0.5,
+              display:'flex', gap:16,
+            }}>
+              <span>📁 {viewing.doc.name}</span>
+              <span>📦 {viewing.doc.size}</span>
+              <span>📅 {viewing.doc.date}</span>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
 // ─── ГЛАВНЫЙ КОМПОНЕНТ ───
 export function CarSection() {
   const { profile, setProfile, tasks, setTasks, notify } = useApp();
@@ -1279,6 +1523,14 @@ export function CarSection() {
       </FlipSection>
       <FlipSection title="Документы" image="/car/car-insurance.jpg">
         <CarDocuments profile={profile} setProfile={setProfile} tasks={tasks} setTasks={setTasks} notify={notify}/>
+        <div style={{marginTop:20,paddingTop:16,borderTop:`1.5px solid rgba(10,37,64,0.14)`}}>
+          <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,letterSpacing:3,
+            color:C.navyMid,textTransform:'uppercase',marginBottom:14,
+            display:'flex',alignItems:'center',gap:8}}>
+            <span style={{color:C.gold}}>▸</span>Копии документов
+          </div>
+          <DocAttachments notify={notify}/>
+        </div>
       </FlipSection>
       <FlipSection title="Сервисная книжка" image="/car/car-logbook.jpg">
         <ServiceBook profile={profile} tasks={tasks} setTasks={setTasks} notify={notify}/>
@@ -1291,4 +1543,4 @@ export function CarSection() {
       </FlipSection>
     </div>
   );
-     }
+                                    }
