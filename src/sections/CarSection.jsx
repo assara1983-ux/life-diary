@@ -33,8 +33,8 @@ function Card({ children, style={} }) {
 
 function SecLabel({ children, color }) {
   return (
-    <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,letterSpacing:3,
-      color:color||C.navyMid,textTransform:'uppercase',marginBottom:12,
+    <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:12,letterSpacing:3,
+      color:color||C.navyMid,textTransform:'uppercase',marginBottom:14,
       paddingBottom:6,borderBottom:`1px solid ${C.lineS}`,
       display:'flex',alignItems:'center',gap:8}}>
       <span style={{color:C.gold}}>▸</span>{children}
@@ -89,41 +89,37 @@ function Btn({ children, onClick, variant='primary', size='md', disabled=false, 
 
 
 // ─── FLIP SECTION — лицевая: картинка+название, оборот: контент ───
-function FlipSection({ title, image, children, minHeight = 280, badge }) {
+function FlipSection({ title, image, children, badge }) {
   const [flipped, setFlipped] = useState(false);
   const [imgOk, setImgOk] = useState(true);
 
   return (
-    <div style={{ perspective:'1200px', marginBottom:14, userSelect:'none' }}>
-      <div
-        onClick={() => setFlipped(!flipped)}
-        style={{
-          position:'relative', width:'100%', minHeight,
-          transformStyle:'preserve-3d',
-          transition:'transform 0.65s cubic-bezier(0.4,0.2,0.2,1)',
-          transform: flipped ? 'rotateY(180deg)' : 'none',
-          cursor:'pointer', borderRadius:14,
-          aspectRatio:'4/3',
-        }}
-      >
-        {/* ── ЛИЦЕВАЯ — картинка на весь блок ── */}
-        <div style={{
-          position:'absolute', inset:0,
-          backfaceVisibility:'hidden', WebkitBackfaceVisibility:'hidden',
-          borderRadius:14, overflow:'hidden',
-          background: C.navyMid,
-          boxShadow:`0 5px 20px rgba(10,37,64,0.20), 0 0 0 1.5px rgba(10,37,64,0.22)`,
-        }}>
+    <div style={{ marginBottom:14 }}>
+
+      {/* ── ЛИЦЕВАЯ — показывается когда не перевёрнуто ── */}
+      {!flipped && (
+        <div
+          onClick={() => setFlipped(true)}
+          style={{
+            position:'relative', width:'100%',
+            aspectRatio:'4/3',
+            borderRadius:14, overflow:'hidden',
+            cursor:'pointer',
+            background: C.navyMid,
+            boxShadow:`0 5px 20px rgba(10,37,64,0.20), 0 0 0 1.5px rgba(10,37,64,0.22)`,
+            transition:'transform 0.2s, box-shadow 0.2s',
+          }}
+        >
           {imgOk ? (
             <img src={image} alt={title}
               style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover', pointerEvents:'none' }}
               onError={() => setImgOk(false)}
             />
           ) : (
-            <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', fontSize:80, opacity:0.2 }}>🚗</div>
+            <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', fontSize:80, opacity:0.2, color:'#fff' }}>🚗</div>
           )}
 
-          {/* Градиент снизу */}
+          {/* Градиент */}
           <div style={{ position:'absolute', inset:0,
             background:'linear-gradient(to top, rgba(10,25,45,0.90) 0%, rgba(10,25,45,0.20) 55%, transparent 100%)' }} />
 
@@ -136,52 +132,46 @@ function FlipSection({ title, image, children, minHeight = 280, badge }) {
           {/* Хинт */}
           <div style={{ position:'absolute', top:10, right:12,
             fontFamily:"'JetBrains Mono',monospace",
-            fontSize:8, color:`rgba(212,175,55,0.70)`, letterSpacing:1.5, textTransform:'uppercase' }}>
-            подробнее →
+            fontSize:8, color:'rgba(212,175,55,0.75)', letterSpacing:1.5, textTransform:'uppercase' }}>
+            нажмите →
           </div>
 
-          {/* Бейдж (напр. статус документа) */}
+          {/* Бейдж */}
           {badge && (
-            <div style={{ position:'absolute', top:10, left:12,
-              padding:'4px 10px', borderRadius:20,
-              background: badge.color === 'error' ? 'rgba(107,16,16,0.85)' :
-                          badge.color === 'warn'  ? 'rgba(196,155,42,0.85)' :
-                          badge.color === 'ok'    ? 'rgba(26,77,46,0.85)' : 'rgba(10,37,64,0.85)',
-              border:`1px solid rgba(255,255,255,0.2)`,
-              fontFamily:"'JetBrains Mono',monospace",
-              fontSize:9, color:'#fff', letterSpacing:1, fontWeight:600 }}>
+            <div style={{ position:'absolute', top:10, left:12, padding:'4px 10px', borderRadius:20,
+              background: badge.color==='error' ? 'rgba(107,16,16,0.85)' : badge.color==='warn' ? 'rgba(196,155,42,0.85)' : 'rgba(26,77,46,0.85)',
+              border:'1px solid rgba(255,255,255,0.2)',
+              fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:'#fff', letterSpacing:1, fontWeight:600 }}>
               {badge.text}
             </div>
           )}
 
           {/* Название снизу */}
           <div style={{ position:'absolute', bottom:0, left:0, right:0, padding:'12px 16px 16px' }}>
-            <div style={{
-              fontFamily:"'Cinzel',serif",
-              fontSize:18, fontWeight:700, color:'#fff',
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:18, fontWeight:700, color:'#fff',
               letterSpacing:2.5, textTransform:'uppercase',
-              textShadow:'0 2px 8px rgba(0,0,0,0.8)', lineHeight:1.2,
-            }}>{title}</div>
+              textShadow:'0 2px 8px rgba(0,0,0,0.8)', lineHeight:1.2 }}>{title}</div>
           </div>
         </div>
+      )}
 
-        {/* ── ОБОРОТ — пергамент с фоном ── */}
+      {/* ── ОБОРОТ — обычный div, растягивается по контенту ── */}
+      {flipped && (
         <div style={{
-          position:'absolute', inset:0,
-          backfaceVisibility:'hidden', WebkitBackfaceVisibility:'hidden',
-          transform:'rotateY(180deg)',
+          position:'relative',
           borderRadius:14, overflow:'hidden',
           border:`2px solid ${C.goldDeep}`,
-          display:'flex', flexDirection:'column',
+          background:`linear-gradient(160deg, ${C.bgCard} 0%, ${C.bgCard2} 100%)`,
+          boxShadow:`0 5px 20px rgba(10,37,64,0.14)`,
         }}>
           {/* Размытый фон */}
           {imgOk && (
             <img src={image} alt=""
               style={{ position:'absolute', inset:0, width:'100%', height:'100%',
-                objectFit:'cover', opacity:0.10, filter:'blur(3px)', pointerEvents:'none' }}
+                objectFit:'cover', opacity:0.08, filter:'blur(4px)', pointerEvents:'none' }}
             />
           )}
-          {/* Пергаментный фон */}
+          {/* Пергаментный overlay + линейки */}
           <div style={{ position:'absolute', inset:0,
             background:`linear-gradient(160deg, rgba(250,243,224,0.97) 0%, rgba(240,230,205,0.96) 100%)`,
             backgroundImage:`repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(10,37,64,0.04) 28px)`,
@@ -193,30 +183,32 @@ function FlipSection({ title, image, children, minHeight = 280, badge }) {
           <div style={{ position:'absolute', bottom:7, right:7, width:12, height:12,
             borderBottom:`2px solid ${C.gold}`, borderRight:`2px solid ${C.gold}` }} />
 
-          {/* Хинт */}
-          <div style={{ position:'absolute', top:10, right:12,
-            fontFamily:"'JetBrains Mono',monospace",
-            fontSize:8, color:`rgba(10,37,64,0.40)`, letterSpacing:1.5, textTransform:'uppercase' }}>
-            ← назад
+          {/* Шапка оборота с кнопкой закрыть */}
+          <div style={{ position:'relative', zIndex:1,
+            padding:'16px 18px 12px',
+            borderBottom:`2px solid rgba(10,37,64,0.14)`,
+            display:'flex', justifyContent:'space-between', alignItems:'center',
+            background:'rgba(10,37,64,0.04)' }}>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:17, fontWeight:700,
+              color:C.navy, letterSpacing:2, textTransform:'uppercase' }}>{title}</div>
+            <button
+              onClick={() => setFlipped(false)}
+              style={{ background:`linear-gradient(135deg,${C.navyMid},${C.navy})`,
+                border:'none', borderRadius:8, cursor:'pointer',
+                padding:'8px 16px',
+                fontFamily:"'Cinzel',serif", fontSize:11,
+                color:C.goldPale, letterSpacing:2, textTransform:'uppercase',
+                boxShadow:'0 2px 8px rgba(10,37,64,0.22)' }}>
+              ← Свернуть
+            </button>
           </div>
 
-          {/* Заголовок оборота */}
-          <div style={{ position:'relative', zIndex:1, padding:'18px 18px 0' }}>
-            <h3 style={{ fontFamily:"'Cinzel',serif",
-              fontSize:15, color:C.navy, margin:'0 0 12px 0',
-              paddingBottom:10, borderBottom:`1.5px solid rgba(10,37,64,0.18)`,
-              letterSpacing:2, textTransform:'uppercase' }}>{title}</h3>
-          </div>
-
-          {/* Контент */}
-          <div style={{ position:'relative', zIndex:1, overflowY:'auto', flex:1,
-            padding:'0 18px 18px',
-            fontFamily:"'Crimson Pro',serif", fontSize:15, lineHeight:1.65, color:C.text1 }}
-            onClick={e => e.stopPropagation()}>
+          {/* Контент — растягивается свободно */}
+          <div style={{ position:'relative', zIndex:1, padding:'20px 18px 22px' }}>
             {children}
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -370,8 +362,8 @@ function CarInfoCard({ profile, setProfile, notify }) {
             ].map(([label,value]) => (
               <div key={label} style={{padding:'9px 12px',background:'rgba(10,37,64,0.04)',
                 borderRadius:8,border:`1px solid ${C.lineS}`}}>
-                <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,
-                  color:C.text3,marginBottom:3,letterSpacing:0.5}}>{label}</div>
+                <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,
+                  color:C.text3,marginBottom:4,letterSpacing:0.5}}>{label}</div>
                 <div style={{fontFamily:"'Crimson Pro',serif",fontSize:15,color:C.text1,fontWeight:500}}>
                   {value}
                 </div>
@@ -594,22 +586,22 @@ function ServiceBook({ profile, tasks, setTasks, notify }) {
                   color:C.text3}}>{fmtDate(entry.date)}</div>
               </div>
               {entry.desc && (
-                <div style={{fontFamily:"'Crimson Pro',serif",fontSize:14,
-                  color:C.text2,lineHeight:1.5,marginBottom:4}}>{entry.desc}</div>
+                <div style={{fontFamily:"'Crimson Pro',serif",fontSize:16,
+                  color:C.text2,lineHeight:1.6,marginBottom:6}}>{entry.desc}</div>
               )}
               <div style={{display:'flex',gap:12,flexWrap:'wrap'}}>
                 {entry.mileage && (
-                  <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:C.text3}}>
+                  <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:12,color:C.text3}}>
                     📍 {Number(entry.mileage).toLocaleString('ru')} км
                   </span>
                 )}
                 {entry.cost && (
-                  <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:C.goldDeep}}>
+                  <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:12,color:C.goldDeep}}>
                     💰 {Number(entry.cost).toLocaleString('ru')} ₸
                   </span>
                 )}
                 {entry.nextDate && (
-                  <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:C.success}}>
+                  <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:12,color:C.success}}>
                     🔜 след. {fmtDate(entry.nextDate)}
                   </span>
                 )}
@@ -624,7 +616,7 @@ function ServiceBook({ profile, tasks, setTasks, notify }) {
         {log.length > 0 && (
           <div style={{marginTop:12,paddingTop:10,borderTop:`1px solid ${C.lineS}`,
             display:'flex',justifyContent:'space-between',
-            fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:C.text3}}>
+            fontFamily:"'JetBrains Mono',monospace",fontSize:12,color:C.text3}}>
             <span>Записей: {log.length}</span>
             <span>Итого: {log.reduce((s,e)=>s+Number(e.cost||0),0).toLocaleString('ru')} ₸</span>
           </div>
@@ -750,8 +742,8 @@ function AiMaintenancePlanner({ profile, tasks, setTasks, notify }) {
                     alignItems:'flex-start'}}>
                     <span style={{fontSize:22,flexShrink:0}}>{item.emoji}</span>
                     <div style={{flex:1}}>
-                      <div style={{fontFamily:"'Cinzel',serif",fontSize:14,color:C.error,fontWeight:600}}>{item.title}</div>
-                      <div style={{fontFamily:"'Crimson Pro',serif",fontSize:14,color:C.text2,marginTop:3}}>{item.desc}</div>
+                      <div style={{fontFamily:"'Cinzel',serif",fontSize:17,color:C.error,fontWeight:700}}>{item.title}</div>
+                      <div style={{fontFamily:"'Crimson Pro',serif",fontSize:16,color:C.text2,marginTop:5,lineHeight:1.6}}>{item.desc}</div>
                       {item.deadline && <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:C.error,marginTop:4}}>до {item.deadline}</div>}
                     </div>
                     <Btn onClick={()=>addToTasks(item,item.deadline)} variant='danger' size='sm'>+ Задача</Btn>
@@ -772,11 +764,11 @@ function AiMaintenancePlanner({ profile, tasks, setTasks, notify }) {
                     border:`1px solid ${C.lineS}`,marginBottom:8,alignItems:'flex-start'}}>
                     <span style={{fontSize:22,flexShrink:0}}>{item.emoji}</span>
                     <div style={{flex:1}}>
-                      <div style={{fontFamily:"'Cinzel',serif",fontSize:14,color:C.navy,fontWeight:600}}>{item.title}</div>
-                      <div style={{fontFamily:"'Crimson Pro',serif",fontSize:14,color:C.text2,marginTop:3}}>{item.desc}</div>
+                      <div style={{fontFamily:"'Cinzel',serif",fontSize:17,color:C.navy,fontWeight:700}}>{item.title}</div>
+                      <div style={{fontFamily:"'Crimson Pro',serif",fontSize:16,color:C.text2,marginTop:5,lineHeight:1.6}}>{item.desc}</div>
                       <div style={{display:'flex',gap:10,marginTop:4,flexWrap:'wrap'}}>
-                        {item.when && <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:C.text3}}>📅 {item.when}</span>}
-                        {item.mileage && <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:C.text3}}>📍 {item.mileage}</span>}
+                        {item.when && <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:12,color:C.text3}}>📅 {item.when}</span>}
+                        {item.mileage && <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:12,color:C.text3}}>📍 {item.mileage}</span>}
                       </div>
                     </div>
                     <Btn onClick={()=>addToTasks(item)} variant='ghost' size='sm'>+ Задача</Btn>
@@ -797,8 +789,8 @@ function AiMaintenancePlanner({ profile, tasks, setTasks, notify }) {
                     border:`1px solid rgba(196,155,42,0.22)`,marginBottom:8,alignItems:'flex-start'}}>
                     <span style={{fontSize:22,flexShrink:0}}>{item.emoji}</span>
                     <div style={{flex:1}}>
-                      <div style={{fontFamily:"'Cinzel',serif",fontSize:14,color:C.warn,fontWeight:600}}>{item.title}</div>
-                      <div style={{fontFamily:"'Crimson Pro',serif",fontSize:14,color:C.text2,marginTop:3}}>{item.desc}</div>
+                      <div style={{fontFamily:"'Cinzel',serif",fontSize:17,color:C.warn,fontWeight:700}}>{item.title}</div>
+                      <div style={{fontFamily:"'Crimson Pro',serif",fontSize:16,color:C.text2,marginTop:5,lineHeight:1.6}}>{item.desc}</div>
                     </div>
                     <Btn onClick={()=>addToTasks(item)} variant='ghost' size='sm'>+ Задача</Btn>
                   </div>
@@ -959,8 +951,8 @@ function CarTips({ profile, notify }) {
                 <div key={i} style={{display:'flex',gap:8,padding:'9px 0',
                   borderBottom:`1px solid ${C.lineS}`,alignItems:'flex-start'}}>
                   <span style={{color:C.gold,fontWeight:700,flexShrink:0,marginTop:1}}>·</span>
-                  <span style={{fontFamily:"'Crimson Pro',serif",fontSize:15,
-                    color:C.text1,flex:1,lineHeight:1.55}}>{tip}</span>
+                  <span style={{fontFamily:"'Crimson Pro',serif",fontSize:17,
+                    color:C.text1,flex:1,lineHeight:1.65}}>{tip}</span>
                   <button onClick={()=>saveTip(tip)}
                     style={{background:'none',border:'none',color:saved.includes(tip)?C.gold:C.text3,
                       fontSize:18,cursor:'pointer',padding:'0 4px',flexShrink:0}}
@@ -1119,16 +1111,16 @@ function CarDocuments({ profile, setProfile, tasks, setTasks, notify }) {
                     borderLeft:`3px solid ${color}`,
                   }}>
                     <div style={{flex:1}}>
-                      <div style={{fontFamily:"'Crimson Pro',serif",fontSize:15,
-                        color:C.text1,fontWeight:600,marginBottom:2}}>{doc.label}</div>
-                      <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,
+                      <div style={{fontFamily:"'Crimson Pro',serif",fontSize:17,
+                        color:C.text1,fontWeight:700,marginBottom:3}}>{doc.label}</div>
+                      <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:12,
                         color:C.text3,letterSpacing:0.5}}>
                         {doc.expiry ? `до ${fmtDate(doc.expiry)}` : 'не указано'}
                       </div>
                     </div>
                     <div style={{textAlign:'right'}}>
                       <div style={{fontFamily:"'JetBrains Mono',monospace",
-                        fontSize:12,color,fontWeight:700}}>
+                        fontSize:14,color,fontWeight:700}}>
                         {statusText(doc.days)}
                       </div>
                       {doc.expiry && (
@@ -1141,7 +1133,7 @@ function CarDocuments({ profile, setProfile, tasks, setTasks, notify }) {
                         )}
                           style={{background:'none',border:'none',
                             fontFamily:"'JetBrains Mono',monospace",
-                            fontSize:9,color:C.navyMid,cursor:'pointer',
+                            fontSize:11,color:C.navyMid,cursor:'pointer',
                             letterSpacing:1,textDecoration:'underline',marginTop:3}}>
                           + напомнить за 14 дн.
                         </button>
@@ -1172,8 +1164,8 @@ function CarDocuments({ profile, setProfile, tasks, setTasks, notify }) {
                       background:'rgba(255,255,255,0.6)',borderRadius:8}}>
                       <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,
                         color:C.text3,marginBottom:3,letterSpacing:0.5}}>{label}</div>
-                      <div style={{fontFamily:"'Crimson Pro',serif",fontSize:14,
-                        color:C.text1,fontWeight:500}}>{value}</div>
+                      <div style={{fontFamily:"'Crimson Pro',serif",fontSize:16,
+                        color:C.text1,fontWeight:600}}>{value}</div>
                     </div>
                   ))}
                 </div>
@@ -1199,8 +1191,8 @@ function CarDocuments({ profile, setProfile, tasks, setTasks, notify }) {
                       borderRadius:8,background:`rgba(10,37,64,0.04)`,
                       border:`1px solid ${C.lineS}`,textDecoration:'none',transition:'all .2s'}}>
                     <span style={{fontSize:18}}>{site.emoji}</span>
-                    <span style={{fontFamily:"'Crimson Pro',serif",fontSize:15,
-                      color:C.navy,flex:1}}>{site.name}</span>
+                    <span style={{fontFamily:"'Crimson Pro',serif",fontSize:17,
+                      color:C.navy,flex:1,fontWeight:500}}>{site.name}</span>
                     <span style={{color:C.gold,fontSize:14}}>→</span>
                   </a>
                 ))}
@@ -1299,4 +1291,4 @@ export function CarSection() {
       </FlipSection>
     </div>
   );
-        }
+     }
