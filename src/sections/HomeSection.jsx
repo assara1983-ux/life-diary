@@ -87,28 +87,75 @@ function FlipCard({ title, image, badge, children, accentColor='#1E3A5F' }) {
 }
 
 // ─── ЗАДАЧА СТРОКА ───
-function TaskRow({ task, today, onToggle, onDelete, onEdit }) {
+function TaskRow({ task, today, onToggle, onDelete, onEdit, onUpdate }) {
   const done=task.doneDate===today;
   const due=isDue(task,today);
+  const [expanded,setExpanded]=useState(false);
+
+  const hasSchedule=task.preferredTime||task.dueDate;
+
   return (
-    <div style={{display:'flex',alignItems:'flex-start',gap:12,padding:'13px 0',borderBottom:'1px solid rgba(10,37,64,0.07)',opacity:done?0.6:1}}>
-      <div onClick={onToggle} style={{width:24,height:24,borderRadius:6,flexShrink:0,marginTop:2,
-        border:`2px solid ${done?C.success:'rgba(10,37,64,0.28)'}`,
-        background:done?'rgba(26,77,46,0.15)':'rgba(255,255,255,0.7)',
-        display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',transition:'all 0.15s'}}>
-        {done&&<span style={{fontSize:14,color:C.success,fontWeight:700}}>✓</span>}
-      </div>
-      <div style={{flex:1}}>
-        <div style={{fontSize:17,color:done?C.text3:C.text1,fontFamily:"'Crimson Pro',serif",fontWeight:500,textDecoration:done?'line-through':'none',lineHeight:1.3}}>{task.title}</div>
-        <div style={{display:'flex',gap:8,marginTop:4,flexWrap:'wrap',alignItems:'center'}}>
-          <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:due?C.navyMid:C.text3,letterSpacing:0.5}}>{freqLabel(task.freq)}</span>
-          {task.notes&&<span style={{fontFamily:"'Crimson Pro',serif",fontSize:13,color:C.text3,fontStyle:'italic'}}>{task.notes.slice(0,40)}</span>}
+    <div style={{borderBottom:'1px solid rgba(10,37,64,0.07)',opacity:done?0.65:1}}>
+      <div style={{display:'flex',alignItems:'flex-start',gap:12,padding:'13px 0'}}>
+        <div onClick={onToggle} style={{width:24,height:24,borderRadius:6,flexShrink:0,marginTop:2,
+          border:`2px solid ${done?C.success:'rgba(10,37,64,0.28)'}`,
+          background:done?'rgba(26,77,46,0.15)':'rgba(255,255,255,0.7)',
+          display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',transition:'all 0.15s'}}>
+          {done&&<span style={{fontSize:14,color:C.success,fontWeight:700}}>✓</span>}
+        </div>
+        <div style={{flex:1}} onClick={()=>setExpanded(e=>!e)}>
+          <div style={{fontSize:17,color:done?C.text3:C.text1,fontFamily:"'Crimson Pro',serif",fontWeight:500,textDecoration:done?'line-through':'none',lineHeight:1.3}}>{task.title}</div>
+          <div style={{display:'flex',gap:8,marginTop:4,flexWrap:'wrap',alignItems:'center'}}>
+            <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:due?C.navyMid:C.text3,letterSpacing:0.5}}>{freqLabel(task.freq)}</span>
+            {task.preferredTime&&<span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:C.gold,letterSpacing:0.5}}>⏰ {task.preferredTime}</span>}
+            {task.dueDate&&<span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:C.navyMid,letterSpacing:0.5}}>📅 {new Date(task.dueDate+'T00:00:00').toLocaleDateString('ru-RU',{day:'numeric',month:'short'})}</span>}
+            {task.notes&&<span style={{fontFamily:"'Crimson Pro',serif",fontSize:13,color:C.text3,fontStyle:'italic'}}>{task.notes.slice(0,35)}</span>}
+          </div>
+        </div>
+        <div style={{display:'flex',gap:6,flexShrink:0}}>
+          <button onClick={()=>setExpanded(e=>!e)} style={{background:'none',border:'none',fontSize:14,cursor:'pointer',
+            color:expanded?C.gold:C.text3,padding:'2px 4px'}} title="Расписание">📅</button>
+          <button onClick={onEdit} style={{background:'none',border:'none',fontSize:16,cursor:'pointer',color:C.text3,padding:'2px 4px'}}>✏️</button>
+          <button onClick={onDelete} style={{background:'none',border:'none',fontSize:16,cursor:'pointer',color:C.error,padding:'2px 4px',opacity:0.6}}>✕</button>
         </div>
       </div>
-      <div style={{display:'flex',gap:6,flexShrink:0}}>
-        <button onClick={onEdit} style={{background:'none',border:'none',fontSize:16,cursor:'pointer',color:C.text3,padding:'2px 4px'}}>✏️</button>
-        <button onClick={onDelete} style={{background:'none',border:'none',fontSize:16,cursor:'pointer',color:C.error,padding:'2px 4px',opacity:0.6}}>✕</button>
-      </div>
+
+      {/* Инлайн-редактирование расписания */}
+      {expanded&&(
+        <div style={{padding:'10px 14px 14px',marginBottom:8,background:'rgba(212,175,55,0.06)',
+          borderRadius:10,border:'1px solid rgba(212,175,55,0.25)',
+          borderLeft:`3px solid ${C.gold}`}}>
+          <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,letterSpacing:2,
+            color:C.goldDeep,textTransform:'uppercase',marginBottom:12}}>
+            📅 В расписание
+          </div>
+          <div style={{display:'flex',gap:12,flexWrap:'wrap',marginBottom:12}}>
+            <div>
+              <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:1.5,color:C.text3,textTransform:'uppercase',marginBottom:5}}>Дата начала</div>
+              <input type="date" value={task.dueDate||''} onChange={e=>onUpdate(task.id,'dueDate',e.target.value)}
+                style={{padding:'8px 12px',border:`1.5px solid rgba(212,175,55,0.35)`,borderRadius:8,
+                  fontFamily:"'JetBrains Mono',monospace",fontSize:14,outline:'none',
+                  background:'rgba(255,255,255,0.85)',color:C.text1}}/>
+            </div>
+            <div>
+              <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:1.5,color:C.text3,textTransform:'uppercase',marginBottom:5}}>Время</div>
+              <input type="time" value={task.preferredTime||''} onChange={e=>onUpdate(task.id,'preferredTime',e.target.value)}
+                style={{padding:'8px 12px',border:`1.5px solid rgba(212,175,55,0.35)`,borderRadius:8,
+                  fontFamily:"'JetBrains Mono',monospace",fontSize:14,outline:'none',
+                  background:'rgba(255,255,255,0.85)',color:C.text1,width:110}}/>
+            </div>
+          </div>
+          {(task.dueDate||task.preferredTime)&&(
+            <div style={{padding:'8px 12px',borderRadius:8,
+              background:'rgba(26,77,46,0.08)',border:'1px solid rgba(26,77,46,0.20)',
+              fontFamily:"'Crimson Pro',serif",fontSize:14,color:C.success}}>
+              ✓ Задача появится в разделах Сегодня и Расписание
+              {task.dueDate&&` с ${new Date(task.dueDate+'T00:00:00').toLocaleDateString('ru-RU',{day:'numeric',month:'long'})}`}
+              {task.preferredTime&&` в ${task.preferredTime}`}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -118,6 +165,7 @@ function SimpleTaskModal({ task, defaultFreq='daily', onSave, onClose }) {
   const [form,setForm]=useState({
     title: task?.title||'', freq: task?.freq||defaultFreq,
     priority: task?.priority||'m', preferredTime: task?.preferredTime||'',
+    dueDate: task?.dueDate||'',
     notes: task?.notes||'',
   });
   const FREQS=[['daily','Ежедневно'],['every:2','Каждые 2 дня'],['every:7','Раз в неделю'],['every:14','Раз в 2 нед.'],['every:30','Раз в месяц'],['every:90','Раз в квартал'],['once','Разово']];
@@ -129,13 +177,39 @@ function SimpleTaskModal({ task, defaultFreq='daily', onSave, onClose }) {
         <div style={{fontFamily:"'Cinzel',serif",fontSize:18,fontWeight:700,color:C.navy,letterSpacing:2,textTransform:'uppercase',marginBottom:20,paddingBottom:12,borderBottom:`1.5px solid ${C.line}`}}>
           {task?.id?'Изменить задачу':'Новая задача'}
         </div>
-        {[['Название','title','text','Название задачи...'],['Время','preferredTime','time',''],['Заметка','notes','text','Подсказка...']].map(([lbl,key,type,ph])=>(
+        {[['Название','title','text','Название задачи...'],['Заметка','notes','text','Подсказка...']].map(([lbl,key,type,ph])=>(
           <div key={key} style={{marginBottom:14}}>
             <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,letterSpacing:2,color:C.navyMid,textTransform:'uppercase',marginBottom:6}}>{lbl}</div>
             <input type={type} value={form[key]||''} onChange={e=>setForm(p=>({...p,[key]:e.target.value}))} placeholder={ph}
               style={{width:'100%',padding:'11px 14px',border:`1.5px solid ${C.line}`,borderRadius:8,fontFamily:"'Crimson Pro',serif",fontSize:16,color:C.text1,outline:'none',background:'rgba(250,243,224,0.8)'}}/>
           </div>
         ))}
+
+        {/* Расписание */}
+        <div style={{marginBottom:14,padding:'14px 16px',borderRadius:10,
+          background:'rgba(212,175,55,0.06)',border:'1px solid rgba(212,175,55,0.22)',
+          borderLeft:`3px solid ${C.gold}`}}>
+          <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,letterSpacing:2,color:C.goldDeep,textTransform:'uppercase',marginBottom:12}}>📅 В расписание</div>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
+            <div>
+              <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:1.5,color:C.text3,textTransform:'uppercase',marginBottom:5}}>Дата начала</div>
+              <input type="date" value={form.dueDate||''} onChange={e=>setForm(p=>({...p,dueDate:e.target.value}))}
+                style={{width:'100%',padding:'10px 12px',border:`1.5px solid rgba(212,175,55,0.35)`,borderRadius:8,fontFamily:"'JetBrains Mono',monospace",fontSize:14,color:C.text1,outline:'none',background:'rgba(255,255,255,0.85)'}}/>
+            </div>
+            <div>
+              <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:1.5,color:C.text3,textTransform:'uppercase',marginBottom:5}}>Время</div>
+              <input type="time" value={form.preferredTime||''} onChange={e=>setForm(p=>({...p,preferredTime:e.target.value}))}
+                style={{width:'100%',padding:'10px 12px',border:`1.5px solid rgba(212,175,55,0.35)`,borderRadius:8,fontFamily:"'JetBrains Mono',monospace",fontSize:14,color:C.text1,outline:'none',background:'rgba(255,255,255,0.85)'}}/>
+            </div>
+          </div>
+          {(form.dueDate||form.preferredTime)&&(
+            <div style={{marginTop:10,padding:'8px 12px',borderRadius:8,background:'rgba(26,77,46,0.08)',border:'1px solid rgba(26,77,46,0.20)',fontFamily:"'Crimson Pro',serif",fontSize:14,color:C.success}}>
+              ✓ Появится в Сегодня и Расписании
+              {form.dueDate&&` с ${new Date(form.dueDate+'T00:00:00').toLocaleDateString('ru-RU',{day:'numeric',month:'long'})}`}
+              {form.preferredTime&&` в ${form.preferredTime}`}
+            </div>
+          )}
+        </div>
         <div style={{marginBottom:18}}>
           <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,letterSpacing:2,color:C.navyMid,textTransform:'uppercase',marginBottom:8}}>Периодичность</div>
           <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
@@ -160,7 +234,7 @@ function SimpleTaskModal({ task, defaultFreq='daily', onSave, onClose }) {
 }
 
 // ─── БЛОК ЗАДАЧ ───
-function TaskBlock({ title, tasks, today, accentColor, onToggle, onDelete, onEdit, onAdd, autoLabel, onAuto }) {
+function TaskBlock({ title, tasks, today, accentColor, onToggle, onDelete, onEdit, onAdd, autoLabel, onAuto, onUpdate }) {
   const dueCount=tasks.filter(t=>isDue(t,today)).length;
   const doneCount=tasks.filter(t=>t.doneDate===today).length;
   return (
@@ -185,7 +259,8 @@ function TaskBlock({ title, tasks, today, accentColor, onToggle, onDelete, onEdi
           <TaskRow key={task.id} task={task} today={today}
             onToggle={()=>onToggle(task.id)}
             onDelete={()=>onDelete(task.id)}
-            onEdit={()=>onEdit(task)}/>
+            onEdit={()=>onEdit(task)}
+            onUpdate={onUpdate}/>
         ))
       )}
     </div>
@@ -476,6 +551,8 @@ export function HomeSection() {
   const deep   =homeTasks.filter(t=>t.freq?.startsWith('every:14')||t.freq?.startsWith('every:30')||t.freq?.startsWith('every:90')||t.freq==='once');
 
   const toggleTask=(id)=>setTasks(p=>p.map(t=>t.id===id?{...t,doneDate:t.doneDate===today?null:today,lastDone:t.doneDate===today?t.lastDone:today}:t));
+  // ✅ Синхронизация: изменения распространяются на Сегодня и Расписание через общий tasks
+  const updateTask=(id,field,value)=>setTasks(p=>p.map(t=>t.id===id?{...t,[field]:value}:t));
   const deleteTask=(id)=>setTasks(p=>p.filter(t=>t.id!==id));
   const saveTask=(task)=>{
     setTasks(p=>p.find(t=>t.id===task.id)?p.map(t=>t.id===task.id?task:t):[...p,task]);
@@ -570,7 +647,7 @@ export function HomeSection() {
         <TaskBlock title="Ежедневные задачи" tasks={daily} today={today} accentColor={CARD_COLORS.daily.accent}
           onToggle={toggleTask} onDelete={deleteTask} onEdit={setModal}
           onAdd={()=>setModal({freq:'daily'})}
-          autoLabel="Авто-заполнить" onAuto={autoDaily}/>
+          autoLabel="Авто-заполнить" onAuto={autoDaily} onUpdate={updateTask}/>
       </FlipCard>
 
       {/* [2] Еженедельная уборка */}
@@ -583,7 +660,7 @@ export function HomeSection() {
         <TaskBlock title="Еженедельные задачи" tasks={weekly} today={today} accentColor={CARD_COLORS.weekly.accent}
           onToggle={toggleTask} onDelete={deleteTask} onEdit={setModal}
           onAdd={()=>setModal({freq:'every:7'})}
-          autoLabel="Авто-заполнить" onAuto={autoWeekly}/>
+          autoLabel="Авто-заполнить" onAuto={autoWeekly} onUpdate={updateTask}/>
       </FlipCard>
 
       {/* [3] Генеральная и редкая */}
@@ -591,7 +668,7 @@ export function HomeSection() {
         <TaskBlock title="Редкие и генеральные" tasks={deep} today={today} accentColor={CARD_COLORS.deep.accent}
           onToggle={toggleTask} onDelete={deleteTask} onEdit={setModal}
           onAdd={()=>setModal({freq:'every:30'})}
-          autoLabel="Авто-заполнить" onAuto={autoDeep}/>
+          autoLabel="Авто-заполнить" onAuto={autoDeep} onUpdate={updateTask}/>
       </FlipCard>
 
       {/* [4] Инвентарь */}
@@ -616,4 +693,4 @@ export function HomeSection() {
       )}
     </div>
   );
-      }
+    }
