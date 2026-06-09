@@ -542,17 +542,6 @@ export function BeautySection() {
   return (
     <div style={{paddingBottom:80,padding:'0 16px 80px'}}>
 
-      {/* Подсказка по коже — только если есть */}
-      {skinInfo&&(
-        <div style={{marginBottom:16,padding:'12px 16px',borderRadius:12,background:'rgba(184,107,93,0.08)',border:'1.5px solid rgba(184,107,93,0.22)',borderLeft:'4px solid rgba(184,107,93,0.7)',display:'flex',gap:12,alignItems:'flex-start'}}>
-          <span style={{fontSize:22,flexShrink:0}}>💆</span>
-          <div style={{fontFamily:"'Crimson Pro',serif",fontSize:17,color:C.text2,lineHeight:1.6}}>
-            <strong style={{color:'rgba(184,107,93,0.9)',fontFamily:"'Cinzel',serif",fontSize:14,letterSpacing:1}}>{profile.skinType} кожа</strong>
-            <br/>{skinInfo}
-          </div>
-        </div>
-      )}
-
       <FlipCard title="Каталог процедур" image="/beauty/beauty-catalog.jpg"
         badge={beautyTasks.length>0&&(
           <div style={{padding:'5px 12px',borderRadius:20,background:'rgba(26,77,46,0.85)',fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:'#fff',letterSpacing:1,fontWeight:600}}>
@@ -577,4 +566,4 @@ export function BeautySection() {
 
     </div>
   );
-                  }
+    }
