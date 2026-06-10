@@ -14,7 +14,12 @@ function localDateStr(date) {
 // ─── УТИЛИТЫ ───
 function isDueOnDay(task, dStr) {
   const d = new Date(dStr + 'T00:00:00');
-  if (!task.freq) return false;
+
+  // Задача с конкретной датой — не показываем раньше
+  if (task.dueDate && dStr < task.dueDate) return false;
+
+  if (!task.freq) return !!task.dueDate && dStr === task.dueDate;
+  if (task.freq === 'once') return task.dueDate === dStr;
   if (task.freq === 'daily') return true;
   if (task.freq === 'workdays') { const dn = d.getDay(); return dn >= 1 && dn <= 5; }
   if (task.freq.startsWith('weekly:')) {
@@ -22,7 +27,7 @@ function isDueOnDay(task, dStr) {
   }
   if (task.freq.startsWith('every:')) {
     const n = parseInt(task.freq.split(':')[1]);
-    const start = task.beautyStartDate || task.createdAt?.split('T')[0] || dStr;
+    const start = task.dueDate || task.beautyStartDate || task.createdAt?.split('T')[0] || dStr;
     if (dStr < start) return false;
     const diffDays = Math.floor(
       (new Date(dStr + 'T00:00:00') - new Date(start + 'T00:00:00')) / 86400000
@@ -134,8 +139,12 @@ export function ScheduleSection() {
 
               // 2. Обычные задачи (не beauty)
               const regularTasks = tasks
-                .filter(t => t.section !== 'beauty' && t.preferredTime && (isDueOnDay(t, dStr) || t.doneDate === dStr))
-                .map(t => ({ type: 'task', time: t.preferredTime, task: t }));
+                .filter(t =>
+                  t.section !== 'beauty' &&
+                  (t.preferredTime || t.dueDate === dStr) &&
+                  (isDueOnDay(t, dStr) || t.doneDate === dStr)
+                )
+                .map(t => ({ type: 'task', time: t.preferredTime || '00:00', task: t }));
 
               // 3. Beauty-блок — группируем подряд идущие
               const beautyDue = tasks.filter(t =>
