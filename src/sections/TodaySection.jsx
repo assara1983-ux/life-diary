@@ -9,13 +9,21 @@ function localDateStr(date) {
 
 function isDueOnDay(task, dStr) {
   const d = new Date(dStr + 'T00:00:00');
-  if (!task.freq) return false;
+
+  // Задача с конкретной датой начала — показываем начиная с этой даты
+  if (task.dueDate) {
+    if (dStr < task.dueDate) return false; // ещё не наступила
+  }
+
+  if (!task.freq) return !!task.dueDate && dStr === task.dueDate;
+  if (task.freq === 'once') return task.dueDate === dStr;
   if (task.freq === 'daily') return true;
   if (task.freq === 'workdays') { const dn = d.getDay(); return dn >= 1 && dn <= 5; }
   if (task.freq.startsWith('weekly:')) return task.freq.split(':')[1].split(',').map(Number).includes(d.getDay());
   if (task.freq.startsWith('every:')) {
     const n = parseInt(task.freq.split(':')[1]);
-    const start = task.beautyStartDate || task.createdAt?.split('T')[0] || dStr;
+    // Для home-задач используем dueDate как точку отсчёта
+    const start = task.dueDate || task.beautyStartDate || task.createdAt?.split('T')[0] || dStr;
     if (dStr < start) return false;
     const diffDays = Math.floor((new Date(dStr+'T00:00:00') - new Date(start+'T00:00:00')) / 86400000);
     return diffDays >= 0 && diffDays % n === 0;
@@ -336,20 +344,44 @@ function ScheduleBlock({ todayItems, today, tasks, setTasks, profile, now }) {
                     if (item.type === 'task') {
                       const done = item.task.doneDate === today;
                       return (
-                        <div key={j} style={{ display:'flex', alignItems:'center', gap:6 }}>
+                        <div key={j}
+                          style={{ display:'flex', alignItems:'center', gap:8, padding:'3px 0', cursor:'pointer' }}
+                          onClick={e => {
+                            e.stopPropagation();
+                            setTasks(p => p.map(t => t.id === item.task.id
+                              ? { ...t,
+                                  doneDate: t.doneDate === today ? null : today,
+                                  lastDone: t.doneDate === today ? t.lastDone : today }
+                              : t));
+                          }}
+                        >
                           <div style={{
-                            width:14, height:14, borderRadius:3, flexShrink:0,
-                            border:`1.5px solid ${done ? '#2D5A3D' : 'rgba(10,37,64,0.30)'}`,
-                            background: done ? '#2D5A3D' : 'rgba(255,255,255,0.6)',
+                            width:18, height:18, borderRadius:4, flexShrink:0,
+                            border:`2px solid ${done ? '#2D5A3D' : 'rgba(10,37,64,0.30)'}`,
+                            background: done ? '#2D5A3D' : 'rgba(255,255,255,0.7)',
                             display:'flex', alignItems:'center', justifyContent:'center',
-                            fontSize:9, color:'#fff',
+                            fontSize:11, color:'#fff', transition:'all 0.15s',
                           }}>{done ? '✓' : ''}</div>
-                          <span style={{
-                            fontSize:13,
-                            color: done ? 'rgba(10,37,64,0.35)' : '#0A2540',
-                            textDecoration: done ? 'line-through' : 'none',
-                            fontFamily:"'Crimson Pro',serif",
-                          }}>{item.task.title}</span>
+                          <div style={{ flex:1 }}>
+                            <div style={{
+                              fontSize:15,
+                              color: done ? 'rgba(10,37,64,0.35)' : '#0A2540',
+                              textDecoration: done ? 'line-through' : 'none',
+                              fontFamily:"'Crimson Pro',serif", lineHeight:1.3,
+                            }}>{item.task.title}</div>
+                            {item.task.section === 'home' && (
+                              <div style={{ fontSize:10, color:'rgba(10,37,64,0.40)',
+                                fontFamily:"'JetBrains Mono',monospace", letterSpacing:0.5 }}>
+                                🏠 Дом
+                              </div>
+                            )}
+                            {item.task.section === 'car' && (
+                              <div style={{ fontSize:10, color:'rgba(10,37,64,0.40)',
+                                fontFamily:"'JetBrains Mono',monospace", letterSpacing:0.5 }}>
+                                🚗 Авто
+                              </div>
+                            )}
+                          </div>
                         </div>
                       );
                     }
@@ -427,10 +459,11 @@ export function TodaySection() {
   const todayItems = useMemo(() => {
     const result = [];
     const regularTasks = tasks.filter(t =>
-      t.section !== 'beauty' && t.preferredTime &&
+      t.section !== 'beauty' &&
+      (t.preferredTime || t.dueDate === today) &&
       (isDueOnDay(t, today) || t.doneDate === today)
     );
-    regularTasks.forEach(t => result.push({ type:'task', time:t.preferredTime, task:t }));
+    regularTasks.forEach(t => result.push({ type:'task', time:t.preferredTime || '00:00', task:t }));
 
     const beautyDue = tasks.filter(t =>
       t.section === 'beauty' && t.preferredTime &&
@@ -622,4 +655,4 @@ export function TodaySection() {
       />
     </div>
   );
-}
+                     }
