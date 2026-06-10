@@ -129,21 +129,45 @@ function TaskRow({ task, today, onToggle, onDelete, onEdit, onUpdate }) {
             color:C.goldDeep,textTransform:'uppercase',marginBottom:12}}>
             📅 В расписание
           </div>
-          <div style={{display:'flex',gap:12,flexWrap:'wrap',marginBottom:12}}>
-            <div>
-              <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:1.5,color:C.text3,textTransform:'uppercase',marginBottom:5}}>Дата начала</div>
-              <input type="date" value={task.dueDate||''} onChange={e=>onUpdate(task.id,'dueDate',e.target.value)}
-                style={{padding:'8px 12px',border:`1.5px solid rgba(212,175,55,0.35)`,borderRadius:8,
-                  fontFamily:"'JetBrains Mono',monospace",fontSize:14,outline:'none',
-                  background:'rgba(255,255,255,0.85)',color:C.text1}}/>
+          {/* Быстрые кнопки даты */}
+          <div style={{marginBottom:10}}>
+            <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.text3,letterSpacing:1.5,textTransform:'uppercase',marginBottom:7}}>Дата начала</div>
+            <div style={{display:'flex',gap:7,flexWrap:'wrap',marginBottom:8}}>
+              {[['Сегодня',localDateStr(new Date())],['Завтра',localDateStr(new Date(Date.now()+86400000))],['+7 дней',localDateStr(new Date(Date.now()+7*86400000))]].map(([lbl,val])=>(
+                <button key={lbl} onClick={()=>onUpdate(task.id,'dueDate',val)}
+                  style={{padding:'8px 13px',borderRadius:8,cursor:'pointer',
+                    fontFamily:"'Crimson Pro',serif",fontSize:14,
+                    border:`1.5px solid ${task.dueDate===val?'rgba(212,175,55,0.7)':'rgba(212,175,55,0.25)'}`,
+                    background:task.dueDate===val?'rgba(212,175,55,0.18)':'rgba(255,255,255,0.6)',
+                    color:task.dueDate===val?C.goldDeep:C.text2,fontWeight:task.dueDate===val?700:400}}>
+                  {lbl}
+                </button>
+              ))}
             </div>
-            <div>
-              <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:1.5,color:C.text3,textTransform:'uppercase',marginBottom:5}}>Время</div>
-              <input type="time" value={task.preferredTime||''} onChange={e=>onUpdate(task.id,'preferredTime',e.target.value)}
-                style={{padding:'8px 12px',border:`1.5px solid rgba(212,175,55,0.35)`,borderRadius:8,
-                  fontFamily:"'JetBrains Mono',monospace",fontSize:14,outline:'none',
-                  background:'rgba(255,255,255,0.85)',color:C.text1,width:110}}/>
+            <input type="date" value={task.dueDate||''} onChange={e=>onUpdate(task.id,'dueDate',e.target.value)}
+              style={{width:'100%',padding:'8px 12px',border:`1.5px solid rgba(212,175,55,0.30)`,borderRadius:8,
+                fontFamily:"'JetBrains Mono',monospace",fontSize:14,outline:'none',
+                background:'rgba(255,255,255,0.85)',color:C.text1}}/>
+          </div>
+          {/* Быстрые кнопки времени */}
+          <div style={{marginBottom:12}}>
+            <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.text3,letterSpacing:1.5,textTransform:'uppercase',marginBottom:7}}>Время</div>
+            <div style={{display:'flex',gap:7,flexWrap:'wrap',marginBottom:8}}>
+              {['09:00','12:00','18:00','20:00','21:00'].map(t=>(
+                <button key={t} onClick={()=>onUpdate(task.id,'preferredTime',t)}
+                  style={{padding:'8px 12px',borderRadius:8,cursor:'pointer',
+                    fontFamily:"'JetBrains Mono',monospace",fontSize:13,
+                    border:`1.5px solid ${task.preferredTime===t?'rgba(30,58,95,0.6)':'rgba(10,37,64,0.15)'}`,
+                    background:task.preferredTime===t?'rgba(30,58,95,0.12)':'rgba(255,255,255,0.6)',
+                    color:task.preferredTime===t?C.navyMid:C.text3,fontWeight:task.preferredTime===t?700:400}}>
+                  {t}
+                </button>
+              ))}
             </div>
+            <input type="time" value={task.preferredTime||''} onChange={e=>onUpdate(task.id,'preferredTime',e.target.value)}
+              style={{width:'100%',padding:'8px 12px',border:`1.5px solid rgba(10,37,64,0.18)`,borderRadius:8,
+                fontFamily:"'JetBrains Mono',monospace",fontSize:14,outline:'none',
+                background:'rgba(255,255,255,0.85)',color:C.text1}}/>
           </div>
           {(task.dueDate||task.preferredTime)&&(
             <div style={{padding:'8px 12px',borderRadius:8,
@@ -190,22 +214,74 @@ function SimpleTaskModal({ task, defaultFreq='daily', onSave, onClose }) {
           background:'rgba(212,175,55,0.06)',border:'1px solid rgba(212,175,55,0.22)',
           borderLeft:`3px solid ${C.gold}`}}>
           <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,letterSpacing:2,color:C.goldDeep,textTransform:'uppercase',marginBottom:12}}>📅 В расписание</div>
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
-            <div>
-              <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:1.5,color:C.text3,textTransform:'uppercase',marginBottom:5}}>Дата начала</div>
-              <input type="date" value={form.dueDate||''} onChange={e=>setForm(p=>({...p,dueDate:e.target.value}))}
-                style={{width:'100%',padding:'10px 12px',border:`1.5px solid rgba(212,175,55,0.35)`,borderRadius:8,fontFamily:"'JetBrains Mono',monospace",fontSize:14,color:C.text1,outline:'none',background:'rgba(255,255,255,0.85)'}}/>
+
+          {/* Быстрый выбор даты */}
+          <div style={{marginBottom:10}}>
+            <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:1.5,color:C.text3,textTransform:'uppercase',marginBottom:8}}>Дата начала</div>
+            <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:8}}>
+              {[
+                ['Сегодня', localDateStr(new Date())],
+                ['Завтра',  localDateStr(new Date(Date.now()+86400000))],
+                ['Послезавтра', localDateStr(new Date(Date.now()+2*86400000))],
+                ['+7 дней', localDateStr(new Date(Date.now()+7*86400000))],
+              ].map(([label, val]) => (
+                <button key={label} onClick={()=>setForm(p=>({...p,dueDate:val}))}
+                  style={{padding:'9px 14px',borderRadius:9,cursor:'pointer',
+                    fontFamily:"'Crimson Pro',serif",fontSize:15,
+                    border:`1.5px solid ${form.dueDate===val?'rgba(212,175,55,0.7)':'rgba(212,175,55,0.25)'}`,
+                    background:form.dueDate===val?'rgba(212,175,55,0.18)':'rgba(255,255,255,0.6)',
+                    color:form.dueDate===val?C.goldDeep:C.text2,
+                    fontWeight:form.dueDate===val?700:400}}>
+                  {label}
+                </button>
+              ))}
             </div>
-            <div>
-              <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:1.5,color:C.text3,textTransform:'uppercase',marginBottom:5}}>Время</div>
-              <input type="time" value={form.preferredTime||''} onChange={e=>setForm(p=>({...p,preferredTime:e.target.value}))}
-                style={{width:'100%',padding:'10px 12px',border:`1.5px solid rgba(212,175,55,0.35)`,borderRadius:8,fontFamily:"'JetBrains Mono',monospace",fontSize:14,color:C.text1,outline:'none',background:'rgba(255,255,255,0.85)'}}/>
+            {/* Или ввести точную дату */}
+            <div style={{display:'flex',alignItems:'center',gap:10}}>
+              <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:C.text3,letterSpacing:1,whiteSpace:'nowrap'}}>Или дата:</span>
+              <input type="date" value={form.dueDate||''} onChange={e=>setForm(p=>({...p,dueDate:e.target.value}))}
+                style={{flex:1,padding:'9px 12px',border:`1.5px solid rgba(212,175,55,0.35)`,borderRadius:9,
+                  fontFamily:"'JetBrains Mono',monospace",fontSize:15,color:C.text1,outline:'none',
+                  background:'rgba(255,255,255,0.85)',minWidth:0}}/>
+              {form.dueDate&&<button onClick={()=>setForm(p=>({...p,dueDate:''}))}
+                style={{background:'none',border:'none',color:C.text3,fontSize:18,cursor:'pointer',padding:'0 4px'}}>✕</button>}
             </div>
           </div>
+
+          {/* Время */}
+          <div style={{marginBottom:10}}>
+            <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:1.5,color:C.text3,textTransform:'uppercase',marginBottom:8}}>Время</div>
+            <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:8}}>
+              {['07:00','09:00','12:00','15:00','18:00','20:00','21:00'].map(t=>(
+                <button key={t} onClick={()=>setForm(p=>({...p,preferredTime:t}))}
+                  style={{padding:'9px 12px',borderRadius:9,cursor:'pointer',
+                    fontFamily:"'JetBrains Mono',monospace",fontSize:14,
+                    border:`1.5px solid ${form.preferredTime===t?'rgba(30,58,95,0.6)':'rgba(10,37,64,0.15)'}`,
+                    background:form.preferredTime===t?'rgba(30,58,95,0.12)':'rgba(255,255,255,0.6)',
+                    color:form.preferredTime===t?C.navyMid:C.text3,
+                    fontWeight:form.preferredTime===t?700:400}}>
+                  {t}
+                </button>
+              ))}
+            </div>
+            <div style={{display:'flex',alignItems:'center',gap:10}}>
+              <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:C.text3,letterSpacing:1,whiteSpace:'nowrap'}}>Или время:</span>
+              <input type="time" value={form.preferredTime||''} onChange={e=>setForm(p=>({...p,preferredTime:e.target.value}))}
+                style={{flex:1,padding:'9px 12px',border:`1.5px solid rgba(10,37,64,0.22)`,borderRadius:9,
+                  fontFamily:"'JetBrains Mono',monospace",fontSize:15,color:C.text1,outline:'none',
+                  background:'rgba(255,255,255,0.85)',minWidth:0}}/>
+              {form.preferredTime&&<button onClick={()=>setForm(p=>({...p,preferredTime:''}))}
+                style={{background:'none',border:'none',color:C.text3,fontSize:18,cursor:'pointer',padding:'0 4px'}}>✕</button>}
+            </div>
+          </div>
+
+          {/* Подтверждение */}
           {(form.dueDate||form.preferredTime)&&(
-            <div style={{marginTop:10,padding:'8px 12px',borderRadius:8,background:'rgba(26,77,46,0.08)',border:'1px solid rgba(26,77,46,0.20)',fontFamily:"'Crimson Pro',serif",fontSize:14,color:C.success}}>
-              ✓ Появится в Сегодня и Расписании
-              {form.dueDate&&` с ${new Date(form.dueDate+'T00:00:00').toLocaleDateString('ru-RU',{day:'numeric',month:'long'})}`}
+            <div style={{padding:'10px 14px',borderRadius:9,background:'rgba(26,77,46,0.08)',
+              border:'1px solid rgba(26,77,46,0.22)',
+              fontFamily:"'Crimson Pro',serif",fontSize:15,color:C.success,lineHeight:1.5}}>
+              ✓ Появится в <strong>Сегодня</strong> и <strong>Расписании</strong>
+              {form.dueDate&&` · ${new Date(form.dueDate+'T00:00:00').toLocaleDateString('ru-RU',{weekday:'short',day:'numeric',month:'long'})}`}
               {form.preferredTime&&` в ${form.preferredTime}`}
             </div>
           )}
@@ -693,4 +769,4 @@ export function HomeSection() {
       )}
     </div>
   );
-    }
+}
