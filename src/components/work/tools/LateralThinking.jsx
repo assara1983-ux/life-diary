@@ -91,7 +91,7 @@ export function LateralThinking() {
       {/* Заголовок */}
       <div style={{ marginBottom: 20 }}>
         <div style={{
-          fontSize: 11, fontFamily: "'JetBrains Mono',monospace",
+          fontSize: 14, fontFamily: "'JetBrains Mono',monospace",
           letterSpacing: 3, color: 'var(--text3)', marginBottom: 4,
         }}>НЕСТАНДАРТНОЕ МЫШЛЕНИЕ</div>
         <div style={{ fontSize: 18, fontFamily: "'Cormorant Infant',serif", color: 'var(--text0)' }}>
@@ -107,8 +107,8 @@ export function LateralThinking() {
         borderRadius: 12,
       }}>
         <div style={{
-          fontSize: 10, fontFamily: "'JetBrains Mono',monospace",
-          letterSpacing: 2, color: '#0070c0', marginBottom: 8,
+          fontSize: 13, fontFamily: "'JetBrains Mono',monospace",
+          letterSpacing: 2, color: BT.navyMid, marginBottom: 8,
           display: 'flex', alignItems: 'center', gap: 6,
         }}>
           <span style={{
@@ -127,14 +127,14 @@ export function LateralThinking() {
             background: 'rgba(255,255,255,0.8)',
             border: '1px solid rgba(0,112,192,0.15)',
             borderRadius: 8, color: 'var(--text0)',
-            fontSize: 13, lineHeight: 1.5,
+            fontSize: 16, lineHeight: 1.5,
             resize: 'vertical', outline: 'none',
             boxSizing: 'border-box',
           }}
         />
         {situation.trim() && (
           <div style={{
-            marginTop: 6, fontSize: 11, color: '#0070c0',
+            marginTop: 6, fontSize: 14, color: BT.navyMid,
             fontFamily: "'JetBrains Mono',monospace",
           }}>✓ Контекст добавлен — ИИ учтёт его в ответе</div>
         )}
@@ -144,12 +144,12 @@ export function LateralThinking() {
       {workTasks.length > 0 && (
         <div style={{
           marginBottom: 16, padding: '12px 14px',
-          background: 'rgba(0,0,0,0.02)',
+          background: 'rgba(250,243,224,0.02)',
           border: '1px solid rgba(0,0,0,0.07)',
           borderRadius: 10,
         }}>
           <div style={{
-            fontSize: 10, fontFamily: "'JetBrains Mono',monospace",
+            fontSize: 13, fontFamily: "'JetBrains Mono',monospace",
             letterSpacing: 1, color: 'var(--text3)', marginBottom: 8,
           }}>ПРИВЯЗАТЬ К ЗАДАЧЕ (необязательно)</div>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -157,7 +157,7 @@ export function LateralThinking() {
               <div key={t.id}
                 onClick={() => setSelectedTask(selectedTask?.id === t.id ? null : t)}
                 style={{
-                  padding: '5px 12px', borderRadius: 12, cursor: 'pointer', fontSize: 11,
+                  padding: '5px 12px', borderRadius: 12, cursor: 'pointer', fontSize: 14,
                   border: `1px solid ${selectedTask?.id === t.id ? 'rgba(0,112,192,0.4)' : 'rgba(0,0,0,0.1)'}`,
                   background: selectedTask?.id === t.id ? 'rgba(0,112,192,0.08)' : 'transparent',
                   color: selectedTask?.id === t.id ? '#0070c0' : 'var(--text3)',
@@ -185,7 +185,7 @@ export function LateralThinking() {
             {currentPrompt}
           </div>
         ) : (
-          <div style={{ fontSize: 13, color: 'var(--text3)', fontFamily: "'Cormorant Infant',serif" }}>
+          <div style={{ fontSize: 16, color: 'var(--text3)', fontFamily: "'Cormorant Infant',serif" }}>
             Нажмите кнопку, чтобы получить новый угол зрения
           </div>
         )}
@@ -212,12 +212,12 @@ export function LateralThinking() {
           background: 'rgba(0,112,192,0.04)',
           border: '1px solid rgba(0,112,192,0.15)',
           borderLeft: '3px solid #0070c0',
-          borderRadius: 12, fontSize: 13, lineHeight: 1.7,
+          borderRadius: 12, fontSize: 16, lineHeight: 1.7,
           color: 'var(--text1)',
         }}>
           <div style={{
-            fontSize: 9, fontFamily: "'JetBrains Mono',monospace",
-            letterSpacing: 2, color: '#0070c0', marginBottom: 8,
+            fontSize: 12, fontFamily: "'JetBrains Mono',monospace",
+            letterSpacing: 2, color: BT.navyMid, marginBottom: 8,
           }}>ИИ АНАЛИЗ</div>
           {loading ? (
             <div style={{ color: 'var(--text3)', fontFamily: "'JetBrains Mono',monospace" }}>
@@ -231,7 +231,7 @@ export function LateralThinking() {
       {history.length > 0 && (
         <div>
           <div style={{
-            fontSize: 10, fontFamily: "'JetBrains Mono',monospace",
+            fontSize: 13, fontFamily: "'JetBrains Mono',monospace",
             letterSpacing: 2, color: 'var(--text3)', marginBottom: 10,
           }}>ИСТОРИЯ ПРОМПТОВ · {history.length}</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -243,7 +243,7 @@ export function LateralThinking() {
                   background: currentPrompt === p ? 'rgba(0,112,192,0.05)' : 'rgba(0,0,0,0.02)',
                   border: `1px solid ${currentPrompt === p ? 'rgba(0,112,192,0.2)' : 'rgba(0,0,0,0.06)'}`,
                   borderLeft: currentPrompt === p ? '2px solid #0070c0' : '1px solid rgba(0,0,0,0.06)',
-                  borderRadius: 8, cursor: 'pointer', fontSize: 12,
+                  borderRadius: 8, cursor: 'pointer', fontSize: 15,
                   color: 'var(--text2)', lineHeight: 1.5, transition: 'all 0.15s',
                 }}
               >{p}</div>
