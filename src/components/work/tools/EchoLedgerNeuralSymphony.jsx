@@ -182,7 +182,7 @@ export function EchoLedgerNeuralSymphony() {
       {/* Заголовок */}
       <div style={{ marginBottom: 20 }}>
         <div style={{
-          fontSize: 11, fontFamily: "'JetBrains Mono',monospace",
+          fontSize: 14, fontFamily: "'JetBrains Mono',monospace",
           letterSpacing: 3, color: 'rgba(200,164,90,0.7)', marginBottom: 4,
         }}>ECHO LEDGER</div>
         <div style={{ fontSize: 18, fontFamily: "'Cormorant Infant',serif" }}>
@@ -200,12 +200,12 @@ export function EchoLedgerNeuralSymphony() {
             transition: 'all 0.2s',
           }}>
             <div style={{
-              fontSize: 12, fontWeight: 600, color: currentMode === key ? m.color : 'var(--text2)',
+              fontSize: 15, fontWeight: 600, color: currentMode === key ? m.color : 'var(--text2)',
               marginBottom: 2, fontFamily: "'JetBrains Mono',monospace",
             }}>
               {m.name} · {m.freq} Гц
             </div>
-            <div style={{ fontSize: 11, color: 'var(--text3)', lineHeight: 1.3 }}>
+            <div style={{ fontSize: 14, color: 'var(--text3)', lineHeight: 1.3 }}>
               {m.label}
             </div>
           </button>
@@ -217,9 +217,9 @@ export function EchoLedgerNeuralSymphony() {
         padding: '12px 14px', marginBottom: 20,
         background: `${mode.color}0d`,
         border: `1px solid ${mode.color}33`,
-        borderRadius: 10, fontSize: 12, color: 'var(--text2)', lineHeight: 1.6,
+        borderRadius: 10, fontSize: 15, color: 'var(--text2)', lineHeight: 1.6,
       }}>
-        <span style={{ color: mode.color, fontFamily: "'JetBrains Mono',monospace", fontSize: 10 }}>
+        <span style={{ color: mode.color, fontFamily: "'JetBrains Mono',monospace", fontSize: 13 }}>
           {mode.name.toUpperCase()} · {mode.freq} Гц ·
         </span>{' '}
         {mode.desc}
@@ -239,7 +239,7 @@ export function EchoLedgerNeuralSymphony() {
         <div style={{
           textAlign: 'center', marginTop: 8,
           fontFamily: "'JetBrains Mono',monospace",
-          fontSize: 11, letterSpacing: 2,
+          fontSize: 14, letterSpacing: 2,
           color: isPlaying ? mode.color : 'rgba(255,255,255,0.2)',
         }}>
           {isPlaying ? `▶ ${mode.name} · ${mode.freq} Гц · В ПОТОКЕ` : `${mode.name} · ${mode.freq} Гц · ПАУЗА`}
@@ -266,13 +266,13 @@ export function EchoLedgerNeuralSymphony() {
       {/* Громкость */}
       <div style={{
         padding: '14px 16px',
-        background: 'rgba(255,255,255,0.02)',
+        background: 'rgba(255,255,255,0.60)',
         border: '1px solid rgba(255,255,255,0.07)',
         borderRadius: 10,
       }}>
         <div style={{
-          fontSize: 10, fontFamily: "'JetBrains Mono',monospace",
-          letterSpacing: 2, color: 'rgba(255,255,255,0.3)', marginBottom: 10,
+          fontSize: 13, fontFamily: "'JetBrains Mono',monospace",
+          letterSpacing: 2, color: BT.text3, marginBottom: 10,
         }}>ГРОМКОСТЬ · {Math.round(volume * 100)}%</div>
         <input type="range" min="0" max="1" step="0.01" value={volume}
           onChange={e => setVolume(parseFloat(e.target.value))}
@@ -283,7 +283,7 @@ export function EchoLedgerNeuralSymphony() {
       {/* Подсказка */}
       <div style={{
         marginTop: 14, textAlign: 'center',
-        fontSize: 11, color: 'rgba(255,255,255,0.2)',
+        fontSize: 14, color: 'rgba(255,255,255,0.2)',
         fontFamily: "'JetBrains Mono',monospace", letterSpacing: 1,
       }}>
         Используйте стереонаушники для максимального эффекта
