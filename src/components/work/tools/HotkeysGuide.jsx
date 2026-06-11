@@ -296,7 +296,7 @@ export function HotkeysGuide() {
       {/* Заголовок */}
       <div style={{ marginBottom: 20 }}>
         <div style={{
-          fontSize: 11, fontFamily: "'JetBrains Mono',monospace",
+          fontSize: 14, fontFamily: "'JetBrains Mono',monospace",
           letterSpacing: 3, color: 'var(--text3)', marginBottom: 4,
         }}>АВТОМАТИЗАЦИЯ</div>
         <div style={{ fontSize: 18, fontFamily: "'Cormorant Infant',serif", color: 'var(--text0)' }}>
@@ -310,7 +310,7 @@ export function HotkeysGuide() {
           <button key={t.id}
             onClick={() => { setActiveTab(t.id); setSearchQuery(''); }}
             style={{
-              padding: '7px 14px', borderRadius: 14, fontSize: 11, cursor: 'pointer',
+              padding: '7px 14px', borderRadius: 14, fontSize: 14, cursor: 'pointer',
               background: activeTab === t.id ? 'rgba(0,112,192,0.1)' : 'transparent',
               border: `1px solid ${activeTab === t.id ? 'rgba(0,112,192,0.4)' : 'rgba(0,0,0,0.1)'}`,
               color: activeTab === t.id ? '#0070c0' : 'var(--text3)',
@@ -332,14 +332,14 @@ export function HotkeysGuide() {
             background: 'rgba(255,255,255,0.8)',
             border: '1px solid rgba(0,112,192,0.15)',
             borderRadius: 18, color: 'var(--text0)',
-            fontSize: 13, outline: 'none', boxSizing: 'border-box',
+            fontSize: 16, outline: 'none', boxSizing: 'border-box',
           }}
         />
       </div>
 
       {/* Счётчик */}
       <div style={{
-        fontSize: 10, fontFamily: "'JetBrains Mono',monospace",
+        fontSize: 13, fontFamily: "'JetBrains Mono',monospace",
         letterSpacing: 2, color: 'var(--text3)', marginBottom: 12,
       }}>
         НАЙДЕНО · {filtered.length}
@@ -364,14 +364,14 @@ export function HotkeysGuide() {
                 flexShrink: 0, padding: '6px 12px', borderRadius: 8,
                 background: 'rgba(0,112,192,0.08)',
                 border: '1px solid rgba(0,112,192,0.2)',
-                fontSize: 11, color: '#0070c0', fontWeight: 600,
+                fontSize: 14, color: BT.navyMid, fontWeight: 600,
                 fontFamily: "'JetBrains Mono',monospace",
                 whiteSpace: 'nowrap', letterSpacing: 0.5,
                 boxShadow: '0 1px 3px rgba(0,112,192,0.1)',
               }}>
                 {item.keys}
               </div>
-              <div style={{ fontSize: 13, color: 'var(--text1)', lineHeight: 1.4 }}>
+              <div style={{ fontSize: 16, color: 'var(--text1)', lineHeight: 1.4 }}>
                 {item.desc}
               </div>
             </div>
@@ -401,17 +401,17 @@ export function HotkeysGuide() {
                 }}>
                   <div>
                     <div style={{
-                      fontSize: 14, fontWeight: 600,
+                      fontSize: 17, fontWeight: 600,
                       color: 'var(--text0)', marginBottom: 3,
                     }}>{item.name}</div>
-                    <div style={{ fontSize: 12, color: 'var(--text3)', lineHeight: 1.4 }}>
+                    <div style={{ fontSize: 15, color: 'var(--text3)', lineHeight: 1.4 }}>
                       {item.desc}
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: 8, flexShrink: 0, alignItems: 'center' }}>
                     <span style={{
                       padding: '3px 8px', borderRadius: 6,
-                      fontSize: 10, fontFamily: "'JetBrains Mono',monospace",
+                      fontSize: 13, fontFamily: "'JetBrains Mono',monospace",
                       background: 'rgba(255,255,255,0.8)',
                       border: `1px solid ${lc.border}`,
                       color: lc.text, fontWeight: 600,
@@ -422,7 +422,7 @@ export function HotkeysGuide() {
                         padding: '5px 12px', borderRadius: 8, cursor: 'pointer',
                         background: 'rgba(255,255,255,0.9)',
                         border: `1px solid ${lc.border}`,
-                        color: lc.text, fontSize: 11,
+                        color: lc.text, fontSize: 14,
                         fontFamily: "'JetBrains Mono',monospace",
                       }}
                     >Копировать</button>
@@ -434,13 +434,13 @@ export function HotkeysGuide() {
                   display: 'flex',
                   background: '#f8f9fa',
                   fontFamily: "'JetBrains Mono',monospace",
-                  fontSize: 12.5, lineHeight: 1.7,
+                  fontSize: 15.5, lineHeight: 1.7,
                   overflow: 'hidden',
                 }}>
                   {/* Номера строк */}
                   <div style={{
                     padding: '12px 0',
-                    background: 'rgba(0,0,0,0.03)',
+                    background: 'rgba(250,243,224,0.03)',
                     borderRight: `1px solid ${lc.border}`,
                     userSelect: 'none', minWidth: 36,
                     textAlign: 'right',
@@ -449,7 +449,7 @@ export function HotkeysGuide() {
                       <div key={li} style={{
                         padding: '0 8px',
                         color: lc.num,
-                        fontSize: 11,
+                        fontSize: 14,
                       }}>{li + 1}</div>
                     ))}
                   </div>
@@ -496,10 +496,10 @@ export function HotkeysGuide() {
               }}>
                 <span style={{ fontSize: 22, flexShrink: 0 }}>{item.icon}</span>
                 <div>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text0)', marginBottom: 3 }}>
+                  <div style={{ fontSize: 17, fontWeight: 600, color: 'var(--text0)', marginBottom: 3 }}>
                     {item.name}
                   </div>
-                  <div style={{ fontSize: 12, color: 'var(--text3)', lineHeight: 1.5 }}>
+                  <div style={{ fontSize: 15, color: 'var(--text3)', lineHeight: 1.5 }}>
                     {item.desc}
                   </div>
                 </div>
@@ -509,11 +509,11 @@ export function HotkeysGuide() {
                   padding: '8px 12px', borderRadius: 8,
                   background: 'rgba(0,112,192,0.05)',
                   border: '1px solid rgba(0,112,192,0.15)',
-                  fontSize: 12,
+                  fontSize: 15,
                 }}>
                   <span style={{
                     fontFamily: "'JetBrains Mono',monospace",
-                    fontSize: 10, color: '#0070c0',
+                    fontSize: 13, color: BT.navyMid,
                     marginRight: 8, letterSpacing: 1,
                   }}>ТРИГГЕР</span>
                   <span style={{ color: 'var(--text1)' }}>{item.trigger}</span>
@@ -522,11 +522,11 @@ export function HotkeysGuide() {
                   padding: '8px 12px', borderRadius: 8,
                   background: 'rgba(34,197,94,0.04)',
                   border: '1px solid rgba(34,197,94,0.15)',
-                  fontSize: 12,
+                  fontSize: 15,
                 }}>
                   <span style={{
                     fontFamily: "'JetBrains Mono',monospace",
-                    fontSize: 10, color: '#22c55e',
+                    fontSize: 13, color: '#22c55e',
                     marginRight: 8, letterSpacing: 1,
                   }}>ДЕЙСТВИЯ</span>
                   <span style={{ color: 'var(--text1)' }}>{item.actions}</span>
@@ -540,7 +540,7 @@ export function HotkeysGuide() {
       {filtered.length === 0 && (
         <div style={{
           padding: '40px 20px', textAlign: 'center',
-          color: 'var(--text3)', fontSize: 13,
+          color: 'var(--text3)', fontSize: 16,
         }}>
           Ничего не найдено по запросу «{searchQuery}»
         </div>
