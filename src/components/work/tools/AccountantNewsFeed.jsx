@@ -127,7 +127,7 @@ export function AccountantNewsFeed() {
       {/* Заголовок */}
       <div style={{ marginBottom: 20 }}>
         <div style={{
-          fontSize: 11, fontFamily: "'JetBrains Mono',monospace",
+          fontSize: 14, fontFamily: "'JetBrains Mono',monospace",
           letterSpacing: 3, color: 'rgba(200,164,90,0.7)', marginBottom: 4,
         }}>БУХГАЛТЕРСКИЙ ДАШБОРД</div>
         <div style={{ fontSize: 18, fontFamily: "'Cormorant Infant',serif" }}>
@@ -139,7 +139,7 @@ export function AccountantNewsFeed() {
       <div style={{ display: 'flex', gap: 6, marginBottom: 20 }}>
         {TABS.map(t => (
           <button key={t.id} onClick={() => setActiveTab(t.id)} style={{
-            flex: 1, padding: '9px 0', borderRadius: 16, fontSize: 12, cursor: 'pointer',
+            flex: 1, padding: '9px 0', borderRadius: 16, fontSize: 15, cursor: 'pointer',
             background: activeTab === t.id ? 'rgba(200,164,90,0.15)' : 'transparent',
             border: `1px solid ${activeTab === t.id ? 'rgba(200,164,90,0.5)' : 'rgba(255,255,255,0.1)'}`,
             color: activeTab === t.id ? 'rgba(200,164,90,0.9)' : 'var(--text3)',
@@ -160,12 +160,12 @@ export function AccountantNewsFeed() {
             {[
               { label: 'Активных задач',    value: activeTasks,  color: 'rgba(200,164,90,0.9)',  icon: '📋' },
               { label: 'Выполнено',         value: doneTasks,    color: 'rgba(34,197,94,0.8)',   icon: '✅' },
-              { label: 'Сегодня',           value: todayTasks,   color: 'rgba(0,112,192,0.8)',   icon: '☀️' },
+              { label: 'Сегодня',           value: todayTasks,   color: BT.navyMid,   icon: '☀️' },
               { label: 'Срочных (7 дней)',  value: urgentTasks,  color: urgentTasks > 0 ? 'rgba(239,68,68,0.8)' : 'rgba(255,255,255,0.3)', icon: '⚠️' },
             ].map(({ label, value, color, icon }) => (
               <div key={label} style={{
                 padding: '14px 12px', textAlign: 'center',
-                background: 'rgba(255,255,255,0.03)',
+                background: 'rgba(255,255,255,0.70)',
                 border: '1px solid rgba(255,255,255,0.07)',
                 borderRadius: 10,
               }}>
@@ -174,7 +174,7 @@ export function AccountantNewsFeed() {
                   {value}
                 </div>
                 <div style={{
-                  fontSize: 9, color: 'rgba(255,255,255,0.4)',
+                  fontSize: 12, color: BT.text3,
                   fontFamily: "'JetBrains Mono',monospace",
                   letterSpacing: 1, marginTop: 4,
                 }}>
@@ -187,7 +187,7 @@ export function AccountantNewsFeed() {
           {/* Готовность к закрытию */}
           <div style={{
             padding: '16px 14px',
-            background: 'rgba(255,255,255,0.03)',
+            background: 'rgba(255,255,255,0.70)',
             border: '1px solid rgba(200,164,90,0.2)',
             borderRadius: 12, marginBottom: 16,
           }}>
@@ -196,7 +196,7 @@ export function AccountantNewsFeed() {
               alignItems: 'center', marginBottom: 10,
             }}>
               <div style={{
-                fontSize: 10, fontFamily: "'JetBrains Mono',monospace",
+                fontSize: 13, fontFamily: "'JetBrains Mono',monospace",
                 letterSpacing: 2, color: 'rgba(200,164,90,0.7)',
               }}>ГОТОВНОСТЬ К ЗАКРЫТИЮ ПЕРИОДА</div>
               <div style={{
@@ -225,7 +225,7 @@ export function AccountantNewsFeed() {
               border: '1px solid rgba(239,68,68,0.2)', borderRadius: 10,
             }}>
               <div style={{
-                fontSize: 10, fontFamily: "'JetBrains Mono',monospace",
+                fontSize: 13, fontFamily: "'JetBrains Mono',monospace",
                 letterSpacing: 2, color: 'rgba(239,68,68,0.7)', marginBottom: 8,
               }}>⚠ ДЕДЛАЙНЫ В БЛИЖАЙШИЕ 7 ДНЕЙ</div>
               {workTasks
@@ -243,13 +243,13 @@ export function AccountantNewsFeed() {
                       padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.04)',
                     }}>
                       <span style={{
-                        fontSize: 10, fontFamily: "'JetBrains Mono',monospace",
+                        fontSize: 13, fontFamily: "'JetBrains Mono',monospace",
                         color: days <= 2 ? 'rgba(239,68,68,0.8)' : 'rgba(200,164,90,0.7)',
                         minWidth: 50,
                       }}>
                         {days === 0 ? 'СЕГОДНЯ' : days === 1 ? 'ЗАВТРА' : `${days} дн.`}
                       </span>
-                      <span style={{ fontSize: 12, color: 'var(--text2)', flex: 1 }}>
+                      <span style={{ fontSize: 15, color: 'var(--text2)', flex: 1 }}>
                         {t.title}
                       </span>
                     </div>
@@ -269,7 +269,7 @@ export function AccountantNewsFeed() {
               width: '100%', padding: '12px 0', borderRadius: 16, marginBottom: 16,
               background: 'linear-gradient(135deg, rgba(200,164,90,0.15), rgba(200,164,90,0.05))',
               border: '1px solid rgba(200,164,90,0.4)',
-              color: 'rgba(200,164,90,0.9)', fontSize: 13, cursor: loadingNews ? 'not-allowed' : 'pointer',
+              color: 'rgba(200,164,90,0.9)', fontSize: 16, cursor: loadingNews ? 'not-allowed' : 'pointer',
               opacity: loadingNews ? 0.7 : 1,
               fontFamily: "'JetBrains Mono',monospace", letterSpacing: 1,
             }}
@@ -281,7 +281,7 @@ export function AccountantNewsFeed() {
             <div style={{
               padding: '60px 20px', textAlign: 'center',
               color: 'var(--text3)', fontFamily: "'Cormorant Infant',serif",
-              fontSize: 14, lineHeight: 1.8,
+              fontSize: 17, lineHeight: 1.8,
             }}>
               Нажмите кнопку для загрузки<br/>актуальных новостей
             </div>
@@ -297,7 +297,7 @@ export function AccountantNewsFeed() {
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6, gap: 8 }}>
                   <div style={{
-                    fontSize: 14, color: 'var(--text1)', fontWeight: 500,
+                    fontSize: 17, color: 'var(--text1)', fontWeight: 500,
                     fontFamily: "'Cormorant Infant',serif", lineHeight: 1.4, flex: 1,
                   }}>
                     {item.title}
@@ -305,19 +305,19 @@ export function AccountantNewsFeed() {
                   {item.tag && (
                     <span style={{
                       flexShrink: 0, padding: '2px 8px', borderRadius: 8,
-                      fontSize: 9, fontFamily: "'JetBrains Mono',monospace",
+                      fontSize: 12, fontFamily: "'JetBrains Mono',monospace",
                       background: TAG_COLORS[item.tag] || 'rgba(255,255,255,0.1)',
-                      color: 'rgba(255,255,255,0.7)', border: '1px solid rgba(255,255,255,0.1)',
+                      color: BT.text2, border: `1px solid ${BT.bdrS}`,
                     }}>{item.tag}</span>
                   )}
                 </div>
                 {item.date && (
                   <div style={{
-                    fontSize: 10, color: 'rgba(200,164,90,0.6)',
+                    fontSize: 13, color: 'rgba(200,164,90,0.6)',
                     fontFamily: "'JetBrains Mono',monospace", marginBottom: 6,
                   }}>{item.date}</div>
                 )}
-                <div style={{ fontSize: 12, color: 'var(--text3)', lineHeight: 1.5 }}>
+                <div style={{ fontSize: 15, color: 'var(--text3)', lineHeight: 1.5 }}>
                   {item.summary}
                 </div>
               </div>
@@ -346,12 +346,12 @@ export function AccountantNewsFeed() {
                 }}
               >
                 <div style={{ fontSize: 24, marginBottom: 8 }}>{r.icon}</div>
-                <div style={{ fontSize: 12, color: 'var(--text2)', lineHeight: 1.4 }}>
+                <div style={{ fontSize: 15, color: 'var(--text2)', lineHeight: 1.4 }}>
                   {r.title}
                 </div>
                 {activeReport === r.id && loadingReport && (
                   <div style={{
-                    marginTop: 8, fontSize: 10,
+                    marginTop: 8, fontSize: 13,
                     color: 'rgba(200,164,90,0.7)',
                     fontFamily: "'JetBrains Mono',monospace",
                   }}>✦ генерирую...</div>
@@ -363,13 +363,13 @@ export function AccountantNewsFeed() {
           {generatedReport && (
             <div style={{
               padding: '16px 18px',
-              background: 'rgba(255,255,255,0.03)',
+              background: 'rgba(255,255,255,0.70)',
               border: '1px solid rgba(200,164,90,0.2)',
-              borderRadius: 12, fontSize: 13, lineHeight: 1.7,
+              borderRadius: 12, fontSize: 16, lineHeight: 1.7,
               color: 'var(--text1)', whiteSpace: 'pre-wrap',
             }}>
               <div style={{
-                fontSize: 9, fontFamily: "'JetBrains Mono',monospace",
+                fontSize: 12, fontFamily: "'JetBrains Mono',monospace",
                 letterSpacing: 2, color: 'rgba(200,164,90,0.5)', marginBottom: 10,
               }}>
                 {REPORT_TYPES.find(r => r.id === activeReport)?.icon}{' '}
