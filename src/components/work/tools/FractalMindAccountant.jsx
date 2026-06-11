@@ -140,7 +140,7 @@ export function FractalMindAccountant() {
       {/* Заголовок */}
       <div style={{ marginBottom: 20 }}>
         <div style={{
-          fontSize: 11, fontFamily: "'JetBrains Mono',monospace",
+          fontSize: 14, fontFamily: "'JetBrains Mono',monospace",
           letterSpacing: 3, color: 'rgba(200,164,90,0.7)', marginBottom: 4,
         }}>ФРАКТАЛЬНЫЙ УМ</div>
         <div style={{ fontSize: 18, fontFamily: "'Cormorant Infant',serif" }}>
@@ -158,7 +158,7 @@ export function FractalMindAccountant() {
               : 'transparent',
             border: `1px solid ${activeMetric === key ? METRICS[key].color : 'rgba(255,255,255,0.1)'}`,
             color: activeMetric === key ? METRICS[key].color : 'var(--text3)',
-            fontSize: 12, cursor: 'pointer', transition: 'all 0.2s',
+            fontSize: 15, cursor: 'pointer', transition: 'all 0.2s',
             fontFamily: "'JetBrains Mono',monospace",
           }}>
             {LABELS[key]}
@@ -199,21 +199,21 @@ export function FractalMindAccountant() {
             }}>
               {fmt(currentValue)}
             </div>
-            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 4 }}>₸</div>
+            <div style={{ fontSize: 14, color: BT.text3, marginTop: 4 }}>₸</div>
           </div>
         </div>
 
         {/* Панель анализа */}
         <div style={{
           padding: '20px 16px',
-          background: 'rgba(255,255,255,0.03)',
+          background: 'rgba(255,255,255,0.70)',
           border: '1px solid rgba(255,255,255,0.07)',
           borderRadius: 16,
           display: 'flex', flexDirection: 'column', gap: 14,
         }}>
           <div>
             <div style={{
-              fontSize: 10, fontFamily: "'JetBrains Mono',monospace",
+              fontSize: 13, fontFamily: "'JetBrains Mono',monospace",
               letterSpacing: 2, color: metric.color, marginBottom: 4, opacity: 0.8,
             }}>{LABELS[activeMetric].toUpperCase()}</div>
             <div style={{ fontSize: 16, fontFamily: "'Cormorant Infant',serif", color: 'var(--text1)', lineHeight: 1.4 }}>
@@ -224,7 +224,7 @@ export function FractalMindAccountant() {
           {/* Поле ввода значения */}
           <div>
             <label style={{
-              display: 'block', fontSize: 9,
+              display: 'block', fontSize: 12,
               fontFamily: "'JetBrains Mono',monospace",
               letterSpacing: 1, color: 'rgba(200,164,90,0.6)', marginBottom: 5,
             }}>ЗНАЧЕНИЕ (₸)</label>
@@ -256,11 +256,11 @@ export function FractalMindAccountant() {
                 borderRadius: 8,
               }}>
                 <span style={{
-                  fontSize: 11, color: METRICS[key].color,
+                  fontSize: 14, color: METRICS[key].color,
                   fontFamily: "'JetBrains Mono',monospace",
                 }}>{LABELS[key]}</span>
                 <span style={{
-                  fontSize: 13, fontWeight: 600,
+                  fontSize: 16, fontWeight: 600,
                   color: activeMetric === key ? METRICS[key].color : 'var(--text2)',
                   fontFamily: "'JetBrains Mono',monospace",
                 }}>{fmt(inputs[key])} ₸</span>
@@ -274,11 +274,11 @@ export function FractalMindAccountant() {
             background: `${metric.color}0d`,
             border: `1px solid ${metric.color}33`,
             borderLeft: `4px solid ${metric.color}`,
-            borderRadius: 8, fontSize: 12,
+            borderRadius: 8, fontSize: 15,
             color: 'var(--text2)', lineHeight: 1.6,
           }}>
             <div style={{
-              fontSize: 9, fontFamily: "'JetBrains Mono',monospace",
+              fontSize: 12, fontFamily: "'JetBrains Mono',monospace",
               letterSpacing: 1, color: metric.color,
               marginBottom: 4, opacity: 0.8,
             }}>РЕКОМЕНДАЦИЯ</div>
@@ -289,7 +289,7 @@ export function FractalMindAccountant() {
             width: '100%', padding: '11px 0', borderRadius: 10,
             background: 'rgba(200,164,90,0.1)',
             border: '1px solid rgba(200,164,90,0.4)',
-            color: 'rgba(200,164,90,0.9)', fontSize: 13, cursor: 'pointer',
+            color: 'rgba(200,164,90,0.9)', fontSize: 16, cursor: 'pointer',
             fontFamily: "'JetBrains Mono',monospace",
           }}>
             💾 Сохранить инсайт
