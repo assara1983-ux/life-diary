@@ -120,7 +120,7 @@ export function RecursiveSoulIndex() {
       {/* Заголовок с параллаксом */}
       <div style={{ marginBottom: 24, transform: `translateY(${Math.min(scrollY * 0.1, 20)}px)` }}>
         <div style={{
-          fontSize: 11, fontFamily: "'JetBrains Mono',monospace",
+          fontSize: 14, fontFamily: "'JetBrains Mono',monospace",
           letterSpacing: 3, color: 'rgba(200,164,90,0.7)', marginBottom: 4,
         }}>RECURSIVE SOUL INDEX</div>
         <div style={{ fontSize: 18, fontFamily: "'Cormorant Infant',serif" }}>
@@ -133,7 +133,7 @@ export function RecursiveSoulIndex() {
         <div style={{ marginBottom: 20 }}>
           <div style={{
             display: 'flex', justifyContent: 'space-between',
-            fontSize: 10, fontFamily: "'JetBrains Mono',monospace",
+            fontSize: 13, fontFamily: "'JetBrains Mono',monospace",
             color: 'rgba(200,164,90,0.6)', marginBottom: 6,
           }}>
             <span>ВОПРОС {qIndex + 1} / {QUESTIONS.length}</span>
@@ -169,7 +169,7 @@ export function RecursiveSoulIndex() {
           transform: transitioning ? 'translateY(16px)' : 'translateY(0)',
         }}>
           <div style={{
-            fontSize: 9, fontFamily: "'JetBrains Mono',monospace",
+            fontSize: 12, fontFamily: "'JetBrains Mono',monospace",
             letterSpacing: 2, color: 'rgba(200,164,90,0.5)', marginBottom: 16,
           }}>РЕФЛЕКСИЯ</div>
           <div style={{
@@ -199,7 +199,7 @@ export function RecursiveSoulIndex() {
                 background: 'rgba(255,255,255,0.04)',
                 border: '1px solid rgba(255,255,255,0.08)',
                 borderRadius: 12, color: 'var(--text2)',
-                fontSize: 14, textAlign: 'left',
+                fontSize: 17, textAlign: 'left',
                 cursor: transitioning ? 'not-allowed' : 'pointer',
                 transition: 'all 0.15s', lineHeight: 1.4,
               }}
@@ -214,7 +214,7 @@ export function RecursiveSoulIndex() {
       {!showInsight && Object.keys(answers).length > 0 && (
         <div style={{ position: 'relative', zIndex: 1, marginBottom: 16 }}>
           <div style={{
-            fontSize: 9, fontFamily: "'JetBrains Mono',monospace",
+            fontSize: 12, fontFamily: "'JetBrains Mono',monospace",
             letterSpacing: 2, color: 'rgba(255,255,255,0.2)', marginBottom: 8,
           }}>ВАШИ ОТВЕТЫ</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -223,7 +223,7 @@ export function RecursiveSoulIndex() {
                 padding: '8px 12px', borderRadius: 8,
                 background: 'rgba(200,164,90,0.05)',
                 border: '1px solid rgba(200,164,90,0.15)',
-                fontSize: 11, color: 'var(--text3)', lineHeight: 1.4,
+                fontSize: 14, color: 'var(--text3)', lineHeight: 1.4,
               }}>
                 <span style={{ color: 'rgba(200,164,90,0.5)', marginRight: 6 }}>
                   {parseInt(idx) + 1}.
@@ -245,13 +245,13 @@ export function RecursiveSoulIndex() {
             borderRadius: 14, minHeight: 200,
           }}>
             <div style={{
-              fontSize: 9, fontFamily: "'JetBrains Mono',monospace",
+              fontSize: 12, fontFamily: "'JetBrains Mono',monospace",
               letterSpacing: 2, color: 'rgba(200,164,90,0.6)', marginBottom: 12,
             }}>✨ РЕКУРСИВНЫЙ ИНСАЙТ</div>
 
             {loadingInsight ? (
               <div style={{
-                fontSize: 13, color: 'rgba(200,164,90,0.6)',
+                fontSize: 16, color: 'rgba(200,164,90,0.6)',
                 fontFamily: "'JetBrains Mono',monospace",
                 letterSpacing: 1, textAlign: 'center', padding: '40px 0',
               }}>
@@ -259,7 +259,7 @@ export function RecursiveSoulIndex() {
               </div>
             ) : (
               <div style={{
-                fontSize: 13, lineHeight: 1.8,
+                fontSize: 16, lineHeight: 1.8,
                 color: 'var(--text1)', whiteSpace: 'pre-wrap',
               }}>
                 {insight}
@@ -273,7 +273,7 @@ export function RecursiveSoulIndex() {
                 flex: 1, padding: '11px 0', borderRadius: 12,
                 background: 'rgba(200,164,90,0.1)',
                 border: '1px solid rgba(200,164,90,0.4)',
-                color: 'rgba(200,164,90,0.9)', fontSize: 13, cursor: 'pointer',
+                color: 'rgba(200,164,90,0.9)', fontSize: 16, cursor: 'pointer',
                 fontFamily: "'JetBrains Mono',monospace",
               }}>
                 💾 Сохранить инсайт
@@ -281,8 +281,8 @@ export function RecursiveSoulIndex() {
               <button onClick={reset} style={{
                 flex: 1, padding: '11px 0', borderRadius: 12,
                 background: 'transparent',
-                border: '1px solid rgba(255,255,255,0.1)',
-                color: 'var(--text3)', fontSize: 13, cursor: 'pointer',
+                border: `1px solid ${BT.bdrS}`,
+                color: 'var(--text3)', fontSize: 16, cursor: 'pointer',
               }}>
                 ↺ Новая рекурсия
               </button>
