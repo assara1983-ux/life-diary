@@ -76,7 +76,7 @@ export function TaxAssistant() {
       }}>
         <div>
           <div style={{
-            fontSize: 11, fontFamily: "'JetBrains Mono',monospace",
+            fontSize: 14, fontFamily: "'JetBrains Mono',monospace",
             letterSpacing: 3, color: 'rgba(200,164,90,0.7)', marginBottom: 4,
           }}>НАЛОГОВЫЙ АССИСТЕНТ</div>
           <div style={{ fontSize: 18, fontFamily: "'Cormorant Infant',serif" }}>
@@ -86,8 +86,8 @@ export function TaxAssistant() {
         {messages.length > 0 && (
           <button onClick={clearChat} style={{
             padding: '6px 14px', borderRadius: 14,
-            background: 'transparent', border: '1px solid rgba(255,255,255,0.1)',
-            color: 'var(--text3)', fontSize: 11, cursor: 'pointer',
+            background: 'transparent', border: `1px solid ${BT.bdrS}`,
+            color: 'var(--text3)', fontSize: 14, cursor: 'pointer',
             fontFamily: "'JetBrains Mono',monospace",
           }}>
             Очистить
@@ -106,7 +106,7 @@ export function TaxAssistant() {
             padding: '6px 14px', borderRadius: 16,
             background: 'rgba(200,164,90,0.08)',
             border: '1px solid rgba(200,164,90,0.3)',
-            color: 'rgba(200,164,90,0.85)', fontSize: 11,
+            color: 'rgba(200,164,90,0.85)', fontSize: 14,
             cursor: 'pointer', whiteSpace: 'nowrap',
             fontFamily: "'JetBrains Mono',monospace",
           }}>
@@ -123,7 +123,7 @@ export function TaxAssistant() {
         {messages.length === 0 && (
           <div style={{
             flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: 'var(--text3)', textAlign: 'center', fontSize: 13,
+            color: 'var(--text3)', textAlign: 'center', fontSize: 16,
             fontFamily: "'Cormorant Infant',serif", lineHeight: 1.8,
           }}>
             Задайте вопрос по налогам РК 2026<br/>или выберите быструю подсказку выше
@@ -137,7 +137,7 @@ export function TaxAssistant() {
           }}>
             {msg.role === 'assistant' && (
               <div style={{
-                fontSize: 9, fontFamily: "'JetBrains Mono',monospace",
+                fontSize: 12, fontFamily: "'JetBrains Mono',monospace",
                 letterSpacing: 1, color: 'rgba(200,164,90,0.5)',
                 marginBottom: 4,
               }}>ИИ КОНСУЛЬТАНТ</div>
@@ -149,7 +149,7 @@ export function TaxAssistant() {
                 : 'rgba(255,255,255,0.05)',
               border: `1px solid ${msg.role === 'user' ? 'rgba(200,164,90,0.35)' : 'rgba(255,255,255,0.08)'}`,
               borderRadius: msg.role === 'user' ? '16px 16px 4px 16px' : '4px 16px 16px 16px',
-              fontSize: 13, lineHeight: 1.6, color: 'var(--text1)',
+              fontSize: 16, lineHeight: 1.6, color: 'var(--text1)',
               whiteSpace: 'pre-wrap',
             }}>
               {msg.content}
@@ -161,10 +161,10 @@ export function TaxAssistant() {
           <div style={{ alignSelf: 'flex-start' }}>
             <div style={{
               padding: '12px 16px',
-              background: 'rgba(255,255,255,0.05)',
+              background: 'rgba(255,255,255,0.75)',
               border: '1px solid rgba(255,255,255,0.08)',
               borderRadius: '4px 16px 16px 16px',
-              fontSize: 13, color: 'rgba(200,164,90,0.6)',
+              fontSize: 16, color: 'rgba(200,164,90,0.6)',
               fontFamily: "'JetBrains Mono',monospace", letterSpacing: 1,
             }}>
               ✦ анализирую...
@@ -189,7 +189,7 @@ export function TaxAssistant() {
             flex: 1, padding: '12px 16px',
             background: 'rgba(255,255,255,0.04)',
             border: '1px solid rgba(200,164,90,0.2)',
-            borderRadius: 20, color: 'var(--text0)', fontSize: 13,
+            borderRadius: 20, color: 'var(--text0)', fontSize: 16,
             outline: 'none',
           }}
         />
