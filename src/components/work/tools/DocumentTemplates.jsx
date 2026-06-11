@@ -160,7 +160,7 @@ export function DocumentTemplates() {
       {/* Заголовок */}
       <div style={{ marginBottom: 20 }}>
         <div style={{
-          fontSize: 11, fontFamily: "'JetBrains Mono',monospace",
+          fontSize: 14, fontFamily: "'JetBrains Mono',monospace",
           letterSpacing: 3, color: 'rgba(200,164,90,0.7)', marginBottom: 4,
         }}>ШАБЛОНЫ ДОКУМЕНТОВ</div>
         <div style={{ fontSize: 18, fontFamily: "'Cormorant Infant',serif" }}>
@@ -173,7 +173,7 @@ export function DocumentTemplates() {
         {Object.entries(TEMPLATES).map(([key, t]) => (
           <button key={key} onClick={() => { setActiveType(key); setGeneratedDoc(''); }}
             style={{
-              padding: '8px 16px', borderRadius: 16, fontSize: 12, cursor: 'pointer',
+              padding: '8px 16px', borderRadius: 16, fontSize: 15, cursor: 'pointer',
               background: activeType === key ? 'rgba(200,164,90,0.15)' : 'transparent',
               border: `1px solid ${activeType === key ? 'rgba(200,164,90,0.5)' : 'rgba(255,255,255,0.1)'}`,
               color: activeType === key ? 'rgba(200,164,90,0.9)' : 'var(--text3)',
@@ -192,12 +192,12 @@ export function DocumentTemplates() {
         {/* Форма */}
         <div style={{
           padding: '16px 14px',
-          background: 'rgba(255,255,255,0.03)',
+          background: 'rgba(255,255,255,0.70)',
           border: '1px solid rgba(200,164,90,0.2)',
           borderRadius: 12,
         }}>
           <div style={{
-            fontSize: 10, fontFamily: "'JetBrains Mono',monospace",
+            fontSize: 13, fontFamily: "'JetBrains Mono',monospace",
             letterSpacing: 2, color: 'rgba(200,164,90,0.7)', marginBottom: 14,
           }}>{template.icon} {template.title.toUpperCase()}</div>
 
@@ -205,7 +205,7 @@ export function DocumentTemplates() {
             {template.fields.map(f => (
               <div key={f.key}>
                 <label style={{
-                  display: 'block', fontSize: 10,
+                  display: 'block', fontSize: 13,
                   fontFamily: "'JetBrains Mono',monospace",
                   letterSpacing: 1, color: 'rgba(200,164,90,0.6)', marginBottom: 5,
                 }}>{f.label.toUpperCase()}</label>
@@ -220,7 +220,7 @@ export function DocumentTemplates() {
                       background: 'rgba(255,255,255,0.04)',
                       border: '1px solid rgba(255,255,255,0.08)',
                       borderRadius: 8, color: 'var(--text0)',
-                      fontSize: 13, resize: 'vertical',
+                      fontSize: 16, resize: 'vertical',
                       outline: 'none', boxSizing: 'border-box',
                     }}
                   />
@@ -235,7 +235,7 @@ export function DocumentTemplates() {
                       background: 'rgba(255,255,255,0.04)',
                       border: '1px solid rgba(255,255,255,0.08)',
                       borderRadius: 8, color: 'var(--text0)',
-                      fontSize: 13, outline: 'none',
+                      fontSize: 16, outline: 'none',
                       boxSizing: 'border-box',
                     }}
                   />
@@ -249,15 +249,15 @@ export function DocumentTemplates() {
               flex: 2, padding: '11px 0', borderRadius: 10,
               background: 'linear-gradient(135deg, rgba(200,164,90,0.2), rgba(200,164,90,0.06))',
               border: '1px solid rgba(200,164,90,0.4)',
-              color: 'rgba(200,164,90,0.9)', fontSize: 13, cursor: 'pointer',
+              color: 'rgba(200,164,90,0.9)', fontSize: 16, cursor: 'pointer',
               fontFamily: "'JetBrains Mono',monospace",
             }}>
               Сгенерировать
             </button>
             <button onClick={clearForm} style={{
               flex: 1, padding: '11px 0', borderRadius: 10,
-              background: 'transparent', border: '1px solid rgba(255,255,255,0.1)',
-              color: 'var(--text3)', fontSize: 12, cursor: 'pointer',
+              background: 'transparent', border: `1px solid ${BT.bdrS}`,
+              color: 'var(--text3)', fontSize: 15, cursor: 'pointer',
             }}>
               Очистить
             </button>
@@ -267,22 +267,22 @@ export function DocumentTemplates() {
         {/* Предпросмотр */}
         <div style={{
           padding: '16px 14px',
-          background: 'rgba(255,255,255,0.02)',
+          background: 'rgba(255,255,255,0.60)',
           border: '1px solid rgba(255,255,255,0.07)',
           borderRadius: 12,
         }}>
           <div style={{
-            fontSize: 10, fontFamily: "'JetBrains Mono',monospace",
-            letterSpacing: 2, color: 'rgba(255,255,255,0.3)', marginBottom: 14,
+            fontSize: 13, fontFamily: "'JetBrains Mono',monospace",
+            letterSpacing: 2, color: BT.text3, marginBottom: 14,
           }}>ПРЕДПРОСМОТР</div>
 
           {generatedDoc ? (
             <>
               <pre style={{
-                background: 'rgba(255,255,255,0.03)',
-                border: '1px solid rgba(255,255,255,0.06)',
+                background: 'rgba(255,255,255,0.70)',
+                border: `1px solid ${BT.bdrS}`,
                 padding: '14px', borderRadius: 10,
-                whiteSpace: 'pre-wrap', fontSize: 12,
+                whiteSpace: 'pre-wrap', fontSize: 15,
                 lineHeight: 1.7, maxHeight: 420,
                 overflowY: 'auto', color: 'var(--text1)',
                 fontFamily: "'JetBrains Mono',monospace",
@@ -293,7 +293,7 @@ export function DocumentTemplates() {
                 width: '100%', marginTop: 12, padding: '11px 0', borderRadius: 10,
                 background: 'rgba(200,164,90,0.1)',
                 border: '1px solid rgba(200,164,90,0.4)',
-                color: 'rgba(200,164,90,0.9)', fontSize: 13, cursor: 'pointer',
+                color: 'rgba(200,164,90,0.9)', fontSize: 16, cursor: 'pointer',
                 fontFamily: "'JetBrains Mono',monospace",
               }}>
                 📋 Скопировать
@@ -302,7 +302,7 @@ export function DocumentTemplates() {
           ) : (
             <div style={{
               padding: '60px 20px', textAlign: 'center',
-              color: 'var(--text3)', fontSize: 12,
+              color: 'var(--text3)', fontSize: 15,
               fontFamily: "'Cormorant Infant',serif", lineHeight: 1.8,
             }}>
               Заполните форму и нажмите<br/>«Сгенерировать»
