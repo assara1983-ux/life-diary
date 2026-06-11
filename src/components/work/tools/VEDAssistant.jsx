@@ -106,7 +106,7 @@ export function VEDAssistant() {
       {/* Заголовок */}
       <div style={{ marginBottom: 20 }}>
         <div style={{
-          fontSize: 11, fontFamily: "'JetBrains Mono',monospace",
+          fontSize: 14, fontFamily: "'JetBrains Mono',monospace",
           letterSpacing: 3, color: 'rgba(200,164,90,0.7)', marginBottom: 4,
         }}>ВЭД АССИСТЕНТ</div>
         <div style={{ fontSize: 18, fontFamily: "'Cormorant Infant',serif" }}>
@@ -118,7 +118,7 @@ export function VEDAssistant() {
       <div style={{ display: 'flex', gap: 6, marginBottom: 20, flexWrap: 'wrap' }}>
         {TABS.map(t => (
           <button key={t.id} onClick={() => setActiveTab(t.id)} style={{
-            padding: '8px 16px', borderRadius: 16, fontSize: 12, cursor: 'pointer',
+            padding: '8px 16px', borderRadius: 16, fontSize: 15, cursor: 'pointer',
             background: activeTab === t.id ? 'rgba(200,164,90,0.15)' : 'transparent',
             border: `1px solid ${activeTab === t.id ? 'rgba(200,164,90,0.5)' : 'rgba(255,255,255,0.1)'}`,
             color: activeTab === t.id ? 'rgba(200,164,90,0.9)' : 'var(--text3)',
@@ -135,7 +135,7 @@ export function VEDAssistant() {
             {[['all','Все'],['any','Любой транспорт'],['sea','Морские']].map(([v,l]) => (
               <div key={v} onClick={() => setFilter(v)}
                 style={{
-                  padding: '5px 14px', borderRadius: 12, cursor: 'pointer', fontSize: 11,
+                  padding: '5px 14px', borderRadius: 12, cursor: 'pointer', fontSize: 14,
                   border: `1px solid ${filter === v ? 'rgba(200,164,90,0.5)' : 'rgba(255,255,255,0.1)'}`,
                   background: filter === v ? 'rgba(200,164,90,0.1)' : 'transparent',
                   color: filter === v ? 'rgba(200,164,90,0.9)' : 'var(--text3)',
@@ -160,7 +160,7 @@ export function VEDAssistant() {
                   }}>{item.code}</div>
                   {item.type === 'sea' && (
                     <span style={{
-                      fontSize: 9, padding: '2px 8px', borderRadius: 8,
+                      fontSize: 12, padding: '2px 8px', borderRadius: 8,
                       background: 'rgba(0,112,192,0.15)',
                       border: '1px solid rgba(0,112,192,0.3)',
                       color: 'rgba(100,180,255,0.8)',
@@ -168,10 +168,10 @@ export function VEDAssistant() {
                     }}>МОРЕ</span>
                   )}
                 </div>
-                <div style={{ fontSize: 13, color: 'var(--text1)', marginBottom: 6, fontWeight: 500 }}>
+                <div style={{ fontSize: 16, color: 'var(--text1)', marginBottom: 6, fontWeight: 500 }}>
                   {item.name}
                 </div>
-                <div style={{ fontSize: 12, color: 'var(--text3)', lineHeight: 1.5 }}>
+                <div style={{ fontSize: 15, color: 'var(--text3)', lineHeight: 1.5 }}>
                   {item.desc}
                 </div>
               </div>
@@ -185,7 +185,7 @@ export function VEDAssistant() {
         <div style={{ maxWidth: 700 }}>
           <div style={{ marginBottom: 16 }}>
             <div style={{
-              fontSize: 10, fontFamily: "'JetBrains Mono',monospace",
+              fontSize: 13, fontFamily: "'JetBrains Mono',monospace",
               letterSpacing: 1, color: 'rgba(200,164,90,0.6)', marginBottom: 8,
             }}>КОД ТН ВЭД</div>
             <div style={{ display: 'flex', gap: 10 }}>
@@ -199,7 +199,7 @@ export function VEDAssistant() {
                   flex: 1, padding: '12px 16px',
                   background: 'rgba(255,255,255,0.04)',
                   border: '1px solid rgba(200,164,90,0.25)',
-                  borderRadius: 10, color: 'var(--text0)', fontSize: 14,
+                  borderRadius: 10, color: 'var(--text0)', fontSize: 17,
                   outline: 'none', fontFamily: "'JetBrains Mono',monospace",
                 }}
               />
@@ -209,7 +209,7 @@ export function VEDAssistant() {
                 border: '1px solid rgba(200,164,90,0.4)',
                 color: 'rgba(200,164,90,0.9)',
                 cursor: loading ? 'not-allowed' : 'pointer',
-                fontSize: 13, opacity: loading ? 0.7 : 1,
+                fontSize: 16, opacity: loading ? 0.7 : 1,
                 fontFamily: "'JetBrains Mono',monospace",
               }}>
                 {loading ? '✦' : '→'}
@@ -222,11 +222,11 @@ export function VEDAssistant() {
               padding: '16px 18px',
               background: 'rgba(255,255,255,0.04)',
               border: '1px solid rgba(200,164,90,0.25)',
-              borderRadius: 12, fontSize: 13, lineHeight: 1.7,
+              borderRadius: 12, fontSize: 16, lineHeight: 1.7,
               color: 'var(--text1)', whiteSpace: 'pre-wrap',
             }}>
               <div style={{
-                fontSize: 9, fontFamily: "'JetBrains Mono',monospace",
+                fontSize: 12, fontFamily: "'JetBrains Mono',monospace",
                 letterSpacing: 2, color: 'rgba(200,164,90,0.5)', marginBottom: 8,
               }}>РЕЗУЛЬТАТ ДЛЯ КОДА {tnvedCode}</div>
               {tnvedResult}
@@ -240,14 +240,14 @@ export function VEDAssistant() {
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
             <div style={{
-              fontSize: 10, fontFamily: "'JetBrains Mono',monospace",
+              fontSize: 13, fontFamily: "'JetBrains Mono',monospace",
               letterSpacing: 2, color: 'rgba(200,164,90,0.7)',
             }}>
               ЧЕК-ЛИСТ ЭКСПОРТА · {exportChecks.filter(i => i.done).length}/{exportChecks.length}
             </div>
             <button onClick={() => resetChecklist(setExportChecks, EXPORT_CHECKLIST)} style={{
-              padding: '4px 12px', borderRadius: 10, fontSize: 10, cursor: 'pointer',
-              background: 'transparent', border: '1px solid rgba(255,255,255,0.1)',
+              padding: '4px 12px', borderRadius: 10, fontSize: 13, cursor: 'pointer',
+              background: 'transparent', border: `1px solid ${BT.bdrS}`,
               color: 'var(--text3)', fontFamily: "'JetBrains Mono',monospace",
             }}>Сбросить</button>
           </div>
@@ -278,12 +278,12 @@ export function VEDAssistant() {
                   border: `1.5px solid ${item.done ? 'rgba(34,197,94,0.8)' : 'rgba(200,164,90,0.3)'}`,
                   background: item.done ? 'rgba(34,197,94,0.2)' : 'transparent',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 10, color: 'rgba(34,197,94,0.9)',
+                  fontSize: 13, color: 'rgba(34,197,94,0.9)',
                 }}>
                   {item.done ? '✓' : ''}
                 </div>
                 <span style={{
-                  fontSize: 13, color: item.done ? 'var(--text3)' : 'var(--text1)',
+                  fontSize: 16, color: item.done ? 'var(--text3)' : 'var(--text1)',
                   textDecoration: item.done ? 'line-through' : 'none',
                   lineHeight: 1.4,
                 }}>{item.item}</span>
@@ -298,14 +298,14 @@ export function VEDAssistant() {
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
             <div style={{
-              fontSize: 10, fontFamily: "'JetBrains Mono',monospace",
+              fontSize: 13, fontFamily: "'JetBrains Mono',monospace",
               letterSpacing: 2, color: 'rgba(200,164,90,0.7)',
             }}>
               ЧЕК-ЛИСТ ИМПОРТА · {importChecks.filter(i => i.done).length}/{importChecks.length}
             </div>
             <button onClick={() => resetChecklist(setImportChecks, IMPORT_CHECKLIST)} style={{
-              padding: '4px 12px', borderRadius: 10, fontSize: 10, cursor: 'pointer',
-              background: 'transparent', border: '1px solid rgba(255,255,255,0.1)',
+              padding: '4px 12px', borderRadius: 10, fontSize: 13, cursor: 'pointer',
+              background: 'transparent', border: `1px solid ${BT.bdrS}`,
               color: 'var(--text3)', fontFamily: "'JetBrains Mono',monospace",
             }}>Сбросить</button>
           </div>
@@ -335,12 +335,12 @@ export function VEDAssistant() {
                   border: `1.5px solid ${item.done ? 'rgba(0,112,192,0.8)' : 'rgba(200,164,90,0.3)'}`,
                   background: item.done ? 'rgba(0,112,192,0.2)' : 'transparent',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 10, color: 'rgba(100,180,255,0.9)',
+                  fontSize: 13, color: 'rgba(100,180,255,0.9)',
                 }}>
                   {item.done ? '✓' : ''}
                 </div>
                 <span style={{
-                  fontSize: 13, color: item.done ? 'var(--text3)' : 'var(--text1)',
+                  fontSize: 16, color: item.done ? 'var(--text3)' : 'var(--text1)',
                   textDecoration: item.done ? 'line-through' : 'none',
                   lineHeight: 1.4,
                 }}>{item.item}</span>
