@@ -264,83 +264,264 @@ export function WorkSection() {
       {/* ════ ВКЛАДКА: ЗАДАЧИ ════ */}
       {workTab === 'tasks' && (
         <div>
-          {todayWorkTasks.length > 0 && (
-            <div style={{ padding: '12px 14px', background: 'rgba(0,112,192,0.05)', border: `1px solid rgba(0,112,192,0.2)`, borderRadius: 10, marginBottom: 14 }}>
-              <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, color: T.info || '#0070c0', letterSpacing: 2, marginBottom: 8 }}>СЕГОДНЯ · РАБОТА</div>
-              {todayWorkTasks.map(t => (
-                <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-                  <div onClick={() => setTasks(p => p.map(x => x.id === t.id ? { ...x, doneDate: x.doneDate === today ? null : today } : x))}
-                    style={{ width: 18, height: 18, borderRadius: 4, border: `1.5px solid ${t.doneDate === today ? T.success : T.bdr}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', background: t.doneDate === today ? 'rgba(45,106,79,0.15)' : 'transparent', flexShrink: 0 }}>
-                    {t.doneDate === today && <span style={{ fontSize: 11, color: '#2d6a4f' }}>✓</span>}
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <span style={{ fontSize: 17, color: t.doneDate === today ? '#4A6480' : '#0A2540', fontFamily:"'Crimson Pro',serif", textDecoration: t.doneDate === today ? 'line-through' : 'none' }}>{t.title}</span>
-                    {t.preferredTime && <span style={{ marginLeft: 8, fontSize: 10, color: T.text3, fontFamily: "'JetBrains Mono',monospace" }}>{t.preferredTime}</span>}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
 
+          {/* ── Дедлайны — красный блок с акцентом ── */}
           {upcomingDeadlines.length > 0 && (
-            <div style={{ marginBottom: 14 }}>
-              <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, color: 'var(--error)', letterSpacing: 2, marginBottom: 8 }}>⚠ БЛИЖАЙШИЕ ДЕДЛАЙНЫ</div>
-              {upcomingDeadlines.map((dl, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', marginBottom: 6, background: dl.days <= 3 ? 'rgba(139,32,32,0.06)' : 'rgba(0,112,192,0.04)', border: `1px solid ${dl.days <= 3 ? 'rgba(139,32,32,0.3)' : 'rgba(0,112,192,0.15)'}`, borderRadius: 8 }}>
-                  <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, color: dl.days <= 3 ? 'var(--error)' : T.text3, minWidth: 50 }}>
-                    {dl.days === 0 ? 'СЕГОДНЯ' : dl.days === 1 ? 'ЗАВТРА' : `${dl.days} дн.`}
-                  </div>
-                  <div style={{ flex: 1, fontSize: 16, color: '#0A2540', fontFamily:"'Crimson Pro',serif" }}>{dl.name}</div>
-                  <span className="badge bm">{dl.deadline}</span>
+            <div style={{marginBottom:18,borderRadius:12,overflow:'hidden',
+              border:'2px solid rgba(107,16,16,0.30)',
+              boxShadow:'0 3px 12px rgba(107,16,16,0.10)'}}>
+              <div style={{padding:'12px 16px',
+                background:'linear-gradient(135deg,rgba(107,16,16,0.12),rgba(107,16,16,0.06))',
+                borderBottom:'1.5px solid rgba(107,16,16,0.20)',
+                display:'flex',alignItems:'center',gap:10}}>
+                <span style={{fontSize:20}}>⚠️</span>
+                <div style={{fontFamily:"'Cinzel',serif",fontSize:14,fontWeight:700,
+                  color:'#6B1010',letterSpacing:2,textTransform:'uppercase'}}>
+                  Ближайшие дедлайны
                 </div>
-              ))}
-            </div>
-          )}
-
-          <div style={{ marginBottom: 14 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-              <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, color: T.text3, letterSpacing: 2 }}>ВСЕ ЗАДАЧИ · {workTasks.length}</div>
-              <button className="btn btn-ghost btn-sm" onClick={() => setModal({})}>+ Добавить</button>
-            </div>
-            {workTasks.length === 0 && (
-              <div className="empty"><span className="empty-ico">💼</span><p>Нет рабочих задач</p></div>
-            )}
-            {workTasks.map(t => (
-              <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', marginBottom: 6, background: 'rgba(0,112,192,0.03)', border: `1px solid ${T.bdr}`, borderRadius: 8 }}>
-                <div onClick={() => setTasks(p => p.map(x => x.id === t.id ? { ...x, doneDate: x.doneDate === today ? null : today } : x))}
-                  style={{ width: 18, height: 18, borderRadius: 4, border: `1.5px solid ${t.doneDate === today ? T.success : T.bdr}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', background: t.doneDate === today ? 'rgba(45,106,79,0.15)' : 'transparent', flexShrink: 0 }}>
-                  {t.doneDate === today && <span style={{ fontSize: 11, color: '#2d6a4f' }}>✓</span>}
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 13, color: t.doneDate === today ? T.text3 : T.text1, textDecoration: t.doneDate === today ? 'line-through' : 'none' }}>{t.title}</div>
-                  <div style={{ fontSize: 12, color: '#4A6480', fontFamily: "'JetBrains Mono',monospace" }}>
-                    {freqLabel(t.freq)}{t.preferredTime ? ` · ${t.preferredTime}` : ''}{t.deadline ? ` · до ${t.deadline.split('T')[0]}` : ''}
-                  </div>
-                </div>
-                <div style={{ display: 'flex', gap: 6 }}>
-                  <span onClick={() => setModal(t)} style={{ fontSize: 13, color: T.text3, cursor: 'pointer', opacity: 0.6 }}>✏️</span>
-                  <span onClick={() => setTasks(p => p.filter(x => x.id !== t.id))} style={{ fontSize: 13, color: T.text3, cursor: 'pointer', opacity: 0.5 }}>✕</span>
+                <div style={{marginLeft:'auto',fontFamily:"'JetBrains Mono',monospace",
+                  fontSize:11,color:'rgba(107,16,16,0.7)',fontWeight:600}}>
+                  {upcomingDeadlines.length} шт.
                 </div>
               </div>
-            ))}
+              {upcomingDeadlines.map((dl,i) => (
+                <div key={i} style={{
+                  display:'flex',alignItems:'center',gap:14,
+                  padding:'14px 16px',
+                  borderBottom:i<upcomingDeadlines.length-1?'1px solid rgba(107,16,16,0.10)':'none',
+                  background:dl.days<=3?'rgba(107,16,16,0.06)':'rgba(250,243,224,0.6)',
+                  transition:'background 0.2s'}}>
+                  {/* Счётчик дней */}
+                  <div style={{
+                    width:56,height:56,borderRadius:10,flexShrink:0,
+                    background:dl.days===0?'#6B1010':dl.days<=3?'rgba(107,16,16,0.12)':'rgba(10,37,64,0.08)',
+                    border:`2px solid ${dl.days<=3?'rgba(107,16,16,0.35)':'rgba(10,37,64,0.15)'}`,
+                    display:'flex',flexDirection:'column',
+                    alignItems:'center',justifyContent:'center',
+                  }}>
+                    <div style={{fontFamily:"'Cinzel',serif",
+                      fontSize:dl.days<=9?22:16,fontWeight:700,lineHeight:1,
+                      color:dl.days===0?'#fff':dl.days<=3?'#6B1010':'#1E3A5F'}}>
+                      {dl.days===0?'!':dl.days}
+                    </div>
+                    <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:8,
+                      color:dl.days===0?'rgba(255,255,255,0.8)':dl.days<=3?'rgba(107,16,16,0.6)':'rgba(10,37,64,0.5)',
+                      letterSpacing:0.5,marginTop:2}}>
+                      {dl.days===0?'сегодня':dl.days===1?'завтра':'дн.'}
+                    </div>
+                  </div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontFamily:"'Crimson Pro',serif",fontSize:17,
+                      color:dl.days<=3?'#6B1010':'#0A2540',fontWeight:600,
+                      lineHeight:1.3,marginBottom:4}}>{dl.name}</div>
+                    <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,
+                      color:'rgba(10,37,64,0.50)',letterSpacing:0.5}}>
+                      📅 {dl.deadline}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* ── Сегодня ── */}
+          {todayWorkTasks.length > 0 && (
+            <div style={{marginBottom:18,borderRadius:12,overflow:'hidden',
+              border:'2px solid rgba(26,77,46,0.30)',
+              boxShadow:'0 3px 12px rgba(26,77,46,0.08)'}}>
+              <div style={{padding:'12px 16px',
+                background:'linear-gradient(135deg,rgba(26,77,46,0.10),rgba(26,77,46,0.05))',
+                borderBottom:'1.5px solid rgba(26,77,46,0.18)',
+                display:'flex',alignItems:'center',gap:10}}>
+                <span style={{fontSize:20}}>☀️</span>
+                <div style={{fontFamily:"'Cinzel',serif",fontSize:14,fontWeight:700,
+                  color:'#1A4D2E',letterSpacing:2,textTransform:'uppercase'}}>
+                  Сегодня
+                </div>
+                <div style={{marginLeft:'auto',fontFamily:"'JetBrains Mono',monospace",
+                  fontSize:11,color:'rgba(26,77,46,0.7)',fontWeight:600}}>
+                  {todayWorkTasks.filter(t=>t.doneDate===today).length}/{todayWorkTasks.length}
+                </div>
+              </div>
+              {todayWorkTasks.map((t,i) => {
+                const done = t.doneDate===today;
+                return (
+                  <div key={t.id} style={{
+                    display:'flex',alignItems:'center',gap:14,padding:'14px 16px',
+                    borderBottom:i<todayWorkTasks.length-1?'1px solid rgba(26,77,46,0.10)':'none',
+                    background:done?'rgba(26,77,46,0.06)':'rgba(250,243,224,0.6)',
+                    opacity:done?0.7:1}}>
+                    <div onClick={()=>setTasks(p=>p.map(x=>x.id===t.id?{...x,doneDate:x.doneDate===today?null:today}:x))}
+                      style={{width:26,height:26,borderRadius:8,flexShrink:0,
+                        border:`2px solid ${done?'#1A4D2E':'rgba(10,37,64,0.25)'}`,
+                        background:done?'rgba(26,77,46,0.15)':'rgba(255,255,255,0.8)',
+                        display:'flex',alignItems:'center',justifyContent:'center',
+                        cursor:'pointer',fontSize:14,color:'#1A4D2E',fontWeight:700}}>
+                      {done&&'✓'}
+                    </div>
+                    <div style={{flex:1}}>
+                      <div style={{fontFamily:"'Crimson Pro',serif",fontSize:17,
+                        color:done?'#4A6480':'#0A2540',fontWeight:done?400:600,
+                        textDecoration:done?'line-through':'none',lineHeight:1.3}}>
+                        {t.title}
+                      </div>
+                      {t.preferredTime&&<div style={{fontFamily:"'JetBrains Mono',monospace",
+                        fontSize:12,color:'rgba(26,77,46,0.6)',marginTop:3}}>
+                        ⏰ {t.preferredTime}
+                      </div>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* ── Все задачи ── */}
+          <div style={{marginBottom:18,borderRadius:12,overflow:'hidden',
+            border:`2px solid rgba(10,37,64,0.18)`,
+            boxShadow:'0 3px 12px rgba(10,37,64,0.08)'}}>
+            <div style={{padding:'12px 16px',
+              background:'linear-gradient(135deg,rgba(10,37,64,0.06),rgba(10,37,64,0.03))',
+              borderBottom:'1.5px solid rgba(10,37,64,0.12)',
+              display:'flex',alignItems:'center',gap:10}}>
+              <span style={{fontSize:20}}>💼</span>
+              <div style={{fontFamily:"'Cinzel',serif",fontSize:14,fontWeight:700,
+                color:CC.navyMid,letterSpacing:2,textTransform:'uppercase'}}>
+                Все задачи
+              </div>
+              <div style={{marginLeft:'auto',display:'flex',gap:8,alignItems:'center'}}>
+                <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,
+                  color:'rgba(10,37,64,0.5)',fontWeight:600}}>{workTasks.length} шт.</span>
+                <button onClick={()=>setModal({})}
+                  style={{padding:'7px 16px',borderRadius:8,border:'none',cursor:'pointer',
+                    fontFamily:"'Cinzel',serif",fontSize:11,letterSpacing:1.5,
+                    fontWeight:700,textTransform:'uppercase',
+                    background:`linear-gradient(135deg,${CC.navyMid},${CC.navy})`,
+                    color:CC.goldPale}}>
+                  + Добавить
+                </button>
+              </div>
+            </div>
+
+            {workTasks.length===0?(
+              <div style={{textAlign:'center',padding:'28px 0',
+                fontFamily:"'Cormorant Infant',serif",fontSize:17,
+                fontStyle:'italic',color:'rgba(10,37,64,0.35)'}}>
+                Нет рабочих задач
+              </div>
+            ):(
+              workTasks.map((t,i)=>{
+                const done=t.doneDate===today;
+                const hasDeadline=t.deadline&&daysUntil(t.deadline)!==null;
+                const dl=hasDeadline?daysUntil(t.deadline):null;
+                const isUrgent=dl!==null&&dl<=3;
+                return (
+                  <div key={t.id} style={{
+                    display:'flex',alignItems:'flex-start',gap:14,padding:'14px 16px',
+                    borderBottom:i<workTasks.length-1?'1px solid rgba(10,37,64,0.08)':'none',
+                    background:done?'rgba(26,77,46,0.04)':isUrgent?'rgba(107,16,16,0.04)':'rgba(250,243,224,0.4)',
+                    borderLeft:`4px solid ${done?'#1A4D2E':isUrgent?'#6B1010':'rgba(10,37,64,0.15)'}`,
+                    opacity:done?0.65:1}}>
+                    <div onClick={()=>setTasks(p=>p.map(x=>x.id===t.id?{...x,doneDate:x.doneDate===today?null:today}:x))}
+                      style={{width:26,height:26,borderRadius:8,flexShrink:0,marginTop:2,
+                        border:`2px solid ${done?'#1A4D2E':'rgba(10,37,64,0.25)'}`,
+                        background:done?'rgba(26,77,46,0.15)':'rgba(255,255,255,0.8)',
+                        display:'flex',alignItems:'center',justifyContent:'center',
+                        cursor:'pointer',fontSize:14,color:'#1A4D2E',fontWeight:700}}>
+                      {done&&'✓'}
+                    </div>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontFamily:"'Crimson Pro',serif",fontSize:18,
+                        color:done?'#4A6480':isUrgent?'#6B1010':'#0A2540',
+                        fontWeight:done?400:600,
+                        textDecoration:done?'line-through':'none',
+                        lineHeight:1.3,marginBottom:5}}>
+                        {t.title}
+                      </div>
+                      <div style={{display:'flex',gap:10,flexWrap:'wrap',alignItems:'center'}}>
+                        <span style={{display:'inline-flex',alignItems:'center',gap:4,
+                          padding:'3px 10px',borderRadius:20,
+                          fontFamily:"'JetBrains Mono',monospace",fontSize:11,
+                          background:'rgba(10,37,64,0.07)',
+                          border:'1px solid rgba(10,37,64,0.12)',
+                          color:'rgba(10,37,64,0.55)'}}>
+                          🔄 {freqLabel(t.freq)}
+                        </span>
+                        {t.preferredTime&&<span style={{display:'inline-flex',alignItems:'center',gap:4,
+                          padding:'3px 10px',borderRadius:20,
+                          fontFamily:"'JetBrains Mono',monospace",fontSize:11,
+                          background:'rgba(212,175,55,0.10)',
+                          border:'1px solid rgba(212,175,55,0.25)',
+                          color:'rgba(139,105,20,0.8)'}}>
+                          ⏰ {t.preferredTime}
+                        </span>}
+                        {hasDeadline&&<span style={{display:'inline-flex',alignItems:'center',gap:4,
+                          padding:'3px 10px',borderRadius:20,
+                          fontFamily:"'JetBrains Mono',monospace",fontSize:11,
+                          background:isUrgent?'rgba(107,16,16,0.10)':'rgba(10,37,64,0.07)',
+                          border:`1px solid ${isUrgent?'rgba(107,16,16,0.30)':'rgba(10,37,64,0.12)'}`,
+                          color:isUrgent?'#6B1010':'rgba(10,37,64,0.55)',fontWeight:isUrgent?700:400}}>
+                          📅 {dl===0?'Сегодня!':dl===1?'Завтра!':t.deadline?.split('T')[0]}
+                        </span>}
+                      </div>
+                    </div>
+                    <div style={{display:'flex',gap:8,flexShrink:0,paddingTop:2}}>
+                      <button onClick={()=>setModal(t)}
+                        style={{background:'none',border:'none',fontSize:17,cursor:'pointer',
+                          color:'rgba(10,37,64,0.40)',padding:'2px 4px'}}>✏️</button>
+                      <button onClick={()=>setTasks(p=>p.filter(x=>x.id!==t.id))}
+                        style={{background:'none',border:'none',fontSize:17,cursor:'pointer',
+                          color:'rgba(107,16,16,0.40)',padding:'2px 4px'}}>✕</button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
 
-          <div style={{ padding: '12px 14px', background: 'rgba(0,112,192,0.04)', border: `1px solid rgba(0,112,192,0.15)`, borderRadius: 10 }}>
-            <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, color: T.info || '#0070c0', letterSpacing: 2, marginBottom: 10 }}>🔔 PUSH-УВЕДОМЛЕНИЯ</div>
-            <div style={{ fontSize: 12, color: T.text2, marginBottom: 10 }}>
-              Статус: <strong style={{ color: pushStatus === 'granted' ? '#2d6a4f' : pushStatus === 'denied' ? 'var(--error)' : T.gold }}>
-                {pushStatus === 'granted' ? '✅ Включены' : pushStatus === 'denied' ? '❌ Заблокированы' : pushStatus === 'unsupported' ? '⚠️ Не поддерживается' : '⏳ Не настроены'}
-              </strong>
+          {/* ── Push-уведомления ── */}
+          <div style={{borderRadius:12,overflow:'hidden',
+            border:'1.5px solid rgba(10,37,64,0.15)',
+            background:'rgba(250,243,224,0.6)'}}>
+            <div style={{padding:'12px 16px',
+              background:'rgba(10,37,64,0.04)',
+              borderBottom:'1.5px solid rgba(10,37,64,0.10)',
+              display:'flex',alignItems:'center',gap:10}}>
+              <span style={{fontSize:18}}>🔔</span>
+              <div style={{fontFamily:"'Cinzel',serif",fontSize:13,fontWeight:700,
+                color:CC.navyMid,letterSpacing:2,textTransform:'uppercase'}}>
+                Push-уведомления
+              </div>
+              <div style={{marginLeft:'auto'}}>
+                <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:12,fontWeight:700,
+                  color:pushStatus==='granted'?'#1A4D2E':pushStatus==='denied'?'#6B1010':'rgba(212,175,55,0.9)'}}>
+                  {pushStatus==='granted'?'✅ Включены':pushStatus==='denied'?'❌ Заблок.':pushStatus==='unsupported'?'⚠️ Не поддерж.':'⏳ Не настр.'}
+                </span>
+              </div>
             </div>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {pushStatus !== 'granted' && pushStatus !== 'denied' && pushStatus !== 'unsupported' && (
-                <button className="btn btn-ghost btn-sm" onClick={handleEnablePush}>🔔 Включить уведомления</button>
+            <div style={{padding:'14px 16px',display:'flex',gap:10,flexWrap:'wrap'}}>
+              {pushStatus!=='granted'&&pushStatus!=='denied'&&pushStatus!=='unsupported'&&(
+                <button onClick={handleEnablePush}
+                  style={{padding:'10px 20px',borderRadius:9,border:'none',cursor:'pointer',
+                    fontFamily:"'Cinzel',serif",fontSize:12,letterSpacing:1.5,
+                    fontWeight:700,textTransform:'uppercase',
+                    background:`linear-gradient(135deg,${CC.navyMid},${CC.navy})`,
+                    color:CC.goldPale}}>
+                  🔔 Включить
+                </button>
               )}
-              {pushStatus === 'granted' && (
-                <button className="btn btn-ghost btn-sm" onClick={handleTestPush}>📨 Тест</button>
+              {pushStatus==='granted'&&(
+                <button onClick={handleTestPush}
+                  style={{padding:'10px 20px',borderRadius:9,
+                    border:'1.5px dashed rgba(10,37,64,0.25)',background:'transparent',cursor:'pointer',
+                    fontFamily:"'Cinzel',serif",fontSize:12,letterSpacing:1.5,
+                    fontWeight:600,textTransform:'uppercase',color:CC.navyMid}}>
+                  📨 Тест
+                </button>
               )}
-              {pushStatus === 'denied' && (
-                <div style={{ fontSize: 12, color: 'var(--error)', lineHeight: 1.5 }}>
+              {pushStatus==='denied'&&(
+                <div style={{fontFamily:"'Crimson Pro',serif",fontSize:15,
+                  color:'#6B1010',lineHeight:1.6}}>
                   Разрешите уведомления вручную в настройках браузера.
                 </div>
               )}
@@ -352,78 +533,193 @@ export function WorkSection() {
       {/* ════ ВКЛАДКА: ОТЧЁТЫ ════ */}
       {workTab === 'reports' && (
         <div>
-          <div style={{ marginBottom: 14 }}>
-            <div onClick={() => setMyReportsOpen(o => !o)}
-              style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', borderRadius: myReportsOpen ? '12px 12px 0 0' : 12, cursor: 'pointer', background: 'rgba(0,112,192,0.05)', border: `1px solid rgba(0,112,192,0.2)` }}>
-              <span style={{ fontSize: 16 }}>📋</span>
-              <span style={{ flex: 1, fontSize: 14, fontFamily: "'Crimson Pro',serif", color: T.info || '#0070c0', fontWeight: 500 }}>
-                Мои отчёты ({selectedKgd.length + selectedBns.length + customReportGroups.reduce((acc, g) => acc + g.reports.length, 0)})
-              </span>
-              <span style={{ fontSize: 11, color: T.text3 }}>{myReportsOpen ? '▲' : '▼'}</span>
+
+          {/* ── Мои отчёты ── */}
+          <div style={{marginBottom:18,borderRadius:12,overflow:'hidden',
+            border:'2px solid rgba(10,37,64,0.18)',
+            boxShadow:'0 3px 12px rgba(10,37,64,0.08)'}}>
+            {/* Заголовок */}
+            <div onClick={()=>setMyReportsOpen(o=>!o)}
+              style={{padding:'14px 16px',cursor:'pointer',
+                background:'linear-gradient(135deg,rgba(10,37,64,0.07),rgba(10,37,64,0.03))',
+                borderBottom:myReportsOpen?'1.5px solid rgba(10,37,64,0.12)':'none',
+                display:'flex',alignItems:'center',gap:12}}>
+              <span style={{fontSize:22}}>📋</span>
+              <div style={{flex:1}}>
+                <div style={{fontFamily:"'Cinzel',serif",fontSize:15,fontWeight:700,
+                  color:CC.navy,letterSpacing:2,textTransform:'uppercase'}}>
+                  Мои отчёты
+                </div>
+                <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,
+                  color:'rgba(10,37,64,0.50)',marginTop:2}}>
+                  {selectedKgd.length + selectedBns.length + customReportGroups.reduce((a,g)=>a+g.reports.length,0)} форм выбрано
+                </div>
+              </div>
+              <span style={{fontSize:16,color:CC.gold,
+                transform:myReportsOpen?'rotate(180deg)':'rotate(0)',transition:'0.25s'}}>▼</span>
             </div>
+
             {myReportsOpen && (
-              <div style={{ border: `1px solid rgba(0,112,192,0.15)`, borderTop: 'none', borderRadius: '0 0 12px 12px', padding: 12 }}>
-                {selectedKgd.length === 0 && selectedBns.length === 0 && customReportGroups.every(g => g.reports.length === 0) && (
-                  <div className="empty"><span className="empty-ico">📊</span><p>Выберите отчёты из каталога</p></div>
+              <div style={{padding:'0 0 4px'}}>
+                {selectedKgd.length===0&&selectedBns.length===0&&customReportGroups.every(g=>g.reports.length===0)&&(
+                  <div style={{textAlign:'center',padding:'24px 0',
+                    fontFamily:"'Cormorant Infant',serif",fontSize:17,
+                    fontStyle:'italic',color:'rgba(10,37,64,0.35)'}}>
+                    Выберите отчёты из каталога ниже
+                  </div>
                 )}
-                {selectedKgd.length > 0 && (
-                  <div style={{ marginBottom: 12 }}>
-                    <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, color: T.text3, letterSpacing: 2, marginBottom: 8 }}>КГД</div>
-                    {selectedKgd.map(r => {
-                      const nearest = (r.deadlines2026 || []).find(dl => daysUntil(dl) >= 0);
-                      const days = nearest ? daysUntil(nearest) : null;
+
+                {/* КГД */}
+                {selectedKgd.length>0&&(
+                  <div>
+                    <div style={{padding:'10px 16px 6px',
+                      fontFamily:"'JetBrains Mono',monospace",fontSize:11,
+                      color:'rgba(10,37,64,0.45)',letterSpacing:2,
+                      textTransform:'uppercase',
+                      borderBottom:'1px solid rgba(10,37,64,0.07)'}}>
+                      🏛 КГД · {selectedKgd.length} форм
+                    </div>
+                    {selectedKgd.map((r,i)=>{
+                      const nearest=(r.deadlines2026||[]).find(dl=>daysUntil(dl)>=0);
+                      const days=nearest?daysUntil(nearest):null;
+                      const urgent=days!==null&&days<=3;
                       return (
-                        <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', marginBottom: 4, background: 'rgba(0,112,192,0.03)', border: `1px solid ${T.bdr}`, borderRadius: 8 }}>
-                          <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: 16, color: '#0A2540', fontFamily:"'Crimson Pro',serif" }}>{r.name}</div>
-                            <div style={{ fontSize: 10, color: T.text3, fontFamily: "'JetBrains Mono',monospace" }}>{r.id}</div>
+                        <div key={r.id} style={{
+                          display:'flex',alignItems:'center',gap:14,
+                          padding:'13px 16px',
+                          borderBottom:i<selectedKgd.length-1?'1px solid rgba(10,37,64,0.07)':'none',
+                          background:urgent?'rgba(107,16,16,0.04)':'transparent',
+                          borderLeft:`3px solid ${urgent?'#6B1010':'rgba(10,37,64,0.15)'}`,
+                        }}>
+                          <div style={{flex:1,minWidth:0}}>
+                            <div style={{fontFamily:"'Crimson Pro',serif",fontSize:17,
+                              color:urgent?'#6B1010':'#0A2540',fontWeight:600,
+                              lineHeight:1.3,marginBottom:4}}>
+                              {r.name}
+                            </div>
+                            <span style={{display:'inline-block',padding:'2px 10px',borderRadius:20,
+                              fontFamily:"'JetBrains Mono',monospace",fontSize:10,
+                              background:'rgba(10,37,64,0.07)',border:'1px solid rgba(10,37,64,0.12)',
+                              color:'rgba(10,37,64,0.50)'}}>
+                              {r.id}
+                            </span>
                           </div>
-                          {days !== null && (
-                            <span className={`badge ${days <= 3 ? 'bgr' : 'bm'}`}>{days === 0 ? 'Сегодня' : `${days} дн.`}</span>
+                          {days!==null&&(
+                            <div style={{flexShrink:0,
+                              padding:'6px 12px',borderRadius:8,
+                              background:urgent?'rgba(107,16,16,0.10)':'rgba(212,175,55,0.10)',
+                              border:`1px solid ${urgent?'rgba(107,16,16,0.30)':'rgba(212,175,55,0.30)'}`,
+                              fontFamily:"'JetBrains Mono',monospace",fontSize:12,
+                              color:urgent?'#6B1010':'#8B6914',fontWeight:700,
+                              textAlign:'center'}}>
+                              {days===0?'Сегодня!':days===1?'Завтра':`${days} дн.`}
+                            </div>
                           )}
-                          <span onClick={() => toggleReport(r.id)} style={{ fontSize: 12, color: T.text3, cursor: 'pointer', opacity: 0.5 }}>✕</span>
+                          <button onClick={()=>toggleReport(r.id)}
+                            style={{background:'none',border:'none',fontSize:18,
+                              cursor:'pointer',color:'rgba(107,16,16,0.35)',
+                              padding:'2px 4px',flexShrink:0}}>✕</button>
                         </div>
                       );
                     })}
                   </div>
                 )}
-                {selectedBns.length > 0 && (
-                  <div style={{ marginBottom: 12 }}>
-                    <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, color: T.text3, letterSpacing: 2, marginBottom: 8 }}>БНС</div>
-                    {selectedBns.map(r => (
-                      <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', marginBottom: 4, background: 'rgba(0,112,192,0.03)', border: `1px solid ${T.bdr}`, borderRadius: 8 }}>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: 16, color: '#0A2540', fontFamily:"'Crimson Pro',serif" }}>{r.name}</div>
-                          <div style={{ fontSize: 10, color: T.text3, fontFamily: "'JetBrains Mono',monospace" }}>{r.id}</div>
+
+                {/* БНС */}
+                {selectedBns.length>0&&(
+                  <div>
+                    <div style={{padding:'10px 16px 6px',
+                      fontFamily:"'JetBrains Mono',monospace",fontSize:11,
+                      color:'rgba(10,37,64,0.45)',letterSpacing:2,
+                      textTransform:'uppercase',
+                      borderBottom:'1px solid rgba(10,37,64,0.07)',
+                      borderTop:'1px solid rgba(10,37,64,0.07)'}}>
+                      📊 БНС · {selectedBns.length} форм
+                    </div>
+                    {selectedBns.map((r,i)=>(
+                      <div key={r.id} style={{
+                        display:'flex',alignItems:'center',gap:14,
+                        padding:'13px 16px',
+                        borderBottom:i<selectedBns.length-1?'1px solid rgba(10,37,64,0.07)':'none',
+                        borderLeft:'3px solid rgba(10,37,64,0.15)'}}>
+                        <div style={{flex:1,minWidth:0}}>
+                          <div style={{fontFamily:"'Crimson Pro',serif",fontSize:17,
+                            color:'#0A2540',fontWeight:600,lineHeight:1.3,marginBottom:4}}>
+                            {r.name}
+                          </div>
+                          <span style={{display:'inline-block',padding:'2px 10px',borderRadius:20,
+                            fontFamily:"'JetBrains Mono',monospace",fontSize:10,
+                            background:'rgba(10,37,64,0.07)',border:'1px solid rgba(10,37,64,0.12)',
+                            color:'rgba(10,37,64,0.50)'}}>
+                            {r.id}
+                          </span>
                         </div>
-                        <span onClick={() => toggleReport(r.id)} style={{ fontSize: 12, color: T.text3, cursor: 'pointer', opacity: 0.5 }}>✕</span>
+                        <button onClick={()=>toggleReport(r.id)}
+                          style={{background:'none',border:'none',fontSize:18,
+                            cursor:'pointer',color:'rgba(107,16,16,0.35)',
+                            padding:'2px 4px',flexShrink:0}}>✕</button>
                       </div>
                     ))}
                   </div>
                 )}
-                {customReportGroups.map(g => g.reports.length > 0 && (
-                  <div key={g.id} style={{ marginBottom: 8 }}>
-                    <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, color: T.text3, letterSpacing: 2, marginBottom: 8 }}>МОИ ОТЧЁТЫ</div>
-                    {g.reports.map(r => (
-                      <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', marginBottom: 4, background: 'rgba(200,164,90,0.04)', border: `1px solid rgba(200,164,90,0.2)`, borderRadius: 8 }}>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: 16, color: '#0A2540', fontFamily:"'Crimson Pro',serif" }}>{r.name}</div>
-                          <div style={{ fontSize: 10, color: T.text3, fontFamily: "'JetBrains Mono',monospace" }}>
-                            {freqLabel(r.frequency)} · до {r.deadline}
-                            {r.daysAfter && <span style={{ marginLeft: 4 }}>({r.daysAfter} дн. после периода)</span>}
-                            {daysUntil(r.deadline) !== null && (
-                              <span style={{ marginLeft: 6, color: daysUntil(r.deadline) <= 3 ? 'var(--error)' : T.text3 }}>
-                                · {daysUntil(r.deadline) <= 0 ? '⚠ просрочен' : `${daysUntil(r.deadline)} дн.`}
+
+                {/* Свои отчёты */}
+                {customReportGroups.map(g=>g.reports.length>0&&(
+                  <div key={g.id}>
+                    <div style={{padding:'10px 16px 6px',
+                      fontFamily:"'JetBrains Mono',monospace",fontSize:11,
+                      color:'rgba(139,105,20,0.7)',letterSpacing:2,textTransform:'uppercase',
+                      borderBottom:'1px solid rgba(212,175,55,0.15)',
+                      borderTop:'1px solid rgba(10,37,64,0.07)'}}>
+                      ⭐ Мои формы · {g.reports.length} шт.
+                    </div>
+                    {g.reports.map((r,i)=>{
+                      const dl=daysUntil(r.deadline);
+                      const urgent=dl!==null&&dl<=3;
+                      return (
+                        <div key={r.id} style={{
+                          display:'flex',alignItems:'flex-start',gap:14,
+                          padding:'13px 16px',
+                          borderBottom:i<g.reports.length-1?'1px solid rgba(212,175,55,0.10)':'none',
+                          borderLeft:`3px solid ${urgent?'#6B1010':'rgba(212,175,55,0.50)'}`,
+                          background:'rgba(212,175,55,0.04)'}}>
+                          <div style={{flex:1,minWidth:0}}>
+                            <div style={{fontFamily:"'Crimson Pro',serif",fontSize:17,
+                              color:urgent?'#6B1010':'#0A2540',fontWeight:600,
+                              lineHeight:1.3,marginBottom:6}}>
+                              {r.name}
+                            </div>
+                            <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+                              <span style={{padding:'2px 10px',borderRadius:20,
+                                fontFamily:"'JetBrains Mono',monospace",fontSize:11,
+                                background:'rgba(212,175,55,0.10)',border:'1px solid rgba(212,175,55,0.25)',
+                                color:'rgba(139,105,20,0.8)'}}>
+                                🔄 {freqLabel(r.frequency)}
                               </span>
-                            )}
+                              <span style={{padding:'2px 10px',borderRadius:20,
+                                fontFamily:"'JetBrains Mono',monospace",fontSize:11,
+                                background:urgent?'rgba(107,16,16,0.10)':'rgba(10,37,64,0.07)',
+                                border:`1px solid ${urgent?'rgba(107,16,16,0.30)':'rgba(10,37,64,0.12)'}`,
+                                color:urgent?'#6B1010':'rgba(10,37,64,0.55)',fontWeight:urgent?700:400}}>
+                                📅 до {r.deadline}{dl!==null&&` (${dl<=0?'⚠ просрочен':`${dl} дн.`})`}
+                              </span>
+                            </div>
                           </div>
                         </div>
-                        <span className="badge bt">{freqLabel(r.frequency)}</span>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 ))}
-                <button className="btn btn-ghost btn-sm" style={{ marginTop: 8 }} onClick={() => setShowCustomModal(true)}>+ Добавить свой отчёт</button>
+
+                <div style={{padding:'12px 16px'}}>
+                  <button onClick={()=>setShowCustomModal(true)}
+                    style={{width:'100%',padding:'12px 0',borderRadius:9,
+                      border:'1.5px dashed rgba(10,37,64,0.22)',background:'transparent',
+                      cursor:'pointer',fontFamily:"'Cinzel',serif",fontSize:12,
+                      letterSpacing:2,textTransform:'uppercase',color:CC.navyMid}}>
+                    + Добавить свой отчёт
+                  </button>
+                </div>
               </div>
             )}
           </div>
