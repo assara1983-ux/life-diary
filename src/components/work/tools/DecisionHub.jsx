@@ -122,7 +122,7 @@ export function DecisionHub() {
       <div style={{ color: 'var(--text0)', paddingBottom: 24 }}>
         <div style={{ marginBottom: 20 }}>
           <div style={{
-            fontSize: 11, fontFamily: "'JetBrains Mono',monospace",
+            fontSize: 14, fontFamily: "'JetBrains Mono',monospace",
             letterSpacing: 3, color: 'rgba(200,164,90,0.7)', marginBottom: 4,
           }}>ХАБ РЕШЕНИЙ</div>
           <div style={{ fontSize: 18, fontFamily: "'Cormorant Infant',serif" }}>
@@ -146,16 +146,16 @@ export function DecisionHub() {
             >
               <div style={{ fontSize: 28, marginBottom: 10 }}>{f.icon}</div>
               <div style={{
-                fontSize: 14, fontWeight: 600, color: 'var(--text1)',
+                fontSize: 17, fontWeight: 600, color: 'var(--text1)',
                 marginBottom: 6, fontFamily: "'Cormorant Infant',serif",
               }}>{f.title}</div>
-              <div style={{ fontSize: 12, color: 'var(--text3)', lineHeight: 1.5 }}>
+              <div style={{ fontSize: 15, color: 'var(--text3)', lineHeight: 1.5 }}>
                 {f.desc}
               </div>
               <div style={{
                 marginTop: 14, padding: '6px 0', textAlign: 'center',
                 borderTop: `1px solid ${f.color}`,
-                fontSize: 10, fontFamily: "'JetBrains Mono',monospace",
+                fontSize: 13, fontFamily: "'JetBrains Mono',monospace",
                 letterSpacing: 1, color: 'rgba(200,164,90,0.6)',
               }}>
                 ОТКРЫТЬ →
@@ -174,16 +174,16 @@ export function DecisionHub() {
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
         <div onClick={() => setSelected(null)}
           style={{
-            padding: '6px 14px', borderRadius: 14, cursor: 'pointer', fontSize: 11,
+            padding: '6px 14px', borderRadius: 14, cursor: 'pointer', fontSize: 14,
             background: 'rgba(255,255,255,0.04)',
-            border: '1px solid rgba(255,255,255,0.1)',
+            border: `1px solid ${BT.bdrS}`,
             color: 'var(--text3)', fontFamily: "'JetBrains Mono',monospace",
           }}
         >← Назад</div>
-        <div style={{ fontSize: 11, color: 'var(--text3)', fontFamily: "'JetBrains Mono',monospace" }}>
+        <div style={{ fontSize: 14, color: 'var(--text3)', fontFamily: "'JetBrains Mono',monospace" }}>
           /
         </div>
-        <div style={{ fontSize: 14, fontFamily: "'Cormorant Infant',serif", color: 'var(--text1)' }}>
+        <div style={{ fontSize: 17, fontFamily: "'Cormorant Infant',serif", color: 'var(--text1)' }}>
           {fw.icon} {fw.title}
         </div>
       </div>
@@ -193,12 +193,12 @@ export function DecisionHub() {
         {fw.questions.map((q, i) => (
           <div key={i} style={{
             padding: '14px 16px',
-            background: 'rgba(255,255,255,0.03)',
+            background: 'rgba(255,255,255,0.70)',
             border: `1px solid ${answers[i] ? fw.color : 'rgba(255,255,255,0.07)'}`,
             borderRadius: 10, transition: 'border 0.2s',
           }}>
             <div style={{
-              fontSize: 13, color: 'rgba(200,164,90,0.85)',
+              fontSize: 16, color: 'rgba(200,164,90,0.85)',
               marginBottom: 8, lineHeight: 1.4,
               borderLeft: `3px solid ${fw.color}`,
               paddingLeft: 10,
@@ -215,7 +215,7 @@ export function DecisionHub() {
                 background: 'rgba(255,255,255,0.04)',
                 border: '1px solid rgba(255,255,255,0.08)',
                 borderRadius: 8, color: 'var(--text1)',
-                fontSize: 12, lineHeight: 1.5, resize: 'vertical',
+                fontSize: 15, lineHeight: 1.5, resize: 'vertical',
                 outline: 'none', boxSizing: 'border-box',
               }}
             />
@@ -228,7 +228,7 @@ export function DecisionHub() {
         <button onClick={analyzeWithAI} disabled={loading} style={{
           flex: 1, padding: '12px 0', borderRadius: 20,
           background: 'rgba(0,112,192,0.1)', border: '1px solid rgba(0,112,192,0.3)',
-          color: 'rgba(100,180,255,0.9)', fontSize: 13, cursor: loading ? 'not-allowed' : 'pointer',
+          color: 'rgba(100,180,255,0.9)', fontSize: 16, cursor: loading ? 'not-allowed' : 'pointer',
           opacity: loading ? 0.7 : 1, fontFamily: "'JetBrains Mono',monospace",
         }}>
           {loading ? '✦ Анализирую...' : '🤖 Анализ ИИ'}
@@ -236,7 +236,7 @@ export function DecisionHub() {
         <button onClick={saveInsight} style={{
           flex: 1, padding: '12px 0', borderRadius: 20,
           background: 'rgba(200,164,90,0.1)', border: '1px solid rgba(200,164,90,0.4)',
-          color: 'rgba(200,164,90,0.9)', fontSize: 13, cursor: 'pointer',
+          color: 'rgba(200,164,90,0.9)', fontSize: 16, cursor: 'pointer',
           fontFamily: "'JetBrains Mono',monospace",
         }}>
           💾 Сохранить решение
@@ -249,11 +249,11 @@ export function DecisionHub() {
           padding: '16px 18px',
           background: 'rgba(0,112,192,0.05)',
           border: '1px solid rgba(0,112,192,0.2)',
-          borderRadius: 12, fontSize: 13, lineHeight: 1.7,
+          borderRadius: 12, fontSize: 16, lineHeight: 1.7,
           color: 'var(--text1)', whiteSpace: 'pre-wrap',
         }}>
           <div style={{
-            fontSize: 9, fontFamily: "'JetBrains Mono',monospace",
+            fontSize: 12, fontFamily: "'JetBrains Mono',monospace",
             letterSpacing: 2, color: 'rgba(0,160,255,0.5)', marginBottom: 8,
           }}>ИИ АНАЛИЗ</div>
           {aiResult}
