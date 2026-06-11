@@ -196,11 +196,10 @@ function WeightChart({ logs }) {
           stroke="rgba(0,112,192,0.3)"
           strokeWidth="1.5"
         />
-        <polyline
-          points={points}
+        <polygon
+          points={last30.map((l,i) => `${toX(i)},${toY(parseFloat(l.value))}`).join(' ') + ` ${W},${H} 0,${H}`}
           fill="rgba(0,112,192,0.08)"
           stroke="none"
-          points={last30.map((l,i) => `${toX(i)},${toY(parseFloat(l.value))}`).join(' ') + ` ${W},${H} 0,${H}`}
         />
         {last30.map((l, i) => (
           <circle
@@ -1027,7 +1026,7 @@ export function HealthSection() {
                 ))}
               </div>
               <div style={{ marginTop: 10, padding: '8px', background: '#fff3e0', borderRadius: 6, fontSize: 12, color: '#e65100' }}>
-                ⚠️ Важно: при стрессе >7 исключите интенсивные тренировки — кортизол блокирует жиросжигание
+                ⚠️ Важно: при стрессе {'>'}7 исключите интенсивные тренировки — кортизол блокирует жиросжигание
               </div>
             </AccordionItem>
 
