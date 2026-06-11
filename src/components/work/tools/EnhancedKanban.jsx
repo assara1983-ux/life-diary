@@ -176,14 +176,13 @@ export function EnhancedKanban() {
                       <div key={task.id} draggable
                         onDragStart={e=>{e.dataTransfer.setData('text/plain',String(task.id));setDraggedId(task.id);}}
                         style={{
-                          background:done?'rgba(26,77,46,0.08)':task.cardBg||col.cardBg,
+                          background:urgent?'rgba(107,16,16,0.06)':done?'rgba(26,77,46,0.06)':col.cardBg,
                           border:`1.5px solid ${urgent?'rgba(107,16,16,0.40)':done?'rgba(26,77,46,0.30)':col.cardBorder}`,
                           borderLeft:`4px solid ${urgent?'#6B1010':done?'#1A4D2E':col.cardAccent}`,
                           borderRadius:10,padding:'12px 12px',cursor:'grab',
                           transition:'box-shadow 0.15s',
                           opacity:done?0.65:1,
                           boxShadow:urgent?'0 2px 8px rgba(107,16,16,0.15)':'0 2px 6px rgba(10,37,64,0.08)',
-                          background:urgent?'rgba(107,16,16,0.06)':done?'rgba(26,77,46,0.06)':col.cardBg,
                         }}>
                         {/* Чекбокс + название */}
                         <div style={{display:'flex',alignItems:'flex-start',gap:10,
