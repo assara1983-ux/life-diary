@@ -3,7 +3,6 @@ import { useState, useMemo, useEffect } from 'react';
 import { useApp } from '../store/AppContext';
 import { KGD_CATALOG, BNS_CATALOG } from '../data/reportsCatalog';
 import { TaskModal } from '../components/TaskModal';
-import { SectionHero } from '../components/SectionHero';
 import { AiBox } from '../components/AiBox';
 import { T } from '../utils/theme';
 import { requestPermission, subscribeUser, sendPush } from '../utils/pushManager';
@@ -205,17 +204,60 @@ export function WorkSection() {
     { v: 'annual',    l: 'Ежегодно',       hint: '31 декабря + N дней' },
   ];
 
+  const CC = {
+    navy:'#0A2540', navyMid:'#1E3A5F',
+    gold:'#D4AF37', goldDeep:'#B8941E', goldPale:'#F0DC90',
+    bgCard:'#FAF3E0', bgCard2:'#F2E8CE',
+    text1:'#0A2540', text2:'#1E3A5F', text3:'#4A6480',
+    success:'#1A4D2E', error:'#6B1010',
+    line:'rgba(10,37,64,0.22)', lineS:'rgba(10,37,64,0.10)',
+  };
+
   return (
-    <div>
-      <SectionHero sectionId="work" />
-      {/* ✅ WorkIllustration убрана */}
+    <div style={{paddingBottom:80}}>
+
+      {/* ── Маленькая шапка ── */}
+      <div style={{position:'relative',height:90,borderRadius:14,overflow:'hidden',
+        marginBottom:20,boxShadow:'0 4px 16px rgba(10,37,64,0.18)'}}>
+        <img src="/sections/work.jpg" alt="" style={{position:'absolute',inset:0,
+          width:'100%',height:'100%',objectFit:'cover'}}
+          onError={e=>e.target.style.display='none'}/>
+        <div style={{position:'absolute',inset:0,
+          background:'linear-gradient(to top,rgba(10,25,45,0.88) 0%,rgba(10,25,45,0.25) 100%)'}}/>
+        <div style={{position:'absolute',top:8,left:10,width:12,height:12,
+          borderTop:'2px solid #D4AF37',borderLeft:'2px solid #D4AF37',opacity:0.9}}/>
+        <div style={{position:'absolute',bottom:8,right:10,width:12,height:12,
+          borderBottom:'2px solid #D4AF37',borderRight:'2px solid #D4AF37',opacity:0.9}}/>
+        <div style={{position:'absolute',bottom:12,left:18}}>
+          <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:3,
+            color:'#F0DC90',textTransform:'uppercase',marginBottom:3,opacity:0.85}}>
+            {profile?.profession||'Бухгалтер'}
+          </div>
+          <div style={{fontFamily:"'Cinzel',serif",fontSize:18,fontWeight:700,
+            color:'#fff',letterSpacing:2,textTransform:'uppercase',
+            textShadow:'0 2px 8px rgba(0,0,0,0.6)'}}>
+            Работа
+          </div>
+        </div>
+      </div>
 
       {/* ─── Вкладки ─── */}
-      <div style={{ display: 'flex', gap: 2, background: 'rgba(0,112,192,0.05)', border: `1px solid ${T.bdr}`, borderRadius: 12, padding: 4, marginBottom: 20 }}>
+      <div style={{display:'flex',gap:4,marginBottom:20,
+        background:'rgba(10,37,64,0.05)',border:'1.5px solid rgba(10,37,64,0.22)',
+        borderRadius:8,padding:4}}>
         {TABS.map(tab => (
-          <div key={tab.id} onClick={() => setWorkTab(tab.id)}
-            style={{ flex: 1, padding: '7px 4px', borderRadius: 9, cursor: 'pointer', textAlign: 'center', fontSize: 12, background: workTab === tab.id ? 'rgba(0,112,192,0.15)' : 'transparent', color: workTab === tab.id ? T.gold : T.text2, transition: 'all .18s', fontFamily: "'JetBrains Mono',monospace", letterSpacing: 0.3 }}
-          >{tab.label}</div>
+          <button key={tab.id} onClick={() => setWorkTab(tab.id)}
+            style={{flex:1,padding:'12px 4px',border:'none',borderRadius:6,cursor:'pointer',
+              textAlign:'center',
+              fontFamily:"'Cinzel',serif",fontSize:12,letterSpacing:1.5,
+              textTransform:'uppercase',
+              background:workTab===tab.id?'#0A2540':'transparent',
+              color:workTab===tab.id?'#F0DC90':'#4A6480',
+              fontWeight:workTab===tab.id?700:400,
+              transition:'all 0.2s',
+              boxShadow:workTab===tab.id?'0 2px 8px rgba(10,37,64,0.22)':'none'}}>
+            {tab.label}
+          </button>
         ))}
       </div>
 
@@ -232,7 +274,7 @@ export function WorkSection() {
                     {t.doneDate === today && <span style={{ fontSize: 11, color: '#2d6a4f' }}>✓</span>}
                   </div>
                   <div style={{ flex: 1 }}>
-                    <span style={{ fontSize: 13, color: t.doneDate === today ? T.text3 : T.text1, textDecoration: t.doneDate === today ? 'line-through' : 'none' }}>{t.title}</span>
+                    <span style={{ fontSize: 17, color: t.doneDate === today ? '#4A6480' : '#0A2540', fontFamily:"'Crimson Pro',serif", textDecoration: t.doneDate === today ? 'line-through' : 'none' }}>{t.title}</span>
                     {t.preferredTime && <span style={{ marginLeft: 8, fontSize: 10, color: T.text3, fontFamily: "'JetBrains Mono',monospace" }}>{t.preferredTime}</span>}
                   </div>
                 </div>
@@ -248,7 +290,7 @@ export function WorkSection() {
                   <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, color: dl.days <= 3 ? 'var(--error)' : T.text3, minWidth: 50 }}>
                     {dl.days === 0 ? 'СЕГОДНЯ' : dl.days === 1 ? 'ЗАВТРА' : `${dl.days} дн.`}
                   </div>
-                  <div style={{ flex: 1, fontSize: 13, color: T.text1 }}>{dl.name}</div>
+                  <div style={{ flex: 1, fontSize: 16, color: '#0A2540', fontFamily:"'Crimson Pro',serif" }}>{dl.name}</div>
                   <span className="badge bm">{dl.deadline}</span>
                 </div>
               ))}
@@ -271,7 +313,7 @@ export function WorkSection() {
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 13, color: t.doneDate === today ? T.text3 : T.text1, textDecoration: t.doneDate === today ? 'line-through' : 'none' }}>{t.title}</div>
-                  <div style={{ fontSize: 10, color: T.text3, fontFamily: "'JetBrains Mono',monospace" }}>
+                  <div style={{ fontSize: 12, color: '#4A6480', fontFamily: "'JetBrains Mono',monospace" }}>
                     {freqLabel(t.freq)}{t.preferredTime ? ` · ${t.preferredTime}` : ''}{t.deadline ? ` · до ${t.deadline.split('T')[0]}` : ''}
                   </div>
                 </div>
@@ -333,7 +375,7 @@ export function WorkSection() {
                       return (
                         <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', marginBottom: 4, background: 'rgba(0,112,192,0.03)', border: `1px solid ${T.bdr}`, borderRadius: 8 }}>
                           <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: 13, color: T.text1 }}>{r.name}</div>
+                            <div style={{ fontSize: 16, color: '#0A2540', fontFamily:"'Crimson Pro',serif" }}>{r.name}</div>
                             <div style={{ fontSize: 10, color: T.text3, fontFamily: "'JetBrains Mono',monospace" }}>{r.id}</div>
                           </div>
                           {days !== null && (
@@ -351,7 +393,7 @@ export function WorkSection() {
                     {selectedBns.map(r => (
                       <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', marginBottom: 4, background: 'rgba(0,112,192,0.03)', border: `1px solid ${T.bdr}`, borderRadius: 8 }}>
                         <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: 13, color: T.text1 }}>{r.name}</div>
+                          <div style={{ fontSize: 16, color: '#0A2540', fontFamily:"'Crimson Pro',serif" }}>{r.name}</div>
                           <div style={{ fontSize: 10, color: T.text3, fontFamily: "'JetBrains Mono',monospace" }}>{r.id}</div>
                         </div>
                         <span onClick={() => toggleReport(r.id)} style={{ fontSize: 12, color: T.text3, cursor: 'pointer', opacity: 0.5 }}>✕</span>
@@ -365,7 +407,7 @@ export function WorkSection() {
                     {g.reports.map(r => (
                       <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', marginBottom: 4, background: 'rgba(200,164,90,0.04)', border: `1px solid rgba(200,164,90,0.2)`, borderRadius: 8 }}>
                         <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: 13, color: T.text1 }}>{r.name}</div>
+                          <div style={{ fontSize: 16, color: '#0A2540', fontFamily:"'Crimson Pro',serif" }}>{r.name}</div>
                           <div style={{ fontSize: 10, color: T.text3, fontFamily: "'JetBrains Mono',monospace" }}>
                             {freqLabel(r.frequency)} · до {r.deadline}
                             {r.daysAfter && <span style={{ marginLeft: 4 }}>({r.daysAfter} дн. после периода)</span>}
@@ -454,7 +496,7 @@ export function WorkSection() {
                 return (
                   <div key={rec.id} style={{ marginBottom: 10, padding: '12px 14px', background: 'rgba(0,112,192,0.04)', border: `1px solid rgba(0,112,192,0.15)`, borderRadius: 10 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
-                      <div style={{ fontFamily: "'Cormorant Infant',serif", fontSize: 15, color: T.text0, flex: 1, paddingRight: 8 }}>{rec.title}</div>
+                      <div style={{ fontFamily:"'Cinzel',serif", fontSize: 17, color: '#0A2540', fontWeight:700, letterSpacing:1, flex: 1, paddingRight: 8 }}>{rec.title}</div>
                       <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
                         <button onClick={() => saveRec(rec)}
                           style={{ padding: '3px 8px', borderRadius: 6, border: `1px solid ${isSaved ? T.gold : T.bdr}`, background: isSaved ? 'rgba(200,164,90,0.15)' : 'transparent', color: isSaved ? T.gold : T.text3, cursor: 'pointer', fontSize: 11 }}>
@@ -468,7 +510,7 @@ export function WorkSection() {
                         )}
                       </div>
                     </div>
-                    <div style={{ fontSize: 12, color: T.text2, lineHeight: 1.5, marginBottom: 6 }}>{rec.summary}</div>
+                    <div style={{ fontFamily:"'Crimson Pro',serif", fontSize: 16, color: '#1E3A5F', lineHeight: 1.65, marginBottom: 8 }}>{rec.summary}</div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span style={{ fontSize: 10, color: T.text3, fontFamily: "'JetBrains Mono',monospace" }}>{rec.source}</span>
                       <span onClick={() => setExpandedRecId(isExpanded ? null : rec.id)} style={{ fontSize: 11, color: T.gold, cursor: 'pointer' }}>
