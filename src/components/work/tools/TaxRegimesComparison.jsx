@@ -68,7 +68,7 @@ export function TaxRegimesComparison() {
       {/* Заголовок */}
       <div style={{ marginBottom: 20 }}>
         <div style={{
-          fontSize: 11, fontFamily: "'JetBrains Mono',monospace",
+          fontSize: 14, fontFamily: "'JetBrains Mono',monospace",
           letterSpacing: 3, color: 'rgba(200,164,90,0.7)', marginBottom: 4,
         }}>СРАВНИТЕЛЬ РЕЖИМОВ</div>
         <div style={{ fontSize: 18, fontFamily: "'Cormorant Infant',serif" }}>
@@ -82,7 +82,7 @@ export function TaxRegimesComparison() {
         gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
         gap: 12, marginBottom: 24,
         padding: '16px 14px',
-        background: 'rgba(255,255,255,0.03)',
+        background: 'rgba(255,255,255,0.70)',
         border: '1px solid rgba(200,164,90,0.2)',
         borderRadius: 12,
       }}>
@@ -93,7 +93,7 @@ export function TaxRegimesComparison() {
         ].map(({ label, value, set, min = 0, max, step = 100000 }) => (
           <div key={label}>
             <label style={{
-              display: 'block', fontSize: 10,
+              display: 'block', fontSize: 13,
               fontFamily: "'JetBrains Mono',monospace",
               letterSpacing: 1, color: 'rgba(200,164,90,0.7)', marginBottom: 6,
             }}>{label.toUpperCase()}</label>
@@ -102,9 +102,9 @@ export function TaxRegimesComparison() {
               onChange={e => set(Number(e.target.value))}
               style={{
                 width: '100%', padding: '10px 12px',
-                background: 'rgba(255,255,255,0.03)',
+                background: 'rgba(255,255,255,0.70)',
                 border: '1px solid rgba(200,164,90,0.25)',
-                borderRadius: 8, color: 'var(--text0)', fontSize: 14,
+                borderRadius: 8, color: 'var(--text0)', fontSize: 17,
                 outline: 'none', boxSizing: 'border-box',
               }}
             />
@@ -123,13 +123,13 @@ export function TaxRegimesComparison() {
         ].map(({ label, value, color }) => (
           <div key={label} style={{
             flex: 1, minWidth: 120, padding: '12px 14px', textAlign: 'center',
-            background: 'rgba(255,255,255,0.03)',
+            background: 'rgba(255,255,255,0.70)',
             border: '1px solid rgba(255,255,255,0.08)',
             borderRadius: 10,
           }}>
             <div style={{
-              fontSize: 9, fontFamily: "'JetBrains Mono',monospace",
-              letterSpacing: 1, color: 'rgba(255,255,255,0.4)', marginBottom: 4,
+              fontSize: 12, fontFamily: "'JetBrains Mono',monospace",
+              letterSpacing: 1, color: BT.text3, marginBottom: 4,
             }}>{label.toUpperCase()}</div>
             <div style={{ fontSize: 16, fontWeight: 700, color }}>{value}</div>
           </div>
@@ -157,7 +157,7 @@ export function TaxRegimesComparison() {
               {/* Бейдж позиции */}
               <div style={{
                 position: 'absolute', top: -10, left: 14,
-                padding: '2px 10px', borderRadius: 10, fontSize: 9,
+                padding: '2px 10px', borderRadius: 10, fontSize: 12,
                 fontFamily: "'JetBrains Mono',monospace",
                 background: isBest ? 'rgba(200,164,90,0.9)' : 'rgba(255,255,255,0.1)',
                 color: isBest ? '#000' : 'rgba(255,255,255,0.5)',
@@ -168,12 +168,12 @@ export function TaxRegimesComparison() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, marginTop: 6 }}>
                 <span style={{ fontSize: 20 }}>{r.icon}</span>
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: isBest ? 'rgba(200,164,90,0.95)' : 'var(--text1)' }}>
+                  <div style={{ fontSize: 16, fontWeight: 600, color: isBest ? 'rgba(200,164,90,0.95)' : 'var(--text1)' }}>
                     {r.name}
                   </div>
                   <div style={{
-                    fontSize: 9, fontFamily: "'JetBrains Mono',monospace",
-                    color: 'rgba(255,255,255,0.4)', letterSpacing: 1,
+                    fontSize: 12, fontFamily: "'JetBrains Mono',monospace",
+                    color: BT.text3, letterSpacing: 1,
                   }}>{r.short}</div>
                 </div>
               </div>
@@ -187,13 +187,13 @@ export function TaxRegimesComparison() {
               </div>
 
               <div style={{
-                fontSize: 11, color: 'rgba(200,164,90,0.6)',
+                fontSize: 14, color: 'rgba(200,164,90,0.6)',
                 marginBottom: 8, fontFamily: "'JetBrains Mono',monospace",
               }}>
                 {r.rate}
               </div>
 
-              <div style={{ fontSize: 12, color: 'var(--text3)', lineHeight: 1.5, marginBottom: r.disclaimer ? 8 : 0 }}>
+              <div style={{ fontSize: 15, color: 'var(--text3)', lineHeight: 1.5, marginBottom: r.disclaimer ? 8 : 0 }}>
                 {r.desc}
               </div>
 
@@ -202,7 +202,7 @@ export function TaxRegimesComparison() {
                   padding: '6px 10px',
                   background: 'rgba(249,115,22,0.08)',
                   border: '1px solid rgba(249,115,22,0.25)',
-                  borderRadius: 6, fontSize: 11,
+                  borderRadius: 6, fontSize: 14,
                   color: 'rgba(249,115,22,0.8)', lineHeight: 1.4,
                 }}>
                   ⚠ {r.disclaimer}
@@ -232,9 +232,9 @@ export function TaxRegimesComparison() {
       {/* Дисклеймер */}
       <div style={{
         marginTop: 16, padding: '10px 14px',
-        background: 'rgba(255,255,255,0.02)',
-        border: '1px solid rgba(255,255,255,0.06)',
-        borderRadius: 8, fontSize: 11, color: 'var(--text3)', lineHeight: 1.5,
+        background: 'rgba(255,255,255,0.60)',
+        border: `1px solid ${BT.bdrS}`,
+        borderRadius: 8, fontSize: 14, color: 'var(--text3)', lineHeight: 1.5,
       }}>
         ℹ Расчёты приблизительные. Для точного выбора режима проконсультируйтесь с налоговым специалистом.
       </div>
