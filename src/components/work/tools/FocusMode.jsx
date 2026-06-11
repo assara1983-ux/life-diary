@@ -79,14 +79,14 @@ export function FocusMode() {
   const strokeDashoffset = circumference * (1 - progress);
 
   return (
-    <div style={{ color: ''#0A2540'', paddingBottom: 24 }}>
+    <div style={{ color: '#0A2540', paddingBottom: 24 }}>
       {/* Заголовок */}
       <div style={{ marginBottom: 20 }}>
         <div style={{
           fontSize: 14, fontFamily: "'JetBrains Mono',monospace",
-          letterSpacing: 3, color: ''#4A6480'', marginBottom: 4,
+          letterSpacing: 3, color: '#4A6480', marginBottom: 4,
         }}>FOCUS MODE</div>
-        <div style={{ fontSize: 18, fontFamily: "'Cormorant Infant',serif", color: ''#0A2540'' }}>
+        <div style={{ fontSize: 18, fontFamily: "'Cormorant Infant',serif", color: '#0A2540' }}>
           Глубокая концентрация · Энергия потока
         </div>
       </div>
@@ -107,7 +107,7 @@ export function FocusMode() {
               fontFamily: "'JetBrains Mono',monospace", cursor: 'pointer',
               background: !showManual ? 'rgba(0,112,192,0.12)' : 'transparent',
               border: `1px solid ${!showManual ? 'rgba(0,112,192,0.4)' : 'rgba(0,0,0,0.1)'}`,
-              color: !showManual ? '#0070c0' : ''#4A6480'',
+              color: !showManual ? '#0070c0' : '#4A6480',
             }}
           >Из списка</button>
           <button
@@ -117,7 +117,7 @@ export function FocusMode() {
               fontFamily: "'JetBrains Mono',monospace", cursor: 'pointer',
               background: showManual ? 'rgba(0,112,192,0.12)' : 'transparent',
               border: `1px solid ${showManual ? 'rgba(0,112,192,0.4)' : 'rgba(0,0,0,0.1)'}`,
-              color: showManual ? '#0070c0' : ''#4A6480'',
+              color: showManual ? '#0070c0' : '#4A6480',
             }}
           >Ввести вручную</button>
         </div>
@@ -126,7 +126,7 @@ export function FocusMode() {
         {!showManual && (
           workTasks.length === 0 ? (
             <div style={{
-              fontSize: 16, color: ''#4A6480'', textAlign: 'center',
+              fontSize: 16, color: '#4A6480', textAlign: 'center',
               padding: '12px 0',
             }}>
               Нет активных задач —{' '}
@@ -145,7 +145,7 @@ export function FocusMode() {
                     padding: '10px 12px', borderRadius: 8, cursor: 'pointer', fontSize: 16,
                     background: selectedTask?.id === task.id ? 'rgba(0,112,192,0.08)' : 'transparent',
                     border: `1px solid ${selectedTask?.id === task.id ? 'rgba(0,112,192,0.3)' : 'rgba(0,0,0,0.06)'}`,
-                    color: selectedTask?.id === task.id ? '#0070c0' : ''#0A2540'',
+                    color: selectedTask?.id === task.id ? '#0070c0' : '#0A2540',
                     transition: 'all 0.15s',
                     display: 'flex', alignItems: 'center', gap: 8,
                   }}
@@ -166,7 +166,7 @@ export function FocusMode() {
           <div>
             <div style={{
               fontSize: 13, fontFamily: "'JetBrains Mono',monospace",
-              letterSpacing: 1, color: ''#4A6480'', marginBottom: 8,
+              letterSpacing: 1, color: '#4A6480', marginBottom: 8,
             }}>НА ЧЁМ СОСРЕДОТОЧИТЬСЯ?</div>
             <input
               value={manualTask}
@@ -176,7 +176,7 @@ export function FocusMode() {
                 width: '100%', padding: '10px 12px',
                 background: 'rgba(255,255,255,0.8)',
                 border: '1px solid rgba(0,112,192,0.2)',
-                borderRadius: 8, color: ''#0A2540'',
+                borderRadius: 8, color: '#0A2540',
                 fontSize: 16, outline: 'none', boxSizing: 'border-box',
               }}
             />
@@ -221,14 +221,14 @@ export function FocusMode() {
             <div style={{
               fontSize: 48, fontWeight: 700,
               fontFamily: "'JetBrains Mono',monospace",
-              color: isActive ? '#0070c0' : ''#0A2540'',
+              color: isActive ? '#0070c0' : '#0A2540',
               letterSpacing: 2,
             }}>
               {formatTime(timeLeft)}
             </div>
             <div style={{
               fontSize: 13, fontFamily: "'JetBrains Mono',monospace",
-              letterSpacing: 2, color: ''#4A6480'', marginTop: 4,
+              letterSpacing: 2, color: '#4A6480', marginTop: 4,
             }}>
               {isActive ? 'В ПОТОКЕ' : 'ГОТОВ'}
             </div>
@@ -246,7 +246,7 @@ export function FocusMode() {
           <button onClick={pauseTimer} style={{
             padding: '12px 32px', borderRadius: 24,
             background: 'rgba(139,32,32,0.1)', border: '1px solid rgba(139,32,32,0.3)',
-            color: ''#6B1010'', fontSize: 17, cursor: 'pointer',
+            color: '#6B1010', fontSize: 17, cursor: 'pointer',
           }}>
             ⏸ ПАУЗА
           </button>
@@ -265,7 +265,7 @@ export function FocusMode() {
       }}>
         <div style={{
           fontSize: 13, fontFamily: "'JetBrains Mono',monospace",
-          letterSpacing: 2, color: ''#4A6480'', marginBottom: 10,
+          letterSpacing: 2, color: '#4A6480', marginBottom: 10,
         }}>ДЛИТЕЛЬНОСТЬ · {customMinutes} МИН</div>
         <input
           type="range" min="5" max="90" step="5"
@@ -282,7 +282,7 @@ export function FocusMode() {
                 fontFamily: "'JetBrains Mono',monospace",
                 border: `1px solid ${customMinutes === n ? 'rgba(0,112,192,0.4)' : 'rgba(0,0,0,0.1)'}`,
                 background: customMinutes === n ? 'rgba(0,112,192,0.08)' : 'transparent',
-                color: customMinutes === n ? '#0070c0' : ''#4A6480'',
+                color: customMinutes === n ? '#0070c0' : '#4A6480',
                 cursor: isActive ? 'not-allowed' : 'pointer',
                 opacity: isActive ? 0.5 : 1,
               }}
@@ -302,7 +302,7 @@ export function FocusMode() {
           <div style={{ fontSize: 28, fontWeight: 700, color: '#1E3A5F' }}>
             {sessionsToday}
           </div>
-          <div style={{ fontSize: 13, color: ''#4A6480'', fontFamily: "'JetBrains Mono',monospace", letterSpacing: 1 }}>
+          <div style={{ fontSize: 13, color: '#4A6480', fontFamily: "'JetBrains Mono',monospace", letterSpacing: 1 }}>
             СЕССИЙ СЕГОДНЯ
           </div>
         </div>
@@ -317,7 +317,7 @@ export function FocusMode() {
             <div style={{ fontSize: 13, color: '#1E3A5F', fontFamily: "'JetBrains Mono',monospace", letterSpacing: 1, marginBottom: 4 }}>
               ЗАДАЧА В ФОКУСЕ
             </div>
-            <div style={{ fontSize: 16, color: ''#0A2540'', lineHeight: 1.4 }}>
+            <div style={{ fontSize: 16, color: '#0A2540', lineHeight: 1.4 }}>
               {activeTaskTitle}
             </div>
           </div>
