@@ -102,7 +102,13 @@ export function WorkSection() {
   const selectedKgd = useMemo(() => KGD_CATALOG.filter(r => selectedReports.includes(r.id)), [selectedReports]);
   const selectedBns = useMemo(() => BNS_CATALOG.filter(r => selectedReports.includes(r.id)), [selectedReports]);
 
-  const workTasks = tasks.filter(t => t.section === 'work');
+  const workTasks = tasks.filter(t => {
+    if (t.section !== 'work') return false;
+    // Разовые задачи выполненные не сегодня — скрываем (ушли в журнал)
+    if (t.freq === 'once' && t.doneDate && t.doneDate < today) return false;
+    // Повторяющиеся задачи выполненные не сегодня — показываем (doneDate старый = снова актуальны)
+    return true;
+  });
   const todayWorkTasks = workTasks.filter(t => {
     if (t.doneDate === today) return true;
     if (!t.freq || !t.preferredTime) return false;
@@ -410,7 +416,9 @@ export function WorkSection() {
                 Нет рабочих задач
               </div>
             ):(
-              workTasks.map((t,i)=>{
+              workTasks
+                .filter(t => !(t.doneDate === today && t.freq !== 'once'))
+                .map((t,i)=>{
                 const done=t.doneDate===today;
                 const hasDeadline=t.deadline&&daysUntil(t.deadline)!==null;
                 const dl=hasDeadline?daysUntil(t.deadline):null;
