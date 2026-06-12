@@ -104,13 +104,17 @@ export function WorkSection() {
 
   const workTasks = tasks.filter(t => {
     if (t.section !== 'work') return false;
-    // Разовые задачи выполненные не сегодня — скрываем (ушли в журнал)
-    if (t.freq === 'once' && t.doneDate && t.doneDate < today) return false;
-    // Повторяющиеся задачи выполненные не сегодня — показываем (doneDate старый = снова актуальны)
+    // Разовые задачи — скрываем если выполнены (в любой день включая сегодня убираем из «Все»)
+    // doneDate не сегодня = ушли в историю
+    if (t.freq === 'once' && t.doneDate && t.doneDate !== today) return false;
+    // Задачи без freq (тоже разовые по сути)
+    if (!t.freq && t.doneDate && t.doneDate !== today) return false;
     return true;
   });
   const todayWorkTasks = workTasks.filter(t => {
+    // Показываем только выполненные СЕГОДНЯ
     if (t.doneDate === today) return true;
+    // Или запланированные на сегодня (с временем)
     if (!t.freq || !t.preferredTime) return false;
     const d = new Date(today + 'T00:00:00');
     if (t.freq === 'daily') return true;
