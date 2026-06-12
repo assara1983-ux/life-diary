@@ -102,19 +102,14 @@ export function WorkSection() {
   const selectedKgd = useMemo(() => KGD_CATALOG.filter(r => selectedReports.includes(r.id)), [selectedReports]);
   const selectedBns = useMemo(() => BNS_CATALOG.filter(r => selectedReports.includes(r.id)), [selectedReports]);
 
+  // Скрываем задачи выполненные не сегодня (с любым непустым doneDate кроме today)
   const workTasks = tasks.filter(t => {
     if (t.section !== 'work') return false;
-    // Разовые задачи — скрываем если выполнены (в любой день включая сегодня убираем из «Все»)
-    // doneDate не сегодня = ушли в историю
-    if (t.freq === 'once' && t.doneDate && t.doneDate !== today) return false;
-    // Задачи без freq (тоже разовые по сути)
-    if (!t.freq && t.doneDate && t.doneDate !== today) return false;
+    if (t.doneDate && t.doneDate !== today && t.doneDate !== '') return false;
     return true;
   });
   const todayWorkTasks = workTasks.filter(t => {
-    // Показываем только выполненные СЕГОДНЯ
     if (t.doneDate === today) return true;
-    // Или запланированные на сегодня (с временем)
     if (!t.freq || !t.preferredTime) return false;
     const d = new Date(today + 'T00:00:00');
     if (t.freq === 'daily') return true;
@@ -402,6 +397,22 @@ export function WorkSection() {
               <div style={{marginLeft:'auto',display:'flex',gap:8,alignItems:'center'}}>
                 <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,
                   color:'rgba(10,37,64,0.5)',fontWeight:600}}>{workTasks.length} шт.</span>
+                <button onClick={()=>{
+                    setTasks(p=>p.map(t=>
+                      t.section==='work'&&t.doneDate&&t.doneDate!==today
+                        ?{...t,doneDate:'',lastDone:t.doneDate}
+                        :t
+                    ));
+                    notify?.('✅ История очищена');
+                  }}
+                  style={{padding:'7px 14px',borderRadius:8,cursor:'pointer',
+                    fontFamily:"'Cinzel',serif",fontSize:10,letterSpacing:1,
+                    fontWeight:600,textTransform:'uppercase',
+                    background:'rgba(107,16,16,0.08)',
+                    border:'1px solid rgba(107,16,16,0.22)',
+                    color:'#6B1010',marginRight:6}}>
+                  🗑 Очистить
+                </button>
                 <button onClick={()=>setModal({})}
                   style={{padding:'7px 16px',borderRadius:8,border:'none',cursor:'pointer',
                     fontFamily:"'Cinzel',serif",fontSize:11,letterSpacing:1.5,
