@@ -105,7 +105,7 @@ export function WorkSection() {
   // Скрываем задачи выполненные не сегодня (с любым непустым doneDate кроме today)
   const workTasks = tasks.filter(t => {
     if (t.section !== 'work') return false;
-    if (t.doneDate && t.doneDate !== today && t.doneDate !== '') return false;
+    if (t.doneDate && t.doneDate !== today) return false;
     return true;
   });
   const todayWorkTasks = workTasks.filter(t => {
@@ -398,12 +398,18 @@ export function WorkSection() {
                 <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,
                   color:'rgba(10,37,64,0.5)',fontWeight:600}}>{workTasks.length} шт.</span>
                 <button onClick={()=>{
-                    setTasks(p=>p.map(t=>
-                      t.section==='work'&&t.doneDate&&t.doneDate!==today
-                        ?{...t,doneDate:'',lastDone:t.doneDate}
-                        :t
-                    ));
-                    notify?.('✅ История очищена');
+                    setTasks(p=>{
+                      // Удаляем разовые выполненные задачи (не сегодня), сбрасываем doneDate у повторяющихся
+                      const filtered = p.filter(t=>
+                        !(t.section==='work' && t.doneDate && t.doneDate!==today && (!t.freq||t.freq==='once'))
+                      );
+                      return filtered.map(t=>
+                        t.section==='work'&&t.doneDate&&t.doneDate!==today
+                          ?{...t,doneDate:null,lastDone:t.doneDate}
+                          :t
+                      );
+                    });
+                    notify?.('✅ Старые выполненные задачи очищены');
                   }}
                   style={{padding:'7px 14px',borderRadius:8,cursor:'pointer',
                     fontFamily:"'Cinzel',serif",fontSize:10,letterSpacing:1,
