@@ -242,8 +242,8 @@ export function FocusMode() {
                 strokeDashoffset={dashoffset}
                 style={{transition:'stroke-dashoffset 1s linear'}}/>}
               {/* Точка начала */}
-              <circle cx={CX} cy={CY-R} r="8"
-                fill={progress>0?ringColor:'rgba(255,255,255,0.20)'}
+              <circle cx={CX} cy={CY-R} r="7"
+                fill={isActive ? '#ffffff' : 'rgba(255,255,255,0.25)'}
                 style={{transition:'fill 0.5s'}}/>
             </svg>
 
@@ -252,24 +252,26 @@ export function FocusMode() {
               transform:'translate(-50%,-50%)',textAlign:'center',userSelect:'none'}}>
               {/* Процент */}
               <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:13,
-                color:progress>0?ringColor:'rgba(255,255,255,0.30)',
+                color:'rgba(255,255,255,0.75)',
                 letterSpacing:2,marginBottom:4}}>
-                {pct}%
+                {pct > 0 ? `${pct}%` : ''}
               </div>
               {/* Время */}
               <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:52,fontWeight:700,
-                color:isActive?ringColor:'rgba(255,255,255,0.90)',
+                color:'#ffffff',
                 letterSpacing:4,lineHeight:1,
-                textShadow:isActive?`0 0 30px ${glowColor}`:'none',
-                transition:'color 0.5s,text-shadow 0.5s'}}>
+                textShadow:isActive?`0 0 24px rgba(255,255,255,0.60), 0 2px 8px rgba(0,0,0,0.40)`:'0 2px 8px rgba(0,0,0,0.30)',
+                transition:'text-shadow 0.5s'}}>
                 {formatTime(timeLeft)}
               </div>
               {/* Статус */}
               <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:13,
-                letterSpacing:3,color:isActive?ringColor:'rgba(255,255,255,0.40)',
+                letterSpacing:3,
+                color:isActive?'rgba(255,255,255,0.90)':'rgba(255,255,255,0.50)',
                 marginTop:6,textTransform:'uppercase',
-                transition:'color 0.5s'}}>
-                {isActive?'В ПОТОКЕ':'ГОТОВ'}
+                textShadow:isActive?`0 0 16px ${glowColor}`:'none',
+                transition:'all 0.5s'}}>
+                {isActive ? '● В ПОТОКЕ' : 'ГОТОВ'}
               </div>
               {/* Сессии */}
               {sessionsToday>0&&<div style={{marginTop:8,fontFamily:"'JetBrains Mono',monospace",
