@@ -1,5 +1,5 @@
 // src/components/work/tools/EnhancedKanban.jsx
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useApp } from '../../../store/AppContext';
 import { TaskModal } from '../../TaskModal';
 
@@ -51,14 +51,35 @@ export function EnhancedKanban() {
   const { tasks, setTasks, notify } = useApp();
   const [taskModal, setTaskModal] = useState(null);
   const [draggedId, setDraggedId] = useState(null);
+  const [confirmClear, setConfirmClear] = useState(false);
+  const [showArchive, setShowArchive] = useState(false);
   const today = localDateStr();
+  const ARCHIVE_AFTER_DAYS = 14;
 
   useMemo(() => {
     if (tasks.some(t=>t.section==='work'&&!t.status))
       setTasks(p=>p.map(t=>t.section==='work'&&!t.status?{...t,status:'todo'}:t));
   }, []); // eslint-disable-line
 
-  const workTasks = useMemo(()=>tasks.filter(t=>t.section==='work'),[tasks]);
+  // ── Автоматическая архивация: задачи, выполненные больше 14 дней назад,
+  //    сами уходят с доски в архив (не удаляются — просто скрываются)
+  useEffect(() => {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - ARCHIVE_AFTER_DAYS);
+    const cutoffStr = localDateStr(cutoff);
+    const toArchive = tasks.filter(t =>
+      t.section==='work' && t.status==='done' && !t.archived &&
+      t.doneDate && t.doneDate < cutoffStr
+    );
+    if (toArchive.length > 0) {
+      const ids = new Set(toArchive.map(t=>t.id));
+      setTasks(p=>p.map(t=>ids.has(t.id)?{...t,archived:true}:t));
+    }
+  }, [tasks]); // eslint-disable-line
+
+  const workTasks = useMemo(()=>tasks.filter(t=>t.section==='work'&&!t.archived),[tasks]);
+  const archivedTasks = useMemo(()=>tasks.filter(t=>t.section==='work'&&t.archived)
+    .sort((a,b)=>(b.doneDate||'').localeCompare(a.doneDate||'')),[tasks]);
 
   const handleDrop = (e, targetStatus) => {
     e.preventDefault();
@@ -80,6 +101,23 @@ export function EnhancedKanban() {
   const toggleSubtask = (taskId,si) =>
     setTasks(p=>p.map(t=>t.id!==taskId||!Array.isArray(t.subtasks)?t:
       {...t,subtasks:t.subtasks.map((s,i)=>i===si?{...s,completed:!s.completed}:s)}));
+
+  // ── Очистка доски: сразу архивировать всё, что в "Выполнено"
+  const clearDoneNow = () => {
+    const doneIds = new Set(workTasks.filter(t=>t.status==='done').map(t=>t.id));
+    if (doneIds.size===0) { setConfirmClear(false); return; }
+    setTasks(p=>p.map(t=>doneIds.has(t.id)?{...t,archived:true}:t));
+    notify(`🗑 Архивировано: ${doneIds.size}`);
+    setConfirmClear(false);
+  };
+
+  const restoreTask = (taskId) => {
+    setTasks(p=>p.map(t=>t.id===taskId?{...t,archived:false}:t));
+  };
+
+  const deleteForever = (taskId) => {
+    setTasks(p=>p.filter(t=>t.id!==taskId));
+  };
 
   const totalDone = workTasks.filter(t=>t.doneDate===today).length;
 
@@ -157,6 +195,19 @@ export function EnhancedKanban() {
                   color:col.dotColor,fontWeight:700,padding:'0 6px'}}>
                   {colTasks.length}
                 </div>
+                {col.id==='done'&&colTasks.length>0&&(
+                  <button
+                    onClick={()=>confirmClear?clearDoneNow():setConfirmClear(true)}
+                    onBlur={()=>setTimeout(()=>setConfirmClear(false),3000)}
+                    style={{
+                      flexShrink:0,marginLeft:6,padding:'5px 10px',borderRadius:8,
+                      border:'1px solid rgba(255,255,255,0.35)',cursor:'pointer',
+                      background:confirmClear?'rgba(255,255,255,0.25)':'rgba(255,255,255,0.10)',
+                      color:col.headerColor,fontFamily:"'JetBrains Mono',monospace",
+                      fontSize:10,letterSpacing:0.5,whiteSpace:'nowrap'}}>
+                    {confirmClear?'Точно? ✓':'🗑 Очистить'}
+                  </button>
+                )}
               </div>
 
               {/* Тело колонки */}
@@ -259,6 +310,42 @@ export function EnhancedKanban() {
           );
         })}
       </div>
+
+      {/* ── Архив выполненных ── */}
+      {archivedTasks.length>0&&(
+        <div style={{marginTop:14}}>
+          <button onClick={()=>setShowArchive(v=>!v)}
+            style={{background:'none',border:'none',cursor:'pointer',
+              fontFamily:"'JetBrains Mono',monospace",fontSize:12,letterSpacing:1,
+              color:'#4A6480',textDecoration:'underline',padding:'6px 0'}}>
+            {showArchive?'▾':'▸'} Архив ({archivedTasks.length})
+          </button>
+          {showArchive&&(
+            <div style={{display:'flex',flexDirection:'column',gap:6,marginTop:8}}>
+              {archivedTasks.map(t=>(
+                <div key={t.id} style={{
+                  display:'flex',alignItems:'center',gap:10,padding:'9px 12px',
+                  borderRadius:8,background:'rgba(10,37,64,0.04)',
+                  border:'1px solid rgba(10,37,64,0.10)'}}>
+                  <div style={{flex:1,minWidth:0,fontFamily:"'Crimson Pro',serif",
+                    fontSize:14,color:'#4A6480',textDecoration:'line-through',
+                    overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+                    {t.title}
+                  </div>
+                  <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,
+                    color:'#4A6480',flexShrink:0}}>{t.doneDate}</div>
+                  <button onClick={()=>restoreTask(t.id)} title="Вернуть на доску"
+                    style={{background:'none',border:'none',cursor:'pointer',
+                      fontSize:14,padding:'2px 4px',flexShrink:0}}>↩️</button>
+                  <button onClick={()=>deleteForever(t.id)} title="Удалить навсегда"
+                    style={{background:'none',border:'none',cursor:'pointer',
+                      fontSize:14,padding:'2px 4px',flexShrink:0,opacity:0.6}}>✕</button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {taskModal!==null&&(
         <TaskModal task={taskModal?.id?taskModal:null} defaultSection="work"
