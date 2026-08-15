@@ -255,7 +255,7 @@ function SectionCard({ section, onClick, fullWidth }) {
 
 // ─── HOME SCREEN ───
 function HomeScreen({ onNavigate }) {
-  const { profile, toastMsg } = useApp();
+  const { profile, toastMsg, sections } = useApp();
   const moon = getMoon();
 
   return (
@@ -355,7 +355,10 @@ function HomeScreen({ onNavigate }) {
           gridTemplateColumns: '1fr 1fr',
           gap: 12,
         }}>
-          {SECTIONS.map(section => (
+          {SECTIONS.filter(section => {
+            const s = sections.find(x => x.id === section.id);
+            return s ? s.vis !== false : true;
+          }).map(section => (
             <SectionCard
               key={section.id}
               section={section}
@@ -552,6 +555,15 @@ function AppContent() {
     const needsUpdate = sections.some(s => s.id === 'goals') || sections.length === 0;
     if (needsUpdate) {
       setSections(SECTIONS.map(s => ({ id: s.id, name: s.name, vis: true })));
+    }
+    // Одноразово: сворачиваем «Покупки» и «Питомцы» с главного экрана —
+    // они остаются доступны через переключатели в Профиле, данные не теряются.
+    const HIDDEN_DEFAULTS_KEY = 'ld_hidden_defaults_v1';
+    if (!localStorage.getItem(HIDDEN_DEFAULTS_KEY)) {
+      setSections(prev => prev.map(s =>
+        (s.id === 'shopping' || s.id === 'pets') ? { ...s, vis: false } : s
+      ));
+      localStorage.setItem(HIDDEN_DEFAULTS_KEY, '1');
     }
   }, [profile]);
 

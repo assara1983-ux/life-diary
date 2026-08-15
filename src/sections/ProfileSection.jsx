@@ -52,6 +52,7 @@ function ProfileTabs({ activeTab, setActiveTab }) {
     { id:'main',  label:'ОСНОВНОЙ' },
     { id:'deep',  label:'АНАЛИЗ' },
     { id:'cycle', label:'ЦИКЛЫ' },
+    { id:'sections', label:'РАЗДЕЛЫ' },
   ];
   return (
     <div style={{
@@ -643,7 +644,7 @@ function CycleTimeline({ dob, onYearSelect }) {
 
 // ─── ОСНОВНОЙ КОМПОНЕНТ ───
 export function ProfileSection() {
-  const { profile, setProfile, notify } = useApp();
+  const { profile, setProfile, notify, sections, setSections } = useApp();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState('main');
   const [selectedYear, setSelectedYear] = useState(null);
@@ -913,6 +914,44 @@ export function ProfileSection() {
       {/* ════ ЦИКЛЫ ════ */}
       {activeTab==='cycle' && (
         <CycleTimeline dob={profile.dob} onYearSelect={setSelectedYear} />
+      )}
+
+      {/* ════ РАЗДЕЛЫ ════ */}
+      {activeTab==='sections' && (
+        <div>
+          <div style={{fontFamily:"'Cormorant Infant',serif",fontSize:16,fontStyle:'italic',
+            color:C.text3,marginBottom:16,lineHeight:1.5}}>
+            Скрывай разделы, которыми не пользуешься — они не удаляются,
+            просто уходят с главного экрана. В любой момент можно включить обратно.
+          </div>
+          <div style={{display:'flex',flexDirection:'column',gap:8}}>
+            {sections.filter(s=>s.id!=='today'&&s.id!=='profile').map(s=>{
+              const isVis = s.vis !== false;
+              return (
+                <div key={s.id} onClick={()=>setSections(prev=>prev.map(x=>x.id===s.id?{...x,vis:!isVis}:x))}
+                  style={{display:'flex',alignItems:'center',gap:12,padding:'13px 16px',
+                    borderRadius:10,cursor:'pointer',
+                    background: isVis ? 'rgba(10,37,64,0.04)' : 'rgba(10,37,64,0.02)',
+                    border:`1.5px solid ${isVis?C.line:C.lineS}`,
+                    opacity: isVis?1:0.55, transition:'all 0.15s'}}>
+                  <span style={{fontSize:20,flexShrink:0}}>{s.emoji}</span>
+                  <span style={{flex:1,fontFamily:"'Crimson Pro',serif",fontSize:17,color:C.text1}}>
+                    {s.name}
+                  </span>
+                  <div style={{
+                    width:44,height:26,borderRadius:13,flexShrink:0,position:'relative',
+                    background: isVis ? C.navy : 'rgba(10,37,64,0.15)',
+                    transition:'background 0.2s'}}>
+                    <div style={{
+                      position:'absolute',top:2,left:isVis?20:2,
+                      width:22,height:22,borderRadius:'50%',background:'#fff',
+                      boxShadow:'0 1px 4px rgba(0,0,0,0.3)',transition:'left 0.2s'}}/>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       )}
 
       {/* Кнопки */}
