@@ -6,6 +6,7 @@ import { TaskModal } from '../components/TaskModal';
 import { AiBox } from '../components/AiBox';
 import { T } from '../utils/theme';
 import { requestPermission, subscribeUser, sendPush } from '../utils/pushManager';
+import { openGoogleCalendar } from '../utils/googleCalendar';
 import { ToolsHub } from '../components/work/ToolsHub';
 
 // ─── УТИЛИТЫ ───
@@ -319,9 +320,19 @@ export function WorkSection() {
                     <div style={{fontFamily:"'Crimson Pro',serif",fontSize:17,
                       color:dl.days<=3?'#6B1010':'#0A2540',fontWeight:600,
                       lineHeight:1.3,marginBottom:4}}>{dl.name}</div>
-                    <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,
-                      color:'rgba(10,37,64,0.50)',letterSpacing:0.5}}>
-                      📅 {dl.deadline}
+                    <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
+                      <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,
+                        color:'rgba(10,37,64,0.50)',letterSpacing:0.5}}>
+                        📅 {dl.deadline}
+                      </span>
+                      <button onClick={()=>openGoogleCalendar(dl.name,dl.deadline,'',`Дедлайн отчёта: ${dl.name}`)}
+                        title="Добавить в Google Calendar"
+                        style={{cursor:'pointer',fontSize:11,fontWeight:600,display:'flex',alignItems:'center',gap:3,
+                          padding:'3px 9px',borderRadius:12,border:'1px solid rgba(66,133,244,0.35)',
+                          background:'rgba(66,133,244,0.10)',color:'#3367D6',
+                          fontFamily:"'JetBrains Mono',monospace"}}>
+                        📆 В календарь
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -495,6 +506,16 @@ export function WorkSection() {
                       </div>
                     </div>
                     <div style={{display:'flex',gap:8,flexShrink:0,paddingTop:2}}>
+                      {!done&&hasDeadline&&(
+                        <button onClick={()=>openGoogleCalendar(t.title,t.deadline,t.preferredTime,t.notes||'')}
+                          title="Добавить в Google Calendar"
+                          style={{cursor:'pointer',fontSize:11,fontWeight:600,display:'flex',alignItems:'center',gap:3,
+                            padding:'4px 9px',borderRadius:12,border:'1px solid rgba(66,133,244,0.35)',
+                            background:'rgba(66,133,244,0.10)',color:'#3367D6',
+                            fontFamily:"'JetBrains Mono',monospace",whiteSpace:'nowrap'}}>
+                          📆
+                        </button>
+                      )}
                       <button onClick={()=>setModal(t)}
                         style={{background:'none',border:'none',fontSize:17,cursor:'pointer',
                           color:'rgba(10,37,64,0.40)',padding:'2px 4px'}}>✏️</button>
