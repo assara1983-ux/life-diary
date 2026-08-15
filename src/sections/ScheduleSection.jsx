@@ -18,6 +18,17 @@ function localDateStr(date) {
   return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
 }
 
+function anchorDate(task, fallback) {
+  if (task.dueDate) return task.dueDate;
+  if (task.beautyStartDate) return task.beautyStartDate;
+  if (task.createdAt) return task.createdAt.split('T')[0];
+  const idNum = typeof task.id === 'number' ? task.id : parseInt(task.id);
+  if (idNum && idNum > 1600000000000 && idNum < 4000000000000) {
+    return new Date(idNum).toISOString().split('T')[0];
+  }
+  return fallback;
+}
+
 function isDueOnDay(task, dStr) {
   const d = new Date(dStr+'T00:00:00');
   if (task.dueDate && dStr < task.dueDate) return false;
@@ -28,7 +39,7 @@ function isDueOnDay(task, dStr) {
   if (task.freq.startsWith('weekly:')) return task.freq.split(':')[1].split(',').map(Number).includes(d.getDay());
   if (task.freq.startsWith('every:')) {
     const n=parseInt(task.freq.split(':')[1]);
-    const start=task.dueDate||task.beautyStartDate||task.createdAt?.split('T')[0]||'2024-01-01';
+    const start=anchorDate(task,'2024-01-01');
     if (dStr<start) return false;
     return Math.floor((new Date(dStr+'T00:00:00')-new Date(start+'T00:00:00'))/86400000)%n===0;
   }
@@ -254,8 +265,8 @@ export function ScheduleSection() {
                               {events.slice(0,2).map((ev,ei)=>{
                                 if (ev.type==='anchor') return (
                                   <div key={ei} style={{display:'flex',gap:6,alignItems:'center'}}>
-                                    <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:12.5,fontWeight:600,color:C.text3,flexShrink:0}}>{ev.time}</span>
-                                    <span style={{fontSize:14.5,color:C.text3,fontFamily:"'Crimson Pro',serif"}}>{ev.label}</span>
+                                    <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:14,fontWeight:600,color:C.text3,flexShrink:0}}>{ev.time}</span>
+                                    <span style={{fontSize:16,color:C.text3,fontFamily:"'Crimson Pro',serif"}}>{ev.label}</span>
                                   </div>
                                 );
                                 if (ev.type==='task') {
@@ -263,7 +274,7 @@ export function ScheduleSection() {
                                   const sc=sectionColor(ev.task.section);
                                   return (
                                     <div key={ei} style={{display:'flex',gap:6,alignItems:'center',marginBottom:2}}>
-                                      <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:12.5,fontWeight:600,color:C.text3,flexShrink:0,minWidth:38}}>{ev.time==='00:00'?'—':ev.time}</span>
+                                      <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:14,fontWeight:600,color:C.text3,flexShrink:0,minWidth:42}}>{ev.time==='00:00'?'—':ev.time}</span>
                                       <div style={{width:3,height:14,borderRadius:2,background:sc,flexShrink:0}}/>
                                       <span style={{fontSize:15,color:done?C.text3:C.text1,fontFamily:"'Crimson Pro',serif",
                                         textDecoration:done?'line-through':'none',
@@ -275,7 +286,7 @@ export function ScheduleSection() {
                                 }
                                 if (ev.type==='beauty') return (
                                   <div key={ei} style={{display:'flex',gap:6,alignItems:'center',marginBottom:2}}>
-                                    <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:12.5,fontWeight:600,color:C.text3,flexShrink:0,minWidth:38}}>{ev.time}</span>
+                                    <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:14,fontWeight:600,color:C.text3,flexShrink:0,minWidth:42}}>{ev.time}</span>
                                     <div style={{width:3,height:14,borderRadius:2,background:'rgba(184,107,93,0.8)',flexShrink:0}}/>
                                     <span style={{fontSize:15,color:ev.allDone?C.text3:C.text1,fontFamily:"'Crimson Pro',serif",
                                       textDecoration:ev.allDone?'line-through':'none'}}>
@@ -286,7 +297,7 @@ export function ScheduleSection() {
                                 return null;
                               })}
                               {events.length>2&&(
-                                <div style={{fontSize:13.5,color:C.text3,fontFamily:"'JetBrains Mono',monospace",letterSpacing:0.5,marginTop:2}}>
+                                <div style={{fontSize:15,color:C.text3,fontFamily:"'JetBrains Mono',monospace",letterSpacing:0.3,marginTop:3}}>
                                   + ещё {events.length-2}
                                 </div>
                               )}
@@ -362,17 +373,22 @@ export function ScheduleSection() {
                                       textDecoration:done?'line-through':'none',lineHeight:1.3}}>
                                       {t.title}
                                     </div>
-                                    <div style={{display:'flex',gap:8,marginTop:4,flexWrap:'wrap'}}>
-                                      <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,
-                                        color:sc,letterSpacing:0.5}}>
+                                    <div style={{display:'flex',gap:8,marginTop:5,flexWrap:'wrap',alignItems:'center'}}>
+                                      <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:12,
+                                        color:sc,letterSpacing:0.5,fontWeight:600}}>
                                         {sectionIcon(t.section)} {t.section}
                                       </span>
-                                      {t.notes&&<span style={{fontFamily:"'Crimson Pro',serif",fontSize:13,
+                                      {t.notes&&<span style={{fontFamily:"'Crimson Pro',serif",fontSize:14,
                                         color:C.text3,fontStyle:'italic'}}>{t.notes.slice(0,35)}</span>}
-                                      {!done&&(t.preferredTime||t.dueDate)&&(
-                                        <span onClick={e=>{e.stopPropagation();openGoogleCalendar(t.title,t.dueDate||dStr,t.preferredTime,t.notes||'');}}
+                                      {!done&&(
+                                        <button onClick={e=>{e.stopPropagation();openGoogleCalendar(t.title,t.dueDate||dStr,t.preferredTime,t.notes||'');}}
                                           title="Добавить в Google Calendar"
-                                          style={{cursor:'pointer',fontSize:13,opacity:0.6}}>📆</span>
+                                          style={{cursor:'pointer',fontSize:12,fontWeight:600,display:'flex',alignItems:'center',gap:4,
+                                            padding:'4px 10px',borderRadius:14,border:'1px solid rgba(66,133,244,0.35)',
+                                            background:'rgba(66,133,244,0.10)',color:'#3367D6',
+                                            fontFamily:"'JetBrains Mono',monospace"}}>
+                                          📆 В календарь
+                                        </button>
                                       )}
                                     </div>
                                   </div>

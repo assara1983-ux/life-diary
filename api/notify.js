@@ -11,7 +11,13 @@ export const config = {
 const UPSTASH_URL   = process.env.UPSTASH_REDIS_REST_URL;
 const UPSTASH_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
 
-const REMINDER_DAYS = [5, 3, 1, 0];
+// Договорённость: напоминания за 3 дня, за 2 дня, в день дедлайна,
+// и затем каждый день, пока задача не будет отмечена выполненной
+// (просроченные пункты сами перестают приходить с сервера, когда
+// клиент помечает задачу done и убирает её из списка дедлайнов).
+function shouldNotify(daysAhead) {
+  return daysAhead === 3 || daysAhead === 2 || daysAhead <= 0;
+}
 
 async function redis(command, args) {
   const res = await fetch(
@@ -91,13 +97,13 @@ export default async function handler(req, res) {
         checked++;
         if (!item.date) continue;
         const daysAhead = daysUntil(item.date, todayStr);
-        if (!REMINDER_DAYS.includes(daysAhead)) continue;
+        if (!shouldNotify(daysAhead)) continue;
 
         const notifyKey = `${item.id}:${daysAhead}`;
         if (notified.has(notifyKey)) continue;
 
-        const label = daysAhead === 0 ? 'СЕГОДНЯ' : daysAhead === 1 ? 'ЗАВТРА' : `через ${daysAhead} дн.`;
-        const emoji = daysAhead <= 1 ? '🚨' : '⚠️';
+        const label = daysAhead === 0 ? 'СЕГОДНЯ' : daysAhead > 0 ? `через ${daysAhead} дн.` : `просрочено на ${-daysAhead} дн.`;
+        const emoji = daysAhead <= 0 ? '🚨' : '⚠️';
 
         const payload = {
           title: `${emoji} Life Diary — дедлайн ${label}`,

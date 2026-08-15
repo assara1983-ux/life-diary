@@ -2,9 +2,22 @@
 import { useState, useEffect, useMemo } from "react";
 import { useApp } from "../store/AppContext";
 import { getProfileInsights, getMoonDay, getCurrentMeridian } from "../utils/knowledgeEngine";
+import { openGoogleCalendar } from "../utils/googleCalendar";
 
 function localDateStr(date) {
   return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+}
+
+function anchorDate(task, fallback) {
+  if (task.dueDate) return task.dueDate;
+  if (task.beautyStartDate) return task.beautyStartDate;
+  if (task.createdAt) return task.createdAt.split('T')[0];
+  // У старых задач без даты создания id — это Date.now(), можно достать реальную дату отсюда
+  const idNum = typeof task.id === 'number' ? task.id : parseInt(task.id);
+  if (idNum && idNum > 1600000000000 && idNum < 4000000000000) {
+    return new Date(idNum).toISOString().split('T')[0];
+  }
+  return fallback;
 }
 
 function isDueOnDay(task, dStr) {
@@ -22,8 +35,7 @@ function isDueOnDay(task, dStr) {
   if (task.freq.startsWith('weekly:')) return task.freq.split(':')[1].split(',').map(Number).includes(d.getDay());
   if (task.freq.startsWith('every:')) {
     const n = parseInt(task.freq.split(':')[1]);
-    // Для home-задач используем dueDate как точку отсчёта
-    const start = task.dueDate || task.beautyStartDate || task.createdAt?.split('T')[0] || dStr;
+    const start = anchorDate(task, '2024-01-01');
     if (dStr < start) return false;
     const diffDays = Math.floor((new Date(dStr+'T00:00:00') - new Date(start+'T00:00:00')) / 86400000);
     return diffDays >= 0 && diffDays % n === 0;
@@ -317,12 +329,12 @@ function ScheduleBlock({ todayItems, today, tasks, setTasks, profile, now }) {
               }}>
                 {/* Час */}
                 <div style={{
-                  width:52, flexShrink:0,
+                  width:58, flexShrink:0,
                   padding:'10px 8px 10px 16px',
                   fontFamily:"'JetBrains Mono',monospace",
-                  fontSize: isNow ? 12 : 11,
-                  fontWeight: isNow ? 700 : 400,
-                  color: isNow ? '#D4AF37' : isPast ? 'rgba(10,37,64,0.30)' : 'rgba(10,37,64,0.60)',
+                  fontSize: isNow ? 14 : 13,
+                  fontWeight: isNow ? 700 : 500,
+                  color: isNow ? '#D4AF37' : isPast ? 'rgba(10,37,64,0.35)' : 'rgba(10,37,64,0.65)',
                   letterSpacing:0.5,
                   display:'flex', alignItems:'center',
                   borderRight:`2px solid ${isNow ? 'rgba(212,175,55,0.7)' : 'rgba(10,37,64,0.14)'}`,
@@ -364,24 +376,34 @@ function ScheduleBlock({ todayItems, today, tasks, setTasks, profile, now }) {
                           }}>{done ? '✓' : ''}</div>
                           <div style={{ flex:1 }}>
                             <div style={{
-                              fontSize:15,
-                              color: done ? 'rgba(10,37,64,0.35)' : '#0A2540',
+                              fontSize:16,
+                              color: done ? 'rgba(10,37,64,0.40)' : '#0A2540',
                               textDecoration: done ? 'line-through' : 'none',
-                              fontFamily:"'Crimson Pro',serif", lineHeight:1.3,
+                              fontFamily:"'Crimson Pro',serif", lineHeight:1.3, fontWeight:500,
                             }}>{item.task.title}</div>
                             {item.task.section === 'home' && (
-                              <div style={{ fontSize:10, color:'rgba(10,37,64,0.40)',
+                              <div style={{ fontSize:11.5, color:'rgba(10,37,64,0.45)',
                                 fontFamily:"'JetBrains Mono',monospace", letterSpacing:0.5 }}>
                                 🏠 Дом
                               </div>
                             )}
                             {item.task.section === 'car' && (
-                              <div style={{ fontSize:10, color:'rgba(10,37,64,0.40)',
+                              <div style={{ fontSize:11.5, color:'rgba(10,37,64,0.45)',
                                 fontFamily:"'JetBrains Mono',monospace", letterSpacing:0.5 }}>
                                 🚗 Авто
                               </div>
                             )}
                           </div>
+                          {!done&&(
+                            <button onClick={e=>{e.stopPropagation();openGoogleCalendar(item.task.title,item.task.dueDate||today,item.task.preferredTime||hour,item.task.notes||'');}}
+                              title="Добавить в Google Calendar"
+                              style={{cursor:'pointer',fontSize:11.5,fontWeight:600,flexShrink:0,display:'flex',alignItems:'center',gap:3,
+                                padding:'4px 9px',borderRadius:12,border:'1px solid rgba(66,133,244,0.35)',
+                                background:'rgba(66,133,244,0.10)',color:'#3367D6',
+                                fontFamily:"'JetBrains Mono',monospace"}}>
+                              📆
+                            </button>
+                          )}
                         </div>
                       );
                     }

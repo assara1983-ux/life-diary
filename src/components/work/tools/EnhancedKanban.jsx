@@ -69,18 +69,31 @@ export function EnhancedKanban() {
     cutoff.setDate(cutoff.getDate() - ARCHIVE_AFTER_DAYS);
     const cutoffStr = localDateStr(cutoff);
     const toArchive = tasks.filter(t =>
-      t.section==='work' && t.status==='done' && !t.archived &&
+      t.section==='work' && !t.archived &&
       t.doneDate && t.doneDate < cutoffStr
     );
     if (toArchive.length > 0) {
       const ids = new Set(toArchive.map(t=>t.id));
       setTasks(p=>p.map(t=>ids.has(t.id)?{...t,archived:true}:t));
     }
+    // Заодно чиним рассинхрон: если задача отмечена выполненной сегодня,
+    // но её сохранённый status ещё не 'done' — подтягиваем его.
+    const toSync = tasks.filter(t => t.section==='work' && !t.archived &&
+      t.doneDate===today && t.status!=='done');
+    if (toSync.length > 0) {
+      const ids = new Set(toSync.map(t=>t.id));
+      setTasks(p=>p.map(t=>ids.has(t.id)?{...t,status:'done'}:t));
+    }
   }, [tasks]); // eslint-disable-line
 
   const workTasks = useMemo(()=>tasks.filter(t=>t.section==='work'&&!t.archived),[tasks]);
   const archivedTasks = useMemo(()=>tasks.filter(t=>t.section==='work'&&t.archived)
     .sort((a,b)=>(b.doneDate||'').localeCompare(a.doneDate||'')),[tasks]);
+
+  // Фактический статус колонки: если задачу отметили выполненной сегодня
+  // из любого другого раздела (Расписание, Сегодня), она обязана попасть
+  // в «Выполнено», даже если поле status не было обновлено оттуда.
+  const effectiveStatus = (t) => t.doneDate===today ? 'done' : (t.status||'todo');
 
   const handleDrop = (e, targetStatus) => {
     e.preventDefault();
@@ -105,7 +118,7 @@ export function EnhancedKanban() {
 
   // ── Очистка доски: сразу архивировать всё, что в "Выполнено"
   const clearDoneNow = () => {
-    const doneIds = new Set(workTasks.filter(t=>t.status==='done').map(t=>t.id));
+    const doneIds = new Set(workTasks.filter(t=>effectiveStatus(t)==='done').map(t=>t.id));
     if (doneIds.size===0) { setConfirmClear(false); return; }
     setTasks(p=>p.map(t=>doneIds.has(t.id)?{...t,archived:true}:t));
     notify(`🗑 Архивировано: ${doneIds.size}`);
@@ -166,7 +179,7 @@ export function EnhancedKanban() {
       {/* ── Колонки ── */}
       <div style={{display:'flex',gap:10,overflowX:'auto',paddingBottom:16,alignItems:'flex-start'}}>
         {COLUMNS.map(col=>{
-          const colTasks=workTasks.filter(t=>(t.status||'todo')===col.id);
+          const colTasks=workTasks.filter(t=>effectiveStatus(t)===col.id);
           return (
             <div key={col.id}
               onDragOver={e=>e.preventDefault()}
