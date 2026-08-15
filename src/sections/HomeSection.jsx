@@ -35,18 +35,24 @@ function freqLabel(f) {
   return f;
 }
 
+function daysBetween(dateStr1, dateStr2) {
+  const d1 = new Date(dateStr1+'T00:00:00');
+  const d2 = new Date(dateStr2+'T00:00:00');
+  return Math.round((d2-d1)/86400000);
+}
+
 function isDue(task, today) {
   if (!task.freq||task.doneDate===today) return false;
-  const d=new Date(today); d.setHours(0,0,0,0);
+  const d=new Date(today+'T00:00:00');
   if (task.freq==='daily') return task.lastDone!==today;
   if (task.freq==='workdays') { const dn=d.getDay(); return dn>=1&&dn<=5&&task.lastDone!==today; }
   if (task.freq==='once') return !task.doneDate;
   if (task.freq.startsWith('every:')) {
     const n=parseInt(task.freq.split(':')[1]);
     if (!task.lastDone) return true;
-    return Math.floor((d-new Date(task.lastDone))/86400000)>=n;
+    return daysBetween(task.lastDone,today)>=n;
   }
-  if (task.freq.startsWith('weekly:')) return new Date(today).getDay()===parseInt(task.freq.split(':')[1])&&task.lastDone!==today;
+  if (task.freq.startsWith('weekly:')) return d.getDay()===parseInt(task.freq.split(':')[1])&&task.lastDone!==today;
   return false;
 }
 
@@ -693,7 +699,7 @@ export function HomeSection() {
       const filtered=items.filter(t=>!exist.has(t.title.toLowerCase()));
       if(!filtered.length) { notify?.('Все задачи уже добавлены'); return p; }
       notify?.(`✅ Добавлено ${filtered.length} задач`);
-      return [...p,...filtered.map(t=>({...t,id:Date.now()+Math.random(),section:'home',lastDone:'',doneDate:'',notes:t.notes||''}))];
+      return [...p,...filtered.map(t=>({...t,id:Date.now()+Math.random(),section:'home',lastDone:'',doneDate:'',notes:t.notes||'',createdAt:new Date().toISOString()}))];
     });
   };
 

@@ -1,91 +1,132 @@
 // api/notify.js
-// Vercel Cron Job — запускается каждый день в 10:00 (UTC+5 = 05:00 UTC)
-// Отправляет Web Push уведомления о дедлайнах
+// Vercel Cron Job — запускается ежедневно (см. vercel.json).
+// Читает все сохранённые push-подписки из Redis (api/save-subscription.js
+// кладёт их туда) и для каждой проверяет реальные дедлайны пользователя,
+// присылая Web Push с конкретным названием задачи/отчёта.
 
 export const config = {
   maxDuration: 30,
 };
 
-// VAPID ключи — используются из Environment Variables
+const UPSTASH_URL   = process.env.UPSTASH_REDIS_REST_URL;
+const UPSTASH_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
+
+const REMINDER_DAYS = [5, 3, 1, 0];
+
+async function redis(command, args) {
+  const res = await fetch(
+    `${UPSTASH_URL}/${command}/${args.map(a => encodeURIComponent(a)).join('/')}`,
+    { headers: { Authorization: `Bearer ${UPSTASH_TOKEN}` } }
+  );
+  return res.json();
+}
+
+async function scanAllKeys(pattern) {
+  let cursor = '0';
+  const keys = [];
+  do {
+    const result = await redis('scan', [cursor, 'match', pattern, 'count', '200']);
+    if (!result.result) break;
+    cursor = result.result[0];
+    keys.push(...(result.result[1] || []));
+  } while (cursor !== '0');
+  return keys;
+}
+
 async function sendPush(subscription, payload) {
   try {
     const webpush = await import('web-push').catch(() => null);
-    if (!webpush) {
-      console.log('web-push not available');
-      return false;
-    }
+    if (!webpush) return { ok: false, reason: 'web-push module missing' };
 
-    // ✅ Исправлено имя ключа на VITE_VAPID_PUBLIC_KEY
     webpush.setVapidDetails(
       process.env.VAPID_SUBJECT || 'mailto:admin@lifediary.app',
-      process.env.VITE_VAPID_PUBLIC_KEY, 
+      process.env.VAPID_PUBLIC_KEY,
       process.env.VAPID_PRIVATE_KEY
     );
 
     await webpush.sendNotification(subscription, JSON.stringify(payload));
-    return true;
+    return { ok: true };
   } catch (e) {
-    console.error('Push send error:', e.message);
-    return false;
+    return { ok: false, reason: e.message, statusCode: e.statusCode };
   }
+}
+
+function daysUntil(dateStr, today) {
+  const d = new Date(dateStr + 'T00:00:00');
+  const t = new Date(today + 'T00:00:00');
+  return Math.round((d - t) / 86400000);
 }
 
 export default async function handler(req, res) {
   const authHeader = req.headers['authorization'];
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     if (process.env.NODE_ENV !== 'development') {
       return res.status(401).json({ error: 'Unauthorized' });
     }
   }
 
+  if (!UPSTASH_URL || !UPSTASH_TOKEN) {
+    return res.status(200).json({ ok: false, message: 'Upstash не настроен' });
+  }
+
   try {
-    const today = new Date();
-    const dates = [0, 1, 3].map(d => {
-      const dt = new Date(today);
-      dt.setDate(today.getDate() + d);
-      return dt.toISOString().split('T')[0];
-    });
-
-    let subscriptions = [];
-    try {
-      if (process.env.PUSH_SUBSCRIPTIONS) {
-        subscriptions = JSON.parse(process.env.PUSH_SUBSCRIPTIONS);
-      }
-    } catch (e) {
-      console.log('No subscriptions found');
-    }
-
-    if (!subscriptions.length) {
-      return res.status(200).json({ ok: true, message: 'No subscriptions', sent: 0 });
-    }
-
-    const messages = [];
-    for (const daysAhead of [0, 1, 3]) {
-      const dt = new Date(today);
-      dt.setDate(today.getDate() + daysAhead);
-      const dStr = dt.toISOString().split('T')[0];
-      const label = daysAhead === 0 ? 'СЕГОДНЯ' : daysAhead === 1 ? 'ЗАВТРА' : 'через 3 дня';
-      const emoji = daysAhead === 0 ? '🚨' : daysAhead === 1 ? '⚠️' : '📅';
-
-      messages.push({
-        dStr,
-        daysAhead,
-        title: `${emoji} Life Diary — Дедлайн ${label}`,
-        body: `Проверь раздел Работа — есть отчёты или платежи со сроком ${label}`,
-        tag: `deadline-${dStr}`,
-        url: '/?section=work'
-      });
-    }
+    const todayStr = new Date().toISOString().split('T')[0];
+    const keys = await scanAllKeys('push:*');
 
     let sent = 0;
-    for (const sub of subscriptions) {
-      for (const msg of messages) {
-        const ok = await sendPush(sub, msg);
-        if (ok) sent++;
+    let checked = 0;
+
+    for (const key of keys) {
+      const result = await redis('get', [key]);
+      if (!result.result) continue;
+
+      let record;
+      try { record = JSON.parse(result.result); } catch { continue; }
+
+      const { subscription, deadlines = [] } = record;
+      let notified = new Set(record.notified || []);
+      let changed = false;
+
+      for (const item of deadlines) {
+        checked++;
+        if (!item.date) continue;
+        const daysAhead = daysUntil(item.date, todayStr);
+        if (!REMINDER_DAYS.includes(daysAhead)) continue;
+
+        const notifyKey = `${item.id}:${daysAhead}`;
+        if (notified.has(notifyKey)) continue;
+
+        const label = daysAhead === 0 ? 'СЕГОДНЯ' : daysAhead === 1 ? 'ЗАВТРА' : `через ${daysAhead} дн.`;
+        const emoji = daysAhead <= 1 ? '🚨' : '⚠️';
+
+        const payload = {
+          title: `${emoji} Life Diary — дедлайн ${label}`,
+          body: item.title || 'Задача',
+          tag: `deadline-${item.id}-${daysAhead}`,
+          url: item.url || '/',
+        };
+
+        const result2 = await sendPush(subscription, payload);
+        if (result2.ok) {
+          sent++;
+          notified.add(notifyKey);
+          changed = true;
+        } else if (result2.statusCode === 410) {
+          // Подписка устарела — удаляем запись целиком
+          await redis('del', [key]);
+          changed = false;
+          break;
+        }
+      }
+
+      if (changed) {
+        record.notified = Array.from(notified);
+        await redis('set', [key, JSON.stringify(record)]);
+        await redis('expire', [key, '5184000']);
       }
     }
 
-    return res.status(200).json({ ok: true, sent, subscriptions: subscriptions.length });
+    return res.status(200).json({ ok: true, clients: keys.length, checked, sent });
   } catch (e) {
     console.error('notify error:', e);
     return res.status(500).json({ error: e.message });

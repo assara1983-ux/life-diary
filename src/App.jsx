@@ -4,6 +4,7 @@ import { AppProvider, useApp } from './store/AppContext';
 import { Onboarding } from './components/Onboarding';
 import { getMoon } from './utils/helpers';
 import { SyncPanel } from './components/SyncPanel';
+import { usePushDeadlineSync } from './hooks/usePushDeadlineSync';
 import './index.css';
 import { TodaySection }    from './sections/TodaySection';
 import { ScheduleSection } from './sections/ScheduleSection';
@@ -296,7 +297,7 @@ function HomeScreen({ onNavigate }) {
           opacity: 0.65,
         }} />
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div style={{ maxWidth: 640, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
             <div style={{
               fontFamily: "'JetBrains Mono', monospace",
@@ -349,6 +350,7 @@ function HomeScreen({ onNavigate }) {
 
         {/* Все разделы в одной сетке — «Сегодня» на всю ширину */}
         <div style={{
+          maxWidth: 640, margin: '0 auto',
           display: 'grid',
           gridTemplateColumns: '1fr 1fr',
           gap: 12,
@@ -454,8 +456,12 @@ function SectionScreen({ sectionId, onBack }) {
           {/* Навигация */}
           <div style={{
             position: 'absolute', inset: 0,
+            display: 'flex', justifyContent: 'center',
+            padding: '0 16px',
+          }}>
+          <div style={{
             display: 'flex', alignItems: 'center',
-            padding: '0 16px', gap: 12,
+            gap: 12, maxWidth: 640, width: '100%',
           }}>
             {/* Кнопка назад */}
             <button
@@ -518,12 +524,15 @@ function SectionScreen({ sectionId, onBack }) {
               </div>
             </div>
           </div>
+          </div>
         </div>
       </div>
 
       {/* ── Контент ── */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '0 0 80px 0' }}>
-        {Component && <Component />}
+        <div style={{ maxWidth: 640, margin: '0 auto', width: '100%' }}>
+          {Component && <Component />}
+        </div>
       </div>
 
       <SyncPanel />
@@ -533,8 +542,10 @@ function SectionScreen({ sectionId, onBack }) {
 
 // ─── APP CONTENT ───
 function AppContent() {
-  const { profile, sections, setSections } = useApp();
+  const { profile, sections, setSections, tasks } = useApp();
   const [active, setActive] = useState(null);
+
+  usePushDeadlineSync(tasks);
 
   useEffect(() => {
     if (!profile) return;
