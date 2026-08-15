@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useApp } from '../store/AppContext';
 import { AiBox } from '../components/AiBox';
 import { TaskModal } from '../components/TaskModal';
+import { openGoogleCalendar } from '../utils/googleCalendar';
 
 const C = {
   navy:'#0A2540', navyMid:'#1E3A5F',
@@ -368,6 +369,11 @@ export function ScheduleSection() {
                                       </span>
                                       {t.notes&&<span style={{fontFamily:"'Crimson Pro',serif",fontSize:13,
                                         color:C.text3,fontStyle:'italic'}}>{t.notes.slice(0,35)}</span>}
+                                      {!done&&(t.preferredTime||t.dueDate)&&(
+                                        <span onClick={e=>{e.stopPropagation();openGoogleCalendar(t.title,t.dueDate||dStr,t.preferredTime,t.notes||'');}}
+                                          title="Добавить в Google Calendar"
+                                          style={{cursor:'pointer',fontSize:13,opacity:0.6}}>📆</span>
+                                      )}
                                     </div>
                                   </div>
                                   <div

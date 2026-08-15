@@ -1,6 +1,7 @@
 // src/components/TaskModal.jsx
 import { useState } from 'react';
 import { T } from '../utils/theme';
+import { openGoogleCalendar } from '../utils/googleCalendar';
 
 export function TaskModal({ task, onSave, onClose, defaultSection = 'tasks' }) {
   const [t, setT] = useState(task || {
@@ -41,15 +42,7 @@ export function TaskModal({ task, onSave, onClose, defaultSection = 'tasks' }) {
   const isSliding = t.freq && t.freq.startsWith('every:');
   const isWeekly = t.freq && t.freq.startsWith('weekly:');
 
-  const openGCal = (title, date, desc = '') => {
-    const s = new Date(date),
-      e = new Date(s.getTime() + 3600000),
-      f = (d) => d.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
-    window.open(
-      `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${f(s)}/${f(e)}&details=${encodeURIComponent(desc)}`,
-      '_blank'
-    );
-  };
+  const openGCal = (title, date, desc = '') => openGoogleCalendar(title, date, '', desc);
 
   return (
     <div className="overlay" onClick={onClose}>

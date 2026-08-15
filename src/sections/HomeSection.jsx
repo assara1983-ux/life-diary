@@ -1,6 +1,7 @@
 // src/sections/HomeSection.jsx
 import { useState, useMemo } from 'react';
 import { useApp } from '../store/AppContext';
+import { openGoogleCalendar } from '../utils/googleCalendar';
 
 const C = {
   navy:'#0A2540', navyMid:'#1E3A5F',
@@ -115,6 +116,8 @@ function TaskRow({ task, today, onToggle, onDelete, onEdit, onUpdate }) {
             <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:due?C.navyMid:C.text3,letterSpacing:0.5}}>{freqLabel(task.freq)}</span>
             {task.preferredTime&&<span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:C.gold,letterSpacing:0.5}}>⏰ {task.preferredTime}</span>}
             {task.dueDate&&<span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:C.navyMid,letterSpacing:0.5}}>📅 {new Date(task.dueDate+'T00:00:00').toLocaleDateString('ru-RU',{day:'numeric',month:'short'})}</span>}
+            {!done&&task.dueDate&&<span onClick={e=>{e.stopPropagation();openGoogleCalendar(task.title,task.dueDate,task.preferredTime,task.notes||'');}}
+              title="Добавить в Google Calendar" style={{cursor:'pointer',fontSize:12,opacity:0.6}}>📆</span>}
             {task.notes&&<span style={{fontFamily:"'Crimson Pro',serif",fontSize:13,color:C.text3,fontStyle:'italic'}}>{task.notes.slice(0,35)}</span>}
           </div>
         </div>

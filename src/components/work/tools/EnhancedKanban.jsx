@@ -2,6 +2,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useApp } from '../../../store/AppContext';
 import { TaskModal } from '../../TaskModal';
+import { openGoogleCalendar } from '../../../utils/googleCalendar';
 
 function localDateStr(d=new Date()) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -257,14 +258,25 @@ export function EnhancedKanban() {
 
                         {/* Дедлайн-тег */}
                         {dl&&(
-                          <div style={{display:'inline-flex',alignItems:'center',gap:5,
-                            padding:'3px 10px',borderRadius:20,
-                            background:urgent?'rgba(107,16,16,0.12)':done?'rgba(26,77,46,0.10)':'rgba(10,37,64,0.07)',
-                            border:`1px solid ${urgent?'rgba(107,16,16,0.30)':done?'rgba(26,77,46,0.25)':'rgba(10,37,64,0.15)'}`,
-                            fontFamily:"'JetBrains Mono',monospace",fontSize:12,
-                            color:urgent?'#6B1010':done?'#1A4D2E':'rgba(10,37,64,0.55)',
-                            fontWeight:urgent?700:400}}>
-                            📅 {daysLeft===0?'Сегодня!':daysLeft===1?'Завтра':dl}
+                          <div style={{display:'flex',alignItems:'center',gap:6,flexWrap:'wrap'}}>
+                            <div style={{display:'inline-flex',alignItems:'center',gap:5,
+                              padding:'3px 10px',borderRadius:20,
+                              background:urgent?'rgba(107,16,16,0.12)':done?'rgba(26,77,46,0.10)':'rgba(10,37,64,0.07)',
+                              border:`1px solid ${urgent?'rgba(107,16,16,0.30)':done?'rgba(26,77,46,0.25)':'rgba(10,37,64,0.15)'}`,
+                              fontFamily:"'JetBrains Mono',monospace",fontSize:12,
+                              color:urgent?'#6B1010':done?'#1A4D2E':'rgba(10,37,64,0.55)',
+                              fontWeight:urgent?700:400}}>
+                              📅 {daysLeft===0?'Сегодня!':daysLeft===1?'Завтра':dl}
+                            </div>
+                            {!done&&(
+                              <button
+                                onClick={(e)=>{e.stopPropagation();openGoogleCalendar(task.title,dl,'',task.notes||'');}}
+                                title="Добавить в Google Calendar"
+                                style={{background:'none',border:'none',cursor:'pointer',
+                                  fontSize:13,padding:0,opacity:0.65}}>
+                                📆
+                              </button>
+                            )}
                           </div>
                         )}
 
