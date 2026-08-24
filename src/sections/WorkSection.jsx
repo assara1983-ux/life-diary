@@ -721,26 +721,24 @@ export function WorkSection() {
                                   <div key={dl} style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap',
                                     padding:'8px 10px',borderRadius:8,
                                     background:'rgba(255,255,255,0.6)',border:'1px solid rgba(10,37,64,0.10)',
-                                    opacity:past?0.5:1}}>
+                                    opacity:past?0.7:1}}>
                                     <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:13,
                                       color:'#0A2540',fontWeight:600,flexShrink:0}}>📅 {dl}</span>
-                                    {!past&&(<>
-                                      <button onClick={()=>addReportDeadlineToSchedule(r,dl)}
-                                        style={{cursor:'pointer',fontSize:11.5,fontWeight:600,
-                                          padding:'4px 10px',borderRadius:12,border:'1px solid rgba(26,77,46,0.35)',
-                                          background:'rgba(26,77,46,0.10)',color:'#1A4D2E',
-                                          fontFamily:"'JetBrains Mono',monospace"}}>
-                                        🗓️ В расписание
-                                      </button>
-                                      <button onClick={()=>openGoogleCalendar(`Сдать: ${r.name}`,dl,'',`Отчёт ${r.id}`)}
-                                        style={{cursor:'pointer',fontSize:11.5,fontWeight:600,
-                                          padding:'4px 10px',borderRadius:12,border:'1px solid rgba(66,133,244,0.35)',
-                                          background:'rgba(66,133,244,0.10)',color:'#3367D6',
-                                          fontFamily:"'JetBrains Mono',monospace"}}>
-                                        📆 Google Calendar
-                                      </button>
-                                    </>)}
-                                    {past&&<span style={{fontSize:11,color:'rgba(10,37,64,0.4)',fontFamily:"'Crimson Pro',serif",fontStyle:'italic'}}>прошедший срок</span>}
+                                    <button onClick={()=>addReportDeadlineToSchedule(r,dl)}
+                                      style={{cursor:'pointer',fontSize:11.5,fontWeight:600,
+                                        padding:'4px 10px',borderRadius:12,border:'1px solid rgba(26,77,46,0.35)',
+                                        background:'rgba(26,77,46,0.10)',color:'#1A4D2E',
+                                        fontFamily:"'JetBrains Mono',monospace"}}>
+                                      🗓️ В расписание
+                                    </button>
+                                    <button onClick={()=>openGoogleCalendar(`Сдать: ${r.name}`,dl,'',`Отчёт ${r.id}`)}
+                                      style={{cursor:'pointer',fontSize:11.5,fontWeight:600,
+                                        padding:'4px 10px',borderRadius:12,border:'1px solid rgba(66,133,244,0.35)',
+                                        background:'rgba(66,133,244,0.10)',color:'#3367D6',
+                                        fontFamily:"'JetBrains Mono',monospace"}}>
+                                      📆 Google Calendar
+                                    </button>
+                                    {past&&<span style={{fontSize:11,color:'rgba(10,37,64,0.4)',fontFamily:"'Crimson Pro',serif",fontStyle:'italic'}}>(прошедший срок в этом году)</span>}
                                   </div>
                                 );
                               })}
@@ -815,26 +813,24 @@ export function WorkSection() {
                                 <div key={dl} style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap',
                                   padding:'8px 10px',borderRadius:8,
                                   background:'rgba(255,255,255,0.6)',border:'1px solid rgba(10,37,64,0.10)',
-                                  opacity:past?0.5:1}}>
+                                  opacity:past?0.7:1}}>
                                   <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:13,
                                     color:'#0A2540',fontWeight:600,flexShrink:0}}>📅 {dl}</span>
-                                  {!past&&(<>
-                                    <button onClick={()=>addReportDeadlineToSchedule(r,dl)}
-                                      style={{cursor:'pointer',fontSize:11.5,fontWeight:600,
-                                        padding:'4px 10px',borderRadius:12,border:'1px solid rgba(26,77,46,0.35)',
-                                        background:'rgba(26,77,46,0.10)',color:'#1A4D2E',
-                                        fontFamily:"'JetBrains Mono',monospace"}}>
-                                      🗓️ В расписание
-                                    </button>
-                                    <button onClick={()=>openGoogleCalendar(`Сдать: ${r.name}`,dl,'',`Отчёт ${r.id}`)}
-                                      style={{cursor:'pointer',fontSize:11.5,fontWeight:600,
-                                        padding:'4px 10px',borderRadius:12,border:'1px solid rgba(66,133,244,0.35)',
-                                        background:'rgba(66,133,244,0.10)',color:'#3367D6',
-                                        fontFamily:"'JetBrains Mono',monospace"}}>
-                                      📆 Google Calendar
-                                    </button>
-                                  </>)}
-                                  {past&&<span style={{fontSize:11,color:'rgba(10,37,64,0.4)',fontFamily:"'Crimson Pro',serif",fontStyle:'italic'}}>прошедший срок</span>}
+                                  <button onClick={()=>addReportDeadlineToSchedule(r,dl)}
+                                    style={{cursor:'pointer',fontSize:11.5,fontWeight:600,
+                                      padding:'4px 10px',borderRadius:12,border:'1px solid rgba(26,77,46,0.35)',
+                                      background:'rgba(26,77,46,0.10)',color:'#1A4D2E',
+                                      fontFamily:"'JetBrains Mono',monospace"}}>
+                                    🗓️ В расписание
+                                  </button>
+                                  <button onClick={()=>openGoogleCalendar(`Сдать: ${r.name}`,dl,'',`Отчёт ${r.id}`)}
+                                    style={{cursor:'pointer',fontSize:11.5,fontWeight:600,
+                                      padding:'4px 10px',borderRadius:12,border:'1px solid rgba(66,133,244,0.35)',
+                                      background:'rgba(66,133,244,0.10)',color:'#3367D6',
+                                      fontFamily:"'JetBrains Mono',monospace"}}>
+                                    📆 Google Calendar
+                                  </button>
+                                  {past&&<span style={{fontSize:11,color:'rgba(10,37,64,0.4)',fontFamily:"'Crimson Pro',serif",fontStyle:'italic'}}>(прошедший срок в этом году)</span>}
                                 </div>
                               );
                             })}
