@@ -20,16 +20,21 @@ function anchorDate(task, fallback) {
   return fallback;
 }
 
+function taskDate(task) {
+  return task.dueDate || (task.deadline ? task.deadline.split('T')[0] : null);
+}
+
 function isDueOnDay(task, dStr) {
   const d = new Date(dStr + 'T00:00:00');
+  const tDate = taskDate(task);
 
   // Задача с конкретной датой начала — показываем начиная с этой даты
-  if (task.dueDate) {
-    if (dStr < task.dueDate) return false; // ещё не наступила
+  if (tDate) {
+    if (dStr < tDate) return false; // ещё не наступила
   }
 
-  if (!task.freq) return !!task.dueDate && dStr === task.dueDate;
-  if (task.freq === 'once') return task.dueDate === dStr;
+  if (!task.freq) return !!tDate && dStr === tDate;
+  if (task.freq === 'once') return tDate === dStr;
   if (task.freq === 'daily') return true;
   if (task.freq === 'workdays') { const dn = d.getDay(); return dn >= 1 && dn <= 5; }
   if (task.freq.startsWith('weekly:')) return task.freq.split(':')[1].split(',').map(Number).includes(d.getDay());
@@ -482,7 +487,7 @@ export function TodaySection() {
     const result = [];
     const regularTasks = tasks.filter(t =>
       t.section !== 'beauty' &&
-      (t.preferredTime || t.dueDate === today) &&
+      (t.preferredTime || taskDate(t) === today) &&
       (isDueOnDay(t, today) || t.doneDate === today)
     );
     regularTasks.forEach(t => result.push({ type:'task', time:t.preferredTime || '00:00', task:t }));

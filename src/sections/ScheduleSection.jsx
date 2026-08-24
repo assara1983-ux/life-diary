@@ -29,11 +29,16 @@ function anchorDate(task, fallback) {
   return fallback;
 }
 
+function taskDate(task) {
+  return task.dueDate || (task.deadline ? task.deadline.split('T')[0] : null);
+}
+
 function isDueOnDay(task, dStr) {
   const d = new Date(dStr+'T00:00:00');
-  if (task.dueDate && dStr < task.dueDate) return false;
-  if (!task.freq) return !!task.dueDate && dStr === task.dueDate;
-  if (task.freq === 'once') return task.dueDate === dStr;
+  const tDate = taskDate(task);
+  if (tDate && dStr < tDate) return false;
+  if (!task.freq) return !!tDate && dStr === tDate;
+  if (task.freq === 'once') return tDate === dStr;
   if (task.freq === 'daily') return true;
   if (task.freq === 'workdays') { const dn=d.getDay(); return dn>=1&&dn<=5; }
   if (task.freq.startsWith('weekly:')) return task.freq.split(':')[1].split(',').map(Number).includes(d.getDay());
@@ -101,7 +106,7 @@ export function ScheduleSection() {
     if (isWork&&profile?.workEnd)   anchors.push({type:'anchor',time:profile.workEnd,  label:'💼 Конец'});
 
     const regular=tasks
-      .filter(t=>t.section!=='beauty'&&(t.preferredTime||t.dueDate===dStr)&&(isDueOnDay(t,dStr)||t.doneDate===dStr))
+      .filter(t=>t.section!=='beauty'&&(t.preferredTime||taskDate(t)===dStr)&&(isDueOnDay(t,dStr)||t.doneDate===dStr))
       .map(t=>({type:'task',time:t.preferredTime||'00:00',task:t}));
 
     const beautyDue=tasks.filter(t=>t.section==='beauty'&&t.preferredTime&&(isDueOnDay(t,dStr)||t.doneDate===dStr));

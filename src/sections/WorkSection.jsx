@@ -76,6 +76,29 @@ export function WorkSection() {
   const [searchQuery, setSearchQuery] = useState('');
   const [catalogOpen, setCatalogOpen] = useState(false);
   const [myReportsOpen, setMyReportsOpen] = useState(true);
+  const [expandedReport, setExpandedReport] = useState(null);
+  const [addedToast, setAddedToast] = useState(null);
+
+  const addReportDeadlineToSchedule = (report, date) => {
+    const exists = tasks.some(t=>t.section==='work'&&t.notes===`report:${report.id}`&&t.deadline===date);
+    if (exists) { setAddedToast('Уже в расписании'); setTimeout(()=>setAddedToast(null),2000); return; }
+    setTasks(p=>[...p,{
+      id: Date.now()+Math.random(),
+      section: 'work',
+      title: `📋 Сдать: ${report.name}`,
+      freq: 'once',
+      priority: 'h',
+      deadline: date,
+      dueDate: date,
+      status: 'todo',
+      doneDate: '',
+      lastDone: '',
+      notes: `report:${report.id}`,
+      createdAt: new Date().toISOString(),
+    }]);
+    setAddedToast('Добавлено в расписание ✓');
+    setTimeout(()=>setAddedToast(null),2000);
+  };
   const [showCustomModal, setShowCustomModal] = useState(false);
   const EMPTY_FORM = { name: '', frequency: 'quarterly', deadline: calcDeadline('quarterly', '30'), daysAfter: '30' };
   const [customForm, setCustomForm] = useState(EMPTY_FORM);
@@ -221,6 +244,15 @@ export function WorkSection() {
 
   return (
     <div style={{paddingBottom:80}}>
+
+      {addedToast&&(
+        <div style={{position:'fixed',bottom:90,left:'50%',transform:'translateX(-50%)',
+          zIndex:9999,padding:'10px 20px',borderRadius:20,background:'rgba(10,37,64,0.92)',
+          color:'#fff',fontFamily:"'Crimson Pro',serif",fontSize:15,
+          boxShadow:'0 4px 16px rgba(0,0,0,0.3)',whiteSpace:'nowrap'}}>
+          {addedToast}
+        </div>
+      )}
 
       {/* ── Маленькая шапка ── */}
       <div style={{position:'relative',height:90,borderRadius:14,overflow:'hidden',
@@ -633,11 +665,13 @@ export function WorkSection() {
                       const nearest=(r.deadlines2026||[]).find(dl=>daysUntil(dl)>=0);
                       const days=nearest?daysUntil(nearest):null;
                       const urgent=days!==null&&days<=3;
+                      const isExpanded=expandedReport===r.id;
                       return (
-                        <div key={r.id} style={{
-                          display:'flex',alignItems:'center',gap:14,
+                        <div key={r.id}>
+                        <div onClick={()=>setExpandedReport(isExpanded?null:r.id)} style={{
+                          display:'flex',alignItems:'center',gap:14,cursor:'pointer',
                           padding:'13px 16px',
-                          borderBottom:i<selectedKgd.length-1?'1px solid rgba(10,37,64,0.07)':'none',
+                          borderBottom:(i<selectedKgd.length-1&&!isExpanded)?'1px solid rgba(10,37,64,0.07)':'none',
                           background:urgent?'rgba(107,16,16,0.04)':'transparent',
                           borderLeft:`3px solid ${urgent?'#6B1010':'rgba(10,37,64,0.15)'}`,
                         }}>
@@ -665,10 +699,54 @@ export function WorkSection() {
                               {days===0?'Сегодня!':days===1?'Завтра':`${days} дн.`}
                             </div>
                           )}
-                          <button onClick={()=>toggleReport(r.id)}
+                          <span style={{fontSize:14,color:CC.gold,flexShrink:0,
+                            transform:isExpanded?'rotate(180deg)':'rotate(0)',transition:'0.2s'}}>▼</span>
+                          <button onClick={(e)=>{e.stopPropagation();toggleReport(r.id);}}
                             style={{background:'none',border:'none',fontSize:18,
                               cursor:'pointer',color:'rgba(107,16,16,0.35)',
                               padding:'2px 4px',flexShrink:0}}>✕</button>
+                        </div>
+                        {isExpanded&&(
+                          <div style={{padding:'6px 16px 14px',
+                            background:'rgba(10,37,64,0.025)',
+                            borderBottom:i<selectedKgd.length-1?'1px solid rgba(10,37,64,0.07)':'none'}}>
+                            <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,
+                              letterSpacing:1.5,textTransform:'uppercase',color:'rgba(10,37,64,0.45)',
+                              margin:'8px 0 8px'}}>Все сроки сдачи в 2026</div>
+                            <div style={{display:'flex',flexDirection:'column',gap:7}}>
+                              {(r.deadlines2026||[]).map(dl=>{
+                                const d=daysUntil(dl);
+                                const past=d!==null&&d<0;
+                                return (
+                                  <div key={dl} style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap',
+                                    padding:'8px 10px',borderRadius:8,
+                                    background:'rgba(255,255,255,0.6)',border:'1px solid rgba(10,37,64,0.10)',
+                                    opacity:past?0.5:1}}>
+                                    <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:13,
+                                      color:'#0A2540',fontWeight:600,flexShrink:0}}>📅 {dl}</span>
+                                    {!past&&(<>
+                                      <button onClick={()=>addReportDeadlineToSchedule(r,dl)}
+                                        style={{cursor:'pointer',fontSize:11.5,fontWeight:600,
+                                          padding:'4px 10px',borderRadius:12,border:'1px solid rgba(26,77,46,0.35)',
+                                          background:'rgba(26,77,46,0.10)',color:'#1A4D2E',
+                                          fontFamily:"'JetBrains Mono',monospace"}}>
+                                        🗓️ В расписание
+                                      </button>
+                                      <button onClick={()=>openGoogleCalendar(`Сдать: ${r.name}`,dl,'',`Отчёт ${r.id}`)}
+                                        style={{cursor:'pointer',fontSize:11.5,fontWeight:600,
+                                          padding:'4px 10px',borderRadius:12,border:'1px solid rgba(66,133,244,0.35)',
+                                          background:'rgba(66,133,244,0.10)',color:'#3367D6',
+                                          fontFamily:"'JetBrains Mono',monospace"}}>
+                                        📆 Google Calendar
+                                      </button>
+                                    </>)}
+                                    {past&&<span style={{fontSize:11,color:'rgba(10,37,64,0.4)',fontFamily:"'Crimson Pro',serif",fontStyle:'italic'}}>прошедший срок</span>}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
                         </div>
                       );
                     })}
@@ -686,11 +764,15 @@ export function WorkSection() {
                       borderTop:'1px solid rgba(10,37,64,0.07)'}}>
                       📊 БНС · {selectedBns.length} форм
                     </div>
-                    {selectedBns.map((r,i)=>(
-                      <div key={r.id} style={{
-                        display:'flex',alignItems:'center',gap:14,
+                    {selectedBns.map((r,i)=>{
+                      const isExpanded=expandedReport===r.id;
+                      const nearest=(r.deadlines2026||[]).find(dl=>daysUntil(dl)>=0);
+                      return (
+                      <div key={r.id}>
+                      <div onClick={()=>setExpandedReport(isExpanded?null:r.id)} style={{
+                        display:'flex',alignItems:'center',gap:14,cursor:'pointer',
                         padding:'13px 16px',
-                        borderBottom:i<selectedBns.length-1?'1px solid rgba(10,37,64,0.07)':'none',
+                        borderBottom:(i<selectedBns.length-1&&!isExpanded)?'1px solid rgba(10,37,64,0.07)':'none',
                         borderLeft:'3px solid rgba(10,37,64,0.15)'}}>
                         <div style={{flex:1,minWidth:0}}>
                           <div style={{fontFamily:"'Crimson Pro',serif",fontSize:17,
@@ -704,12 +786,64 @@ export function WorkSection() {
                             {r.id}
                           </span>
                         </div>
-                        <button onClick={()=>toggleReport(r.id)}
+                        {nearest&&(
+                          <div style={{flexShrink:0,padding:'6px 12px',borderRadius:8,
+                            background:'rgba(212,175,55,0.10)',border:'1px solid rgba(212,175,55,0.30)',
+                            fontFamily:"'JetBrains Mono',monospace",fontSize:12,
+                            color:'#8B6914',fontWeight:700,textAlign:'center'}}>
+                            {daysUntil(nearest)===0?'Сегодня!':`${daysUntil(nearest)} дн.`}
+                          </div>
+                        )}
+                        <span style={{fontSize:14,color:CC.gold,flexShrink:0,
+                          transform:isExpanded?'rotate(180deg)':'rotate(0)',transition:'0.2s'}}>▼</span>
+                        <button onClick={(e)=>{e.stopPropagation();toggleReport(r.id);}}
                           style={{background:'none',border:'none',fontSize:18,
                             cursor:'pointer',color:'rgba(107,16,16,0.35)',
                             padding:'2px 4px',flexShrink:0}}>✕</button>
                       </div>
-                    ))}
+                      {isExpanded&&(
+                        <div style={{padding:'6px 16px 14px',background:'rgba(10,37,64,0.025)',
+                          borderBottom:i<selectedBns.length-1?'1px solid rgba(10,37,64,0.07)':'none'}}>
+                          <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,
+                            letterSpacing:1.5,textTransform:'uppercase',color:'rgba(10,37,64,0.45)',
+                            margin:'8px 0 8px'}}>Все сроки сдачи в 2026</div>
+                          <div style={{display:'flex',flexDirection:'column',gap:7}}>
+                            {(r.deadlines2026||[]).map(dl=>{
+                              const d=daysUntil(dl);
+                              const past=d!==null&&d<0;
+                              return (
+                                <div key={dl} style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap',
+                                  padding:'8px 10px',borderRadius:8,
+                                  background:'rgba(255,255,255,0.6)',border:'1px solid rgba(10,37,64,0.10)',
+                                  opacity:past?0.5:1}}>
+                                  <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:13,
+                                    color:'#0A2540',fontWeight:600,flexShrink:0}}>📅 {dl}</span>
+                                  {!past&&(<>
+                                    <button onClick={()=>addReportDeadlineToSchedule(r,dl)}
+                                      style={{cursor:'pointer',fontSize:11.5,fontWeight:600,
+                                        padding:'4px 10px',borderRadius:12,border:'1px solid rgba(26,77,46,0.35)',
+                                        background:'rgba(26,77,46,0.10)',color:'#1A4D2E',
+                                        fontFamily:"'JetBrains Mono',monospace"}}>
+                                      🗓️ В расписание
+                                    </button>
+                                    <button onClick={()=>openGoogleCalendar(`Сдать: ${r.name}`,dl,'',`Отчёт ${r.id}`)}
+                                      style={{cursor:'pointer',fontSize:11.5,fontWeight:600,
+                                        padding:'4px 10px',borderRadius:12,border:'1px solid rgba(66,133,244,0.35)',
+                                        background:'rgba(66,133,244,0.10)',color:'#3367D6',
+                                        fontFamily:"'JetBrains Mono',monospace"}}>
+                                      📆 Google Calendar
+                                    </button>
+                                  </>)}
+                                  {past&&<span style={{fontSize:11,color:'rgba(10,37,64,0.4)',fontFamily:"'Crimson Pro',serif",fontStyle:'italic'}}>прошедший срок</span>}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                      </div>
+                      );
+                    })}
                   </div>
                 )}
 
