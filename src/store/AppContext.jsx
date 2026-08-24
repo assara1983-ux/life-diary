@@ -37,6 +37,22 @@ function useStorageState(key, defaultValue) {
     catch (e) { console.error(`Ошибка сохранения ${key}:`, e); }
   }, [key, value]);
 
+  // Синхронизация между вкладками: если данные изменились в ДРУГОЙ вкладке
+  // (например, там что-то отметили или добавили), подтягиваем это сюда —
+  // без этого старая открытая вкладка могла молча затереть свежие данные
+  // при следующем собственном сохранении.
+  useEffect(() => {
+    function onStorage(e) {
+      if (e.key !== key || e.newValue == null) return;
+      try {
+        const incoming = JSON.parse(e.newValue);
+        setValue(prev => (JSON.stringify(prev) === e.newValue ? prev : incoming));
+      } catch {}
+    }
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, [key]);
+
   return [value, setValue];
 }
 
