@@ -7,6 +7,8 @@ import { ModalDetail } from '../components/ModalDetail';
 import { ANATOMY_DATA } from '../data/anatomyKnowledge';
 import { BreathingTimer } from '../components/BreathingTimer';
 import { HealthTracker } from '../components/HealthTracker';
+import { PoseIllustration } from '../components/health/PoseIllustration';
+import { BreathingDiagram } from '../components/health/BreathingDiagram';
 import { ELEMENT_NUTRITION, CHRONO_ADVICE, ACTIVITY_ADVICE, ENERGY_RECOVERY } from '../data/healthRecommendations';
 
 // ─── УТИЛИТЫ ───
@@ -50,11 +52,44 @@ const getEasternYear = (y) =>
 
 // ─── ДАННЫЕ ───
 const BREATHING_TECHNIQUES = [
-  { id:'wilunas',  title:'Экстренный сброс (Рыдающее)', short:'Снижение давления и паники',  purpose:'Мгновенное снятие острого стресса (>7)', effect:'Снижение кортизола, нормализация пульса', rules:'Вдох ртом → выдох со звуком "с-с-с" → пауза. 3 мин.', technique:{inhale:1,exhale:3,hold:0,cycles:3} },
-  { id:'physical', title:'Коррекция фигуры',            short:'Активация метаболизма',        purpose:'Сжигание жира, тонус мышц пресса',      effect:'Ускорение обмена веществ',               rules:'Только утром натощак. Поза "Всадник". Активный выдох "Ба-ха".', technique:{inhale:2,exhale:5,hold:2,cycles:10} },
-  { id:'samchon',  title:'Сам Чон До (Базовое)',         short:'Гармонизация состояния',       purpose:'Подготовка, снятие зажимов',            effect:'Баланс Инь/Ян, спокойствие',             rules:'Вдох носом 3с → Выдох ртом 6с → Пауза 2с.', technique:{inhale:3,exhale:6,hold:2,cycles:5} },
-  { id:'norbekov', title:'Настрой Норбекова + ОМЗ',      short:'Омоложение и ресурс',          purpose:'Настройка 13 центров, омоложение',       effect:'Прилив энергии, ясность ума',            rules:'4 этапа: Образ → Палец → Рука → Сплетение. НЕ направлять в Сердце/Мозг!', technique:{inhale:4,exhale:8,hold:2,cycles:4} },
-  { id:'mood',     title:'Смена настроения',             short:'Эмоциональная перезагрузка',   purpose:'Быстрая смена негатива на позитив',     effect:'Выработка дофамина',                     rules:'Сам Чон До → Образ человека в нужном настроении → Дыхание через образ.', technique:{inhale:3,exhale:5,hold:0,cycles:6} },
+  { id:'wilunas',  title:'Экстренный сброс (Рыдающее)', short:'Снижение давления и паники',  purpose:'Мгновенное снятие острого стресса (>7)', effect:'Снижение кортизола, нормализация пульса', rules:'Вдох ртом → выдох со звуком "с-с-с" → пауза. 3 мин.', technique:{inhale:1,exhale:3,hold:0,cycles:3},
+    steps:[
+      'Сядьте прямо или лягте, плечи расслаблены, не поднимайте их на вдохе.',
+      'Короткий бесшумный вдох через приоткрытый рот — 1 секунда, будто хватаете воздух.',
+      'Медленный выдох через рот со звуком «с-с-с», как сдувающийся шарик — 3 секунды.',
+      'Пауза 1–2 секунды на пустых лёгких, не форсируйте следующий вдох.',
+      'Повторяйте 3 минуты. Если закружилась голова — сделайте паузу и дышите обычно.' ] },
+  { id:'physical', title:'Коррекция фигуры',            short:'Активация метаболизма',        purpose:'Сжигание жира, тонус мышц пресса',      effect:'Ускорение обмена веществ',               rules:'Только утром натощак. Поза "Всадник". Активный выдох "Ба-ха".', technique:{inhale:2,exhale:5,hold:2,cycles:10},
+    steps:[
+      'Только натощак утром, через 20–30 минут после пробуждения.',
+      'Поза «Всадник»: ноги на ширине плеч, слегка присядьте, руки на бёдрах, спина прямая.',
+      'Вдох носом 2 секунды, живот мягко надувается.',
+      'Задержка 2 секунды, лёгкое напряжение мышц пресса.',
+      'Резкий выдох ртом со звуком «ба-ха», втягивая живот к позвоночнику — 5 секунд.',
+      '10 циклов подряд, затем отдых 30 секунд, всего 3 подхода.' ] },
+  { id:'samchon',  title:'Сам Чон До (Базовое)',         short:'Гармонизация состояния',       purpose:'Подготовка, снятие зажимов',            effect:'Баланс Инь/Ян, спокойствие',             rules:'Вдох носом 3с → Выдох ртом 6с → Пауза 2с.', technique:{inhale:3,exhale:6,hold:2,cycles:5},
+    steps:[
+      'Сядьте с прямой спиной, руки свободно на коленях ладонями вверх.',
+      'Закройте глаза, расслабьте лицо и плечи.',
+      'Вдох через нос 3 секунды — воздух наполняет сначала живот, потом грудь.',
+      'Плавный выдох через рот 6 секунд, будто выдуваете воздух через трубочку.',
+      'Пауза на пустом выдохе 2 секунды.',
+      'Повторить 5 циклов, наблюдая за ощущениями в теле без оценки.' ] },
+  { id:'norbekov', title:'Настрой Норбекова + ОМЗ',      short:'Омоложение и ресурс',          purpose:'Настройка 13 центров, омоложение',       effect:'Прилив энергии, ясность ума',             rules:'4 этапа: Образ → Палец → Рука → Сплетение. НЕ направлять в Сердце/Мозг!', technique:{inhale:4,exhale:8,hold:2,cycles:4},
+    steps:[
+      'Этап 1 «Образ»: закройте глаза, представьте яркий тёплый образ (солнце, огонёк).',
+      'Этап 2 «Палец»: направьте внимание в кончик указательного пальца, ощутите тепло/покалывание.',
+      'Этап 3 «Рука»: распространите это ощущение на всю ладонь и предплечье на вдохе (4с).',
+      'Этап 4 «Сплетение»: на выдохе (8с) направьте тепло к солнечному сплетению — область живота.',
+      '⚠️ Никогда не направляйте поток в область сердца или головы — только конечности и живот.',
+      'Задержка 2 секунды между этапами, 4 полных цикла.' ] },
+  { id:'mood',     title:'Смена настроения',             short:'Эмоциональная перезагрузка',   purpose:'Быстрая смена негатива на позитив',     effect:'Выработка дофамина',                     rules:'Сам Чон До → Образ человека в нужном настроении → Дыхание через образ.', technique:{inhale:3,exhale:5,hold:0,cycles:6},
+    steps:[
+      'Начните с 1–2 циклов «Сам Чон До» (вдох носом 3с, выдох ртом 6с), чтобы успокоиться.',
+      'Вспомните конкретного человека, который излучает нужное вам сейчас настроение.',
+      'Мысленно «наденьте» его выражение лица и осанку на вдохе (3с).',
+      'На выдохе (5с) мысленно скажите себе фразу этого настроения («я спокоен», «я уверен»).',
+      'Повторяйте 6 циклов, позволяя настроению закрепиться в теле.' ] },
 ];
 
 // У-Син данные по стихиям
@@ -118,13 +153,52 @@ const UXIN_DATA = {
 
 // Гормональная йога
 const HORMONAL_YOGA = [
-  { name: 'Баддха Конасана', sanskrit: 'Baddha Konasana', benefit: 'Стимуляция яичников, улучшение кровотока в малом тазу', time: '3–5 мин', phase: 'Фолликулярная и овуляция' },
-  { name: 'Вирасана', sanskrit: 'Virasana', benefit: 'Снятие напряжения в пояснице, баланс гормонов', time: '2–3 мин', phase: 'Любая' },
-  { name: 'Супта Баддха Конасана', sanskrit: 'Supta Baddha Konasana', benefit: 'Глубокое расслабление репродуктивной системы', time: '5–10 мин', phase: 'Лютеиновая и менструация' },
-  { name: 'Сарвангасана', sanskrit: 'Sarvangasana', benefit: 'Стимуляция щитовидной железы, баланс ФСГ/ЛГ', time: '2–5 мин', phase: 'Фолликулярная' },
-  { name: 'Пашчимоттанасана', sanskrit: 'Paschimottanasana', benefit: 'Массаж яичников, снятие ПМС', time: '3 мин', phase: 'Лютеиновая' },
-  { name: 'Шавасана с пранаямой', sanskrit: 'Savasana', benefit: 'Интеграция практики, снижение кортизола', time: '10 мин', phase: 'Любая — в конце' },
+  { name: 'Баддха Конасана', sanskrit: 'Baddha Konasana', pose: 'baddhaKonasana', benefit: 'Стимуляция яичников, улучшение кровотока в малом тазу', time: '3–5 мин', phase: 'Фолликулярная и овуляция',
+    steps: [
+      'Сядьте на пол, спина прямая, можно опереться на стену или подушку под таз.',
+      'Согните колени и сведите стопы подошва к подошве, подтяните пятки ближе к паху.',
+      'Мягко разведите колени в стороны и вниз — не давите руками, дайте бёдрам раскрыться самим.',
+      'Дыхание: медленный вдох носом 4 секунды, выдох через нос 6 секунд, живот свободен.',
+      'Держите 3–5 минут, если тянет в паху — подложите под колени валики.' ] },
+  { name: 'Вирасана', sanskrit: 'Virasana', pose: 'virasana', benefit: 'Снятие напряжения в пояснице, баланс гормонов', time: '2–3 мин', phase: 'Любая',
+    steps: [
+      'Встаньте на колени, стопы разведите чуть шире таза, носки назад.',
+      'Опуститесь ягодицами на пол между стоп (или на блок/подушку, если некомфортно).',
+      'Спина прямая, ладони на бёдрах, плечи опущены от ушей.',
+      'Дыхание: ровный вдох-выдох по 4 секунды через нос, направляя выдох в поясницу.',
+      'Держите 2–3 минуты, при онемении стоп мягко выйдите из позы.' ] },
+  { name: 'Супта Баддха Конасана', sanskrit: 'Supta Baddha Konasana', pose: 'suptaBaddhaKonasana', benefit: 'Глубокое расслабление репродуктивной системы', time: '5–10 мин', phase: 'Лютеиновая и менструация',
+    steps: [
+      'Лягте на спину, сведите стопы подошва к подошве, колени раскройте в стороны.',
+      'Под каждое колено подложите подушку или валик для опоры — это важно для расслабления.',
+      'Руки свободно вдоль тела ладонями вверх, плечи прижаты к полу.',
+      'Дыхание: диафрагмальное — вдох 4 секунды (живот поднимается), выдох 6 секунд (живот опускается).',
+      'Оставайтесь 5–10 минут, выходите через поворот на бок.' ] },
+  { name: 'Сарвангасана', sanskrit: 'Sarvangasana', pose: 'sarvangasana', benefit: 'Стимуляция щитовидной железы, баланс ФСГ/ЛГ', time: '2–5 мин', phase: 'Фолликулярная',
+    steps: [
+      'Лягте на спину, руками помогите поднять таз и ноги вертикально вверх.',
+      'Поддержите поясницу ладонями, локти на полу близко к телу.',
+      'Вес тела — на плечах и верхней части рук, НЕ на шее.',
+      'Дыхание: спокойное, через нос, без задержек, 4–5 секунд на вдох и выдох.',
+      '⚠️ Не выполняйте при проблемах с шеей/давлением или во время менструации.',
+      'Держите 2–5 минут, выходите медленно, без рывков.' ] },
+  { name: 'Пашчимоттанасана', sanskrit: 'Paschimottanasana', pose: 'paschimottanasana', benefit: 'Массаж яичников, снятие ПМС', time: '3 мин', phase: 'Лютеиновая',
+    steps: [
+      'Сядьте с прямыми вытянутыми вперёд ногами, стопы на себя.',
+      'На вдохе вытяните позвоночник вверх, руки поднимите над головой.',
+      'На выдохе наклонитесь вперёд от таза (не от поясницы), тянитесь к стопам.',
+      'Если не достаёте до стоп — держите голени, спина может быть слегка округлой.',
+      'Дыхание в позе: вдох 4 секунды на вытяжение, выдох 6 секунд — мягче уходите глубже.',
+      'Держите 1–3 минуты, выходите на вдохе.' ] },
+  { name: 'Шавасана с пранаямой', sanskrit: 'Savasana', pose: 'savasana', benefit: 'Интеграция практики, снижение кортизола', time: '10 мин', phase: 'Любая — в конце',
+    steps: [
+      'Лягте на спину, ноги немного шире таза, руки вдоль тела ладонями вверх.',
+      'Прикройте глаза, дайте телу полностью расслабиться, проверьте — не сжаты ли челюсти.',
+      'Дыхание: естественное, без управления, просто наблюдайте вдох и выдох.',
+      'Через 2–3 минуты можно добавить счёт: вдох на 4, выдох на 6 — без напряжения.',
+      'Оставайтесь 10 минут, выходите медленно через поворот на бок и сидя.' ] },
 ];
+
 
 // Фазы цикла
 const CYCLE_PHASES = [
@@ -250,9 +324,12 @@ export function HealthSection() {
 
   // Вкладки
   const [activeTab,     setActiveTab]     = useState('anatomy');
+  const [breathSearch,  setBreathSearch]  = useState('');
+  const [yogaSearch,    setYogaSearch]    = useState('');
   const [modalContent,  setModalContent]  = useState(null);
   const [expandedRec,   setExpandedRec]   = useState(null);
   const [expandedBreath,setExpandedBreath]= useState(null);
+  const [expandedPose,  setExpandedPose]   = useState(null);
 
   const healthData = useMemo(() => calculateHealthProfile(profile), [profile]);
   const timeData   = useMemo(() => getTimeRecommendation(), []);
@@ -453,12 +530,21 @@ export function HealthSection() {
 
   const sortedBreathing = useMemo(() => {
     const list = [...BREATHING_TECHNIQUES];
-    return list.sort((a,b) => {
+    const filtered = breathSearch.trim()
+      ? list.filter(t => (t.title+' '+t.short+' '+t.purpose).toLowerCase().includes(breathSearch.trim().toLowerCase()))
+      : list;
+    return filtered.sort((a,b) => {
       if (stress > 7 && a.id === 'wilunas') return -1;
       if (isWeightGoal && a.id === 'physical') return a.id === 'wilunas' ? 1 : -1;
       return 0;
     });
-  }, [stress, isWeightGoal]);
+  }, [stress, isWeightGoal, breathSearch]);
+
+  const filteredHormonalYoga = useMemo(() => {
+    if (!yogaSearch.trim()) return HORMONAL_YOGA;
+    const q = yogaSearch.trim().toLowerCase();
+    return HORMONAL_YOGA.filter(p => (p.name+' '+p.sanskrit+' '+p.benefit+' '+p.phase).toLowerCase().includes(q));
+  }, [yogaSearch]);
 
   // ─── ВКЛАДКИ ───
   const TABS = [
@@ -991,16 +1077,46 @@ export function HealthSection() {
                 <p style={{ marginBottom: 10, color: '#8e44ad' }}>
                   Практика балансирует ФСГ/ЛГ, поддерживает щитовидную железу и надпочечники. 3–4 раза в неделю, 20–30 минут.
                 </p>
+                <input
+                  type="text" value={yogaSearch} onChange={e=>setYogaSearch(e.target.value)}
+                  placeholder="🔍 Поиск позы по названию или эффекту..."
+                  style={{ width:'100%', boxSizing:'border-box', padding:'9px 11px', marginBottom:10,
+                    border:'1.5px solid #f8bbd0', borderRadius:8, fontSize:12,
+                    outline:'none', fontFamily:"'Crimson Pro',serif" }} />
+                {filteredHormonalYoga.length===0 && (
+                  <div style={{textAlign:'center',padding:'14px 0',color:'#999',fontStyle:'italic',fontSize:12}}>Ничего не найдено</div>
+                )}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {HORMONAL_YOGA.map((pose, i) => (
-                    <div key={i} style={{ padding: '8px 10px', background: '#fce4ec', border: '1px solid #f8bbd0', borderRadius: 6 }}>
-                      <div style={{ fontWeight: 600, fontSize: 12, color: '#880e4f', marginBottom: 2 }}>
-                        {pose.name} <span style={{ fontStyle: 'italic', fontWeight: 400, color: '#c2185b', fontSize: 11 }}>({pose.sanskrit})</span>
+                  {filteredHormonalYoga.map((pose, i) => {
+                    const isOpen = expandedPose === pose.name;
+                    return (
+                    <div key={i} onClick={()=>setExpandedPose(isOpen?null:pose.name)}
+                      style={{ padding: '8px 10px', background: '#fce4ec', border: '1px solid #f8bbd0', borderRadius: 6, cursor:'pointer' }}>
+                      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                        <div style={{ fontWeight: 600, fontSize: 12, color: '#880e4f', marginBottom: 2 }}>
+                          {pose.name} <span style={{ fontStyle: 'italic', fontWeight: 400, color: '#c2185b', fontSize: 11 }}>({pose.sanskrit})</span>
+                        </div>
+                        <span style={{fontSize:13,color:'#880e4f'}}>{isOpen?'−':'+'}</span>
                       </div>
                       <div style={{ fontSize: 11, color: '#555', marginBottom: 2 }}>{pose.benefit}</div>
                       <div style={{ fontSize: 10, color: '#888' }}>⏱ {pose.time} · {pose.phase}</div>
+                      {isOpen && (
+                        <div onClick={e=>e.stopPropagation()} style={{ marginTop: 10, paddingTop: 10, borderTop: '1px dashed #f8bbd0' }}>
+                          {pose.pose && (
+                            <div style={{ maxWidth: 220, margin: '0 auto 10px' }}>
+                              <PoseIllustration pose={pose.pose} />
+                            </div>
+                          )}
+                          {pose.steps && (
+                            <ol style={{ margin: 0, paddingLeft: 18, lineHeight: 1.7, fontSize: 11.5, color: '#4a2030' }}>
+                              {pose.steps.map((s,si) => <li key={si}>{s}</li>)}
+                            </ol>
+                          )}
+                        </div>
+                      )}
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </AccordionItem>
             )}
@@ -1167,6 +1283,14 @@ export function HealthSection() {
           <h2 style={{ fontFamily: 'var(--font-head)', borderBottom: '2px solid var(--blue)', paddingBottom: 5 }}>
             Дыхательные Протоколы
           </h2>
+          <input
+            type="text" value={breathSearch} onChange={e=>setBreathSearch(e.target.value)}
+            placeholder="🔍 Поиск по названию или цели..."
+            style={{ padding:'10px 12px', border:'1.5px solid var(--blue)', borderRadius:8,
+              fontSize:13, outline:'none', fontFamily:"'Crimson Pro',serif" }} />
+          {sortedBreathing.length===0 && (
+            <div style={{textAlign:'center',padding:'20px 0',color:'#888',fontStyle:'italic'}}>Ничего не найдено</div>
+          )}
           {sortedBreathing.map(tech => {
             const isEmergency   = stress > 7 && tech.id === 'wilunas';
             const isRecommended = isWeightGoal && tech.id === 'physical';
@@ -1189,7 +1313,17 @@ export function HealthSection() {
                   <div style={{ padding: 15, borderTop: '1px solid #eee', background: '#fff', fontSize: 13, lineHeight: 1.6 }}>
                     <div><b>Для чего:</b> {tech.purpose}</div>
                     <div><b>Что даёт:</b> {tech.effect}</div>
-                    <div><b>Правила:</b> {tech.rules}</div>
+                    <div style={{ margin: '10px 0' }}>
+                      <BreathingDiagram technique={tech.technique} />
+                    </div>
+                    {tech.steps && (
+                      <div style={{ marginTop: 8 }}>
+                        <b>Пошагово:</b>
+                        <ol style={{ margin: '6px 0 0', paddingLeft: 20, lineHeight: 1.7 }}>
+                          {tech.steps.map((s,i) => <li key={i}>{s}</li>)}
+                        </ol>
+                      </div>
+                    )}
                     <div style={{ marginTop: 10 }}>
                       <BreathingTimer technique={tech.technique} onFinish={() => setExpandedBreath(null)} />
                     </div>
