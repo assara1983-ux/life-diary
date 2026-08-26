@@ -1,6 +1,7 @@
 // src/sections/BeautySection.jsx
 import { useState, useMemo } from 'react';
 import { useApp } from '../store/AppContext';
+import { openGoogleCalendar } from '../utils/googleCalendar';
 
 const C = {
   navy:'#0A2540', navyMid:'#1E3A5F',
@@ -59,6 +60,21 @@ function timeSlot(t) {
 function localDateStr(d) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
+
+// Ищет ближайшую будущую дату, когда процедура должна выполняться —
+// нужно для кнопки «Добавить в Google Calendar» у повторяющихся дел.
+function nextOccurrenceDate(task, todayStr) {
+  if (isDue(task, todayStr)) return todayStr;
+  const d = new Date(todayStr+'T00:00:00');
+  for (let i=1;i<=90;i++){
+    d.setDate(d.getDate()+1);
+    const ds = localDateStr(d);
+    if (isDue(task, ds)) return ds;
+  }
+  return todayStr;
+}
+
+const WEEKDAYS = [['1','пн'],['2','вт'],['3','ср'],['4','чт'],['5','пт'],['6','сб'],['0','вс']];
 
 // ─── FLIP CARD ───
 function FlipCard({ title, image, badge, children }) {
@@ -168,6 +184,7 @@ export function BeautySection() {
   const [settingsOpen,setSettingsOpen]=useState({});
   const [pendingSettings,setPendingSettings]=useState({});
   const [customForm,setCustomForm]=useState(null);
+  const [editingId,setEditingId]=useState(null);
   const [aiRec,setAiRec]=useState(()=>{ try{return JSON.parse(localStorage.getItem('ld_beauty_ai_rec')||'null')}catch{return null} });
   const [aiLoading,setAiLoading]=useState(false);
   const [aiSaved,setAiSaved]=useState(()=>{ try{return JSON.parse(localStorage.getItem('ld_beauty_ai_saved')||'[]')}catch{return []} });
@@ -267,6 +284,24 @@ export function BeautySection() {
     setTasks(p=>p.map(t=>t.id===taskId?{...t,[field]:val}:t));
     if(beautyId&&field==='preferredTime') setBeautyProcs(p=>({...p,[beautyId]:{...(p[beautyId]||{}),time:val}}));
     if(beautyId&&field==='beautyDuration') setBeautyProcs(p=>({...p,[beautyId]:{...(p[beautyId]||{}),duration:val}}));
+  };
+
+  const updateFreqKind=(taskId,kind)=>{
+    const val = kind==='daily'?'daily'
+      : kind==='workdays'?'workdays'
+      : kind==='every'?'every:7'
+      : kind==='weekly'?'weekly:1'
+      : kind==='monthly'?'monthly:1'
+      : 'daily';
+    setTasks(p=>p.map(t=>t.id===taskId?{...t,freq:val}:t));
+  };
+
+  const toggleWeeklyDay=(taskId,currentFreq,day)=>{
+    const days = currentFreq.startsWith('weekly:') ? currentFreq.split(':')[1].split(',').filter(Boolean) : [];
+    const has = days.includes(day);
+    const next = has ? days.filter(d=>d!==day) : [...days,day];
+    if (next.length===0) return; // хотя бы один день должен остаться
+    setTasks(p=>p.map(t=>t.id===taskId?{...t,freq:`weekly:${next.join(',')}`}:t));
   };
 
   const toggleDone=(id)=>setTasks(p=>p.map(t=>t.id===id?{...t,doneDate:t.doneDate===today?null:today,lastDone:t.doneDate===today?t.lastDone:today}:t));
@@ -448,7 +483,7 @@ export function BeautySection() {
                     </div>
                     <button onClick={()=>removeProc(task.beautyId)} style={{background:'none',border:'none',color:C.text3,fontSize:18,cursor:'pointer',padding:'0 4px',opacity:0.5}}>✕</button>
                   </div>
-                  <div style={{display:'flex',gap:12,paddingTop:10,borderTop:'1px solid rgba(10,37,64,0.07)'}}>
+                  <div style={{display:'flex',gap:12,paddingTop:10,borderTop:'1px solid rgba(10,37,64,0.07)',flexWrap:'wrap',alignItems:'flex-end'}}>
                     <div>
                       <div style={{fontSize:10,color:C.text3,fontFamily:"'JetBrains Mono',monospace",letterSpacing:1.5,textTransform:'uppercase',marginBottom:4}}>Время</div>
                       <input type="time" value={task.preferredTime||''} onChange={e=>updateField(task.id,task.beautyId,'preferredTime',e.target.value)}
@@ -459,7 +494,100 @@ export function BeautySection() {
                       <input type="number" value={task.beautyDuration||''} onChange={e=>updateField(task.id,task.beautyId,'beautyDuration',parseInt(e.target.value))}
                         style={{padding:'7px 10px',border:'1.5px solid rgba(184,107,93,0.25)',borderRadius:8,fontFamily:"'JetBrains Mono',monospace",fontSize:14,outline:'none',background:'rgba(255,255,255,0.75)',color:C.text1,width:80}}/>
                     </div>
+                    <button onClick={()=>setEditingId(editingId===task.id?null:task.id)}
+                      style={{padding:'8px 12px',borderRadius:8,cursor:'pointer',
+                        border:`1.5px solid ${editingId===task.id?cc.accent:'rgba(184,107,93,0.25)'}`,
+                        background:editingId===task.id?cc.accent:'rgba(255,255,255,0.75)',
+                        color:editingId===task.id?'#fff':C.text1,
+                        fontFamily:"'JetBrains Mono',monospace",fontSize:12,fontWeight:600}}>
+                      🔁 Периодичность {editingId===task.id?'▲':'▼'}
+                    </button>
+                    {!done&&(
+                      <button onClick={()=>openGoogleCalendar(task.title,nextOccurrenceDate(task,today),task.preferredTime,task.notes||'')}
+                        style={{padding:'8px 12px',borderRadius:8,cursor:'pointer',
+                          border:'1px solid rgba(66,133,244,0.35)',background:'rgba(66,133,244,0.10)',
+                          color:'#3367D6',fontFamily:"'JetBrains Mono',monospace",fontSize:12,fontWeight:600}}>
+                        📆 Google Calendar
+                      </button>
+                    )}
                   </div>
+
+                  {editingId===task.id&&(
+                    <div style={{marginTop:12,paddingTop:12,borderTop:'1px solid rgba(10,37,64,0.07)',
+                      display:'flex',flexDirection:'column',gap:10}}>
+
+                      <div>
+                        <div style={{fontSize:10,color:C.text3,fontFamily:"'JetBrains Mono',monospace",letterSpacing:1.5,textTransform:'uppercase',marginBottom:6}}>Как часто</div>
+                        <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+                          {[['daily','ежедневно'],['workdays','по будням'],['weekly','по дням недели'],['every','раз в N дней'],['monthly','числа месяца']].map(([kind,label])=>{
+                            const active = kind==='daily'?task.freq==='daily'
+                              : kind==='workdays'?task.freq==='workdays'
+                              : kind==='weekly'?task.freq?.startsWith('weekly:')
+                              : kind==='every'?task.freq?.startsWith('every:')
+                              : kind==='monthly'?task.freq?.startsWith('monthly:')
+                              : false;
+                            return (
+                              <button key={kind} onClick={()=>updateFreqKind(task.id,kind)}
+                                style={{padding:'6px 11px',borderRadius:14,cursor:'pointer',
+                                  border:`1px solid ${active?cc.accent:'rgba(184,107,93,0.25)'}`,
+                                  background:active?cc.accent:'transparent',
+                                  color:active?'#fff':C.text2,
+                                  fontFamily:"'JetBrains Mono',monospace",fontSize:11.5}}>
+                                {label}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {task.freq?.startsWith('weekly:')&&(
+                        <div>
+                          <div style={{fontSize:10,color:C.text3,fontFamily:"'JetBrains Mono',monospace",letterSpacing:1.5,textTransform:'uppercase',marginBottom:6}}>В какие дни</div>
+                          <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+                            {WEEKDAYS.map(([val,label])=>{
+                              const days=task.freq.split(':')[1].split(',');
+                              const active=days.includes(val);
+                              return (
+                                <button key={val} onClick={()=>toggleWeeklyDay(task.id,task.freq,val)}
+                                  style={{width:38,height:34,borderRadius:8,cursor:'pointer',
+                                    border:`1px solid ${active?cc.accent:'rgba(184,107,93,0.25)'}`,
+                                    background:active?cc.accent:'transparent',
+                                    color:active?'#fff':C.text2,
+                                    fontFamily:"'JetBrains Mono',monospace",fontSize:12}}>
+                                  {label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {task.freq?.startsWith('every:')&&(
+                        <div>
+                          <div style={{fontSize:10,color:C.text3,fontFamily:"'JetBrains Mono',monospace",letterSpacing:1.5,textTransform:'uppercase',marginBottom:6}}>Каждые сколько дней</div>
+                          <input type="number" min="1" value={task.freq.split(':')[1]}
+                            onChange={e=>{const n=Math.max(1,parseInt(e.target.value)||1); setTasks(p=>p.map(t=>t.id===task.id?{...t,freq:`every:${n}`}:t));}}
+                            style={{padding:'7px 10px',border:'1.5px solid rgba(184,107,93,0.25)',borderRadius:8,fontFamily:"'JetBrains Mono',monospace",fontSize:14,outline:'none',background:'rgba(255,255,255,0.75)',color:C.text1,width:80}}/>
+                        </div>
+                      )}
+
+                      {task.freq?.startsWith('monthly:')&&(
+                        <div>
+                          <div style={{fontSize:10,color:C.text3,fontFamily:"'JetBrains Mono',monospace",letterSpacing:1.5,textTransform:'uppercase',marginBottom:6}}>Числа месяца</div>
+                          <input type="number" min="1" max="31" value={task.freq.split(':')[1]}
+                            onChange={e=>{const n=Math.min(31,Math.max(1,parseInt(e.target.value)||1)); setTasks(p=>p.map(t=>t.id===task.id?{...t,freq:`monthly:${n}`}:t));}}
+                            style={{padding:'7px 10px',border:'1.5px solid rgba(184,107,93,0.25)',borderRadius:8,fontFamily:"'JetBrains Mono',monospace",fontSize:14,outline:'none',background:'rgba(255,255,255,0.75)',color:C.text1,width:80}}/>
+                        </div>
+                      )}
+
+                      <div>
+                        <div style={{fontSize:10,color:C.text3,fontFamily:"'JetBrains Mono',monospace",letterSpacing:1.5,textTransform:'uppercase',marginBottom:6}}>Дата начала отсчёта</div>
+                        <input type="date" value={task.beautyStartDate||today}
+                          onChange={e=>updateField(task.id,task.beautyId,'beautyStartDate',e.target.value)}
+                          style={{padding:'7px 10px',border:'1.5px solid rgba(184,107,93,0.25)',borderRadius:8,fontFamily:"'JetBrains Mono',monospace",fontSize:14,outline:'none',background:'rgba(255,255,255,0.75)',color:C.text1}}/>
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })}
