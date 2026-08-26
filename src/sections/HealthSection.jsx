@@ -160,7 +160,10 @@ const HORMONAL_YOGA = [
       'Мягко разведите колени в стороны и вниз — не давите руками, дайте бёдрам раскрыться самим.',
       'Дыхание: медленный вдох носом 4 секунды, выдох через нос 6 секунд, живот свободен.',
       'Держите 3–5 минут, если тянет в паху — подложите под колени валики.' ] },
-  { name: 'Вирасана', sanskrit: 'Virasana', pose: 'virasana', benefit: 'Снятие напряжения в пояснице, баланс гормонов', time: '2–3 мин', phase: 'Любая',
+  { name: 'Вирасана', sanskrit: 'Virasana', pose: 'virasana',
+    image: 'https://commons.wikimedia.org/wiki/Special:FilePath/Virasana%20Yoga-Asana%20Nina-Mel.jpg',
+    imageCredit: 'Nina-Mel, CC BY 3.0, Wikimedia Commons',
+    benefit: 'Снятие напряжения в пояснице, баланс гормонов', time: '2–3 мин', phase: 'Любая',
     steps: [
       'Встаньте на колени, стопы разведите чуть шире таза, носки назад.',
       'Опуститесь ягодицами на пол между стоп (или на блок/подушку, если некомфортно).',
@@ -174,7 +177,10 @@ const HORMONAL_YOGA = [
       'Руки свободно вдоль тела ладонями вверх, плечи прижаты к полу.',
       'Дыхание: диафрагмальное — вдох 4 секунды (живот поднимается), выдох 6 секунд (живот опускается).',
       'Оставайтесь 5–10 минут, выходите через поворот на бок.' ] },
-  { name: 'Сарвангасана', sanskrit: 'Sarvangasana', pose: 'sarvangasana', benefit: 'Стимуляция щитовидной железы, баланс ФСГ/ЛГ', time: '2–5 мин', phase: 'Фолликулярная',
+  { name: 'Сарвангасана', sanskrit: 'Sarvangasana', pose: 'sarvangasana',
+    image: 'https://commons.wikimedia.org/wiki/Special:FilePath/Sarvangasana.jpg',
+    imageCredit: 'CC BY-SA 2.5, Wikimedia Commons',
+    benefit: 'Стимуляция щитовидной железы, баланс ФСГ/ЛГ', time: '2–5 мин', phase: 'Фолликулярная',
     steps: [
       'Лягте на спину, руками помогите поднять таз и ноги вертикально вверх.',
       'Поддержите поясницу ладонями, локти на полу близко к телу.',
@@ -182,7 +188,10 @@ const HORMONAL_YOGA = [
       'Дыхание: спокойное, через нос, без задержек, 4–5 секунд на вдох и выдох.',
       '⚠️ Не выполняйте при проблемах с шеей/давлением или во время менструации.',
       'Держите 2–5 минут, выходите медленно, без рывков.' ] },
-  { name: 'Пашчимоттанасана', sanskrit: 'Paschimottanasana', pose: 'paschimottanasana', benefit: 'Массаж яичников, снятие ПМС', time: '3 мин', phase: 'Лютеиновая',
+  { name: 'Пашчимоттанасана', sanskrit: 'Paschimottanasana', pose: 'paschimottanasana',
+    image: 'https://commons.wikimedia.org/wiki/Special:FilePath/Paschimotanasana%20Yoga-Asana%20Nina-Mel.jpg',
+    imageCredit: 'Nina-Mel, CC BY 3.0, Wikimedia Commons',
+    benefit: 'Массаж яичников, снятие ПМС', time: '3 мин', phase: 'Лютеиновая',
     steps: [
       'Сядьте с прямыми вытянутыми вперёд ногами, стопы на себя.',
       'На вдохе вытяните позвоночник вверх, руки поднимите над головой.',
@@ -190,7 +199,10 @@ const HORMONAL_YOGA = [
       'Если не достаёте до стоп — держите голени, спина может быть слегка округлой.',
       'Дыхание в позе: вдох 4 секунды на вытяжение, выдох 6 секунд — мягче уходите глубже.',
       'Держите 1–3 минуты, выходите на вдохе.' ] },
-  { name: 'Шавасана с пранаямой', sanskrit: 'Savasana', pose: 'savasana', benefit: 'Интеграция практики, снижение кортизола', time: '10 мин', phase: 'Любая — в конце',
+  { name: 'Шавасана с пранаямой', sanskrit: 'Savasana', pose: 'savasana',
+    image: 'https://commons.wikimedia.org/wiki/Special:FilePath/Shavasana.jpg',
+    imageCredit: 'CC BY-SA 2.5, Wikimedia Commons',
+    benefit: 'Интеграция практики, снижение кортизола', time: '10 мин', phase: 'Любая — в конце',
     steps: [
       'Лягте на спину, ноги немного шире таза, руки вдоль тела ладонями вверх.',
       'Прикройте глаза, дайте телу полностью расслабиться, проверьте — не сжаты ли челюсти.',
@@ -1102,9 +1114,26 @@ export function HealthSection() {
                       <div style={{ fontSize: 10, color: '#888' }}>⏱ {pose.time} · {pose.phase}</div>
                       {isOpen && (
                         <div onClick={e=>e.stopPropagation()} style={{ marginTop: 10, paddingTop: 10, borderTop: '1px dashed #f8bbd0' }}>
-                          {pose.pose && (
-                            <div style={{ maxWidth: 220, margin: '0 auto 10px' }}>
-                              <PoseIllustration pose={pose.pose} />
+                          {(pose.image || pose.pose) && (
+                            <div style={{ maxWidth: 220, margin: '0 auto 6px' }}>
+                              {pose.image ? (
+                                <img
+                                  src={pose.image}
+                                  alt={pose.name}
+                                  loading="lazy"
+                                  style={{ width:'100%', height:'auto', borderRadius:10, display:'block',
+                                    border:'1px solid #f8bbd0' }}
+                                  onError={(e)=>{ e.currentTarget.style.display='none'; const fb=e.currentTarget.nextSibling; if(fb) fb.style.display='block'; }}
+                                />
+                              ) : null}
+                              <div style={{ display: pose.image ? 'none' : 'block' }}>
+                                {pose.pose && <PoseIllustration pose={pose.pose} />}
+                              </div>
+                              {pose.image && pose.imageCredit && (
+                                <div style={{ fontSize:9.5, color:'#aaa', textAlign:'center', marginTop:3 }}>
+                                  Фото: {pose.imageCredit}
+                                </div>
+                              )}
                             </div>
                           )}
                           {pose.steps && (
