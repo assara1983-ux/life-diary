@@ -114,7 +114,7 @@ export function Onboarding() {
 
   // ✅ ДОБАВЛЕНЫ ПОЛЯ breed И weightKg (дефолт 3.5)
   const addPet = () => set("pets", [...d.pets, { 
-    id: Date.now(), 
+    id: Date.now() + Math.random(), 
     name: "", 
     type: "Кошка", 
     breed: "", 
@@ -130,7 +130,7 @@ export function Onboarding() {
   const updPet = (id, k, v) => set("pets", d.pets.map(p => p.id === id ? { ...p, [k]: v } : p));
   const delPet = id => set("pets", d.pets.filter(p => p.id !== id));
 
-  const addTrip = () => set("trips", [...d.trips, { id: Date.now(), destination: "", targetDate: "", budget: "", saved: "", stage: "💭 Мечта", notes: "" }]);
+  const addTrip = () => set("trips", [...d.trips, { id: Date.now() + Math.random(), destination: "", targetDate: "", budget: "", saved: "", stage: "💭 Мечта", notes: "" }]);
   const updTrip = (id, k, v) => set("trips", d.trips.map(t => t.id === id ? { ...t, [k]: v } : t));
   const delTrip = id => set("trips", d.trips.filter(t => t.id !== id));
 
