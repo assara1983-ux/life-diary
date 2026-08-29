@@ -1,6 +1,7 @@
 // src/sections/CarSection.jsx
 import { useState, useEffect, useCallback } from 'react';
 import { useApp } from '../store/AppContext';
+import { askViaServer } from '../services/aiClient';
 
 const C = {
   navy:'#0A2540', navyMid:'#1E3A5F', navyLight:'#2C4F7A',
@@ -656,15 +657,8 @@ function AiMaintenancePlanner({ profile, tasks, setTasks, notify }) {
   "summary": "общий вывод о состоянии авто"
 }`;
 
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,
-          messages:[{role:'user',content:prompt}]}),
-      });
-      const data = await response.json();
-      const text = data.content?.find(b=>b.type==='text')?.text||'';
-      const parsed = JSON.parse(text.replace(/```json|```/g,'').trim());
+      const response = await askViaServer('Ты — опытный автомеханик. Отвечай ТОЛЬКО валидным JSON, без markdown и пояснений.', prompt, 1000);
+      const parsed = JSON.parse(response.replace(/```json|```/g,'').trim());
       setPlan(parsed);
       try { localStorage.setItem('ld_car_ai_plan', JSON.stringify(parsed)); } catch {}
     } catch(e) {
@@ -840,15 +834,8 @@ function CarTips({ profile, notify }) {
   "common_issues": ["3 типичные проблемы этой модели и как их избежать"],
   "lifehacks": ["5 лайфхаков для автомобилиста"]
 }`;
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,
-          messages:[{role:'user',content:prompt}]}),
-      });
-      const data = await response.json();
-      const text = data.content?.find(b=>b.type==='text')?.text||'';
-      const parsed = JSON.parse(text.replace(/```json|```/g,'').trim());
+      const response = await askViaServer('Ты — опытный автоэксперт. Отвечай ТОЛЬКО валидным JSON, без markdown и пояснений.', prompt, 1000);
+      const parsed = JSON.parse(response.replace(/```json|```/g,'').trim());
       setTips(parsed);
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed)); } catch {}
     } catch(e) {

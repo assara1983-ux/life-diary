@@ -1,6 +1,7 @@
 // src/sections/TravelSection.jsx
 import { useState, useEffect, useCallback } from "react";
 import { useApp } from "../store/AppContext";
+import { askViaServer } from "../services/aiClient";
 
 const C = {
   navy:'#0A2540', navyMid:'#1E3A5F', navyLight:'#2C4F7A',
@@ -560,15 +561,8 @@ function DestinationCard({ tripData }) {
       const transport = TRANSPORT_TYPES.find(t=>t.id===tripData.transport)?.label||'';
       const dates = tripData.dates||'';
       const prompt = `Ты — опытный трэвел-эксперт. Пользователь летит из Алматы, Казахстан в "${dest}"${transport?` на ${transport}`:''}${dates?` (${dates})`:''}.\n\nОтветь ТОЛЬКО JSON (без markdown):\n{"overview":"2-3 предложения о месте","highlights":["топ-5 достопримечательностей с emoji"],"tips":["3-5 советов для туристов из Казахстана"],"food":["3-4 блюда с emoji"],"warnings":["2-3 важных предупреждения"],"bestTime":"лучшее время","transport":"как передвигаться внутри","budget":"примерный бюджет в USD/день","visa":"нужна ли виза для граждан Казахстана","currency":"валюта страны и курс к тенге"}`;
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
-        method:'POST',
-        headers:{ 'Content-Type':'application/json' },
-        body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:1000,
-          messages:[{ role:'user', content:prompt }] }),
-      });
-      const data = await response.json();
-      const text = data.content?.find(b=>b.type==='text')?.text||'';
-      const parsed = JSON.parse(text.replace(/```json|```/g,'').trim());
+      const response = await askViaServer('Ты — опытный трэвел-эксперт. Отвечай ТОЛЬКО валидным JSON, без markdown и пояснений.', prompt, 1000);
+      const parsed = JSON.parse(response.replace(/```json|```/g,'').trim());
       setAiData(parsed);
       try { localStorage.setItem(storageKey, JSON.stringify(parsed)); } catch {}
     } catch(e) {
@@ -751,15 +745,8 @@ function AiPackingList({ tripData }) {
     setLoading(true);
     try {
       const prompt = `Составь чеклист вещей для поездки из Алматы, Казахстан${dest?` в ${dest}`:''}${transport?` на ${transport}`:''}${dates?` (${dates})`:''}.\n\nОтветь ТОЛЬКО JSON (без markdown):\n{"categories":[{"name":"Документы","emoji":"📋","items":["паспорт","..."]},{"name":"Одежда","emoji":"👕","items":[...]},{"name":"Техника","emoji":"📱","items":[...]},{"name":"Медицина","emoji":"💊","items":[...]},{"name":"Прочее","emoji":"🎒","items":[...]}]}`;
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
-        method:'POST',
-        headers:{ 'Content-Type':'application/json' },
-        body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:1000,
-          messages:[{ role:'user', content:prompt }] }),
-      });
-      const data = await response.json();
-      const text = data.content?.find(b=>b.type==='text')?.text||'';
-      const parsed = JSON.parse(text.replace(/```json|```/g,'').trim());
+      const response = await askViaServer('Отвечай ТОЛЬКО валидным JSON, без markdown и пояснений.', prompt, 1000);
+      const parsed = JSON.parse(response.replace(/```json|```/g,'').trim());
       setItems(parsed.categories||[]);
       try { localStorage.setItem(storageKey, JSON.stringify(parsed.categories)); } catch {}
     } catch(e) {
