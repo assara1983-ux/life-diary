@@ -3,6 +3,7 @@ import React, { useState, useMemo } from "react";
 import { useApp } from "../store/AppContext";
 import { getProfileInsights } from "../utils/knowledgeEngine";
 import { getMeridianInfo, getChronotypePeaks } from "../data/profileKnowledge";
+import { calculateKuaNumber, kuaGroup, calculateDailyHexagram } from "../data/iChing";
 
 const JIAZI_STAGES = [
   { name:'Рождение',  spheres:{health:'Иммунитет',career:'Обучение',relations:'Семья',spirit:'Поиск смысла',finance:'Накопление'}, tips:'Закладка фундамента.',critical:'Формирование реакций.' },
@@ -124,6 +125,7 @@ function FlipCardBlock({ title, frontImage, children, minHeight=280, frontConten
     if (title.includes("Синхро")) return "🔄";
     if (title.includes("Рекомендации")) return "📋";
     if (title.includes("Зоны")) return "🫁";
+    if (title.includes("Перемен")) return "☯️";
     return "📄";
   };
 
@@ -667,6 +669,14 @@ export function ProfileSection() {
   );
 
   const genderStr = String(profile.gender||'').trim();
+
+  const iChing = useMemo(() => {
+    if (!profile?.dob) return null;
+    const birthYear = new Date(profile.dob).getFullYear();
+    const kua = calculateKuaNumber(birthYear, genderStr);
+    const daily = calculateDailyHexagram(new Date());
+    return { kua, group: kuaGroup(kua), daily };
+  }, [profile?.dob, genderStr]);
   const isMale = genderStr.toLowerCase().includes('муж')||genderStr.toLowerCase()==='male';
   const meridianInfo = insights?getMeridianInfo(insights.zodiac):{tip:''};
   const chronoPeaks  = insights?getChronotypePeaks(profile.chronotype):{};
@@ -859,6 +869,45 @@ export function ProfileSection() {
                 ⚠️ Ограничьте хирургические вмешательства и интенсивные тренировки в полнолуние.
               </div>
             </FlipCardBlock>
+
+            {iChing && (
+              <FlipCardBlock title="Книга Перемен" minHeight={320}
+                frontContent={
+                  <div style={{ textAlign:'center' }}>
+                    <div style={{ fontSize:44, lineHeight:1 }}>{iChing.daily.u}</div>
+                    <div style={{ fontFamily:"'Cormorant Infant',serif", fontSize:16, fontWeight:600, color:C.navy, marginTop:6 }}>
+                      №{iChing.daily.number} · {iChing.daily.name}
+                    </div>
+                    <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:C.text3, marginTop:4 }}>
+                      Гексаграмма дня
+                    </div>
+                  </div>
+                }>
+                <div style={{ marginBottom:10, padding:'8px 12px',
+                  background:'rgba(212,175,55,0.10)', borderRadius:6,
+                  borderLeft:`2px solid ${C.gold}` }}>
+                  <strong style={{ color:C.goldDeep }}>Число Гуа:</strong>{' '}
+                  {iChing.kua} (группа «{iChing.group}»)
+                </div>
+                <p style={{ marginBottom:6 }}>
+                  <strong style={{ color:C.navy }}>№{iChing.daily.number} {iChing.daily.name}</strong>{' '}
+                  <span style={{ fontSize:20 }}>{iChing.daily.u}</span>
+                </p>
+                <p style={{ marginBottom:8, fontStyle:'italic', color:C.text2 }}>{iChing.daily.m}</p>
+                <div style={{ marginBottom:10, padding:'8px 12px',
+                  background:'rgba(26,77,46,0.08)', borderRadius:6,
+                  borderLeft:`2px solid ${C.success}` }}>
+                  💡 {iChing.daily.a}
+                </div>
+                {iChing.daily.result && iChing.daily.result.number !== iChing.daily.number && (
+                  <div style={{ fontSize:13, color:C.text3 }}>
+                    Изменяющаяся линия ({iChing.daily.changingLine}) ведёт к{' '}
+                    <strong>№{iChing.daily.result.number} {iChing.daily.result.name}</strong> {iChing.daily.result.u}
+                    — это то, во что сегодняшняя ситуация превратится при развитии.
+                  </div>
+                )}
+              </FlipCardBlock>
+            )}
 
           </div>
         </>
