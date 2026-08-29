@@ -110,6 +110,31 @@ function InnerAccordion({ title, children, defaultOpen=false }) {
   );
 }
 
+// ─── Форма быстрого добавления времени рождения (для тех, кто прошёл онбординг раньше) ───
+function BirthTimeInlineForm() {
+  const { profile, setProfile, notify } = useApp();
+  const [val, setVal] = useState('');
+  const save = (e) => {
+    e.stopPropagation();
+    if (!val) return;
+    setProfile(p => ({ ...p, birthTime: val }));
+    notify?.('✅ Время рождения сохранено');
+  };
+  return (
+    <div onClick={e=>e.stopPropagation()} style={{ display:'flex', gap:8, alignItems:'center' }}>
+      <input type="time" value={val} onChange={e=>setVal(e.target.value)}
+        style={{ padding:'8px 10px', border:`1.5px solid ${C.line}`, borderRadius:6,
+          fontFamily:"'JetBrains Mono',monospace", fontSize:14 }} />
+      <button onClick={save}
+        style={{ padding:'8px 14px', borderRadius:6, border:'none', cursor:'pointer',
+          background:C.navy, color:C.gold, fontFamily:"'JetBrains Mono',monospace",
+          fontSize:12, fontWeight:600 }}>
+        Сохранить
+      </button>
+    </div>
+  );
+}
+
 // ─── FLIP CARD ───
 function FlipCardBlock({ title, frontImage, children, minHeight=280, frontContent }) {
   const [flipped, setFlipped] = useState(false);
@@ -797,6 +822,22 @@ export function ProfileSection() {
               <InnerAccordion title="Рекомендации">
                 Используй спады энергии для восстановления. Доверяй интуиции в финансовых вопросах.
               </InnerAccordion>
+              {insights?.hourAnimal ? (
+                <InnerAccordion title="Часовой знак (Ба Цзы)" defaultOpen={true}>
+                  <div style={{marginBottom:6}}>
+                    <strong style={{color:C.goldDeep}}>{insights.hourAnimal.animal}</strong>{' '}
+                    <span style={{opacity:0.6}}>({insights.hourAnimal.branch}, {insights.hourAnimal.range})</span>
+                  </div>
+                  {insights.hourAnimal.trait}
+                </InnerAccordion>
+              ) : (
+                <InnerAccordion title="Часовой знак (Ба Цзы)">
+                  <div style={{marginBottom:8, color:C.text3}}>
+                    Не указано время рождения — добавь его, чтобы увидеть часовой знак:
+                  </div>
+                  <BirthTimeInlineForm />
+                </InnerAccordion>
+              )}
             </FlipCardBlock>
 
             <FlipCardBlock title="Градус Судьбы"

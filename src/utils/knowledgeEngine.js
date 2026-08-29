@@ -20,6 +20,35 @@ const ZODIAC_MAP = [
 ];
 
 const EASTERN_ANIMALS = ['Крыса', 'Бык', 'Тигр', 'Кролик', 'Дракон', 'Змея', 'Лошадь', 'Коза', 'Обезьяна', 'Петух', 'Собака', 'Свинья'];
+
+// Двенадцать "земных ветвей" (Ба Цзы) — традиционные 2-часовые периоды суток,
+// каждому соответствует животное. Используется, если известно время рождения.
+const HOUR_BRANCHES = [
+  { branch: '子 Цзы', animal: 'Крыса',   range: '23:00–00:59', trait: 'Сообразительность, манёвренность, умение находить возможности там, где другие не видят.' },
+  { branch: '丑 Чоу',  animal: 'Бык',     range: '01:00–02:59', trait: 'Упорство, надёжность, способность методично доводить дело до конца.' },
+  { branch: '寅 Инь',  animal: 'Тигр',    range: '03:00–04:59', trait: 'Смелость, инициативность, тяга к независимости и риску.' },
+  { branch: '卯 Мао',  animal: 'Кролик',  range: '05:00–06:59', trait: 'Дипломатичность, тонкий вкус, забота о гармонии в отношениях.' },
+  { branch: '辰 Чэнь', animal: 'Дракон',  range: '07:00–08:59', trait: 'Амбициозность, харизма, стремление к масштабным целям.' },
+  { branch: '巳 Сы',   animal: 'Змея',    range: '09:00–10:59', trait: 'Проницательность, стратегическое мышление, скрытая сила.' },
+  { branch: '午 У',    animal: 'Лошадь',  range: '11:00–12:59', trait: 'Энергичность, свободолюбие, яркая харизма лидера.' },
+  { branch: '未 Вэй',  animal: 'Коза',    range: '13:00–14:59', trait: 'Мягкость, творческое начало, потребность в заботе и красоте вокруг.' },
+  { branch: '申 Шэнь', animal: 'Обезьяна',range: '15:00–16:59', trait: 'Изобретательность, живой ум, способность находить нестандартные решения.' },
+  { branch: '酉 Ю',    animal: 'Петух',   range: '17:00–18:59', trait: 'Точность, наблюдательность, тяга к порядку и справедливости.' },
+  { branch: '戌 Сюй',  animal: 'Собака',  range: '19:00–20:59', trait: 'Верность, честность, обострённое чувство долга.' },
+  { branch: '亥 Хай',  animal: 'Свинья',  range: '21:00–22:59', trait: 'Щедрость, добродушие, умение искренне наслаждаться жизнью.' },
+];
+
+/** Часовой знак (Ба Цзы) по времени рождения ('HH:MM'). Возвращает null, если время не задано. */
+function getHourAnimal(birthTime) {
+  if (!birthTime) return null;
+  const [hStr] = birthTime.split(':');
+  const h = parseInt(hStr, 10);
+  if (Number.isNaN(h)) return null;
+  // 23:00-00:59 -> индекс 0, далее каждые 2 часа сдвигом
+  const idx = Math.floor(((h + 1) % 24) / 2);
+  return HOUR_BRANCHES[idx];
+}
+
 const EASTERN_ELEMENTS = ['Металл', 'Вода', 'Дерево', 'Огонь', 'Земля'];
 
 const LUNAR_RESTRICTIONS = {
@@ -159,6 +188,7 @@ export function getProfileInsights(profile) {
 
   const zodiac = getZodiacSign(dob);
   const eastern = getEasternSign(year);
+  const hourAnimal = getHourAnimal(profile.birthTime);
   const destiny = calculateDestinyDegree(profile.fullName);
   const moonDay = getMoonDay();
   const meridian = getCurrentMeridian();
@@ -211,7 +241,8 @@ export function getProfileInsights(profile) {
     zodiacWeaknesses: ZODIAC_MAP.find(z => z.sign === zodiac)?.weakness || 'Лёгкие, нервная система',
     easternElement: EASTERN_ELEMENTS[(year - 4) % 5] || 'Вода',
     easternTraits: 'Честность, щедрость, терпимость',
-    easternKarma: 'Научиться говорить «нет» без чувства вины'
+    easternKarma: 'Научиться говорить «нет» без чувства вины',
+    hourAnimal,
   };
 }
 

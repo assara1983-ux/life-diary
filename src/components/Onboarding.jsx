@@ -312,6 +312,11 @@ export function Onboarding() {
                   </select>
                 </div>
               </div>
+              <div className="fld">
+                <label>Время рождения <span style={{opacity:0.55,fontWeight:400}}>(если известно)</span></label>
+                <input type="time" value={d.birthTime || ""} onChange={e => set("birthTime", e.target.value)} />
+                <div className="fld-hint">Часовой знак (Ба Цзы) — дополняет расчёт по году рождения. Можно пропустить и указать позже в Профиле.</div>
+              </div>
               {(d.dob || d.fullName) && (
                 <div className="calc-preview">
                   <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "#8c7a5a", letterSpacing: 2, marginBottom: 12, textTransform: "uppercase" }}>Рассчитано автоматически</div>
