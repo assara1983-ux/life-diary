@@ -220,9 +220,15 @@ export function WorkSection() {
     notify('📨 Тест отправлен');
   };
 
+  const isAccountant = /бухгалтер|accountant/i.test(profile?.profession || '');
+
+  useEffect(() => {
+    if (workTab === 'reports' && !isAccountant) setWorkTab('tasks');
+  }, [isAccountant, workTab]);
+
   const TABS = [
     { id: 'tasks',   label: '📋 Задачи' },
-    { id: 'reports', label: '📊 Отчёты' },
+    ...(isAccountant ? [{ id: 'reports', label: '📊 Отчёты' }] : []),
     { id: 'tools',   label: '🔧 Инструменты' },
     { id: 'ai',      label: '✨ ИИ' },
   ];

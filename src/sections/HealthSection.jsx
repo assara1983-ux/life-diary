@@ -1182,12 +1182,13 @@ export function HealthSection() {
             >
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {[
-                  { year: '2024', source: 'Nature Metabolism', finding: 'Интервальное голодание 16:8 снижает воспаление и улучшает метаболизм глюкозы у женщин среднего возраста' },
+                  { year: '2024', source: 'Nature Metabolism', finding: 'Интервальное голодание 16:8 снижает воспаление и улучшает метаболизм глюкозы у женщин среднего возраста', womenOnly: true },
                   { year: '2024', source: 'JAMA', finding: 'Силовые тренировки 2×/нед эффективнее кардио для долгосрочного снижения веса на 12+ месяцев' },
                   { year: '2024', source: 'Cell', finding: 'Микробиом кишечника напрямую влияет на аппетит — пробиотики Lactobacillus gasseri снижают висцеральный жир' },
-                  { year: '2025', source: 'Frontiers in Endocrinology', finding: 'Магний (400 мг/день) снижает кортизол и ПМС у женщин с лютеиновым дефицитом' },
+                  { year: '2025', source: 'Frontiers in Endocrinology', finding: 'Магний (400 мг/день) снижает кортизол и ПМС у женщин с лютеиновым дефицитом', womenOnly: true },
+                  { year: '2025', source: 'European Journal of Applied Physiology', finding: 'Силовые тренировки повышают уровень тестостерона и мышечную массу у мужчин старше 35 при дефиците сна', menOnly: true },
                   { year: '2025', source: 'ТКМ + современная наука', finding: `Стихия ${element}: ${uxin.research}` },
-                ].map((r, i) => (
+                ].filter(r => (isWoman ? !r.menOnly : !r.womenOnly)).map((r, i) => (
                   <div key={i} style={{ padding: '8px 10px', background: '#f9f9f9', border: '1px solid #eee', borderRadius: 6 }}>
                     <div style={{ fontSize: 10, color: '#0070c0', fontFamily: "'JetBrains Mono',monospace", marginBottom: 3 }}>
                       {r.year} · {r.source}

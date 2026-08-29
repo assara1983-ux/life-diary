@@ -74,8 +74,13 @@ function Toast({ msg }) {
 
 // ─── SECTION CARD ───
 function SectionCard({ section, onClick, fullWidth }) {
+  const { profile } = useApp();
   const [imgOk, setImgOk] = useState(true);
   const [hovered, setHovered] = useState(false);
+
+  const cardImg = (section.id === 'beauty' && profile?.gender === 'Мужской')
+    ? 'https://commons.wikimedia.org/wiki/Special:FilePath/BarberShop.jpg?width=600'
+    : section.img;
 
   // Для «Сегодня» — специальная карточка с временем
   const isToday = section.id === 'today';
@@ -121,7 +126,7 @@ function SectionCard({ section, onClick, fullWidth }) {
       {/* Фото */}
       {imgOk && (
         <img
-          src={section.img}
+          src={cardImg}
           alt={section.name}
           onError={() => setImgOk(false)}
           style={{
@@ -377,9 +382,13 @@ function HomeScreen({ onNavigate }) {
 // ─── SECTION SCREEN ───
 function SectionScreen({ sectionId, onBack }) {
   const section = SECTIONS.find(s => s.id === sectionId) || SECTIONS[0];
-  const { toastMsg } = useApp();
+  const { toastMsg, profile } = useApp();
   const [imgOk,       setImgOk]       = useState(true);
   const [imgHeaderOk, setImgHeaderOk] = useState(true);
+
+  const headerImg = (section.id === 'beauty' && profile?.gender === 'Мужской')
+    ? 'https://commons.wikimedia.org/wiki/Special:FilePath/BarberShop.jpg?width=900'
+    : section.img;
 
   const COMPONENTS = {
     today:    TodaySection,
@@ -426,7 +435,7 @@ function SectionScreen({ sectionId, onBack }) {
           {/* Фото раздела */}
           {imgHeaderOk && (
             <img
-              src={section.img}
+              src={headerImg}
               alt={section.name}
               onError={() => setImgHeaderOk(false)}
               style={{
@@ -491,7 +500,7 @@ function SectionScreen({ sectionId, onBack }) {
             }}>
               {imgOk ? (
                 <img
-                  src={section.img} alt=""
+                  src={headerImg} alt=""
                   onError={() => setImgOk(false)}
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 />

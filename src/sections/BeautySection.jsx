@@ -667,10 +667,17 @@ export function BeautySection() {
 
   const skinInfo=profile.skinType?skinTips[profile.skinType]||'Регулярный уход — основа здоровья.':null;
 
+  const BEAUTY_IMG = isMale
+    ? 'https://commons.wikimedia.org/wiki/Special:FilePath/BarberShop.jpg?width=900'
+    : '/beauty/beauty-catalog.jpg';
+  const RITUALS_IMG = isMale
+    ? 'https://commons.wikimedia.org/wiki/Special:FilePath/BarberShop.jpg?width=900'
+    : '/beauty/beauty-rituals.jpg';
+
   return (
     <div style={{paddingBottom:80,padding:'0 16px 80px'}}>
 
-      <FlipCard title="Каталог процедур" image="/beauty/beauty-catalog.jpg"
+      <FlipCard title="Каталог процедур" image={BEAUTY_IMG}
         badge={beautyTasks.length>0&&(
           <div style={{padding:'5px 12px',borderRadius:20,background:'rgba(26,77,46,0.85)',fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:'#fff',letterSpacing:1,fontWeight:600}}>
             ✓ {beautyTasks.length} процедур
@@ -679,7 +686,7 @@ export function BeautySection() {
         <CatalogContent/>
       </FlipCard>
 
-      <FlipCard title="Мои ритуалы" image="/beauty/beauty-rituals.jpg"
+      <FlipCard title="Мои ритуалы" image={RITUALS_IMG}
         badge={beautyTasks.length>0&&(
           <div style={{padding:'5px 12px',borderRadius:20,background:doneToday>0?'rgba(26,77,46,0.85)':'rgba(10,37,64,0.75)',fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:'#fff',letterSpacing:1,fontWeight:600}}>
             {doneToday}/{due.length+doneToday} сегодня
