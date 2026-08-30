@@ -184,7 +184,7 @@ export function TaskModal({ task, onSave, onClose, defaultSection = 'tasks' }) {
             className="btn btn-primary"
             onClick={() => {
               if (!t.title.trim()) return;
-              onSave({ ...t, id: t.id || Date.now() });
+              onSave({ ...t, id: t.id || (Date.now() + Math.random()) });
               onClose();
             }}
           >

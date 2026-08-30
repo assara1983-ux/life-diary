@@ -7,6 +7,8 @@ import { ModalDetail } from '../components/ModalDetail';
 import { ANATOMY_DATA } from '../data/anatomyKnowledge';
 import { BreathingTimer } from '../components/BreathingTimer';
 import { HealthTracker } from '../components/HealthTracker';
+import { TaskModal } from '../components/TaskModal';
+import { openGoogleCalendar } from '../utils/googleCalendar';
 import { PoseIllustration } from '../components/health/PoseIllustration';
 import { BreathingDiagram } from '../components/health/BreathingDiagram';
 import { ELEMENT_NUTRITION, CHRONO_ADVICE, ACTIVITY_ADVICE, ENERGY_RECOVERY } from '../data/healthRecommendations';
@@ -331,8 +333,23 @@ function AccordionItem({ title, children, isOpen, toggle, accent }) {
 
 // ─── ГЛАВНЫЙ КОМПОНЕНТ ───
 export function HealthSection() {
-  const { profile } = useApp();
+  const { profile, tasks, setTasks, notify } = useApp();
   const today = localDateStr();
+
+  const healthTasks = useMemo(() => tasks.filter(t=>t.section==='health'), [tasks]);
+
+  const saveHealthTask = (t) => {
+    setTasks(p => p.some(x=>x.id===t.id) ? p.map(x=>x.id===t.id?t:x) : [...p, t]);
+    notify?.(t.id ? '✅ Задача сохранена' : '✅ Задача добавлена');
+  };
+  const deleteHealthTask = (id) => {
+    if (!window.confirm('Удалить задачу?')) return;
+    setTasks(p => p.filter(x=>x.id!==id));
+  };
+  const toggleHealthTaskDone = (t) => {
+    const isDone = t.doneDate === today;
+    setTasks(p => p.map(x=>x.id===t.id?{...x, doneDate: isDone?null:today, lastDone: isDone?x.lastDone:today}:x));
+  };
 
   // Вкладки
   const [activeTab,     setActiveTab]     = useState('anatomy');
@@ -340,6 +357,7 @@ export function HealthSection() {
   const [yogaSearch,    setYogaSearch]    = useState('');
   const [modalContent,  setModalContent]  = useState(null);
   const [expandedRec,   setExpandedRec]   = useState(null);
+  const [healthTaskModal, setHealthTaskModal] = useState(null); // null | 'new' | task-объект
   const [expandedBreath,setExpandedBreath]= useState(null);
   const [expandedPose,  setExpandedPose]   = useState(null);
 
@@ -1287,6 +1305,62 @@ export function HealthSection() {
           <h2 style={{ fontFamily: 'var(--font-head)', borderBottom: '2px solid var(--blue)', paddingBottom: 5 }}>
             Персональные Рекомендации
           </h2>
+
+          {/* ── Мои задачи по здоровью ── */}
+          <div style={{ background:'#fff', border:'1px solid var(--blue)', borderRadius:8, padding:'12px 14px' }}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom: healthTasks.length?10:0 }}>
+              <span style={{ fontWeight:600, color:'var(--blue)', fontSize:14 }}>📋 Мои задачи по здоровью</span>
+              <button onClick={()=>setHealthTaskModal('new')}
+                style={{ padding:'6px 12px', borderRadius:8, cursor:'pointer',
+                  border:'1px solid var(--blue)', background:'transparent', color:'var(--blue)',
+                  fontSize:12, fontWeight:600 }}>
+                + Добавить
+              </button>
+            </div>
+            {healthTasks.length===0 && (
+              <div style={{ fontSize:12.5, color:'#888', fontStyle:'italic' }}>
+                Нет задач. Добавь — попадёт в Расписание и Сегодня, с датой/временем и напоминанием.
+              </div>
+            )}
+            <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+              {healthTasks.map(t => {
+                const done = t.doneDate === today;
+                const dateLabel = t.dueDate || (t.deadline ? t.deadline.split('T')[0] : null);
+                return (
+                  <div key={t.id} style={{ display:'flex', alignItems:'center', gap:8,
+                    padding:'8px 10px', borderRadius:8, background:'rgba(0,112,192,0.04)' }}>
+                    <div onClick={()=>toggleHealthTaskDone(t)} style={{ cursor:'pointer', fontSize:16,
+                      color: done?'#2d6a4f':'#bbb', flexShrink:0 }}>
+                      {done?'✅':'⬜'}
+                    </div>
+                    <div style={{ flex:1, minWidth:0 }} onClick={()=>setHealthTaskModal(t)}>
+                      <div style={{ fontSize:13.5, color: done?'#999':'#222', textDecoration: done?'line-through':'none',
+                        cursor:'pointer', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                        {t.title}
+                      </div>
+                      <div style={{ fontSize:10.5, color:'#888' }}>
+                        {t.preferredTime && `🕒 ${t.preferredTime} `}
+                        {dateLabel && `📅 ${dateLabel} `}
+                        {t.freq && t.freq!=='once' && `🔁 ${t.freq}`}
+                      </div>
+                    </div>
+                    {!done && (dateLabel || t.preferredTime) && (
+                      <button onClick={()=>openGoogleCalendar(t.title, dateLabel||today, t.preferredTime, t.notes||'')}
+                        title="Добавить в Google Calendar"
+                        style={{ background:'none', border:'none', cursor:'pointer', fontSize:14, flexShrink:0, opacity:0.65 }}>
+                        📆
+                      </button>
+                    )}
+                    <button onClick={()=>deleteHealthTask(t.id)} title="Удалить"
+                      style={{ background:'none', border:'none', cursor:'pointer', fontSize:14, flexShrink:0, opacity:0.4 }}>
+                      ✕
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
           <AccordionItem title="🥗 Питание по стихии" isOpen={expandedRec === 'diet'} toggle={() => setExpandedRec(expandedRec === 'diet' ? null : 'diet')}>
             <p><b>Рекомендуемые продукты:</b> {ELEMENT_NUTRITION[element]?.foods}</p>
             <p style={{ marginTop: 6 }}><b>Ограничить:</b> {ELEMENT_NUTRITION[element]?.avoid}</p>
@@ -1394,6 +1468,15 @@ export function HealthSection() {
           isOpen={!!modalContent} onClose={() => setModalContent(null)}
           title={modalContent.title} description={modalContent.desc}
           warning={modalContent.warning} rules={modalContent.rules} benefit={modalContent.benefit}
+        />
+      )}
+
+      {healthTaskModal && (
+        <TaskModal
+          task={healthTaskModal==='new' ? null : healthTaskModal}
+          defaultSection="health"
+          onSave={saveHealthTask}
+          onClose={()=>setHealthTaskModal(null)}
         />
       )}
     </div>
