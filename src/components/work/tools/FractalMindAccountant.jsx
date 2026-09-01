@@ -199,7 +199,7 @@ export function FractalMindAccountant() {
             }}>
               {fmt(currentValue)}
             </div>
-            <div style={{ fontSize: 14, color: BT.text3, marginTop: 4 }}>₸</div>
+            <div style={{ fontSize: 14, color: 'var(--text3)', marginTop: 4 }}>₸</div>
           </div>
         </div>
 

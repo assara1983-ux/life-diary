@@ -160,7 +160,7 @@ export function AccountantNewsFeed() {
             {[
               { label: 'Активных задач',    value: activeTasks,  color: 'rgba(200,164,90,0.9)',  icon: '📋' },
               { label: 'Выполнено',         value: doneTasks,    color: 'rgba(34,197,94,0.8)',   icon: '✅' },
-              { label: 'Сегодня',           value: todayTasks,   color: BT.navyMid,   icon: '☀️' },
+              { label: 'Сегодня',           value: todayTasks,   color: 'rgba(0,112,192,0.85)',   icon: '☀️' },
               { label: 'Срочных (7 дней)',  value: urgentTasks,  color: urgentTasks > 0 ? 'rgba(239,68,68,0.8)' : 'rgba(255,255,255,0.3)', icon: '⚠️' },
             ].map(({ label, value, color, icon }) => (
               <div key={label} style={{
@@ -174,7 +174,7 @@ export function AccountantNewsFeed() {
                   {value}
                 </div>
                 <div style={{
-                  fontSize: 12, color: BT.text3,
+                  fontSize: 12, color: 'var(--text3)',
                   fontFamily: "'JetBrains Mono',monospace",
                   letterSpacing: 1, marginTop: 4,
                 }}>
@@ -307,7 +307,7 @@ export function AccountantNewsFeed() {
                       flexShrink: 0, padding: '2px 8px', borderRadius: 8,
                       fontSize: 12, fontFamily: "'JetBrains Mono',monospace",
                       background: TAG_COLORS[item.tag] || 'rgba(255,255,255,0.1)',
-                      color: BT.text2, border: `1px solid ${BT.bdrS}`,
+                      color: 'var(--text2)', border: `1px solid rgba(0,0,0,0.12)`,
                     }}>{item.tag}</span>
                   )}
                 </div>

@@ -281,7 +281,7 @@ export function RecursiveSoulIndex() {
               <button onClick={reset} style={{
                 flex: 1, padding: '11px 0', borderRadius: 12,
                 background: 'transparent',
-                border: `1px solid ${BT.bdrS}`,
+                border: `1px solid rgba(0,0,0,0.12)`,
                 color: 'var(--text3)', fontSize: 16, cursor: 'pointer',
               }}>
                 ↺ Новая рекурсия

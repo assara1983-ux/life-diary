@@ -108,7 +108,7 @@ export function LateralThinking() {
       }}>
         <div style={{
           fontSize: 13, fontFamily: "'JetBrains Mono',monospace",
-          letterSpacing: 2, color: BT.navyMid, marginBottom: 8,
+          letterSpacing: 2, color: '#0070c0', marginBottom: 8,
           display: 'flex', alignItems: 'center', gap: 6,
         }}>
           <span style={{
@@ -134,7 +134,7 @@ export function LateralThinking() {
         />
         {situation.trim() && (
           <div style={{
-            marginTop: 6, fontSize: 14, color: BT.navyMid,
+            marginTop: 6, fontSize: 14, color: '#0070c0',
             fontFamily: "'JetBrains Mono',monospace",
           }}>✓ Контекст добавлен — ИИ учтёт его в ответе</div>
         )}
@@ -217,7 +217,7 @@ export function LateralThinking() {
         }}>
           <div style={{
             fontSize: 12, fontFamily: "'JetBrains Mono',monospace",
-            letterSpacing: 2, color: BT.navyMid, marginBottom: 8,
+            letterSpacing: 2, color: '#0070c0', marginBottom: 8,
           }}>ИИ АНАЛИЗ</div>
           {loading ? (
             <div style={{ color: 'var(--text3)', fontFamily: "'JetBrains Mono',monospace" }}>

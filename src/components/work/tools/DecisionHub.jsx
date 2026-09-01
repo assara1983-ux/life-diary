@@ -176,7 +176,7 @@ export function DecisionHub() {
           style={{
             padding: '6px 14px', borderRadius: 14, cursor: 'pointer', fontSize: 14,
             background: 'rgba(255,255,255,0.04)',
-            border: `1px solid ${BT.bdrS}`,
+            border: `1px solid rgba(0,0,0,0.12)`,
             color: 'var(--text3)', fontFamily: "'JetBrains Mono',monospace",
           }}
         >← Назад</div>

@@ -256,7 +256,7 @@ export function DocumentTemplates() {
             </button>
             <button onClick={clearForm} style={{
               flex: 1, padding: '11px 0', borderRadius: 10,
-              background: 'transparent', border: `1px solid ${BT.bdrS}`,
+              background: 'transparent', border: `1px solid rgba(0,0,0,0.12)`,
               color: 'var(--text3)', fontSize: 15, cursor: 'pointer',
             }}>
               Очистить
@@ -273,14 +273,14 @@ export function DocumentTemplates() {
         }}>
           <div style={{
             fontSize: 13, fontFamily: "'JetBrains Mono',monospace",
-            letterSpacing: 2, color: BT.text3, marginBottom: 14,
+            letterSpacing: 2, color: 'var(--text3)', marginBottom: 14,
           }}>ПРЕДПРОСМОТР</div>
 
           {generatedDoc ? (
             <>
               <pre style={{
                 background: 'rgba(255,255,255,0.70)',
-                border: `1px solid ${BT.bdrS}`,
+                border: `1px solid rgba(0,0,0,0.12)`,
                 padding: '14px', borderRadius: 10,
                 whiteSpace: 'pre-wrap', fontSize: 15,
                 lineHeight: 1.7, maxHeight: 420,

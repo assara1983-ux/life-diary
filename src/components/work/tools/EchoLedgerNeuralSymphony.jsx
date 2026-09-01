@@ -272,7 +272,7 @@ export function EchoLedgerNeuralSymphony() {
       }}>
         <div style={{
           fontSize: 13, fontFamily: "'JetBrains Mono',monospace",
-          letterSpacing: 2, color: BT.text3, marginBottom: 10,
+          letterSpacing: 2, color: 'var(--text3)', marginBottom: 10,
         }}>ГРОМКОСТЬ · {Math.round(volume * 100)}%</div>
         <input type="range" min="0" max="1" step="0.01" value={volume}
           onChange={e => setVolume(parseFloat(e.target.value))}

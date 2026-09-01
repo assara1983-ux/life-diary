@@ -364,7 +364,7 @@ export function HotkeysGuide() {
                 flexShrink: 0, padding: '6px 12px', borderRadius: 8,
                 background: 'rgba(0,112,192,0.08)',
                 border: '1px solid rgba(0,112,192,0.2)',
-                fontSize: 14, color: BT.navyMid, fontWeight: 600,
+                fontSize: 14, color: '#0070c0', fontWeight: 600,
                 fontFamily: "'JetBrains Mono',monospace",
                 whiteSpace: 'nowrap', letterSpacing: 0.5,
                 boxShadow: '0 1px 3px rgba(0,112,192,0.1)',
@@ -513,7 +513,7 @@ export function HotkeysGuide() {
                 }}>
                   <span style={{
                     fontFamily: "'JetBrains Mono',monospace",
-                    fontSize: 13, color: BT.navyMid,
+                    fontSize: 13, color: '#0070c0',
                     marginRight: 8, letterSpacing: 1,
                   }}>ТРИГГЕР</span>
                   <span style={{ color: 'var(--text1)' }}>{item.trigger}</span>

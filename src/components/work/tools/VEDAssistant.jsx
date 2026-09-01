@@ -247,7 +247,7 @@ export function VEDAssistant() {
             </div>
             <button onClick={() => resetChecklist(setExportChecks, EXPORT_CHECKLIST)} style={{
               padding: '4px 12px', borderRadius: 10, fontSize: 13, cursor: 'pointer',
-              background: 'transparent', border: `1px solid ${BT.bdrS}`,
+              background: 'transparent', border: `1px solid rgba(0,0,0,0.12)`,
               color: 'var(--text3)', fontFamily: "'JetBrains Mono',monospace",
             }}>Сбросить</button>
           </div>
@@ -305,7 +305,7 @@ export function VEDAssistant() {
             </div>
             <button onClick={() => resetChecklist(setImportChecks, IMPORT_CHECKLIST)} style={{
               padding: '4px 12px', borderRadius: 10, fontSize: 13, cursor: 'pointer',
-              background: 'transparent', border: `1px solid ${BT.bdrS}`,
+              background: 'transparent', border: `1px solid rgba(0,0,0,0.12)`,
               color: 'var(--text3)', fontFamily: "'JetBrains Mono',monospace",
             }}>Сбросить</button>
           </div>

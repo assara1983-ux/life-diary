@@ -129,7 +129,7 @@ export function TaxRegimesComparison() {
           }}>
             <div style={{
               fontSize: 12, fontFamily: "'JetBrains Mono',monospace",
-              letterSpacing: 1, color: BT.text3, marginBottom: 4,
+              letterSpacing: 1, color: 'var(--text3)', marginBottom: 4,
             }}>{label.toUpperCase()}</div>
             <div style={{ fontSize: 16, fontWeight: 700, color }}>{value}</div>
           </div>
@@ -173,7 +173,7 @@ export function TaxRegimesComparison() {
                   </div>
                   <div style={{
                     fontSize: 12, fontFamily: "'JetBrains Mono',monospace",
-                    color: BT.text3, letterSpacing: 1,
+                    color: 'var(--text3)', letterSpacing: 1,
                   }}>{r.short}</div>
                 </div>
               </div>
@@ -233,7 +233,7 @@ export function TaxRegimesComparison() {
       <div style={{
         marginTop: 16, padding: '10px 14px',
         background: 'rgba(255,255,255,0.60)',
-        border: `1px solid ${BT.bdrS}`,
+        border: `1px solid rgba(0,0,0,0.12)`,
         borderRadius: 8, fontSize: 14, color: 'var(--text3)', lineHeight: 1.5,
       }}>
         ℹ Расчёты приблизительные. Для точного выбора режима проконсультируйтесь с налоговым специалистом.

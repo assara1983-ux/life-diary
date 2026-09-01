@@ -86,7 +86,7 @@ export function TaxAssistant() {
         {messages.length > 0 && (
           <button onClick={clearChat} style={{
             padding: '6px 14px', borderRadius: 14,
-            background: 'transparent', border: `1px solid ${BT.bdrS}`,
+            background: 'transparent', border: `1px solid rgba(0,0,0,0.12)`,
             color: 'var(--text3)', fontSize: 14, cursor: 'pointer',
             fontFamily: "'JetBrains Mono',monospace",
           }}>
