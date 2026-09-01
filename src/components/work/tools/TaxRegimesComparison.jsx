@@ -1,47 +1,56 @@
 // src/components/work/tools/TaxRegimesComparison.jsx
 import { useState, useMemo } from 'react';
 
-// ⚠️ Обновить при изменении МРП
+// ⚠️ Обновить при изменении МРП (устанавливается ежегодно Законом РК «О республиканском бюджете»)
 const MRP_2026 = 4325;
+
+// Данные сверены на актуальный Налоговый кодекс РК (Закон № 214-VIII, в силе с 1 января 2026).
+// С 2026 года налоговая реформа существенно сократила число режимов:
+// — Патент, розничный налог и режим с фиксированным вычетом ОТМЕНЕНЫ.
+// — Патент заменён новым «СНР для самозанятых» (через приложение E-Salyq Business).
+// — «Упрощённая декларация» и бывший розничный налог объединены в один режим со ставкой 4%.
+// — ЕСП не действует с 1 января 2024 года (был временным режимом на 2019–2023).
+const OUR_THRESHOLD_MRP = 230000; // порог для ИПН 10%/15% для ИП на ОУР
+const VAT_THRESHOLD_MRP = 10000;  // порог обязательной постановки на учёт по НДС (ОУР)
+const UD_LIMIT_MRP = 600000;      // лимит годового дохода для Упрощённой декларации
+const SELF_EMPLOYED_LIMIT_MRP_MONTH = 300; // лимит дохода в месяц для самозанятых
 
 const REGIMES = [
   {
     id: 'our',
-    name: 'Общеустановленный режим',
+    name: 'Общеустановленный режим (ОУР)',
     short: 'ОУР',
-    rate: 'ИПН 10% с прибыли',
-    desc: 'Полный бухгалтерский учёт. НДС при превышении оборота 20 000 МРП.',
-    calc: (income, expenses) => Math.max(0, (income - expenses) * 0.10),
+    rate: 'ИПН 10% / 15% с прибыли (для ИП)',
+    desc: `Налог с прибыли (доходы минус расходы). До ${(OUR_THRESHOLD_MRP*MRP_2026).toLocaleString('ru-RU')} ₸ прибыли в год — 10%, сверх — 15%. НДС 16% при доходе свыше ${(VAT_THRESHOLD_MRP*MRP_2026).toLocaleString('ru-RU')} ₸. Для ТОО — КПН 20% с прибыли.`,
+    calc: (income, expenses) => {
+      const profit = Math.max(0, income - expenses);
+      const threshold = OUR_THRESHOLD_MRP * MRP_2026;
+      if (profit <= threshold) return profit * 0.10;
+      return threshold * 0.10 + (profit - threshold) * 0.15;
+    },
+    maxIncome: null, // без ограничений по доходу
     icon: '📋',
   },
   {
     id: 'upd',
     name: 'Упрощённая декларация',
     short: 'УД',
-    rate: '3% от оборота (1.5% ИПН + 1.5% СН)',
-    desc: 'Самый популярный режим для малого бизнеса. До 24 038 МРП оборота.',
-    calc: (income) => income * 0.03,
+    rate: '4% от оборота (маслихат: 2–6%)',
+    desc: `Единый налог с оборота, НДС и соцналога нет. Лимит дохода — ${UD_LIMIT_MRP.toLocaleString('ru-RU')} МРП (${(UD_LIMIT_MRP*MRP_2026).toLocaleString('ru-RU')} ₸/год). Есть запретительный список ~180 кодов ОКЭД (Пост. Правительства №970).`,
+    calc: (income) => income * 0.04,
+    maxIncome: UD_LIMIT_MRP * MRP_2026,
     icon: '⚡',
   },
   {
-    id: 'patent',
-    name: 'Патент',
-    short: 'ПАТ',
-    rate: '1% от дохода',
-    desc: 'Только для ИП без сотрудников. До 3 528 МРП дохода в год.',
-    calc: (income) => income * 0.01,
-    icon: '📜',
-    disclaimer: 'Только для отдельных видов деятельности без сотрудников',
-  },
-  {
-    id: 'esn',
-    name: 'Единый совокупный платёж',
-    short: 'ЕСП',
-    rate: 'Фиксированный ежемесячный платёж',
-    desc: 'Для физлиц без регистрации ИП. Фиксированный платёж ~1 МРП/мес.',
-    calc: () => MRP_2026 * 12,
-    icon: '🔒',
-    disclaimer: 'Для физлиц, оказывающих услуги без образования ИП',
+    id: 'selfEmployed',
+    name: 'СНР для самозанятых',
+    short: 'САМОЗАНЯТЫЙ',
+    rate: 'ИПН 0% + соцплатежи 4%',
+    desc: `Заменил патент с 2026 года. Только для физлиц без ИП, ограниченный список видов деятельности, через приложение E-Salyq Business. Лимит — ${SELF_EMPLOYED_LIMIT_MRP_MONTH} МРП/мес (${(SELF_EMPLOYED_LIMIT_MRP_MONTH*MRP_2026).toLocaleString('ru-RU')} ₸/мес).`,
+    calc: (income) => income * 0.04, // ИПН 0% + соцплатежи ОПВ/ОПВР/СО/ОСМС ≈ 4% суммарно
+    maxIncome: SELF_EMPLOYED_LIMIT_MRP_MONTH * 12 * MRP_2026,
+    icon: '📱',
+    disclaimer: 'Только для физлиц без регистрации ИП, по ограниченному перечню видов деятельности',
   },
 ];
 
@@ -50,16 +59,23 @@ export function TaxRegimesComparison() {
   const [expenses,  setExpenses]  = useState(6000000);
   const [employees, setEmployees] = useState(0);
 
-  const results = useMemo(() =>
-    REGIMES.map(r => ({
+  const results = useMemo(() => {
+    const withTax = REGIMES.map(r => ({
       ...r,
       tax: Math.round(r.calc(income, expenses, employees)),
-    })).sort((a, b) => a.tax - b.tax),
-    [income, expenses, employees]
-  );
+      eligible: r.maxIncome == null || income <= r.maxIncome,
+    }));
+    // Сортируем так, чтобы подходящие режимы шли первыми (по возрастанию налога),
+    // а недоступные из-за превышения лимита — в конце, не как «рекомендуемые»
+    return withTax.sort((a, b) => {
+      if (a.eligible !== b.eligible) return a.eligible ? -1 : 1;
+      return a.tax - b.tax;
+    });
+  }, [income, expenses, employees]);
 
-  const best = results[0];
+  const best = results.find(r => r.eligible) || results[0];
   const profit = Math.max(0, income - expenses);
+  const maxTaxForBar = Math.max(...results.map(r => r.tax), 1);
 
   const fmt = n => n.toLocaleString('ru-RU');
 
@@ -72,7 +88,7 @@ export function TaxRegimesComparison() {
           letterSpacing: 3, color: 'rgba(200,164,90,0.7)', marginBottom: 4,
         }}>СРАВНИТЕЛЬ РЕЖИМОВ</div>
         <div style={{ fontSize: 18, fontFamily: "'Cormorant Infant',serif" }}>
-          Налоговые режимы РК 2026 · МРП = {fmt(MRP_2026)} ₸
+          Налоговые режимы РК 2026 · МРП = {fmt(MRP_2026)} ₸ · по Налоговому кодексу (Закон №214-VIII)
         </div>
       </div>
 
@@ -143,26 +159,27 @@ export function TaxRegimesComparison() {
         gap: 12,
       }}>
         {results.map((r, idx) => {
-          const isBest = r.id === best.id;
+          const isBest = r.id === best.id && r.eligible;
           return (
             <div key={r.id} style={{
               position: 'relative',
               padding: '18px 16px',
               background: isBest
                 ? 'linear-gradient(135deg, rgba(200,164,90,0.12), rgba(200,164,90,0.04))'
-                : 'rgba(255,255,255,0.04)',
-              border: `1.5px solid ${isBest ? 'rgba(200,164,90,0.6)' : 'rgba(255,255,255,0.08)'}`,
+                : r.eligible ? 'rgba(255,255,255,0.04)' : 'rgba(239,68,68,0.04)',
+              border: `1.5px solid ${isBest ? 'rgba(200,164,90,0.6)' : r.eligible ? 'rgba(255,255,255,0.08)' : 'rgba(239,68,68,0.25)'}`,
               borderRadius: 12,
+              opacity: r.eligible ? 1 : 0.7,
             }}>
               {/* Бейдж позиции */}
               <div style={{
                 position: 'absolute', top: -10, left: 14,
                 padding: '2px 10px', borderRadius: 10, fontSize: 12,
                 fontFamily: "'JetBrains Mono',monospace",
-                background: isBest ? 'rgba(200,164,90,0.9)' : 'rgba(255,255,255,0.1)',
-                color: isBest ? '#000' : 'rgba(255,255,255,0.5)',
+                background: isBest ? 'rgba(200,164,90,0.9)' : !r.eligible ? 'rgba(239,68,68,0.85)' : 'rgba(255,255,255,0.1)',
+                color: isBest ? '#000' : !r.eligible ? '#fff' : 'rgba(255,255,255,0.5)',
               }}>
-                {isBest ? '✦ РЕКОМЕНДУЕМ' : `#${idx + 1}`}
+                {isBest ? '✦ РЕКОМЕНДУЕМ' : !r.eligible ? '⛔ ПРЕВЫШЕН ЛИМИТ' : `#${idx + 1}`}
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, marginTop: 6 }}>
@@ -193,9 +210,21 @@ export function TaxRegimesComparison() {
                 {r.rate}
               </div>
 
-              <div style={{ fontSize: 15, color: 'var(--text3)', lineHeight: 1.5, marginBottom: r.disclaimer ? 8 : 0 }}>
+              <div style={{ fontSize: 15, color: 'var(--text3)', lineHeight: 1.5, marginBottom: (r.disclaimer||!r.eligible) ? 8 : 0 }}>
                 {r.desc}
               </div>
+
+              {!r.eligible && (
+                <div style={{
+                  padding: '6px 10px',
+                  background: 'rgba(239,68,68,0.08)',
+                  border: '1px solid rgba(239,68,68,0.3)',
+                  borderRadius: 6, fontSize: 14,
+                  color: 'rgba(239,68,68,0.85)', lineHeight: 1.4,
+                }}>
+                  ⛔ Ваш доход ({fmt(income)} ₸) превышает лимит режима ({fmt(r.maxIncome)} ₸) — этот режим недоступен
+                </div>
+              )}
 
               {r.disclaimer && (
                 <div style={{
@@ -217,7 +246,7 @@ export function TaxRegimesComparison() {
               }}>
                 <div style={{
                   height: '100%',
-                  width: `${Math.round((r.tax / results[results.length - 1].tax) * 100)}%`,
+                  width: `${Math.round((r.tax / maxTaxForBar) * 100)}%`,
                   background: isBest
                     ? 'linear-gradient(90deg, rgba(200,164,90,0.8), rgba(200,164,90,0.4))'
                     : 'rgba(255,255,255,0.2)',
@@ -236,7 +265,7 @@ export function TaxRegimesComparison() {
         border: `1px solid rgba(0,0,0,0.12)`,
         borderRadius: 8, fontSize: 14, color: 'var(--text3)', lineHeight: 1.5,
       }}>
-        ℹ Расчёты приблизительные. Для точного выбора режима проконсультируйтесь с налоговым специалистом.
+        ℹ Расчёты приблизительные и не учитывают региональные корректировки ставок маслихатами, вычеты и льготы. Данные сверены на новый Налоговый кодекс РК (Закон №214-VIII, действует с 01.01.2026) по состоянию на сентябрь 2026. Для точного выбора режима проконсультируйтесь с налоговым специалистом или на kgd.gov.kz.
       </div>
     </div>
   );
